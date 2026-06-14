@@ -21,18 +21,29 @@ basic profile fields), without implementing authentication itself.
 
 Applied to every table unless noted otherwise:
 
-- `id BIGSERIAL PRIMARY KEY` — internal identifier, used for FKs/joins. **Never exposed.**
+- `id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY` — internal identifier, used for
+  FKs/joins. **Never exposed.**
 - `external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE` — the identifier used in any
   future API. Postgres 13+ (project uses `postgres:17-alpine`) has `gen_random_uuid()` built
   in, no extension required.
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT now()` on every table.
 - `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()` on tables whose rows can be edited after
   creation (not on lot/contribution tables, which are append-only in the client today).
+  `DEFAULT now()` only covers `INSERT`; the future service layer is responsible for setting
+  `updated_at = now()` on every `UPDATE` (no database trigger).
 - Money/quantity/rate columns are unconstrained `NUMERIC` (exact decimals; crypto quantities
   need up to 8 decimal places per `client/src/composables/useFormat.ts`).
 - All `user_id REFERENCES system.users(id)` foreign keys (on `wallets`, `stock_types`,
   `fund_types`, `currency_rates`) use the Postgres default (`NO ACTION`/`RESTRICT`) — a user
   row can't be deleted while it owns data. Cascading user deletion is an auth-spec concern.
+- Postgres doesn't auto-index FK columns, so every FK gets an explicit `CREATE INDEX` —
+  *unless* it's already the leftmost column of an existing UNIQUE/composite index (e.g.
+  `stock_types`/`fund_types`/`currency_rates`, whose `UNIQUE (user_id, ...)` already covers
+  `user_id` lookups).
+- Numeric columns get `CHECK` constraints where the domain implies a range: lot/contribution
+  quantities and amounts are `> 0`; lot/contribution prices and the nullable manual
+  `current_price`/`current_value` fields are `>= 0`; `currency_rates.rate` is `> 0`. `CHECK`
+  passes on `NULL`, so nullable columns don't need an `IS NULL OR` guard.
 
 ## Schema layout
 
@@ -53,13 +64,11 @@ Basic Google SSO profile — prep for future auth, not implemented here.
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | `BIGSERIAL PK` | |
-| `external_id` | `UUID` | unique, default `gen_random_uuid()` |
+| `id`, `external_id`, `created_at`, `updated_at` | — | per conventions |
 | `google_sub` | `TEXT NOT NULL UNIQUE` | Google's stable subject claim |
 | `email` | `TEXT NOT NULL UNIQUE` | |
 | `name` | `TEXT NOT NULL` | |
 | `avatar_url` | `TEXT` | nullable |
-| `created_at` / `updated_at` | `TIMESTAMPTZ` | |
 
 ### `finances.wallets`
 
@@ -70,6 +79,8 @@ Basic Google SSO profile — prep for future auth, not implemented here.
 | `name` | `TEXT NOT NULL` | |
 | `kind` | `finances.wallet_kind NOT NULL` | enum: `'stocks'`, `'crypto'`, `'funds'` — matches `WalletKind` |
 | `currency` | `TEXT NOT NULL` | ISO code, e.g. `BRL`/`USD`/`EUR` |
+
+Index: `(user_id)` (FK).
 
 ### `finances.stock_types` / `finances.fund_types`
 
@@ -82,7 +93,7 @@ Identical shape, one table per list:
 | `user_id` | `BIGINT NOT NULL REFERENCES system.users(id)` | |
 | `name` | `TEXT NOT NULL` | |
 
-Constraint: `UNIQUE (user_id, name)`.
+Constraint: `UNIQUE (user_id, name)` — also covers the `user_id` FK index (leftmost column).
 
 ### `finances.currency_rates`
 
@@ -93,11 +104,11 @@ Mirrors `CurrencyConfig { base, rates }`.
 | `id`, `external_id`, `created_at`, `updated_at` | — | per conventions |
 | `user_id` | `BIGINT NOT NULL REFERENCES system.users(id)` | |
 | `currency_code` | `TEXT NOT NULL` | e.g. `BRL`, `USD`, `EUR` |
-| `rate` | `NUMERIC NOT NULL` | value of 1 unit of `currency_code` in the user's base currency |
+| `rate` | `NUMERIC NOT NULL CHECK (rate > 0)` | value of 1 unit of `currency_code` in the user's base currency |
 | `is_base` | `BOOLEAN NOT NULL DEFAULT false` | exactly one row per user should be the base (rate = 1) |
 
-Constraints: `UNIQUE (user_id, currency_code)`; a partial unique index
-`(user_id) WHERE is_base` so at most one row per user can be marked base.
+Constraints: `UNIQUE (user_id, currency_code)` — also covers the `user_id` FK index; a
+partial unique index `(user_id) WHERE is_base` so at most one row per user can be marked base.
 
 ### `finances.stock_holdings` / `finances.stock_lots`
 
@@ -108,15 +119,19 @@ Constraints: `UNIQUE (user_id, currency_code)`; a partial unique index
 | `stock_type_id` | `BIGINT NOT NULL REFERENCES finances.stock_types(id) ON DELETE RESTRICT` | |
 | `ticker` | `TEXT NOT NULL` | |
 | `name` | `TEXT NOT NULL` | |
-| `current_price` | `NUMERIC` | nullable — optional manual field |
+| `current_price` | `NUMERIC CHECK (current_price >= 0)` | nullable — optional manual field |
+
+Indexes: `(wallet_id)`, `(stock_type_id)` (FKs).
 
 | `stock_lots` column | Type | Notes |
 |---|---|---|
 | `id`, `external_id`, `created_at` | — | per conventions |
 | `stock_holding_id` | `BIGINT NOT NULL REFERENCES finances.stock_holdings(id) ON DELETE CASCADE` | |
 | `lot_date` | `DATE NOT NULL` | |
-| `quantity` | `NUMERIC NOT NULL` | |
-| `price` | `NUMERIC NOT NULL` | |
+| `quantity` | `NUMERIC NOT NULL CHECK (quantity > 0)` | |
+| `price` | `NUMERIC NOT NULL CHECK (price >= 0)` | |
+
+Index: `(stock_holding_id)` (FK).
 
 ### `finances.crypto_holdings` / `finances.crypto_lots`
 
@@ -129,15 +144,19 @@ model):
 | `wallet_id` | `BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE` | |
 | `ticker` | `TEXT NOT NULL` | |
 | `name` | `TEXT NOT NULL` | |
-| `current_price` | `NUMERIC` | nullable |
+| `current_price` | `NUMERIC CHECK (current_price >= 0)` | nullable |
+
+Index: `(wallet_id)` (FK).
 
 | `crypto_lots` column | Type | Notes |
 |---|---|---|
 | `id`, `external_id`, `created_at` | — | per conventions |
 | `crypto_holding_id` | `BIGINT NOT NULL REFERENCES finances.crypto_holdings(id) ON DELETE CASCADE` | |
 | `lot_date` | `DATE NOT NULL` | |
-| `quantity` | `NUMERIC NOT NULL` | |
-| `price` | `NUMERIC NOT NULL` | |
+| `quantity` | `NUMERIC NOT NULL CHECK (quantity > 0)` | |
+| `price` | `NUMERIC NOT NULL CHECK (price >= 0)` | |
+
+Index: `(crypto_holding_id)` (FK).
 
 ### `finances.fund_holdings` / `finances.fund_contributions`
 
@@ -147,14 +166,18 @@ model):
 | `wallet_id` | `BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE` | |
 | `fund_type_id` | `BIGINT NOT NULL REFERENCES finances.fund_types(id) ON DELETE RESTRICT` | |
 | `name` | `TEXT NOT NULL` | |
-| `current_value` | `NUMERIC` | nullable — optional manual field |
+| `current_value` | `NUMERIC CHECK (current_value >= 0)` | nullable — optional manual field |
+
+Indexes: `(wallet_id)`, `(fund_type_id)` (FKs).
 
 | `fund_contributions` column | Type | Notes |
 |---|---|---|
 | `id`, `external_id`, `created_at` | — | per conventions |
 | `fund_holding_id` | `BIGINT NOT NULL REFERENCES finances.fund_holdings(id) ON DELETE CASCADE` | |
 | `contribution_date` | `DATE NOT NULL` | |
-| `amount` | `NUMERIC NOT NULL` | |
+| `amount` | `NUMERIC NOT NULL CHECK (amount > 0)` | |
+
+Index: `(fund_holding_id)` (FK).
 
 ### `finances.wallet_kind` (enum type)
 
@@ -169,7 +192,7 @@ aggregated, producing one row per holding:
 |---|---|
 | `external_id` | the holding's own `external_id` |
 | `wallet_id` | the owning wallet's internal `id` |
-| `kind` | literal `'stock'` / `'crypto'` / `'fund'` |
+| `kind` | `finances.wallet_kind` value: `'stocks'` / `'crypto'` / `'funds'`, matching the source table — consistent with `wallets.kind` and the client's `WalletKind` |
 | `name` | holding name |
 | `ticker` | stock/crypto ticker, `NULL` for funds |
 | `type_label` | `stock_types.name` / `fund_types.name`, `NULL` for crypto |
@@ -178,7 +201,10 @@ aggregated, producing one row per holding:
 | `cost_basis` | `SUM(lots.quantity * lots.price)` or `SUM(contributions.amount)` |
 | `current_value` | `current_price * quantity` for stock/crypto, `fund_holdings.current_value` for funds |
 
-A unique index on `external_id` enables `REFRESH MATERIALIZED VIEW CONCURRENTLY`.
+A unique index on `external_id` enables `REFRESH MATERIALIZED VIEW CONCURRENTLY`. A second,
+non-unique index on `wallet_id` supports the "holdings for this wallet" access pattern. Each
+`UNION ALL` branch casts its `kind` literal (e.g. `'stocks'::finances.wallet_kind`), so the
+view column is typed `finances.wallet_kind`, not `text`.
 
 **Refresh strategy is not part of this spec.** No triggers are created; refreshing
 (after writes, on a schedule, or on read) is an API-layer decision for the follow-up spec.
@@ -264,6 +290,9 @@ materialized view correctly — generic in-memory databases don't support all of
 ## Out of scope / follow-ups
 
 - REST controllers, services, and repositories (jOOQ DSL usage against the generated code).
+  When that layer is built, follow a domain-module package layout (e.g.
+  `br.com.investlog.server.portfolio`, `br.com.investlog.server.system`), keeping the
+  jOOQ-generated code isolated in `br.com.investlog.server.jooq` as planned here.
 - `holdings_overview` refresh strategy (trigger, scheduled job, or on-demand).
 - Seed/demo data for local development.
 - Client integration (explicitly excluded — client is read-only context for this work).
