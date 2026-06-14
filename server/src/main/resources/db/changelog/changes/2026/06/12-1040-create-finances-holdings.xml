@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="12-1040-1" author="investlog">
+        <sql>
+            CREATE TABLE finances.stock_holdings (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                stock_type_id BIGINT NOT NULL REFERENCES finances.stock_types(id) ON DELETE RESTRICT,
+                ticker TEXT NOT NULL,
+                name TEXT NOT NULL,
+                current_price NUMERIC CHECK (current_price >= 0),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.stock_holdings;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-2" author="investlog">
+        <sql>CREATE INDEX idx_stock_holdings_wallet_id ON finances.stock_holdings (wallet_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_stock_holdings_wallet_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-3" author="investlog">
+        <sql>CREATE INDEX idx_stock_holdings_stock_type_id ON finances.stock_holdings (stock_type_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_stock_holdings_stock_type_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-4" author="investlog">
+        <sql>
+            CREATE TABLE finances.stock_lots (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                stock_holding_id BIGINT NOT NULL REFERENCES finances.stock_holdings(id) ON DELETE CASCADE,
+                lot_date DATE NOT NULL,
+                quantity NUMERIC NOT NULL CHECK (quantity > 0),
+                price NUMERIC NOT NULL CHECK (price >= 0),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.stock_lots;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-5" author="investlog">
+        <sql>CREATE INDEX idx_stock_lots_stock_holding_id ON finances.stock_lots (stock_holding_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_stock_lots_stock_holding_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-6" author="investlog">
+        <sql>
+            CREATE TABLE finances.crypto_holdings (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                ticker TEXT NOT NULL,
+                name TEXT NOT NULL,
+                current_price NUMERIC CHECK (current_price >= 0),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.crypto_holdings;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-7" author="investlog">
+        <sql>CREATE INDEX idx_crypto_holdings_wallet_id ON finances.crypto_holdings (wallet_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_crypto_holdings_wallet_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-8" author="investlog">
+        <sql>
+            CREATE TABLE finances.crypto_lots (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                crypto_holding_id BIGINT NOT NULL REFERENCES finances.crypto_holdings(id) ON DELETE CASCADE,
+                lot_date DATE NOT NULL,
+                quantity NUMERIC NOT NULL CHECK (quantity > 0),
+                price NUMERIC NOT NULL CHECK (price >= 0),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.crypto_lots;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-9" author="investlog">
+        <sql>CREATE INDEX idx_crypto_lots_crypto_holding_id ON finances.crypto_lots (crypto_holding_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_crypto_lots_crypto_holding_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-10" author="investlog">
+        <sql>
+            CREATE TABLE finances.fund_holdings (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                fund_type_id BIGINT NOT NULL REFERENCES finances.fund_types(id) ON DELETE RESTRICT,
+                name TEXT NOT NULL,
+                current_value NUMERIC CHECK (current_value >= 0),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.fund_holdings;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-11" author="investlog">
+        <sql>CREATE INDEX idx_fund_holdings_wallet_id ON finances.fund_holdings (wallet_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_fund_holdings_wallet_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-12" author="investlog">
+        <sql>CREATE INDEX idx_fund_holdings_fund_type_id ON finances.fund_holdings (fund_type_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_fund_holdings_fund_type_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-13" author="investlog">
+        <sql>
+            CREATE TABLE finances.fund_contributions (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                fund_holding_id BIGINT NOT NULL REFERENCES finances.fund_holdings(id) ON DELETE CASCADE,
+                contribution_date DATE NOT NULL,
+                amount NUMERIC NOT NULL CHECK (amount > 0),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.fund_contributions;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1040-14" author="investlog">
+        <sql>CREATE INDEX idx_fund_contributions_fund_holding_id ON finances.fund_contributions (fund_holding_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_fund_contributions_fund_holding_id;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

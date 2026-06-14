@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="12-1000-1" author="investlog">
+        <sql>CREATE SCHEMA system;</sql>
+        <rollback>
+            <sql>DROP SCHEMA system;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1000-2" author="investlog">
+        <sql>CREATE SCHEMA finances;</sql>
+        <rollback>
+            <sql>DROP SCHEMA finances;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

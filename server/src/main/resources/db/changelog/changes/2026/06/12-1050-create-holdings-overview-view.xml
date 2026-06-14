@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="12-1050-1" author="investlog">
+        <sql>
+            CREATE MATERIALIZED VIEW finances.holdings_overview AS
+            SELECT
+                sh.external_id,
+                sh.wallet_id,
+                'stocks'::finances.wallet_kind AS kind,
+                sh.name,
+                sh.ticker,
+                st.name AS type_label,
+                sh.current_price,
+                COALESCE(SUM(sl.quantity), 0) AS quantity,
+                COALESCE(SUM(sl.quantity * sl.price), 0) AS cost_basis,
+                sh.current_price * COALESCE(SUM(sl.quantity), 0) AS current_value
+            FROM finances.stock_holdings sh
+            JOIN finances.stock_types st ON st.id = sh.stock_type_id
+            LEFT JOIN finances.stock_lots sl ON sl.stock_holding_id = sh.id
+            GROUP BY sh.id, sh.external_id, sh.wallet_id, sh.name, sh.ticker, st.name, sh.current_price
+
+            UNION ALL
+
+            SELECT
+                ch.external_id,
+                ch.wallet_id,
+                'crypto'::finances.wallet_kind AS kind,
+                ch.name,
+                ch.ticker,
+                NULL::TEXT AS type_label,
+                ch.current_price,
+                COALESCE(SUM(cl.quantity), 0) AS quantity,
+                COALESCE(SUM(cl.quantity * cl.price), 0) AS cost_basis,
+                ch.current_price * COALESCE(SUM(cl.quantity), 0) AS current_value
+            FROM finances.crypto_holdings ch
+            LEFT JOIN finances.crypto_lots cl ON cl.crypto_holding_id = ch.id
+            GROUP BY ch.id, ch.external_id, ch.wallet_id, ch.name, ch.ticker, ch.current_price
+
+            UNION ALL
+
+            SELECT
+                fh.external_id,
+                fh.wallet_id,
+                'funds'::finances.wallet_kind AS kind,
+                fh.name,
+                NULL::TEXT AS ticker,
+                ft.name AS type_label,
+                NULL::NUMERIC AS current_price,
+                NULL::NUMERIC AS quantity,
+                COALESCE(SUM(fc.amount), 0) AS cost_basis,
+                fh.current_value
+            FROM finances.fund_holdings fh
+            JOIN finances.fund_types ft ON ft.id = fh.fund_type_id
+            LEFT JOIN finances.fund_contributions fc ON fc.fund_holding_id = fh.id
+            GROUP BY fh.id, fh.external_id, fh.wallet_id, fh.name, ft.name, fh.current_value;
+        </sql>
+        <rollback>
+            <sql>DROP MATERIALIZED VIEW finances.holdings_overview;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1050-2" author="investlog">
+        <sql>CREATE UNIQUE INDEX uq_holdings_overview_external_id ON finances.holdings_overview (external_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.uq_holdings_overview_external_id;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="12-1050-3" author="investlog">
+        <sql>CREATE INDEX idx_holdings_overview_wallet_id ON finances.holdings_overview (wallet_id);</sql>
+        <rollback>
+            <sql>DROP INDEX finances.idx_holdings_overview_wallet_id;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
