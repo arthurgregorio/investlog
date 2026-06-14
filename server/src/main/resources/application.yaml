@@ -1,3 +1,7 @@
 spring:
   application:
     name: server
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    database-change-log-table: database_changelog
+    database-change-log-lock-table: database_changelog_lock
