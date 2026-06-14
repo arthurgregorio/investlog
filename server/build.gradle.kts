@@ -1,5 +1,26 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3
+import liquibase.Liquibase
+import liquibase.database.DatabaseFactory
+import liquibase.database.jvm.JdbcConnection
+import liquibase.resource.DirectoryResourceAccessor
+import nu.studer.gradle.jooq.JooqEdition
+import org.jooq.meta.kotlin.*
+import org.testcontainers.postgresql.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
+import java.io.File
+import java.sql.DriverManager
+
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.testcontainers:testcontainers-postgresql:2.0.5")
+		classpath("org.liquibase:liquibase-core:5.0.3")
+		classpath("org.postgresql:postgresql:42.7.11")
+	}
+}
 
 plugins {
 	kotlin("jvm") version "2.3.21"
@@ -7,6 +28,7 @@ plugins {
 
 	id("org.springframework.boot") version "4.1.0"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("nu.studer.jooq") version "10.2.1"
 }
 
 group = "br.com.investlog"
@@ -44,6 +66,7 @@ dependencies {
 
 	// database
 	runtimeOnly("org.postgresql:postgresql")
+	jooqGenerator("org.postgresql:postgresql:42.7.11")
 
 	// testing
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
@@ -68,6 +91,77 @@ kotlin {
 		languageVersion.set(KOTLIN_2_3)
 		freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
 	}
+}
+
+jooq {
+	version.set("3.21.5")
+	edition.set(JooqEdition.OSS)
+
+	configurations {
+		create("main") {
+			generateSchemaSourceOnCompilation.set(true)
+
+			jooqConfiguration.apply {
+				generator {
+					name = "org.jooq.codegen.KotlinGenerator"
+
+					database {
+						name = "org.jooq.meta.postgres.PostgresDatabase"
+
+						schemata {
+							schema {
+								inputSchema = "system"
+							}
+							schema {
+								inputSchema = "finances"
+							}
+						}
+					}
+
+					target {
+						packageName = "br.com.investlog.server.jooq"
+						directory = "build/generated-sources/jooq/main"
+					}
+				}
+			}
+		}
+	}
+}
+
+val jooqDb = PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"))
+
+val startJooqDb by tasks.registering {
+	doLast {
+		jooqDb.start()
+
+		val connection = DriverManager.getConnection(jooqDb.jdbcUrl, jooqDb.username, jooqDb.password)
+		try {
+			val database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(JdbcConnection(connection))
+			val resourceAccessor = DirectoryResourceAccessor(File(projectDir, "src/main/resources"))
+
+			Liquibase("db/changelog/db.changelog-master.xml", resourceAccessor, database).update()
+		} finally {
+			connection.close()
+		}
+
+		jooq.configurations.getByName("main").jooqConfiguration.jdbc {
+			driver = "org.postgresql.Driver"
+			url = jooqDb.jdbcUrl
+			user = jooqDb.username
+			password = jooqDb.password
+		}
+	}
+}
+
+val stopJooqDb by tasks.registering {
+	doLast {
+		jooqDb.stop()
+	}
+}
+
+tasks.named("generateJooq") {
+	dependsOn(startJooqDb)
+	finalizedBy(stopJooqDb)
 }
 
 springBoot {
