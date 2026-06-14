@@ -159,6 +159,10 @@ val stopJooqDb by tasks.registering {
 	}
 }
 
+startJooqDb {
+	finalizedBy(stopJooqDb)
+}
+
 tasks.named("generateJooq") {
 	dependsOn(startJooqDb)
 	finalizedBy(stopJooqDb)
