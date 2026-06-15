@@ -23,10 +23,19 @@ jOOQ Kotlin sources from it, then tears the container down.
 
 ## Architecture
 
-This is currently a **skeleton** Spring Boot project at the application layer —
-`Application.kt` is just the `@SpringBootApplication` bootstrap, and there are no controllers,
-services or repositories yet. The persistence schema itself, however, is fully defined (see
-below).
+`Application.kt` is the `@SpringBootApplication` bootstrap. Beyond that, the application layer
+has:
+
+- `shared/security` — cross-cutting current-user resolution: `CurrentUser` (domain model),
+  `UserRepository` (queries/updates `system.users` via the generated jOOQ `USERS` table), and
+  `CurrentUserProvider`/`FixedCurrentUserProvider` (resolves the current user; fixed to a dev
+  user for now).
+- `config` — `WebMvcConfig` (path-segment API versioning, prefixes `@RestController`s under
+  `/private/{version}`) and `GlobalExceptionHandler` (RFC 7807 `ProblemDetail` error responses).
+- `profile` — the first business module: `GET`/`PATCH /private/v1/profile`, following a
+  `rest/{controllers,dtos}` + `domain/services` layout that future modules will follow.
+
+The persistence schema itself is fully defined (see below).
 
 - Kotlin 2.3.21 / Spring Boot 4.1.0, JVM 25 toolchain. Root package: `br.com.investlog.server`.
 - Web: `spring-boot-starter-webmvc` (servlet MVC, not WebFlux).
@@ -43,7 +52,8 @@ below).
 - jOOQ codegen (`nu.studer.jooq` plugin, configured in `build.gradle.kts`) generates Kotlin
   sources for the `system`/`finances` schemas into `build/generated-sources/jooq/main` (package
   `br.com.investlog.server.jooq`, gitignored) as part of `compileKotlin` — see `generateJooq`/
-  `startJooqDb`/`stopJooqDb`. The generated DSL isn't consumed by application code yet.
+  `startJooqDb`/`stopJooqDb`. `shared/security/UserRepository` is the first consumer, querying
+  and updating `system.users` via the generated `USERS` table.
 - `jackson-module-kotlin` for Kotlin-aware JSON (de)serialization. `kotlin-reflect` is on the
   classpath for frameworks that need it (jOOQ/Jackson/Spring).
 - Other starters: `actuator`, `mail`, `validation`.

@@ -64,5 +64,8 @@ class ProfileControllerTest {
             .body("""{"accentColor":"purple"}""")
             .exchange()
             .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.title").isEqualTo("Validation Error")
+            .jsonPath("$.errors[0]").isEqualTo("accentColor must be one of: blue, indigo, teal, green")
     }
 }
