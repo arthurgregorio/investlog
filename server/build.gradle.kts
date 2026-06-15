@@ -55,6 +55,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-mail")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	implementation("org.springframework.data:spring-data-commons")
 
 	// kotlin thing
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -76,6 +77,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
+	testImplementation("tools.jackson.core:jackson-databind")
 
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
