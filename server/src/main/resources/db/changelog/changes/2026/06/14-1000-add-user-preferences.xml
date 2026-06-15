@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="14-1000-1" author="${claude}">
+        <sql>
+            ALTER TABLE system.users
+                ADD COLUMN accent_color TEXT NOT NULL DEFAULT 'teal'
+                    CHECK (accent_color IN ('blue', 'indigo', 'teal', 'green')),
+                ADD COLUMN preferred_currency TEXT NOT NULL DEFAULT 'BRL';
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE system.users
+                    DROP COLUMN accent_color,
+                    DROP COLUMN preferred_currency;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
