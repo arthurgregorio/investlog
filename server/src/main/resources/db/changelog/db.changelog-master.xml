@@ -17,4 +17,6 @@
 
     <include file="db/changelog/changes/2026/06/14-1000-add-user-preferences.xml" relativeToChangelogFile="false"/>
 
+    <include file="db/changelog/changes/2026/06/14-1050-seed-dev-data.xml" relativeToChangelogFile="false"/>
+
 </databaseChangeLog>

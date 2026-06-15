@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="14-1050-1" author="${claude}">
+        <sql>
+            INSERT INTO system.users (google_sub, email, name)
+            VALUES ('dev-user', 'arthurshakal@gmail.com', 'Arthur Gregorio');
+        </sql>
+        <rollback>
+            <sql>DELETE FROM system.users WHERE google_sub = 'dev-user';</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="14-1050-2" author="${claude}">
+        <sql>
+            INSERT INTO finances.currency_rates (user_id, currency_code, rate, is_base)
+            SELECT u.id, v.currency_code, v.rate, v.is_base
+            FROM system.users u
+            CROSS JOIN (VALUES
+                ('BRL', 1::numeric, true),
+                ('USD', 5.42::numeric, false),
+                ('EUR', 5.88::numeric, false)
+            ) AS v(currency_code, rate, is_base)
+            WHERE u.google_sub = 'dev-user';
+        </sql>
+        <rollback>
+            <sql>
+                DELETE FROM finances.currency_rates
+                WHERE user_id = (SELECT id FROM system.users WHERE google_sub = 'dev-user');
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
