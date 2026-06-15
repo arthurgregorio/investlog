@@ -45,11 +45,27 @@ for everything in this spec. `/public/v1/...` is reserved for future unauthentic
 (health/info, future OAuth callbacks) — no routes defined there yet, since every current endpoint
 is scoped to `CurrentUserProvider`'s user.
 
-Versioning uses Spring Framework 7 / Spring Boot 4's built-in support
-(`WebMvcConfigurer.configureApiVersioning`): `usePathSegment(1)` (the segment right after
-`/private`/`/public`), `addSupportedVersions("v1")`, `setDefaultVersion("v1")`. If a second
-version is ever needed, only the handler methods that change declare `version = "v2"` on their
-mapping annotation — the rest of the surface stays on `v1`.
+Versioning uses Spring Framework 7 / Spring Boot 4's built-in support, wired via two
+`WebMvcConfigurer` hooks:
+- `configurePathMatch { it.addPathPrefix("/private/{version}", HandlerTypePredicate.forAnnotation(RestController::class.java)) }`
+  prepends `/private/{version}` to every controller's mapping, so a controller mapped at
+  `/wallets` resolves to `/private/{version}/wallets`. `{version}` must be declared as a URI
+  variable for the resolver below to read it (confirmed against Spring's path-segment versioning
+  sample — `spring-framework#35404`).
+- `configureApiVersioning { it.usePathSegment(1).addSupportedVersions("v1").setDefaultVersion("v1") }`
+  — `usePathSegment` is 0-indexed, so index `1` is the `{version}` segment added by the prefix
+  above (index `0` is `private`). `setDefaultVersion` is effectively inert for this strategy since
+  `{version}` is always present in the path; it's declared anyway as Spring's documented fallback
+  for an omitted version, which can't happen here.
+
+When `/public/v1` gains routes, it needs its own
+`addPathPrefix("/public/{version}", ...)` with a predicate that distinguishes its controllers
+from `/private` ones (package- or annotation-based) — left to the implementation plan.
+
+If a second version is ever needed, only the handler methods that change declare
+`version = "v2"` on their mapping annotation (e.g. `@GetMapping(version = "v2")`); Spring routes
+`{version}=v2` requests to that method and falls back to the unmarked method (implicitly `v1`)
+for everything else — the rest of the surface needs no change.
 
 ### Pagination — every collection endpoint
 `stock-types`, `fund-types`, `currency-rates`, `wallets`, `holdings` accept standard Spring
