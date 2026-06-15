@@ -1,8 +1,10 @@
 package br.com.investlog.server.config
 
+import br.com.investlog.server.shared.exceptions.NotFoundException
 import java.time.Instant
 import org.slf4j.LoggerFactory
 import org.springframework.context.support.DefaultMessageSourceResolvable
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -33,6 +35,22 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         problemDetail.setProperty("timestamp", Instant.now())
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail)
+    }
+
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFound(ex: NotFoundException): ProblemDetail {
+        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException::class)
+    fun handleDataIntegrityViolation(ex: DataIntegrityViolationException): ProblemDetail {
+        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "The request conflicts with existing data")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
     }
 
     @ExceptionHandler(Exception::class)
