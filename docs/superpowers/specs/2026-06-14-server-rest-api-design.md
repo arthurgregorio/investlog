@@ -39,6 +39,18 @@ leave the server. Exception: `currency-rates` is addressed by `currencyCode` (e.
 a natural, stable per-user key (`UNIQUE(user_id, currency_code)`), so a separate UUID would add
 nothing.
 
+### API versioning & path structure
+Every endpoint lives under an access-level prefix plus a version segment: **`/private/v1/...`**
+for everything in this spec. `/public/v1/...` is reserved for future unauthenticated routes
+(health/info, future OAuth callbacks) — no routes defined there yet, since every current endpoint
+is scoped to `CurrentUserProvider`'s user.
+
+Versioning uses Spring Framework 7 / Spring Boot 4's built-in support
+(`WebMvcConfigurer.configureApiVersioning`): `usePathSegment(1)` (the segment right after
+`/private`/`/public`), `addSupportedVersions("v1")`, `setDefaultVersion("v1")`. If a second
+version is ever needed, only the handler methods that change declare `version = "v2"` on their
+mapping annotation — the rest of the surface stays on `v1`.
+
 ### Pagination — every collection endpoint
 `stock-types`, `fund-types`, `currency-rates`, `wallets`, `holdings` accept standard Spring
 `Pageable` query params (`page`, `size`, `sort`) and return
@@ -53,9 +65,9 @@ does not pull in on its own. `build.gradle.kts` needs `org.springframework.data:
 added directly — it brings the types plus Spring MVC's `Pageable` argument-resolver
 auto-configuration, without pulling in a full Spring Data repository module.
 
-**Aggregate endpoints are the exception**: `GET /api/holdings/summary` and
-`GET /api/holdings/timeline` return a single object / a full unpaginated list — see "Design
-decisions flagged for review" below.
+**Aggregate endpoints are the exception**: `GET /private/v1/holdings/summary` and
+`GET /private/v1/holdings/timeline` return a single object / a full unpaginated list — see
+"Design decisions flagged for review" below.
 
 ### Error handling
 `@RestControllerAdvice` translating to RFC 7807 `ProblemDetail`:
@@ -68,11 +80,19 @@ decisions flagged for review" below.
 - `@Valid` body validation failure → 400
 
 ### JSON conventions
-camelCase field names (Jackson `kotlin` module), dates as ISO `yyyy-MM-dd` strings, money/quantity
-as JSON numbers (`NUMERIC` ↔ jOOQ `BigDecimal`). Holding `kind` values in API responses match the
-existing `finances.wallet_kind` enum / `WalletKind` (`stocks`/`crypto`/`funds`) — note this is
-plural, unlike the client's current `Holding.kind` discriminant (`'stock'/'crypto'/'fund'`);
-reconciling that is a client-integration-phase concern.
+camelCase field names, dates as ISO `yyyy-MM-dd` strings, money/quantity as JSON numbers
+(`NUMERIC` ↔ jOOQ `BigDecimal`). Spring Boot 4 runs on **Jackson 3** (`tools.jackson.*`): Spring
+auto-configures a `tools.jackson.databind.json.JsonMapper` bean — the Jackson 3 replacement for
+`com.fasterxml.jackson.databind.ObjectMapper`, which is deprecated and should not be constructed
+or referenced directly. Inject the `JsonMapper` bean wherever JSON (de)serialization is needed
+outside the request/response cycle (e.g. the `entries` jsonb column — see DTO shapes). The Kotlin
+module is the Jackson-3 `jackson-module-kotlin` (`tools.jackson.module.kotlin`), auto-registered
+alongside it.
+
+Holding `kind` values in API responses match the existing `finances.wallet_kind` enum /
+`WalletKind` (`stocks`/`crypto`/`funds`) — note this is plural, unlike the client's current
+`Holding.kind` discriminant (`'stock'/'crypto'/'fund'`); reconciling that is a
+client-integration-phase concern.
 
 ---
 
@@ -155,15 +175,15 @@ no configured rate still counts, at 1:1, rather than being silently dropped by a
 | `invested_with_cv_base` | same `SUM`, filtered to holdings with a current value |
 | `current_value_base` | `SUM(current_value * rate) FILTER (WHERE current_value IS NOT NULL)` |
 
-At most 3 rows per user. `GET /api/holdings/summary` reads all rows for the current user and sums
-them in the service for the "regardless of type" grand totals (point 4) — no extra view needed
-for that part.
+At most 3 rows per user. `GET /private/v1/holdings/summary` reads all rows for the current user
+and sums them in the service for the "regardless of type" grand totals (point 4) — no extra view
+needed for that part.
 
 ### 4. `14-1030-create-wallet-totals-view.xml`
 
 `finances.wallet_totals`, grouped by `wallet_id` — the same `cost_basis`/`current_value`
 aggregates as above, but per wallet, in both the wallet's own currency and base currency (same
-`currency_rates` join). Feeds the enriched `GET /api/wallets` response (`invested`,
+`currency_rates` join). Feeds the enriched `GET /private/v1/wallets` response (`invested`,
 `investedBase`, `currentValue`, `currentValueBase`, `holdingCount` per wallet) — covers
 `walletInvested`/`walletInvestedBase`.
 
@@ -171,7 +191,7 @@ aggregates as above, but per wallet, in both the wallet's own currency and base 
 
 `finances.investment_events` — `UNION ALL` of `stock_lots`/`crypto_lots`/`fund_contributions`,
 each joined to its holding → wallet → `currency_rates`, producing one row per transaction:
-`(user_id, kind, date, amount_base)`. Feeds `GET /api/holdings/timeline` — covers
+`(user_id, kind, date, amount_base)`. Feeds `GET /private/v1/holdings/timeline` — covers
 `cumulativeSeries`'s event list (`holdingEvents`). The existing monthly-bucketing/cumulative-sum
 logic stays client-side, unchanged — this view supplies the raw `(date, amountBase)` events
 instead of the client deriving them from the full in-memory `holdings` array. See "Design
@@ -181,7 +201,8 @@ decisions flagged for review" for the alternative considered.
 
 ## Endpoint map
 
-All paths prefixed `/api`. ✅ = new in this revision (points 1, 4, 6).
+All paths prefixed `/private/v1` (see "API versioning & path structure" above; paths below omit
+the prefix for brevity). ✅ = new in this revision (points 1, 4, 6).
 
 ### Profile (point 6)
 
@@ -292,10 +313,11 @@ data class FundHoldingDto(
 )
 ```
 
-The `entries` jsonb column is deserialized (Jackson) into `List<LotDto>` or
-`List<ContributionDto>` based on `kind` when mapping the jOOQ record to the response DTO. jOOQ
-maps Postgres `jsonb` to `org.jooq.JSONB`; the mapper calls `.data()` to get the raw JSON string
-and passes it to `ObjectMapper.readValue(...)` — no custom jOOQ binding needed.
+The `entries` jsonb column is deserialized into `List<LotDto>` or `List<ContributionDto>` based
+on `kind` when mapping the jOOQ record to the response DTO. jOOQ maps Postgres `jsonb` to
+`org.jooq.JSONB`; the mapper calls `.data()` to get the raw JSON string and passes it to the
+injected `JsonMapper`'s `.readValue(...)` (Jackson 3 — see JSON conventions above) — no custom
+jOOQ binding needed.
 
 After the five new changesets land, `./gradlew generateJooq` regenerates sources for the new/
 changed views automatically (it applies the full changelog to a throwaway Testcontainer) — no
