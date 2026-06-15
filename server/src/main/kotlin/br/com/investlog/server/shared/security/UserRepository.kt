@@ -1,0 +1,39 @@
+package br.com.investlog.server.shared.security
+
+import br.com.investlog.server.jooq.system.tables.records.UsersRecord
+import br.com.investlog.server.jooq.system.tables.references.USERS
+import java.time.OffsetDateTime
+import org.jooq.DSLContext
+import org.springframework.stereotype.Repository
+
+@Repository
+class UserRepository(private val dsl: DSLContext) {
+
+    fun findByGoogleSub(googleSub: String): CurrentUser? {
+        return dsl.selectFrom(USERS)
+            .where(USERS.GOOGLE_SUB.eq(googleSub))
+            .fetchOne()
+            ?.toCurrentUser()
+    }
+
+    fun updatePreferences(userId: Long, accentColor: String, preferredCurrency: String): CurrentUser {
+        return dsl.update(USERS)
+            .set(USERS.ACCENT_COLOR, accentColor)
+            .set(USERS.PREFERRED_CURRENCY, preferredCurrency)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .returning()
+            .fetchSingle()
+            .toCurrentUser()
+    }
+
+    private fun UsersRecord.toCurrentUser() = CurrentUser(
+        id = id!!,
+        externalId = externalId!!,
+        name = name!!,
+        email = email!!,
+        avatarUrl = avatarUrl,
+        accentColor = accentColor!!,
+        preferredCurrency = preferredCurrency!!,
+    )
+}
