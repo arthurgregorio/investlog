@@ -3,9 +3,9 @@
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
 
-    <changeSet id="12-1030-1" author="investlog">
+    <changeSet id="12-1030-1" author="${claude}">
         <sql>
             CREATE TABLE finances.wallets (
                 id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -23,14 +23,14 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="12-1030-2" author="investlog">
+    <changeSet id="12-1030-2" author="${claude}">
         <sql>CREATE INDEX idx_wallets_user_id ON finances.wallets (user_id);</sql>
         <rollback>
             <sql>DROP INDEX finances.idx_wallets_user_id;</sql>
         </rollback>
     </changeSet>
 
-    <changeSet id="12-1030-3" author="investlog">
+    <changeSet id="12-1030-3" author="${claude}">
         <sql>
             CREATE TABLE finances.stock_types (
                 id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -46,7 +46,7 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="12-1030-4" author="investlog">
+    <changeSet id="12-1030-4" author="${claude}">
         <sql>
             CREATE TABLE finances.fund_types (
                 id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -62,7 +62,7 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="12-1030-5" author="investlog">
+    <changeSet id="12-1030-5" author="${claude}">
         <sql>
             CREATE TABLE finances.currency_rates (
                 id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -81,7 +81,7 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="12-1030-6" author="investlog">
+    <changeSet id="12-1030-6" author="${claude}">
         <sql>CREATE UNIQUE INDEX uq_currency_rates_user_base ON finances.currency_rates (user_id) WHERE is_base;</sql>
         <rollback>
             <sql>DROP INDEX finances.uq_currency_rates_user_base;</sql>

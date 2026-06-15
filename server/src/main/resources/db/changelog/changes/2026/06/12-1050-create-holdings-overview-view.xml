@@ -3,9 +3,9 @@
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
 
-    <changeSet id="12-1050-1" author="investlog">
+    <changeSet id="12-1050-1" author="${claude}">
         <sql>
             CREATE MATERIALIZED VIEW finances.holdings_overview AS
             SELECT
@@ -64,14 +64,14 @@
         </rollback>
     </changeSet>
 
-    <changeSet id="12-1050-2" author="investlog">
+    <changeSet id="12-1050-2" author="${claude}">
         <sql>CREATE UNIQUE INDEX uq_holdings_overview_external_id ON finances.holdings_overview (external_id);</sql>
         <rollback>
             <sql>DROP INDEX finances.uq_holdings_overview_external_id;</sql>
         </rollback>
     </changeSet>
 
-    <changeSet id="12-1050-3" author="investlog">
+    <changeSet id="12-1050-3" author="${claude}">
         <sql>CREATE INDEX idx_holdings_overview_wallet_id ON finances.holdings_overview (wallet_id);</sql>
         <rollback>
             <sql>DROP INDEX finances.idx_holdings_overview_wallet_id;</sql>

@@ -3,9 +3,9 @@
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
 
-    <changeSet id="12-1010-1" author="investlog">
+    <changeSet id="12-1010-1" author="${claude}">
         <sql>CREATE TYPE finances.wallet_kind AS ENUM ('stocks', 'crypto', 'funds');</sql>
         <rollback>
             <sql>DROP TYPE finances.wallet_kind;</sql>

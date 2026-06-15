@@ -3,7 +3,10 @@
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <property name="claude" value="claude@code.com" />
+    <property name="arthur" value="arthurshakal@gmail.com" />
 
     <include file="db/changelog/changes/2026/06/12-1000-create-schemas.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/06/12-1010-create-wallet-kind-enum.xml" relativeToChangelogFile="false"/>
