@@ -47,6 +47,10 @@ repositories {
 	mavenCentral()
 }
 
+val jooqVersion = "3.21.5"
+val postgresDriverVersion = "42.7.11"
+val kotlinLoggingJvmVersion = "7.0.14"
+
 dependencies {
 	// spring stuff
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -56,6 +60,9 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.data:spring-data-commons")
+
+	// logging
+	implementation("io.github.oshai:kotlin-logging-jvm:$kotlinLoggingJvmVersion")
 
 	// kotlin thing
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -67,7 +74,7 @@ dependencies {
 
 	// database
 	runtimeOnly("org.postgresql:postgresql")
-	jooqGenerator("org.postgresql:postgresql:42.7.11")
+	jooqGenerator("org.postgresql:postgresql:$postgresDriverVersion")
 
 	// testing
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
@@ -96,7 +103,7 @@ kotlin {
 }
 
 jooq {
-	version.set("3.21.5")
+	version.set(jooqVersion)
 	edition.set(JooqEdition.OSS)
 
 	configurations {
@@ -133,18 +140,22 @@ jooq {
 val jooqDb = PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"))
 
 val startJooqDb by tasks.registering {
+	description = "start jooq to generate database metadata from schema"
 	doLast {
 		jooqDb.start()
 
 		val connection = DriverManager.getConnection(jooqDb.jdbcUrl, jooqDb.username, jooqDb.password)
-		try {
-			val database = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(JdbcConnection(connection))
+
+		connection.use { connection ->
+            val database = DatabaseFactory
+				.getInstance()
+				.findCorrectDatabaseImplementation(JdbcConnection(connection))
+
 			val resourceAccessor = DirectoryResourceAccessor(File(projectDir, "src/main/resources"))
 
-			Liquibase("db/changelog/db.changelog-master.xml", resourceAccessor, database).update()
-		} finally {
-			connection.close()
-		}
+            Liquibase("db/changelog/db.changelog-master.xml", resourceAccessor, database)
+				.update()
+        }
 
 		jooq.configurations.getByName("main").jooqConfiguration.jdbc {
 			driver = "org.postgresql.Driver"
@@ -156,6 +167,7 @@ val startJooqDb by tasks.registering {
 }
 
 val stopJooqDb by tasks.registering {
+	description = "stop jooq to generate database metadata from schema"
 	doLast {
 		jooqDb.stop()
 	}

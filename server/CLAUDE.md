@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `sa_investlog`, see `compose.yaml`) — no manual `docker compose up` needed for local dev.
 
 `generateJooq` (and therefore `build`/`bootRun`/`test`, which depend on it via
-`compileKotlin`) requires Docker running locally: it starts a throwaway `postgres:17-alpine`
+`compileKotlin`) requires Docker running locally: it starts a throwaway `postgres:18-alpine`
 Testcontainer, applies `db/changelog/db.changelog-master.xml` to it via Liquibase, generates
 jOOQ Kotlin sources from it, then tears the container down.
 
@@ -39,10 +39,12 @@ has:
   and `GlobalExceptionHandler` (RFC 7807 `ProblemDetail` error responses: 400 validation errors,
   404 `NotFoundException`, 409 `DataIntegrityViolationException` from unique/FK-restrict
   violations, 500 catch-all).
-- `profile` — `GET`/`PATCH /private/v1/profile`, following a `rest/{controllers,dtos}` +
+- `shared/rest/payloads` — shared REST payload types; currently holds `CurrencyCode`, a typed
+  enum used as a path variable in the currency-rates controller.
+- `profile` — `GET`/`PATCH /private/v1/profile`, following a `rest/{controllers,payloads}` +
   `domain/services` layout.
 - `typelists` — `GET`/`POST`/`DELETE /private/v1/stock-types` and `.../fund-types`, paginated,
-  sharing one pair of DTOs (`TypeResponse`/`TypeCreateRequest`) since both resources are
+  sharing one pair of payloads (`TypeResponse`/`TypeCreateRequest`) since both resources are
   `{id, name}`. Extends the `profile` layout with `domain/repositories`.
 - `currencyrates` — `GET`/`PUT /private/v1/currency-rates`, addressed by `currencyCode` (not
   `external_id`); `PUT` upserts and, when `isBase: true`, clears the previous base row in the
@@ -69,6 +71,8 @@ The persistence schema itself is fully defined (see below).
   and updating `system.users` via the generated `USERS` table.
 - `jackson-module-kotlin` for Kotlin-aware JSON (de)serialization. `kotlin-reflect` is on the
   classpath for frameworks that need it (jOOQ/Jackson/Spring).
+- `kotlin-logging-jvm` (`io.github.oshai:kotlin-logging-jvm`) for structured, Kotlin-idiomatic
+  logging via `KotlinLogging.logger {}` (SLF4J-backed).
 - Other starters: `actuator`, `mail`, `validation`.
 - `spring-data-commons` provides `Pageable`/`Page`/`PagedModel` and the MVC argument-resolver
   auto-configuration for paginated collection endpoints (default page size 20, configured via

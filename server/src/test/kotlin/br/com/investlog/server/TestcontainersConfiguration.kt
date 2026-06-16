@@ -9,9 +9,11 @@ import org.testcontainers.utility.DockerImageName
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
 
-	@Bean
-	@ServiceConnection
-	fun postgresContainer(): PostgreSQLContainer {
-		return PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"))
-	}
+    @Bean
+    @ServiceConnection
+    fun postgresContainer(): PostgreSQLContainer = PostgreSQLContainer(DockerImageName.parse(POSTGRES_IMAGE))
+
+    companion object {
+        const val POSTGRES_IMAGE = "postgres:18-alpine"
+    }
 }

@@ -1,10 +1,9 @@
 package br.com.investlog.server.typelists.rest.controllers
 
 import br.com.investlog.server.typelists.domain.services.StockTypeService
-import br.com.investlog.server.typelists.rest.dtos.TypeCreateRequest
-import br.com.investlog.server.typelists.rest.dtos.TypeResponse
+import br.com.investlog.server.typelists.rest.payloads.TypeCreateRequest
+import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import jakarta.validation.Valid
-import java.util.UUID
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.http.HttpStatus
@@ -16,19 +15,20 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 @RestController
 @RequestMapping("/stock-types")
-class StockTypeController(private val stockTypeService: StockTypeService) {
+class StockTypeController(
+    private val stockTypeService: StockTypeService
+) {
 
     @GetMapping
-    fun findAll(pageable: Pageable): PagedModel<TypeResponse> =
-        stockTypeService.findAll(pageable)
+    fun findAll(pageable: Pageable): PagedModel<TypeResponse> = stockTypeService.findAll(pageable)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun create(@Valid @RequestBody request: TypeCreateRequest): TypeResponse =
-        stockTypeService.create(request.name)
+    fun create(@Valid @RequestBody request: TypeCreateRequest): TypeResponse = stockTypeService.create(request.name)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

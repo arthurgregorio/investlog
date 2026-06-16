@@ -3,12 +3,12 @@ package br.com.investlog.server.typelists.domain.repositories
 import br.com.investlog.server.jooq.finances.tables.records.FundTypesRecord
 import br.com.investlog.server.jooq.finances.tables.references.FUND_TYPES
 import br.com.investlog.server.shared.persistence.pagedModelOf
-import br.com.investlog.server.typelists.rest.dtos.TypeResponse
-import java.util.UUID
+import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import org.jooq.DSLContext
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Repository
+import java.util.UUID
 
 @Repository
 class FundTypeRepository(private val dsl: DSLContext) {

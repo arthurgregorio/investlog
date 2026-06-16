@@ -1,33 +1,21 @@
 package br.com.investlog.server.typelists.rest.controllers
 
-import br.com.investlog.server.TestcontainersConfiguration
-import br.com.investlog.server.typelists.rest.dtos.TypeResponse
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import org.junit.jupiter.api.MethodOrderer
+import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.RestTestClient
+import org.springframework.test.web.servlet.client.returnResult
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestcontainersConfiguration::class)
-@AutoConfigureRestTestClient
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class FundTypeControllerTest {
+class FundTypeControllerTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var restTestClient: RestTestClient
-
-    companion object {
-        private var createdId: UUID? = null
-    }
 
     @Test
     @Order(1)
@@ -50,7 +38,7 @@ class FundTypeControllerTest {
             .body("""{"name":"Renda Fixa"}""")
             .exchange()
             .expectStatus().isCreated()
-            .returnResult(TypeResponse::class.java)
+            .returnResult<TypeResponse>()
             .responseBody
 
         assertEquals("Renda Fixa", response?.name)
@@ -96,5 +84,9 @@ class FundTypeControllerTest {
             .uri("/private/v1/fund-types/${UUID.randomUUID()}")
             .exchange()
             .expectStatus().isNotFound()
+    }
+
+    companion object {
+        private var createdId: UUID? = null
     }
 }

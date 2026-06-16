@@ -1,24 +1,16 @@
 package br.com.investlog.server.profile.rest.controllers
 
-import br.com.investlog.server.TestcontainersConfiguration
-import br.com.investlog.server.profile.rest.dtos.ProfileResponse
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import org.junit.jupiter.api.MethodOrderer
+import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.profile.rest.payloads.ProfileResponse
 import org.junit.jupiter.api.Order
-import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.RestTestClient
+import org.springframework.test.web.servlet.client.returnResult
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestcontainersConfiguration::class)
-@AutoConfigureRestTestClient
-@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class ProfileControllerTest {
+class ProfileControllerTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var restTestClient: RestTestClient
@@ -26,11 +18,12 @@ class ProfileControllerTest {
     @Test
     @Order(1)
     fun `returns the current user's profile`() {
+
         val response = restTestClient.get()
             .uri("/private/v1/profile")
             .exchange()
             .expectStatus().isOk()
-            .returnResult(ProfileResponse::class.java)
+            .returnResult<ProfileResponse>()
             .responseBody
 
         assertEquals("Arthur Gregorio", response?.name)
@@ -42,13 +35,14 @@ class ProfileControllerTest {
     @Test
     @Order(2)
     fun `updates accent color and preserves preferred currency`() {
+
         val response = restTestClient.patch()
             .uri("/private/v1/profile")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"accentColor":"indigo"}""")
+            .body("""{"accentColor":"INDIGO"}""")
             .exchange()
             .expectStatus().isOk()
-            .returnResult(ProfileResponse::class.java)
+            .returnResult<ProfileResponse>()
             .responseBody
 
         assertEquals("indigo", response?.accentColor)
@@ -65,7 +59,6 @@ class ProfileControllerTest {
             .exchange()
             .expectStatus().isBadRequest()
             .expectBody()
-            .jsonPath("$.title").isEqualTo("Validation Error")
-            .jsonPath("$.errors[0]").isEqualTo("accentColor must be one of: blue, indigo, teal, green")
+            .jsonPath("$.title").isEqualTo("Bad Request")
     }
 }

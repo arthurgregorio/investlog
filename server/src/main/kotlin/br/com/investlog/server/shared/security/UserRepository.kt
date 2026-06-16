@@ -2,9 +2,9 @@ package br.com.investlog.server.shared.security
 
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
 import br.com.investlog.server.jooq.system.tables.references.USERS
-import java.time.OffsetDateTime
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
+import java.time.OffsetDateTime
 
 @Repository
 class UserRepository(private val dsl: DSLContext) {

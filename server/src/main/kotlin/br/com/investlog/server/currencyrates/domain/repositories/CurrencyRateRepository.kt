@@ -1,6 +1,6 @@
 package br.com.investlog.server.currencyrates.domain.repositories
 
-import br.com.investlog.server.currencyrates.rest.dtos.CurrencyRateResponse
+import br.com.investlog.server.currencyrates.rest.payloads.CurrencyRateResponse
 import br.com.investlog.server.jooq.finances.tables.records.CurrencyRatesRecord
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.shared.persistence.pagedModelOf
@@ -31,6 +31,7 @@ class CurrencyRateRepository(private val dsl: DSLContext) {
     }
 
     fun upsert(userId: Long, currencyCode: String, rate: BigDecimal, isBase: Boolean): CurrencyRateResponse {
+
         if (isBase) {
             dsl.update(CURRENCY_RATES)
                 .set(CURRENCY_RATES.IS_BASE, false)

@@ -1,4 +1,4 @@
-package br.com.investlog.server.profile.rest.dtos
+package br.com.investlog.server.profile.rest.payloads
 
 data class ProfileResponse(
     val name: String,

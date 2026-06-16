@@ -1,4 +1,4 @@
-package br.com.investlog.server.currencyrates.rest.dtos
+package br.com.investlog.server.currencyrates.rest.payloads
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.math.BigDecimal

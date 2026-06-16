@@ -1,13 +1,15 @@
 package br.com.investlog.server.config
 
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.ConstraintViolationException
-import java.time.Instant
-import org.slf4j.LoggerFactory
 import org.springframework.context.support.DefaultMessageSourceResolvable
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.CONFLICT
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
@@ -16,11 +18,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
+import java.time.Instant
+
+private val log = KotlinLogging.logger {}
 
 @RestControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
-
-    private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     override fun handleMethodArgumentNotValid(
         ex: MethodArgumentNotValidException,
@@ -28,19 +31,23 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         status: HttpStatusCode,
         request: WebRequest,
     ): ResponseEntity<Any>? {
+
+        log.debug(ex) { "Data validation failed" }
+
         val errors = ex.allErrors.map(DefaultMessageSourceResolvable::getDefaultMessage)
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.message ?: "Validation failed")
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message)
         problemDetail.title = "Validation Error"
         problemDetail.setProperty("errors", errors)
         problemDetail.setProperty("timestamp", Instant.now())
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail)
+        return ResponseEntity.status(BAD_REQUEST).body(problemDetail)
     }
 
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFound(ex: NotFoundException): ProblemDetail {
-        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found")
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(NOT_FOUND, ex.message ?: "Resource not found")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -48,9 +55,12 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleConstraintViolation(ex: ConstraintViolationException): ProblemDetail {
-        val errors = ex.constraintViolations.map { it.message }
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed")
+        log.error(ex) { "Constraint violation occurred" }
+
+        val errors = ex.constraintViolations.map { it.message }
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, "Validation failed")
+
         problemDetail.title = "Validation Error"
         problemDetail.setProperty("errors", errors)
         problemDetail.setProperty("timestamp", Instant.now())
@@ -60,7 +70,10 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleDataIntegrityViolation(ex: DataIntegrityViolationException): ProblemDetail {
-        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "The request conflicts with existing data")
+
+        log.error(ex) { "Data integrity violation occurred" }
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, "The request conflicts with existing data")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -68,9 +81,10 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
     @ExceptionHandler(Exception::class)
     fun handleUnexpected(ex: Exception): ProblemDetail {
-        log.error("Unexpected exception occurred", ex)
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred")
+        log.error(ex) { "Unexpected exception occurred" }
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(INTERNAL_SERVER_ERROR, "An unexpected error occurred")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

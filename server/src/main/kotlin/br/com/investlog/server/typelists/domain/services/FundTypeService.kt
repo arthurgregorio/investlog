@@ -3,11 +3,11 @@ package br.com.investlog.server.typelists.domain.services
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.security.CurrentUserProvider
 import br.com.investlog.server.typelists.domain.repositories.FundTypeRepository
-import br.com.investlog.server.typelists.rest.dtos.TypeResponse
-import java.util.UUID
+import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 @Service
 class FundTypeService(

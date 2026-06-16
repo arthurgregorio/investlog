@@ -1,4 +1,4 @@
-package br.com.investlog.server.typelists.rest.dtos
+package br.com.investlog.server.typelists.rest.payloads
 
 import java.util.UUID
 
