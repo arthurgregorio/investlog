@@ -9,14 +9,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew build                                        # full build (compile + test)
 ./gradlew test                                         # run all tests
 ./gradlew test --tests "br.com.investlog.server.ServerApplicationTests"  # single test class
-./gradlew generateJooq                                 # regenerate jOOQ sources from the Liquibase schema
+./gradlew jooqCodegen                                  # regenerate jOOQ sources from the Liquibase schema
 ```
 
 `spring-boot-docker-compose` is a `developmentOnly` dependency wired to `compose.yaml`, so
 `bootRun` automatically starts the local Postgres container (`investlog-postgres`, db/user/pass
 `sa_investlog`, see `compose.yaml`) — no manual `docker compose up` needed for local dev.
 
-`generateJooq` (and therefore `build`/`bootRun`/`test`, which depend on it via
+`jooqCodegen` (and therefore `build`/`bootRun`/`test`, which depend on it via
 `compileKotlin`) requires Docker running locally: it starts a throwaway `postgres:18-alpine`
 Testcontainer, applies `db/changelog/db.changelog-master.xml` to it via Liquibase, generates
 jOOQ Kotlin sources from it, then tears the container down.
@@ -64,10 +64,10 @@ The persistence schema itself is fully defined (see below).
   `application-prod.yaml` adds `spring.datasource.*` via `DB_HOST`/`DB_PORT`/`DB_NAME`/
   `DB_USER`/`DB_PASSWORD` env vars; `application-dev.yaml` relies on `spring-boot-docker-compose`
   auto-detection.
-- jOOQ codegen (`nu.studer.jooq` plugin, configured in `build.gradle.kts`) generates Kotlin
-  sources for the `system`/`finances` schemas into `build/generated-sources/jooq/main` (package
-  `br.com.investlog.server.jooq`, gitignored) as part of `compileKotlin` — see `generateJooq`/
-  `startJooqDb`/`stopJooqDb`. `shared/security/UserRepository` is the first consumer, querying
+- jOOQ codegen (`org.jooq.jooq-codegen-gradle` official plugin, configured in `build.gradle.kts`)
+  generates Kotlin sources for the `system`/`finances` schemas into
+  `build/generated-sources/jooq/main` (package `br.com.investlog.server.jooq`, gitignored) as
+  part of `compileKotlin` — see `jooqCodegen`/`startJooqDb`/`stopJooqDb`. `shared/security/UserRepository` is the first consumer, querying
   and updating `system.users` via the generated `USERS` table.
 - `jackson-module-kotlin` for Kotlin-aware JSON (de)serialization. `kotlin-reflect` is on the
   classpath for frameworks that need it (jOOQ/Jackson/Spring).
