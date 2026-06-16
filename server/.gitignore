@@ -38,3 +38,4 @@ out/
 
 # claude local settings
 .claude/*.local*
+.junie
