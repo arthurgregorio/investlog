@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { DialogProgrammatic as Dialog } from 'buefy'
 import AppIcon from '@/components/AppIcon.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
@@ -33,6 +34,18 @@ const trade = computed(() => (props.holding.kind !== 'fund' ? props.holding : nu
 
 function toggle() {
   isOpen.value = !isOpen.value
+}
+
+function confirmRemove() {
+  Dialog.confirm({
+    title: 'Remover investimento',
+    message: 'Esta ação <strong>não pode ser desfeita</strong>.',
+    type: 'is-danger',
+    hasIcon: true,
+    confirmText: 'Remover',
+    cancelText: 'Cancelar',
+    onConfirm: () => store.removeHolding(props.holding.id),
+  })
 }
 </script>
 
@@ -108,7 +121,7 @@ function toggle() {
             <span v-if="trade" class="avg-note">
               Preço médio <b>{{ fmt.money(cost / (qty || 1), wallet.currency) }}</b>
             </span>
-            <b-button type="is-text" size="is-small" icon-left="delete" style="color: var(--down)" @click="store.removeHolding(holding.id)">Remover</b-button>
+            <b-button type="is-text" size="is-small" icon-left="delete" style="color: var(--down)" @click="confirmRemove">Remover</b-button>
           </div>
         </div>
       </div>

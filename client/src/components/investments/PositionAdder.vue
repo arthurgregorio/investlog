@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { ToastProgrammatic as Toast } from 'buefy'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
@@ -33,6 +34,7 @@ function submit() {
     store.addLot(props.holding.id, { date: dateStr, qty: Number(qty.value), price: Number(price.value) })
   }
   emit('close')
+  Toast.open({ message: isFund.value ? 'Aporte registrado!' : 'Compra registrada!', type: 'is-success' })
 }
 </script>
 

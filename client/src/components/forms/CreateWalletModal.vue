@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { ToastProgrammatic as Toast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
@@ -27,6 +28,7 @@ function submit() {
   const id = store.addWallet({ name: name.value, type: type.value, currency: currency.value })
   emit('created', id, type.value)
   emit('close')
+  Toast.open({ message: 'Carteira criada!', type: 'is-success' })
 }
 </script>
 

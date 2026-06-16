@@ -2,6 +2,7 @@
    The selected wallet is kept valid as `kind`/wallets change via a watcher
    (the prototype used a render-phase setTimeout hack — not needed in Vue). */
 import { computed, reactive, watch } from 'vue'
+import { ToastProgrammatic as Toast } from 'buefy'
 import { usePortfolioStore } from '@/stores/portfolio'
 import type { WalletKind } from '@/types'
 
@@ -75,6 +76,7 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
       })
     }
     onDone?.(form.kind)
+    Toast.open({ message: 'Investimento registrado!', type: 'is-success' })
   }
 
   return { form, submit }
