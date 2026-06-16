@@ -10,7 +10,6 @@ import org.jooq.DSLContext
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Repository
-import org.springframework.transaction.annotation.Transactional
 
 @Repository
 class CurrencyRateRepository(private val dsl: DSLContext) {
@@ -31,7 +30,6 @@ class CurrencyRateRepository(private val dsl: DSLContext) {
         return pagedModelOf(content, pageable, total.toLong())
     }
 
-    @Transactional
     fun upsert(userId: Long, currencyCode: String, rate: BigDecimal, isBase: Boolean): CurrencyRateResponse {
         if (isBase) {
             dsl.update(CURRENCY_RATES)

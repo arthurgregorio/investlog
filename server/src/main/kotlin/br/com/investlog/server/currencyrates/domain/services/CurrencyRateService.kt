@@ -7,6 +7,7 @@ import java.math.BigDecimal
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class CurrencyRateService(
@@ -20,6 +21,7 @@ class CurrencyRateService(
         return currencyRateRepository.findAll(userId, pageable)
     }
 
+    @Transactional
     fun upsert(currencyCode: String, rate: BigDecimal, isBase: Boolean): CurrencyRateResponse {
         val userId = currentUserProvider.getCurrentUser().id
 

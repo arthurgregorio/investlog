@@ -1,6 +1,7 @@
 package br.com.investlog.server.config
 
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import jakarta.validation.ConstraintViolationException
 import java.time.Instant
 import org.slf4j.LoggerFactory
 import org.springframework.context.support.DefaultMessageSourceResolvable
@@ -40,6 +41,18 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFound(ex: NotFoundException): ProblemDetail {
         val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message ?: "Resource not found")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolation(ex: ConstraintViolationException): ProblemDetail {
+        val errors = ex.constraintViolations.map { it.message }
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed")
+        problemDetail.title = "Validation Error"
+        problemDetail.setProperty("errors", errors)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
