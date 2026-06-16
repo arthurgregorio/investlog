@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
-import TypeBadge from '@/components/ui/TypeBadge.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import { useModals } from '@/composables/useModals'
@@ -17,6 +16,12 @@ const router = useRouter()
 const modals = useModals()
 
 const iconFor = (key: WalletKind): IconName => store.WALLET_TYPES[key].icon as IconName
+
+const tagTypeFor: Record<WalletKind, string> = {
+  stocks: 'is-link',
+  crypto: 'is-warning',
+  funds: 'is-success',
+}
 
 function gotoType(type: WalletKind) {
   router.push({ name: 'investments', query: { filter: type } })
@@ -58,7 +63,7 @@ function gotoType(type: WalletKind) {
             <div class="wallet-titles">
               <div class="wallet-name">{{ w.name }}</div>
               <div class="wallet-tags">
-                <TypeBadge :kind="w.type">{{ store.WALLET_TYPES[w.type].label }}</TypeBadge>
+                <b-tag :type="tagTypeFor[w.type]">{{ store.WALLET_TYPES[w.type].label }}</b-tag>
                 <span class="cur-chip">{{ w.currency }}</span>
               </div>
             </div>
