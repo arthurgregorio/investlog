@@ -14,25 +14,25 @@ function onInput(v: string) {
     <p class="control"><span class="button is-static">{{ prefix }}</span></p>
     <b-input
       type="number"
-      :value="modelValue === '' ? '' : String(modelValue)"
+      :model-value="modelValue === '' ? '' : String(modelValue)"
       :placeholder="placeholder"
       :step="step"
       :min="min"
       inputmode="decimal"
       expanded
       v-bind="$attrs"
-      @input="onInput(($event.target as HTMLInputElement).value)"
+      @update:model-value="onInput"
     />
   </b-field>
   <b-input
     v-else
     type="number"
-    :value="modelValue === '' ? '' : String(modelValue)"
+    :model-value="modelValue === '' ? '' : String(modelValue)"
     :placeholder="placeholder"
     :step="step"
     :min="min"
     inputmode="decimal"
     v-bind="$attrs"
-    @input="onInput(($event.target as HTMLInputElement).value)"
+    @update:model-value="onInput"
   />
 </template>

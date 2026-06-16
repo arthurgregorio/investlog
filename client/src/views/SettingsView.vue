@@ -62,7 +62,7 @@ function addFundType() {
               <NumberInput
                 :model-value="config.rates[c]"
                 :prefix="store.currencySymbol[base]"
-                @update:model-value="(v) => store.setRate(c, Number(v))"
+                @update:model-value="(v) => v !== '' && store.setRate(c, Number(v))"
               />
             </label>
           </div>
