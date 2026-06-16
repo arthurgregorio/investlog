@@ -2,12 +2,9 @@
 import { computed, ref } from 'vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import FormField from '@/components/ui/FormField.vue'
-import TextInput from '@/components/ui/TextInput.vue'
-import SelectInput from '@/components/ui/SelectInput.vue'
-import SegChoice from '@/components/ui/SegChoice.vue'
-import type { IconName } from '@/components/AppIcon.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
+import type { IconName } from '@/components/AppIcon.vue'
 import type { WalletKind } from '@/types'
 
 const props = defineProps<{ initialType?: WalletKind }>()
@@ -41,15 +38,28 @@ function submit() {
     @close="emit('close')"
   >
     <div class="form-grid">
-      <FormField label="Nome da carteira" span>
-        <TextInput v-model="name" placeholder="ex.: Carteira de Dividendos" autofocus />
-      </FormField>
-      <FormField label="Tipo" span hint="Define quais investimentos a carteira aceita.">
-        <SegChoice v-model="type" :options="KIND_OPTS" />
-      </FormField>
-      <FormField label="Moeda" hint="Convertida para a moeda base na visão consolidada.">
-        <SelectInput v-model="currency" :options="store.currencies" />
-      </FormField>
+      <b-field label="Nome da carteira" style="grid-column: 1/-1">
+        <b-input v-model="name" placeholder="ex.: Carteira de Dividendos" autofocus />
+      </b-field>
+      <b-field label="Tipo" message="Define quais investimentos a carteira aceita." style="grid-column: 1/-1">
+        <b-field grouped>
+          <b-radio-button
+            v-for="opt in KIND_OPTS"
+            :key="opt.value"
+            v-model="type"
+            :native-value="opt.value"
+            type="is-primary"
+          >
+            <AppIcon :name="opt.icon" :size="17" />
+            <span>{{ opt.label }}</span>
+          </b-radio-button>
+        </b-field>
+      </b-field>
+      <b-field label="Moeda" message="Convertida para a moeda base na visão consolidada.">
+        <b-select v-model="currency">
+          <option v-for="o in store.currencies" :key="o" :value="o">{{ o }}</option>
+        </b-select>
+      </b-field>
     </div>
     <template #footer>
       <AppButton variant="ghost" @click="emit('close')">Cancelar</AppButton>

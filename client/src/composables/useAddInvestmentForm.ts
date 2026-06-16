@@ -5,8 +5,6 @@ import { computed, reactive, watch } from 'vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import type { WalletKind } from '@/types'
 
-const today = () => new Date().toISOString().slice(0, 10)
-
 export type InvestmentKind = WalletKind // 'stocks' | 'crypto' | 'funds'
 
 export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind: InvestmentKind) => void) {
@@ -19,7 +17,7 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
     fundType: store.fundTypes[0] ?? '',
     ticker: '',
     name: '',
-    date: today(),
+    date: new Date() as Date | null,
     qty: '' as number | '',
     price: '' as number | '',
     currentPrice: '' as number | '',
@@ -58,21 +56,22 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
   )
 
   function submit() {
-    if (!form.valid) return
+    if (!form.valid || !form.date) return
+    const dateStr = form.date.toISOString().slice(0, 10)
     if (form.kind === 'stocks') {
       store.addStock({
         walletId: form.walletId, stockType: form.stockType, ticker: form.ticker, name: form.name,
-        date: form.date, qty: Number(form.qty), price: Number(form.price), currentPrice: form.currentPrice,
+        date: dateStr, qty: Number(form.qty), price: Number(form.price), currentPrice: form.currentPrice,
       })
     } else if (form.kind === 'crypto') {
       store.addCrypto({
         walletId: form.walletId, ticker: form.ticker, name: form.name,
-        date: form.date, qty: Number(form.qty), price: Number(form.price), currentPrice: form.currentPrice,
+        date: dateStr, qty: Number(form.qty), price: Number(form.price), currentPrice: form.currentPrice,
       })
     } else {
       store.addFund({
         walletId: form.walletId, name: form.name, fundType: form.fundType,
-        date: form.date, amount: Number(form.amount), currentValue: form.currentValue,
+        date: dateStr, amount: Number(form.amount), currentValue: form.currentValue,
       })
     }
     onDone?.(form.kind)

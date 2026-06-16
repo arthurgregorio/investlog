@@ -14,7 +14,7 @@ const isFund = computed(() => props.holding.kind === 'fund')
 const cur = computed(() => store.walletOf(props.holding.walletId)?.currency ?? store.base)
 const sym = computed(() => store.currencySymbol[cur.value])
 
-const date = ref(new Date().toISOString().slice(0, 10))
+const date = ref<Date | null>(new Date())
 const qty = ref<number | ''>('')
 const price = ref<number | ''>('')
 const amount = ref<number | ''>('')
@@ -26,11 +26,12 @@ const valid = computed(() =>
 )
 
 function submit() {
-  if (!valid.value) return
+  if (!valid.value || !date.value) return
+  const dateStr = date.value.toISOString().slice(0, 10)
   if (isFund.value) {
-    store.addContribution(props.holding.id, { date: date.value, amount: Number(amount.value) })
+    store.addContribution(props.holding.id, { date: dateStr, amount: Number(amount.value) })
   } else {
-    store.addLot(props.holding.id, { date: date.value, qty: Number(qty.value), price: Number(price.value) })
+    store.addLot(props.holding.id, { date: dateStr, qty: Number(qty.value), price: Number(price.value) })
   }
   emit('close')
 }

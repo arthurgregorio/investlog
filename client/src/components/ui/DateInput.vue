@@ -1,13 +1,13 @@
 <script setup lang="ts">
-defineProps<{ modelValue: string }>()
-const emit = defineEmits<{ 'update:modelValue': [string] }>()
+defineProps<{ modelValue: Date | null }>()
+const emit = defineEmits<{ 'update:modelValue': [Date | null] }>()
 </script>
-
 <template>
-  <input
-    class="inp"
-    type="date"
-    :value="modelValue"
-    @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+  <b-datepicker
+    :model-value="modelValue"
+    locale="pt-BR"
+    trap-focus
+    append-to-body
+    @update:model-value="emit('update:modelValue', $event)"
   />
 </template>

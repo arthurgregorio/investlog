@@ -1,49 +1,38 @@
 <script setup lang="ts">
 defineOptions({ inheritAttrs: false })
-
 withDefaults(
-  defineProps<{
-    modelValue: number | ''
-    placeholder?: string
-    prefix?: string
-    step?: string
-    min?: string
-  }>(),
-  { step: 'any' },
+  defineProps<{ modelValue: number | ''; placeholder?: string; prefix?: string; step?: string; min?: string }>(),
+  { step: 'any' }
 )
 const emit = defineEmits<{ 'update:modelValue': [number | ''] }>()
-
-function onInput(e: Event) {
-  const v = (e.target as HTMLInputElement).value
+function onInput(v: string) {
   emit('update:modelValue', v === '' ? '' : Number(v))
 }
 </script>
-
 <template>
-  <div v-if="prefix" class="inp-wrap">
-    <span class="inp-prefix">{{ prefix }}</span>
-    <input
-      class="inp"
+  <b-field grouped v-if="prefix">
+    <p class="control"><span class="button is-static">{{ prefix }}</span></p>
+    <b-input
       type="number"
-      inputmode="decimal"
+      :value="modelValue === '' ? '' : String(modelValue)"
+      :placeholder="placeholder"
       :step="step"
       :min="min"
-      :value="modelValue"
-      :placeholder="placeholder"
+      inputmode="decimal"
+      expanded
       v-bind="$attrs"
-      @input="onInput"
+      @input="onInput(($event.target as HTMLInputElement).value)"
     />
-  </div>
-  <input
+  </b-field>
+  <b-input
     v-else
-    class="inp"
     type="number"
-    inputmode="decimal"
+    :value="modelValue === '' ? '' : String(modelValue)"
+    :placeholder="placeholder"
     :step="step"
     :min="min"
-    :value="modelValue"
-    :placeholder="placeholder"
+    inputmode="decimal"
     v-bind="$attrs"
-    @input="onInput"
+    @input="onInput(($event.target as HTMLInputElement).value)"
   />
 </template>

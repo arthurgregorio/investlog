@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import FormField from '@/components/ui/FormField.vue'
-import TextInput from '@/components/ui/TextInput.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
-import SelectInput from '@/components/ui/SelectInput.vue'
-import SegChoice from '@/components/ui/SegChoice.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
@@ -35,9 +31,20 @@ const kindLabelPt = computed(() =>
 
 <template>
   <div class="form-stack">
-    <FormField label="Tipo de investimento" span>
-      <SegChoice v-model="form.kind" :options="KIND_OPTS" />
-    </FormField>
+    <b-field label="Tipo de investimento" style="grid-column: 1/-1">
+      <b-field grouped>
+        <b-radio-button
+          v-for="opt in KIND_OPTS"
+          :key="opt.value"
+          v-model="form.kind"
+          :native-value="opt.value"
+          type="is-primary"
+        >
+          <AppIcon :name="opt.icon" :size="17" />
+          <span>{{ opt.label }}</span>
+        </b-radio-button>
+      </b-field>
+    </b-field>
 
     <div v-if="form.walletsOfKind.length === 0" class="form-notice">
       <AppIcon name="info" :size="18" />
@@ -48,51 +55,57 @@ const kindLabelPt = computed(() =>
     </div>
 
     <div v-else class="form-grid">
-      <FormField label="Carteira" span>
-        <SelectInput v-model="form.walletId" :options="walletOptions" />
-      </FormField>
+      <b-field label="Carteira" style="grid-column: 1/-1">
+        <b-select v-model="form.walletId">
+          <option v-for="o in walletOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </b-select>
+      </b-field>
 
-      <FormField v-if="form.kind === 'stocks'" label="Tipo">
-        <SelectInput v-model="form.stockType" :options="store.stockTypes" />
-      </FormField>
+      <b-field v-if="form.kind === 'stocks'" label="Tipo">
+        <b-select v-model="form.stockType">
+          <option v-for="o in store.stockTypes" :key="o" :value="o">{{ o }}</option>
+        </b-select>
+      </b-field>
 
       <template v-if="form.kind !== 'funds'">
-        <FormField :label="form.kind === 'crypto' ? 'Sigla / código' : 'Ticker'">
-          <TextInput v-model="form.ticker" :placeholder="form.kind === 'crypto' ? 'BTC' : 'PETR4'" />
-        </FormField>
-        <FormField label="Nome (opcional)" :span="form.kind === 'crypto'">
-          <TextInput v-model="form.name" :placeholder="form.kind === 'crypto' ? 'Bitcoin' : 'Petrobras'" />
-        </FormField>
-        <FormField label="Data da aquisição">
+        <b-field :label="form.kind === 'crypto' ? 'Sigla / código' : 'Ticker'">
+          <b-input v-model="form.ticker" :placeholder="form.kind === 'crypto' ? 'BTC' : 'PETR4'" />
+        </b-field>
+        <b-field label="Nome (opcional)" :style="form.kind === 'crypto' ? 'grid-column: 1/-1' : undefined">
+          <b-input v-model="form.name" :placeholder="form.kind === 'crypto' ? 'Bitcoin' : 'Petrobras'" />
+        </b-field>
+        <b-field label="Data da aquisição">
           <DateInput v-model="form.date" />
-        </FormField>
-        <FormField label="Quantidade">
+        </b-field>
+        <b-field label="Quantidade">
           <NumberInput v-model="form.qty" placeholder="0" min="0" />
-        </FormField>
-        <FormField label="Preço na aquisição">
+        </b-field>
+        <b-field label="Preço na aquisição">
           <NumberInput v-model="form.price" placeholder="0,00" :prefix="sym" min="0" />
-        </FormField>
-        <FormField label="Preço atual (opcional)" hint="Preencha para acompanhar lucro/prejuízo.">
+        </b-field>
+        <b-field label="Preço atual (opcional)" message="Preencha para acompanhar lucro/prejuízo.">
           <NumberInput v-model="form.currentPrice" placeholder="0,00" :prefix="sym" min="0" />
-        </FormField>
+        </b-field>
       </template>
 
       <template v-else>
-        <FormField label="Tipo de fundo">
-          <SelectInput v-model="form.fundType" :options="store.fundTypes" />
-        </FormField>
-        <FormField label="Nome do fundo">
-          <TextInput v-model="form.name" placeholder="ex.: Tesouro Selic 2029" />
-        </FormField>
-        <FormField label="Data do aporte">
+        <b-field label="Tipo de fundo">
+          <b-select v-model="form.fundType">
+            <option v-for="o in store.fundTypes" :key="o" :value="o">{{ o }}</option>
+          </b-select>
+        </b-field>
+        <b-field label="Nome do fundo">
+          <b-input v-model="form.name" placeholder="ex.: Tesouro Selic 2029" />
+        </b-field>
+        <b-field label="Data do aporte">
           <DateInput v-model="form.date" />
-        </FormField>
-        <FormField label="Valor aportado">
+        </b-field>
+        <b-field label="Valor aportado">
           <NumberInput v-model="form.amount" placeholder="0,00" :prefix="sym" min="0" />
-        </FormField>
-        <FormField label="Valor atual (opcional)" span hint="Saldo atual do fundo, para calcular o rendimento.">
+        </b-field>
+        <b-field label="Valor atual (opcional)" message="Saldo atual do fundo, para calcular o rendimento." style="grid-column: 1/-1">
           <NumberInput v-model="form.currentValue" placeholder="0,00" :prefix="sym" min="0" />
-        </FormField>
+        </b-field>
       </template>
     </div>
   </div>
