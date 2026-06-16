@@ -31,7 +31,10 @@ class CryptoHoldingController(private val service: CryptoHoldingService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun create(@PathVariable walletId: UUID, @Valid @RequestBody request: CryptoHoldingCreateRequest): CryptoHoldingResponse =
+    fun create(
+        @PathVariable walletId: UUID,
+        @Valid @RequestBody request: CryptoHoldingCreateRequest
+    ): CryptoHoldingResponse =
         service.create(walletId, request)
 
     @PatchMapping("/{holdingId}")

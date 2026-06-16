@@ -28,6 +28,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
 
     @BeforeAll
     fun setup() {
+
         walletId = restTestClient.post()
             .uri("/private/v1/wallets")
             .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +52,8 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""
+            .body(
+                """
                 {
                   "stockTypeId":"$stockTypeId",
                   "ticker":"$ticker",
@@ -59,7 +61,8 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
                   "currentPrice":38.50,
                   "lot":{"lotDate":"2024-01-15","quantity":100,"price":35.00}
                 }
-            """.trimIndent())
+            """.trimIndent()
+            )
             .exchange()
             .expectStatus().isCreated()
             .returnResult<StockHoldingResponse>()

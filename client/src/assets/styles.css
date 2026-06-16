@@ -11,6 +11,20 @@
 [data-accent="blue"]{ --primary:#206bc4; --primary-d:#1b5aa6; --primary-soft:rgba(32,107,196,.12); }
 [data-accent="indigo"]{ --primary:#4263eb; --primary-d:#3950c8; --primary-soft:rgba(66,99,235,.12); }
 
+/* ===== Bulma 1.x color bridge ===== */
+/* Brand blue #206bc4 → hsl(211, 72%, 45%) */
+:root,
+[data-accent="blue"] {
+  --bulma-primary-h: 211deg;
+  --bulma-primary-s: 72%;
+  --bulma-primary-l: 45%;
+}
+[data-accent="indigo"] { --bulma-primary-h: 228deg; --bulma-primary-s: 79%; --bulma-primary-l: 53%; }
+[data-accent="teal"]   { --bulma-primary-h: 163deg; --bulma-primary-s: 87%; --bulma-primary-l: 35%; }
+[data-accent="green"]  { --bulma-primary-h: 152deg; --bulma-primary-s: 74%; --bulma-primary-l: 33%; }
+/* Bulma's [data-theme=dark] selector matches any element, including .app-root[data-theme=dark],
+   so dark mode Bulma overrides apply automatically without an extra bridge rule. */
+
 [data-theme="light"]{
   --bg:#f4f6fa; --surface:#ffffff; --surface-2:#f7f9fc; --surface-hover:#f1f5fa;
   --border:#e6e9ef; --border-2:#eef1f6;
