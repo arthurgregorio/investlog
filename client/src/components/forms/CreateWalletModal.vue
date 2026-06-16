@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AppModal from '@/components/ui/AppModal.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import type { IconName } from '@/components/AppIcon.vue'
@@ -62,8 +61,8 @@ function submit() {
       </b-field>
     </div>
     <template #footer>
-      <AppButton variant="ghost" @click="emit('close')">Cancelar</AppButton>
-      <AppButton variant="primary" icon="check" :disabled="!valid" @click="submit">Criar carteira</AppButton>
+      <b-button type="is-text" @click="emit('close')">Cancelar</b-button>
+      <b-button type="is-primary" icon-left="check" :disabled="!valid" @click="submit">Criar carteira</b-button>
     </template>
   </AppModal>
 </template>

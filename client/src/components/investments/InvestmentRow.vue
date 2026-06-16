@@ -101,16 +101,14 @@ function toggle() {
 
         <PositionAdder v-if="adding" :holding="holding" @close="adding = false" />
         <div v-else class="detail-foot">
-          <button class="link-btn" @click="adding = true">
-            <AppIcon name="plus" :size="16" :stroke="2.4" />{{ fund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
-          </button>
+          <b-button type="is-text" icon-left="plus" @click="adding = true">
+            {{ fund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
+          </b-button>
           <div class="detail-foot-right">
             <span v-if="trade" class="avg-note">
               Preço médio <b>{{ fmt.money(cost / (qty || 1), wallet.currency) }}</b>
             </span>
-            <button class="del-btn" @click="store.removeHolding(holding.id)">
-              <AppIcon name="trash" :size="15" />Remover
-            </button>
+            <b-button type="is-text" size="is-small" icon-left="delete" style="color: var(--down)" @click="store.removeHolding(holding.id)">Remover</b-button>
           </div>
         </div>
       </div>

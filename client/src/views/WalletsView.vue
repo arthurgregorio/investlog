@@ -6,7 +6,6 @@ import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import TypeBadge from '@/components/ui/TypeBadge.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
@@ -34,9 +33,7 @@ function gotoType(type: WalletKind) {
           Cada carteira tem um tipo e uma moeda. Os totais são convertidos para {{ base }} na visão geral.
         </p>
       </div>
-      <button class="btn btn-primary btn-md" @click="modals.openCreateWallet()">
-        <AppIcon name="plus" :size="18" :stroke="2.4" />Nova carteira
-      </button>
+      <b-button type="is-primary" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
     </div>
 
     <EmptyState
@@ -46,7 +43,7 @@ function gotoType(type: WalletKind) {
       text="Crie sua primeira carteira para começar a registrar investimentos."
     >
       <template #action>
-        <AppButton variant="primary" icon="plus" @click="modals.openCreateWallet()">Nova carteira</AppButton>
+        <b-button type="is-primary" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
       </template>
     </EmptyState>
 
@@ -89,9 +86,7 @@ function gotoType(type: WalletKind) {
               {{ store.walletHoldings(w.id).length }}
               {{ store.walletHoldings(w.id).length === 1 ? 'ativo' : 'ativos' }}
             </span>
-            <button class="link-btn" @click="gotoType(w.type)">
-              Ver investimentos<AppIcon name="chevronRight" :size="15" />
-            </button>
+            <b-button type="is-text" icon-right="chevron-right" @click="gotoType(w.type)">Ver investimentos</b-button>
           </div>
         </CardBody>
       </Card>

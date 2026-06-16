@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import type { Holding } from '@/types'
 
@@ -51,10 +50,10 @@ function submit() {
       </template>
     </div>
     <div class="adder-actions">
-      <AppButton size="sm" variant="ghost" @click="emit('close')">Cancelar</AppButton>
-      <AppButton size="sm" variant="primary" icon="check" :disabled="!valid" @click="submit">
+      <b-button size="is-small" type="is-text" @click="emit('close')">Cancelar</b-button>
+      <b-button size="is-small" type="is-primary" icon-left="check" :disabled="!valid" @click="submit">
         {{ isFund ? 'Adicionar aporte' : 'Adicionar compra' }}
-      </AppButton>
+      </b-button>
     </div>
   </div>
 </template>

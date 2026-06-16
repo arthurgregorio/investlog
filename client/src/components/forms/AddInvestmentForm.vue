@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import type { AddInvestmentForm } from '@/composables/useAddInvestmentForm'
@@ -49,9 +48,9 @@ const kindLabelPt = computed(() =>
     <div v-if="form.walletsOfKind.length === 0" class="form-notice">
       <AppIcon name="info" :size="18" />
       <span>Nenhuma carteira de <b>{{ kindLabelPt }}</b> ainda.</span>
-      <AppButton size="sm" variant="primary" icon="plus" @click="emit('create-wallet', form.kind)">
+      <b-button size="is-small" type="is-primary" icon-left="plus" @click="emit('create-wallet', form.kind)">
         Criar carteira
-      </AppButton>
+      </b-button>
     </div>
 
     <div v-else class="form-grid">

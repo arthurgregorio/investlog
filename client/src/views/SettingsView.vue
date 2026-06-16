@@ -5,7 +5,6 @@ import AppIcon from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import { useAppearanceStore } from '@/stores/appearance'
 import type { AccentKey } from '@/types'
@@ -82,7 +81,7 @@ function addFundType() {
         </div>
         <div class="chip-add">
           <b-input v-model="newType" placeholder="ex.: Stock, REIT…" />
-          <AppButton variant="soft" icon="plus" @click="addStockType">Adicionar tipo</AppButton>
+          <b-button icon-left="plus" @click="addStockType">Adicionar tipo</b-button>
         </div>
       </CardBody>
     </Card>
@@ -99,7 +98,7 @@ function addFundType() {
         </div>
         <div class="chip-add">
           <b-input v-model="newFundType" placeholder="ex.: Previdência, Cambial…" />
-          <AppButton variant="soft" icon="plus" @click="addFundType">Adicionar tipo</AppButton>
+          <b-button icon-left="plus" @click="addFundType">Adicionar tipo</b-button>
         </div>
       </CardBody>
     </Card>

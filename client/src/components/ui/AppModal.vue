@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
-import IconButton from '@/components/ui/IconButton.vue'
 
 defineProps<{ title: string; subtitle?: string; wide?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -21,7 +20,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
             <h2 class="modal-title">{{ title }}</h2>
             <p v-if="subtitle" class="modal-sub">{{ subtitle }}</p>
           </div>
-          <IconButton icon="x" label="Fechar" @click="emit('close')" />
+          <b-button icon-left="close" aria-label="Fechar" @click="emit('close')" />
         </div>
         <div class="modal-body"><slot /></div>
         <div v-if="$slots.footer" class="modal-foot"><slot name="footer" /></div>

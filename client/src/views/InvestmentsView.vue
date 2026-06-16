@@ -5,7 +5,6 @@ import { useRoute } from 'vue-router'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import AppButton from '@/components/ui/AppButton.vue'
 import InvestmentRow from '@/components/investments/InvestmentRow.vue'
 import { usePortfolioStore } from '@/stores/portfolio'
 import { useModals } from '@/composables/useModals'
@@ -46,9 +45,7 @@ const rows = computed(() =>
         <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Investimentos</h1>
       </div>
-      <button class="btn btn-primary btn-md" @click="modals.openAddInvestment()">
-        <AppIcon name="plus" :size="18" :stroke="2.4" />Adicionar investimento
-      </button>
+      <b-button type="is-primary" icon-left="plus" @click="modals.openAddInvestment()">Adicionar investimento</b-button>
     </div>
 
     <div class="seg-tabs">
@@ -70,7 +67,7 @@ const rows = computed(() =>
       text="Registre uma aquisição para vê-la no seu logbook."
     >
       <template #action>
-        <AppButton variant="primary" icon="plus" @click="modals.openAddInvestment()">Adicionar investimento</AppButton>
+        <b-button type="is-primary" icon-left="plus" @click="modals.openAddInvestment()">Adicionar investimento</b-button>
       </template>
     </EmptyState>
 

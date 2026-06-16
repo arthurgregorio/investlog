@@ -20,9 +20,7 @@ const { dark } = storeToRefs(appearance)
       </div>
       <div class="navbar-spacer" />
       <span class="base-chip"><AppIcon name="repeat" :size="14" />Base&nbsp;<b>{{ base }}</b></span>
-      <button class="icon-btn" aria-label="Tema" @click="appearance.toggleDark()">
-        <AppIcon :name="dark ? 'sun' : 'moon'" :size="20" />
-      </button>
+      <b-button :icon-left="dark ? 'weather-sunny' : 'weather-night'" aria-label="Tema" @click="appearance.toggleDark()" />
       <div class="navbar-user">
         <Avatar initials="RT" />
         <div class="nu-meta">

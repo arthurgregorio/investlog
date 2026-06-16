@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import AppIcon, { type IconName } from '@/components/AppIcon.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import type { IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import GainChip from '@/components/ui/GainChip.vue'
@@ -47,12 +48,8 @@ const iconFor = (key: WalletKind): IconName => store.WALLET_TYPES[key].icon as I
         <h1 class="page-title">Visão geral</h1>
       </div>
       <div class="head-actions">
-        <button class="btn btn-soft btn-md" @click="router.push({ name: 'wallets' })">
-          <AppIcon name="wallet" :size="17" />Carteiras
-        </button>
-        <button class="btn btn-primary btn-md" @click="modals.openAddInvestment()">
-          <AppIcon name="plus" :size="18" :stroke="2.4" />Adicionar
-        </button>
+        <b-button icon-left="wallet" @click="router.push({ name: 'wallets' })">Carteiras</b-button>
+        <b-button type="is-primary" icon-left="plus" @click="modals.openAddInvestment()">Adicionar</b-button>
       </div>
     </div>
 
