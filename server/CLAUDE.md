@@ -30,10 +30,23 @@ has:
   `UserRepository` (queries/updates `system.users` via the generated jOOQ `USERS` table), and
   `CurrentUserProvider`/`FixedCurrentUserProvider` (resolves the current user; fixed to a dev
   user for now).
+- `shared/persistence` — `pagedModelOf(content, pageable, total)`, the single place jOOQ page
+  results become `org.springframework.data.web.PagedModel<T>` for collection endpoints.
+- `shared/exceptions` — `NotFoundException`, mapped by `GlobalExceptionHandler` to a 404
+  `ProblemDetail`.
 - `config` — `WebMvcConfig` (path-segment API versioning, prefixes `@RestController`s under
-  `/private/{version}`) and `GlobalExceptionHandler` (RFC 7807 `ProblemDetail` error responses).
-- `profile` — the first business module: `GET`/`PATCH /private/v1/profile`, following a
-  `rest/{controllers,dtos}` + `domain/services` layout that future modules will follow.
+  `/private/{version}`; `@EnableSpringDataWebSupport` activates `Pageable` parameter resolution)
+  and `GlobalExceptionHandler` (RFC 7807 `ProblemDetail` error responses: 400 validation errors,
+  404 `NotFoundException`, 409 `DataIntegrityViolationException` from unique/FK-restrict
+  violations, 500 catch-all).
+- `profile` — `GET`/`PATCH /private/v1/profile`, following a `rest/{controllers,dtos}` +
+  `domain/services` layout.
+- `typelists` — `GET`/`POST`/`DELETE /private/v1/stock-types` and `.../fund-types`, paginated,
+  sharing one pair of DTOs (`TypeResponse`/`TypeCreateRequest`) since both resources are
+  `{id, name}`. Extends the `profile` layout with `domain/repositories`.
+- `currencyrates` — `GET`/`PUT /private/v1/currency-rates`, addressed by `currencyCode` (not
+  `external_id`); `PUT` upserts and, when `isBase: true`, clears the previous base row in the
+  same transaction.
 
 The persistence schema itself is fully defined (see below).
 
@@ -57,6 +70,9 @@ The persistence schema itself is fully defined (see below).
 - `jackson-module-kotlin` for Kotlin-aware JSON (de)serialization. `kotlin-reflect` is on the
   classpath for frameworks that need it (jOOQ/Jackson/Spring).
 - Other starters: `actuator`, `mail`, `validation`.
+- `spring-data-commons` provides `Pageable`/`Page`/`PagedModel` and the MVC argument-resolver
+  auto-configuration for paginated collection endpoints (default page size 20, configured via
+  `spring.data.web.pageable.default-page-size`).
 
 ### Testing
 
