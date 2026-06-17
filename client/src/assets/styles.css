@@ -258,6 +258,10 @@ a {
     border-radius: 2px 2px 0 0;
 }
 
+.topnav-items .nav-item:first-child {
+    padding-left: 0;
+}
+
 .nav-icon {
     display: grid;
     place-items: center;
@@ -520,11 +524,6 @@ a {
 }
 
 /* ===== KPI ===== */
-.kpi-grid {
-    display: grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap: 16px;
-}
 
 .kpi-label {
     font-size: 12.5px;
@@ -555,26 +554,34 @@ a {
     color: var(--text-muted);
 }
 
-/* ===== Layout grids ===== */
-.grid-8-4 {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 18px;
-    align-items: stretch;
+/* ===== Layout grids — Bulma Smart Grid ===== */
+/* Reset Bulma's %block margin-bottom so page flex gap handles spacing */
+.page > .fixed-grid,
+.page > .fixed-grid > .grid {
+    margin-bottom: 0;
 }
 
-.grid-8-4 > .card {
+/* Uniform 1rem gap across all overview grids */
+.page > .fixed-grid > .grid {
+    --bulma-grid-gap: 1rem;
+}
+
+/* chart-card and alloc-card fill their cell height so both are equal */
+.chart-card,
+.alloc-card {
+    height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.grid-8-4 > .card > .card-body {
+.chart-card > .card-body,
+.alloc-card > .card-body {
     flex: 1;
     display: flex;
     flex-direction: column;
 }
 
-.grid-8-4 > .alloc-card .alloc-body {
+.alloc-card .alloc-body {
     flex: 1;
     justify-content: center;
 }
@@ -645,11 +652,6 @@ a {
 }
 
 /* ===== Type distribution cards ===== */
-.type-grid {
-    display: grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap: 16px;
-}
 
 .type-card {
     cursor: pointer;
@@ -1524,15 +1526,6 @@ a {
 }
 
 /* ===== mobile ===== */
-@media (max-width: 1024px) {
-    .grid-8-4 {
-        grid-template-columns:1fr;
-    }
-
-    .kpi-grid, .type-grid {
-        grid-template-columns:1fr;
-    }
-}
 
 @media (max-width: 680px) {
     .form-grid {
