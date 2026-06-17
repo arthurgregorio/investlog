@@ -1,0 +1,21 @@
+package br.com.investlog.server.holdingsoverview.rest.controllers
+
+import br.com.investlog.server.holdingsoverview.domain.services.HoldingsOverviewService
+import br.com.investlog.server.holdingsoverview.rest.payloads.HoldingRowResponse
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PagedModel
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@RequestMapping("/holdings")
+class HoldingsOverviewController(private val holdingsOverviewService: HoldingsOverviewService) {
+
+    @GetMapping
+    fun findAll(
+        @RequestParam(required = false) kind: String?,
+        pageable: Pageable,
+    ): PagedModel<HoldingRowResponse> = holdingsOverviewService.findAll(kind, pageable)
+}
