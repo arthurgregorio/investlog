@@ -38,21 +38,26 @@ const walletCountByKind = computed(() => {
   return counts
 })
 
+const ALL_KINDS: WalletKind[] = ['stocks', 'crypto', 'funds']
+
 const typeRows = computed(() => {
-  if (!summary.value) return []
-  return summary.value.kindSummaries.map((kindSummary) => ({
-    key: kindSummary.kind as WalletKind,
-    label: WALLET_TYPES[kindSummary.kind as WalletKind].label,
-    accent: WALLET_TYPES[kindSummary.kind as WalletKind].accent,
-    invested: kindSummary.totalCostBasis,
-    walletCount: walletCountByKind.value[kindSummary.kind] ?? 0,
-    holdings: kindSummary.holdingCount,
-  }))
+  const summaryByKind = Object.fromEntries(
+    (summary.value?.kindSummaries ?? []).map((kindSummary) => [kindSummary.kind, kindSummary]),
+  )
+  return ALL_KINDS.map((kind) => {
+    const kindSummary = summaryByKind[kind]
+    return {
+      key: kind,
+      label: WALLET_TYPES[kind].label,
+      accent: WALLET_TYPES[kind].accent,
+      invested: kindSummary?.totalCostBasis ?? 0,
+      walletCount: walletCountByKind.value[kind] ?? 0,
+      holdings: kindSummary?.holdingCount ?? 0,
+    }
+  })
 })
 
 const grandInvestedBase = computed(() => summary.value?.totalCostBasis ?? 0)
-
-const hasCurrentValues = computed(() => (summary.value?.totalCurrentValue ?? 0) > 0)
 
 const chartSeries = computed(() => {
   const points = overviewStore.series
@@ -120,13 +125,9 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
         <Card class="kpi-card">
           <CardBody>
             <div class="kpi-label">Valor atual estimado</div>
-            <div class="kpi-value">
-              {{ hasCurrentValues ? fmt.money(summary.totalCurrentValue, baseCurrency) : '—' }}
-            </div>
+            <div class="kpi-value">{{ fmt.money(summary.totalCurrentValue, baseCurrency) }}</div>
             <div class="kpi-foot">
-              <span class="kpi-sub">
-                {{ hasCurrentValues ? 'posições com valor atual' : 'preencha o valor atual' }}
-              </span>
+              <span class="kpi-sub">posições com valor atual</span>
             </div>
           </CardBody>
         </Card>
@@ -136,12 +137,10 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
             <div class="kpi-label">Resultado</div>
             <div class="kpi-value">
               <GainChip
-                v-if="hasCurrentValues"
                 :value="summary.totalGain"
                 :pct="summary.totalGainPct ?? 0"
                 :cur="baseCurrency"
               />
-              <template v-else>—</template>
             </div>
             <div class="kpi-foot"><span class="kpi-sub">sobre posições avaliadas</span></div>
           </CardBody>
