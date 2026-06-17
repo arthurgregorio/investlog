@@ -21,13 +21,13 @@ import java.util.UUID
 class FundHoldingRepository(private val dsl: DSLContext) {
 
     fun findAll(walletInternalId: Long, pageable: Pageable): PagedModel<FundHoldingResponse> {
-        val w = WALLETS.`as`("w")
-        val ft = FUND_TYPES.`as`("ft")
-        val fh = FUND_HOLDINGS.`as`("fh")
+        val wallets = WALLETS.`as`("wallets")
+        val fundTypes = FUND_TYPES.`as`("fund_types")
+        val fundHoldings = FUND_HOLDINGS.`as`("fund_holdings")
 
         val contributionsField = DSL.multiset(
             DSL.selectFrom(FUND_CONTRIBUTIONS)
-                .where(FUND_CONTRIBUTIONS.FUND_HOLDING_ID.eq(fh.ID))
+                .where(FUND_CONTRIBUTIONS.FUND_HOLDING_ID.eq(fundHoldings.ID))
                 .orderBy(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE)
         ).`as`("contributions").convertFrom { r ->
             r.map { rec ->
@@ -39,21 +39,21 @@ class FundHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        val content = dsl.select(fh.EXTERNAL_ID, w.EXTERNAL_ID, ft.EXTERNAL_ID, fh.NAME, fh.CURRENT_VALUE, contributionsField)
-            .from(fh)
-            .join(w).on(w.ID.eq(fh.WALLET_ID))
-            .join(ft).on(ft.ID.eq(fh.FUND_TYPE_ID))
-            .where(fh.WALLET_ID.eq(walletInternalId))
-            .orderBy(fh.CREATED_AT.desc())
+        val content = dsl.select(fundHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, fundTypes.EXTERNAL_ID, fundHoldings.NAME, fundHoldings.CURRENT_VALUE, contributionsField)
+            .from(fundHoldings)
+            .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
+            .join(fundTypes).on(fundTypes.ID.eq(fundHoldings.FUND_TYPE_ID))
+            .where(fundHoldings.WALLET_ID.eq(walletInternalId))
+            .orderBy(fundHoldings.CREATED_AT.desc())
             .limit(pageable.pageSize)
             .offset(pageable.offset.toInt())
             .fetch { rec ->
                 FundHoldingResponse(
-                    id = rec.get(fh.EXTERNAL_ID)!!,
-                    walletId = rec.get(w.EXTERNAL_ID)!!,
-                    fundTypeId = rec.get(ft.EXTERNAL_ID)!!,
-                    name = rec.get(fh.NAME)!!,
-                    currentValue = rec.get(fh.CURRENT_VALUE),
+                    id = rec.get(fundHoldings.EXTERNAL_ID)!!,
+                    walletId = rec.get(wallets.EXTERNAL_ID)!!,
+                    fundTypeId = rec.get(fundTypes.EXTERNAL_ID)!!,
+                    name = rec.get(fundHoldings.NAME)!!,
+                    currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     contributions = rec.get(contributionsField),
                 )
             }
@@ -144,13 +144,13 @@ class FundHoldingRepository(private val dsl: DSLContext) {
             .execute()
 
     private fun findByInternalId(internalId: Long, walletInternalId: Long): FundHoldingResponse? {
-        val w = WALLETS.`as`("w")
-        val ft = FUND_TYPES.`as`("ft")
-        val fh = FUND_HOLDINGS.`as`("fh")
+        val wallets = WALLETS.`as`("wallets")
+        val fundTypes = FUND_TYPES.`as`("fund_types")
+        val fundHoldings = FUND_HOLDINGS.`as`("fund_holdings")
 
         val contributionsField = DSL.multiset(
             DSL.selectFrom(FUND_CONTRIBUTIONS)
-                .where(FUND_CONTRIBUTIONS.FUND_HOLDING_ID.eq(fh.ID))
+                .where(FUND_CONTRIBUTIONS.FUND_HOLDING_ID.eq(fundHoldings.ID))
                 .orderBy(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE)
         ).`as`("contributions").convertFrom { r ->
             r.map { rec ->
@@ -162,19 +162,19 @@ class FundHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        return dsl.select(fh.EXTERNAL_ID, w.EXTERNAL_ID, ft.EXTERNAL_ID, fh.NAME, fh.CURRENT_VALUE, contributionsField)
-            .from(fh)
-            .join(w).on(w.ID.eq(fh.WALLET_ID))
-            .join(ft).on(ft.ID.eq(fh.FUND_TYPE_ID))
-            .where(fh.ID.eq(internalId))
-            .and(fh.WALLET_ID.eq(walletInternalId))
+        return dsl.select(fundHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, fundTypes.EXTERNAL_ID, fundHoldings.NAME, fundHoldings.CURRENT_VALUE, contributionsField)
+            .from(fundHoldings)
+            .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
+            .join(fundTypes).on(fundTypes.ID.eq(fundHoldings.FUND_TYPE_ID))
+            .where(fundHoldings.ID.eq(internalId))
+            .and(fundHoldings.WALLET_ID.eq(walletInternalId))
             .fetchOne { rec ->
                 FundHoldingResponse(
-                    id = rec.get(fh.EXTERNAL_ID)!!,
-                    walletId = rec.get(w.EXTERNAL_ID)!!,
-                    fundTypeId = rec.get(ft.EXTERNAL_ID)!!,
-                    name = rec.get(fh.NAME)!!,
-                    currentValue = rec.get(fh.CURRENT_VALUE),
+                    id = rec.get(fundHoldings.EXTERNAL_ID)!!,
+                    walletId = rec.get(wallets.EXTERNAL_ID)!!,
+                    fundTypeId = rec.get(fundTypes.EXTERNAL_ID)!!,
+                    name = rec.get(fundHoldings.NAME)!!,
+                    currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     contributions = rec.get(contributionsField),
                 )
             }
