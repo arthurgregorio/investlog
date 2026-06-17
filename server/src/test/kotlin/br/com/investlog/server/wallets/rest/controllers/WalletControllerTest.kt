@@ -34,6 +34,7 @@ class WalletControllerTest : BaseIntegrationTest() {
         assertEquals("My Stocks", wallet.name)
         assertEquals("stocks", wallet.kind)
         assertEquals("BRL", wallet.currency)
+        assertEquals(0, wallet.holdingCount)
     }
 
     @Test
