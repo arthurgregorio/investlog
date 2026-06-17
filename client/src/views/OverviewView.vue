@@ -48,8 +48,7 @@ const iconFor = (key: WalletKind): IconName => store.WALLET_TYPES[key].icon as I
         <h1 class="page-title">Visão geral</h1>
       </div>
       <div class="head-actions">
-        <b-button icon-left="wallet" @click="router.push({ name: 'wallets' })">Carteiras</b-button>
-        <b-button type="is-primary" icon-left="plus" @click="modals.openAddInvestment()">Adicionar</b-button>
+        <b-button type="is-primary" icon-left="wallet" @click="router.push({ name: 'wallets' })">Carteiras</b-button>
       </div>
     </div>
 

@@ -63,7 +63,7 @@ function submit() {
       </b-field>
     </div>
     <template #footer>
-      <b-button type="is-text" @click="emit('close')">Cancelar</b-button>
+      <b-button @click="emit('close')">Cancelar</b-button>
       <b-button type="is-primary" icon-left="check" :disabled="!valid" @click="submit">Criar carteira</b-button>
     </template>
   </AppModal>

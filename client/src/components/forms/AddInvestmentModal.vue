@@ -19,7 +19,7 @@ const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'stocks', () 
   >
     <AddInvestmentForm :form="form" @create-wallet="(type) => emit('create-wallet', type)" />
     <template #footer>
-      <b-button type="is-text" @click="emit('close')">Cancelar</b-button>
+      <b-button @click="emit('close')">Cancelar</b-button>
       <b-button type="is-primary" icon-left="check" :disabled="!form.valid" @click="submit">Adicionar</b-button>
     </template>
   </AppModal>

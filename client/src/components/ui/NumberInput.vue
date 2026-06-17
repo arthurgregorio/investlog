@@ -10,7 +10,7 @@ function onInput(v: string) {
 }
 </script>
 <template>
-  <b-field grouped v-if="prefix">
+  <div v-if="prefix" class="field has-addons">
     <p class="control"><span class="button is-static">{{ prefix }}</span></p>
     <b-input
       type="number"
@@ -23,7 +23,7 @@ function onInput(v: string) {
       v-bind="$attrs"
       @update:model-value="onInput"
     />
-  </b-field>
+  </div>
   <b-input
     v-else
     type="number"
