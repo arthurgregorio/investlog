@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import { usePortfolioStore } from '@/stores/portfolio'
+import { useWalletsStore } from '@/stores/wallets'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
+import { WALLET_TYPES } from '@/utils/walletTypes'
 import type { WalletKind } from '@/types'
 
-const store = usePortfolioStore()
-const { base, wallets } = storeToRefs(store)
+const walletsStore = useWalletsStore()
 const router = useRouter()
 const modals = useModals()
 
-const iconFor = (key: WalletKind): IconName => store.WALLET_TYPES[key].icon as IconName
+onMounted(() => walletsStore.load())
 
 const tagTypeFor: Record<WalletKind, string> = {
   stocks: 'is-link',
@@ -23,26 +23,28 @@ const tagTypeFor: Record<WalletKind, string> = {
   funds: 'is-success',
 }
 
-function gotoType(type: WalletKind) {
-  router.push({ name: 'investments', query: { filter: type } })
+function gotoType(kind: WalletKind) {
+  router.push({ name: 'investments', query: { filter: kind } })
 }
+
+const iconFor = (kind: WalletKind): IconName => WALLET_TYPES[kind].icon as IconName
 </script>
 
 <template>
   <div class="page">
+    <b-loading :is-full-page="false" :active="walletsStore.loading" />
+
     <div class="page-head page-head-row">
       <div>
         <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Carteiras</h1>
-        <p class="page-desc">
-          Cada carteira tem um tipo e uma moeda. Os totais são convertidos para {{ base }} na visão geral.
-        </p>
+        <p class="page-desc">Cada carteira tem um tipo e uma moeda.</p>
       </div>
       <b-button type="is-primary" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
     </div>
 
     <EmptyState
-      v-if="wallets.length === 0"
+      v-if="walletsStore.loaded && walletsStore.wallets.length === 0"
       icon="wallet"
       title="Nenhuma carteira ainda"
       text="Crie sua primeira carteira para começar a registrar investimentos."
@@ -53,45 +55,31 @@ function gotoType(type: WalletKind) {
     </EmptyState>
 
     <div v-else class="wallet-grid">
-      <Card v-for="w in wallets" :key="w.id" class="wallet-card">
-        <div class="wallet-stripe" :style="{ background: store.WALLET_TYPES[w.type].accent }" />
+      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="wallet-card">
+        <div class="wallet-stripe" :style="{ background: WALLET_TYPES[wallet.kind].accent }" />
         <CardBody>
           <div class="wallet-head">
-            <span class="type-ic sm" :style="{ background: store.WALLET_TYPES[w.type].accent }">
-              <AppIcon :name="iconFor(w.type)" :size="18" />
+            <span class="type-ic sm" :style="{ background: WALLET_TYPES[wallet.kind].accent }">
+              <AppIcon :name="iconFor(wallet.kind)" :size="18" />
             </span>
             <div class="wallet-titles">
-              <div class="wallet-name">{{ w.name }}</div>
+              <div class="wallet-name">{{ wallet.name }}</div>
               <div class="wallet-tags">
-                <b-tag :type="tagTypeFor[w.type]">{{ store.WALLET_TYPES[w.type].label }}</b-tag>
-                <span class="cur-chip">{{ w.currency }}</span>
+                <b-tag :type="tagTypeFor[wallet.kind]">{{ WALLET_TYPES[wallet.kind].label }}</b-tag>
+                <span class="cur-chip">{{ wallet.currency }}</span>
               </div>
             </div>
           </div>
           <div class="wallet-invested">
-            <div class="wi-value">{{ fmt.money(store.walletInvested(w.id), w.currency) }}</div>
-            <div v-if="w.currency !== base" class="wi-base">
-              ≈ {{ fmt.money(store.walletInvestedBase(w.id), base, { compact: true }) }}
-            </div>
+            <div class="wi-value">{{ fmt.money(wallet.totalInvested, wallet.currency) }}</div>
           </div>
-
-          <ul v-if="store.walletHoldings(w.id).length" class="wallet-holdings">
-            <li v-for="h in store.walletHoldings(w.id).slice(0, 4)" :key="h.id">
-              <span class="wh-name">{{ h.kind === 'fund' ? h.name : h.ticker }}</span>
-              <span class="wh-val">{{ fmt.money(store.holdingCost(h), w.currency, { compact: true }) }}</span>
-            </li>
-            <li v-if="store.walletHoldings(w.id).length > 4" class="wh-more">
-              +{{ store.walletHoldings(w.id).length - 4 }} mais
-            </li>
-          </ul>
-          <div v-else class="wallet-empty">Sem investimentos ainda</div>
-
           <div class="wallet-foot">
             <span class="wallet-count">
-              {{ store.walletHoldings(w.id).length }}
-              {{ store.walletHoldings(w.id).length === 1 ? 'ativo' : 'ativos' }}
+              {{ wallet.holdingCount }} {{ wallet.holdingCount === 1 ? 'ativo' : 'ativos' }}
             </span>
-            <b-button type="is-text" icon-right="chevron-right" @click="gotoType(w.type)">Ver investimentos</b-button>
+            <b-button type="is-text" icon-right="chevron-right" @click="gotoType(wallet.kind)">
+              Ver investimentos
+            </b-button>
           </div>
         </CardBody>
       </Card>

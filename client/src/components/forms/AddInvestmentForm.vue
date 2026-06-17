@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import AppIcon from '@/components/AppIcon.vue'
-import { usePortfolioStore } from '@/stores/portfolio'
+import { useTypesListStore } from '@/stores/typesList'
+import { fmt } from '@/composables/useFormat'
 import type { AddInvestmentForm } from '@/composables/useAddInvestmentForm'
 import type { IconName } from '@/components/AppIcon.vue'
 import type { WalletKind } from '@/types'
@@ -11,7 +12,7 @@ import type { WalletKind } from '@/types'
 const props = defineProps<{ form: AddInvestmentForm }>()
 const emit = defineEmits<{ 'create-wallet': [WalletKind] }>()
 
-const store = usePortfolioStore()
+const typesListStore = useTypesListStore()
 
 const KIND_OPTS: { value: WalletKind; label: string; icon: IconName }[] = [
   { value: 'stocks', label: 'Ações', icon: 'trendUp' },
@@ -19,10 +20,16 @@ const KIND_OPTS: { value: WalletKind; label: string; icon: IconName }[] = [
   { value: 'funds', label: 'Fundos', icon: 'building' },
 ]
 
-const sym = computed(() => store.currencySymbol[props.form.cur])
+const walletCurrency = computed(() => {
+  const wallet = props.form.walletsOfKind.find((wallet) => wallet.id === props.form.walletId)
+  return wallet?.currency ?? 'BRL'
+})
+const sym = computed(() => fmt.sym(walletCurrency.value))
+
 const walletOptions = computed(() =>
-  props.form.walletsOfKind.map((w) => ({ value: w.id, label: `${w.name} · ${w.currency}` })),
+  props.form.walletsOfKind.map((wallet) => ({ value: wallet.id, label: `${wallet.name} · ${wallet.currency}` })),
 )
+
 const kindLabelPt = computed(() =>
   props.form.kind === 'stocks' ? 'ações' : props.form.kind === 'crypto' ? 'cripto' : 'fundos',
 )
@@ -56,13 +63,15 @@ const kindLabelPt = computed(() =>
     <div v-else class="form-grid">
       <b-field label="Carteira" style="grid-column: 1/-1">
         <b-select v-model="form.walletId">
-          <option v-for="o in walletOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+          <option v-for="opt in walletOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
         </b-select>
       </b-field>
 
       <b-field v-if="form.kind === 'stocks'" label="Tipo">
-        <b-select v-model="form.stockType">
-          <option v-for="o in store.stockTypes" :key="o" :value="o">{{ o }}</option>
+        <b-select v-model="form.stockTypeId">
+          <option v-for="stockType in typesListStore.stockTypes" :key="stockType.id" :value="stockType.id">
+            {{ stockType.name }}
+          </option>
         </b-select>
       </b-field>
 
@@ -77,7 +86,7 @@ const kindLabelPt = computed(() =>
           <DateInput v-model="form.date" />
         </b-field>
         <b-field label="Quantidade">
-          <NumberInput v-model="form.qty" placeholder="0" min="0" />
+          <NumberInput v-model="form.quantity" placeholder="0" min="0" />
         </b-field>
         <b-field label="Preço na aquisição">
           <NumberInput v-model="form.price" placeholder="0,00" :prefix="sym" min="0" />
@@ -89,8 +98,10 @@ const kindLabelPt = computed(() =>
 
       <template v-else>
         <b-field label="Tipo de fundo">
-          <b-select v-model="form.fundType">
-            <option v-for="o in store.fundTypes" :key="o" :value="o">{{ o }}</option>
+          <b-select v-model="form.fundTypeId">
+            <option v-for="fundType in typesListStore.fundTypes" :key="fundType.id" :value="fundType.id">
+              {{ fundType.name }}
+            </option>
           </b-select>
         </b-field>
         <b-field label="Nome do fundo">

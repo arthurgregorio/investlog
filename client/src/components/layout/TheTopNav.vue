@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
-import { usePortfolioStore } from '@/stores/portfolio'
+import { useOverviewStore } from '@/stores/overview'
+import { useRatesStore } from '@/stores/rates'
 import { fmt } from '@/composables/useFormat'
 
-const portfolio = usePortfolioStore()
-const { base, grandInvestedBase } = storeToRefs(portfolio)
+const overviewStore = useOverviewStore()
+const ratesStore = useRatesStore()
 const route = useRoute()
 const router = useRouter()
+
+onMounted(() => {
+  Promise.all([overviewStore.load(), ratesStore.load()])
+})
 
 const nav: { name: string; label: string; icon: IconName }[] = [
   { name: 'overview', label: 'Visão geral', icon: 'dashboard' },
@@ -36,8 +41,10 @@ const nav: { name: string; label: string; icon: IconName }[] = [
       </div>
       <div class="topnav-total">
         <span class="tn-label">Total investido</span>
-        <span class="tn-value">{{ fmt.money(grandInvestedBase, base, { compact: true }) }}</span>
-        <span class="tn-sub">· {{ base }}</span>
+        <span class="tn-value">
+          {{ fmt.money(overviewStore.summary?.totalCostBasis ?? 0, ratesStore.baseCurrency, { compact: true }) }}
+        </span>
+        <span class="tn-sub">· {{ ratesStore.baseCurrency }}</span>
       </div>
     </div>
   </nav>

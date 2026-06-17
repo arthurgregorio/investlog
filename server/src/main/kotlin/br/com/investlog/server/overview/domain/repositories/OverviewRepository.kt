@@ -63,8 +63,8 @@ class OverviewRepository(private val dsl: DSLContext) {
                 )
             }
 
-        val totalCostBasis = kindSummaries.sumOf { it.totalCostBasis }
-        val totalCurrentValue = kindSummaries.sumOf { it.totalCurrentValue }
+        val totalCostBasis = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCostBasis }
+        val totalCurrentValue = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCurrentValue }
         val totalGain = totalCurrentValue - totalCostBasis
 
         return PortfolioSummaryResponse(
@@ -131,7 +131,7 @@ class OverviewRepository(private val dsl: DSLContext) {
 
         val grouped = (stockAmounts + cryptoAmounts + fundAmounts)
             .groupBy { it.month }
-            .mapValues { entry -> entry.value.sumOf { it.amount } }
+            .mapValues { entry -> entry.value.fold(BigDecimal.ZERO) { acc, point -> acc + point.amount } }
             .toSortedMap()
 
         var cumulative = BigDecimal.ZERO

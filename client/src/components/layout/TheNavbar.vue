@@ -2,11 +2,11 @@
 import { storeToRefs } from 'pinia'
 import AppIcon from '@/components/AppIcon.vue'
 import Avatar from '@/components/ui/Avatar.vue'
-import { usePortfolioStore } from '@/stores/portfolio'
+import { useRatesStore } from '@/stores/rates'
 import { useAppearanceStore } from '@/stores/appearance'
 
-const portfolio = usePortfolioStore()
-const { base } = storeToRefs(portfolio)
+const ratesStore = useRatesStore()
+const { baseCurrency } = storeToRefs(ratesStore)
 const appearance = useAppearanceStore()
 const { dark } = storeToRefs(appearance)
 </script>
@@ -19,7 +19,7 @@ const { dark } = storeToRefs(appearance)
         <span class="brand-name">Invest<b>Log</b></span>
       </div>
       <div class="navbar-spacer" />
-      <span class="base-chip"><AppIcon name="repeat" :size="14" />Base&nbsp;<b>{{ base }}</b></span>
+      <span class="base-chip"><AppIcon name="repeat" :size="14" />Base&nbsp;<b>{{ baseCurrency }}</b></span>
       <b-button :icon-left="dark ? 'weather-sunny' : 'weather-night'" aria-label="Tema" @click="appearance.toggleDark()" />
       <div class="navbar-user">
         <Avatar initials="RT" />

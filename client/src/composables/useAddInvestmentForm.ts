@@ -1,44 +1,45 @@
-/* Shared add-investment form logic, used by the add-investment modal.
-   The selected wallet is kept valid as `kind`/wallets change via a watcher
-   (the prototype used a render-phase setTimeout hack — not needed in Vue). */
 import { computed, reactive, watch } from 'vue'
 import { ToastProgrammatic as Toast } from 'buefy'
-import { usePortfolioStore } from '@/stores/portfolio'
+import { holdingsApi } from '@/api/holdings'
+import { useWalletsStore } from '@/stores/wallets'
+import { useTypesListStore } from '@/stores/typesList'
 import type { WalletKind } from '@/types'
 
-export type InvestmentKind = WalletKind // 'stocks' | 'crypto' | 'funds'
+export type InvestmentKind = WalletKind
 
 export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind: InvestmentKind) => void) {
-  const store = usePortfolioStore()
+  const walletsStore = useWalletsStore()
+  const typesListStore = useTypesListStore()
 
   const form = reactive({
     kind: initialKind ?? 'stocks',
     walletId: '' as string,
-    stockType: store.stockTypes[0] ?? '',
-    fundType: store.fundTypes[0] ?? '',
+    stockTypeId: '' as string,
+    fundTypeId: '' as string,
     ticker: '',
     name: '',
     date: new Date() as Date | null,
-    qty: '' as number | '',
+    quantity: '' as number | '',
     price: '' as number | '',
     currentPrice: '' as number | '',
     amount: '' as number | '',
     currentValue: '' as number | '',
+    submitting: false,
 
-    walletsOfKind: computed(() => store.wallets.filter((w) => w.type === form.kind)),
-    wallet: computed(() => store.walletOf(form.walletId)),
-    cur: computed(() => store.walletOf(form.walletId)?.currency ?? store.base),
+    walletsOfKind: computed(() => walletsStore.wallets.filter((wallet) => wallet.kind === form.kind)),
     valid: computed(() => {
       if (!form.walletId) return false
-      if (form.kind === 'funds') return !!form.name.trim() && !!form.date && Number(form.amount) > 0
-      return !!form.ticker.trim() && !!form.date && Number(form.qty) > 0 && Number(form.price) > 0
+      if (form.kind === 'funds') {
+        return !!form.fundTypeId && !!form.name.trim() && !!form.date && Number(form.amount) > 0
+      }
+      return !!form.ticker.trim() && !!form.date && Number(form.quantity) > 0 && Number(form.price) > 0
     }),
   })
 
-  // initial wallet selection
   form.walletId = form.walletsOfKind[0]?.id ?? ''
+  form.stockTypeId = typesListStore.stockTypes[0]?.id ?? ''
+  form.fundTypeId = typesListStore.fundTypes[0]?.id ?? ''
 
-  // when the kind changes, jump to the first wallet of that kind
   watch(
     () => form.kind,
     () => {
@@ -46,37 +47,69 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
     },
   )
 
-  // keep the selected wallet valid as wallets are created/removed
   watch(
     () => form.walletsOfKind,
     (list) => {
-      if (form.walletId && !list.some((w) => w.id === form.walletId)) {
+      if (form.walletId && !list.some((wallet) => wallet.id === form.walletId)) {
         form.walletId = list[0]?.id ?? ''
       }
     },
   )
 
-  function submit() {
-    if (!form.valid || !form.date) return
+  watch(
+    () => typesListStore.stockTypes,
+    (types) => {
+      if (!form.stockTypeId || !types.some((type) => type.id === form.stockTypeId)) {
+        form.stockTypeId = types[0]?.id ?? ''
+      }
+    },
+  )
+
+  watch(
+    () => typesListStore.fundTypes,
+    (types) => {
+      if (!form.fundTypeId || !types.some((type) => type.id === form.fundTypeId)) {
+        form.fundTypeId = types[0]?.id ?? ''
+      }
+    },
+  )
+
+  async function submit() {
+    if (!form.valid || !form.date || form.submitting) return
+    form.submitting = true
     const dateStr = form.date.toISOString().slice(0, 10)
-    if (form.kind === 'stocks') {
-      store.addStock({
-        walletId: form.walletId, stockType: form.stockType, ticker: form.ticker, name: form.name,
-        date: dateStr, qty: Number(form.qty), price: Number(form.price), currentPrice: form.currentPrice,
-      })
-    } else if (form.kind === 'crypto') {
-      store.addCrypto({
-        walletId: form.walletId, ticker: form.ticker, name: form.name,
-        date: dateStr, qty: Number(form.qty), price: Number(form.price), currentPrice: form.currentPrice,
-      })
-    } else {
-      store.addFund({
-        walletId: form.walletId, name: form.name, fundType: form.fundType,
-        date: dateStr, amount: Number(form.amount), currentValue: form.currentValue,
-      })
+    const currentPriceNum = Number(form.currentPrice) > 0 ? Number(form.currentPrice) : undefined
+
+    try {
+      if (form.kind === 'stocks') {
+        await holdingsApi.createStockHolding(form.walletId, {
+          stockTypeId: form.stockTypeId,
+          ticker: form.ticker.trim().toUpperCase(),
+          name: form.name.trim() || undefined,
+          currentPrice: currentPriceNum,
+          lot: { lotDate: dateStr, quantity: Number(form.quantity), price: Number(form.price) },
+        })
+      } else if (form.kind === 'crypto') {
+        await holdingsApi.createCryptoHolding(form.walletId, {
+          ticker: form.ticker.trim().toUpperCase(),
+          name: form.name.trim() || undefined,
+          currentPrice: currentPriceNum,
+          lot: { lotDate: dateStr, quantity: Number(form.quantity), price: Number(form.price) },
+        })
+      } else {
+        const currentValueNum = Number(form.currentValue) > 0 ? Number(form.currentValue) : undefined
+        await holdingsApi.createFundHolding(form.walletId, {
+          fundTypeId: form.fundTypeId,
+          name: form.name.trim(),
+          currentValue: currentValueNum,
+          contribution: { contributionDate: dateStr, amount: Number(form.amount) },
+        })
+      }
+      onDone?.(form.kind)
+      Toast.open({ message: 'Investimento registrado!', type: 'is-success' })
+    } finally {
+      form.submitting = false
     }
-    onDone?.(form.kind)
-    Toast.open({ message: 'Investimento registrado!', type: 'is-success' })
   }
 
   return { form, submit }

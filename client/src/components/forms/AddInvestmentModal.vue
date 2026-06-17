@@ -1,13 +1,28 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import AppModal from '@/components/ui/AppModal.vue'
 import AddInvestmentForm from '@/components/forms/AddInvestmentForm.vue'
 import { useAddInvestmentForm } from '@/composables/useAddInvestmentForm'
+import { useWalletsStore } from '@/stores/wallets'
+import { useTypesListStore } from '@/stores/typesList'
+import { useHoldingsListStore } from '@/stores/holdingsList'
 import type { WalletKind } from '@/types'
 
 const props = defineProps<{ initialKind?: WalletKind }>()
 const emit = defineEmits<{ close: []; 'create-wallet': [WalletKind] }>()
 
-const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'stocks', () => emit('close'))
+const walletsStore = useWalletsStore()
+const typesListStore = useTypesListStore()
+const holdingsListStore = useHoldingsListStore()
+
+onMounted(() => {
+  Promise.all([walletsStore.load(), typesListStore.load()])
+})
+
+const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'stocks', () => {
+  holdingsListStore.refresh()
+  emit('close')
+})
 </script>
 
 <template>
@@ -17,10 +32,18 @@ const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'stocks', () 
     wide
     @close="emit('close')"
   >
-    <AddInvestmentForm :form="form" @create-wallet="(type) => emit('create-wallet', type)" />
+    <AddInvestmentForm :form="form" @create-wallet="(kind) => emit('create-wallet', kind)" />
     <template #footer>
-      <b-button @click="emit('close')">Cancelar</b-button>
-      <b-button type="is-primary" icon-left="check" :disabled="!form.valid" @click="submit">Adicionar</b-button>
+      <b-button :disabled="form.submitting" @click="emit('close')">Cancelar</b-button>
+      <b-button
+        type="is-primary"
+        icon-left="check"
+        :disabled="!form.valid"
+        :loading="form.submitting"
+        @click="submit"
+      >
+        Adicionar
+      </b-button>
     </template>
   </AppModal>
 </template>
