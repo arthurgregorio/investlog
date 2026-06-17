@@ -27,6 +27,12 @@ class CryptoHoldingService(
         return holdingRepo.findAll(walletId, pageable)
     }
 
+    fun findById(walletExternalId: UUID, holdingExternalId: UUID): CryptoHoldingResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        return holdingRepo.findByExternalId(walletId, holdingExternalId)
+            ?: throw NotFoundException("Crypto holding not found: $holdingExternalId")
+    }
+
     @Transactional
     fun create(walletExternalId: UUID, request: CryptoHoldingCreateRequest): CryptoHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)

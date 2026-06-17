@@ -100,6 +100,11 @@ class CryptoHoldingRepository(private val dsl: DSLContext) {
         )
     }
 
+    fun findByExternalId(walletInternalId: Long, externalId: UUID): CryptoHoldingResponse? {
+        val internalId = findInternalId(walletInternalId, externalId) ?: return null
+        return findByInternalId(internalId, walletInternalId)
+    }
+
     fun findInternalId(walletInternalId: Long, externalId: UUID): Long? =
         dsl.select(CRYPTO_HOLDINGS.ID)
             .from(CRYPTO_HOLDINGS)

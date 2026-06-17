@@ -29,6 +29,10 @@ class StockHoldingController(private val service: StockHoldingService) {
     fun findAll(@PathVariable walletId: UUID, pageable: Pageable): PagedModel<StockHoldingResponse> =
         service.findAll(walletId, pageable)
 
+    @GetMapping("/{holdingId}")
+    fun findById(@PathVariable walletId: UUID, @PathVariable holdingId: UUID): StockHoldingResponse =
+        service.findById(walletId, holdingId)
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@PathVariable walletId: UUID, @Valid @RequestBody request: StockHoldingCreateRequest): StockHoldingResponse =

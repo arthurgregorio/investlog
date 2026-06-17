@@ -116,6 +116,11 @@ class StockHoldingRepository(private val dsl: DSLContext) {
         )
     }
 
+    fun findByExternalId(walletInternalId: Long, externalId: UUID): StockHoldingResponse? {
+        val internalId = findInternalId(walletInternalId, externalId) ?: return null
+        return findByInternalId(internalId, walletInternalId)
+    }
+
     fun findInternalId(walletInternalId: Long, externalId: UUID): Long? =
         dsl.select(STOCK_HOLDINGS.ID)
             .from(STOCK_HOLDINGS)

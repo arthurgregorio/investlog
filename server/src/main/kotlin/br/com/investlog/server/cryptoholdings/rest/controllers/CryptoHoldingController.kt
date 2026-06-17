@@ -29,6 +29,10 @@ class CryptoHoldingController(private val service: CryptoHoldingService) {
     fun findAll(@PathVariable walletId: UUID, pageable: Pageable): PagedModel<CryptoHoldingResponse> =
         service.findAll(walletId, pageable)
 
+    @GetMapping("/{holdingId}")
+    fun findById(@PathVariable walletId: UUID, @PathVariable holdingId: UUID): CryptoHoldingResponse =
+        service.findById(walletId, holdingId)
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(

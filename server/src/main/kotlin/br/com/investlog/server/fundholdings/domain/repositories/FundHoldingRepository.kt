@@ -108,6 +108,11 @@ class FundHoldingRepository(private val dsl: DSLContext) {
             .where(FUND_TYPES.EXTERNAL_ID.eq(externalId))
             .fetchOne(FUND_TYPES.ID)
 
+    fun findByExternalId(walletInternalId: Long, externalId: UUID): FundHoldingResponse? {
+        val internalId = findInternalId(walletInternalId, externalId) ?: return null
+        return findByInternalId(internalId, walletInternalId)
+    }
+
     fun findInternalId(walletInternalId: Long, externalId: UUID): Long? =
         dsl.select(FUND_HOLDINGS.ID)
             .from(FUND_HOLDINGS)
