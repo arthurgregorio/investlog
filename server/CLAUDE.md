@@ -21,6 +21,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Testcontainer, applies `db/changelog/db.changelog-master.xml` to it via Liquibase, generates
 jOOQ Kotlin sources from it, then tears the container down.
 
+## Coding Conventions
+
+**No abbreviated names** — use full descriptive names everywhere: variables, parameters, jOOQ
+table aliases, and loop iterators. Examples of what to avoid and what to use instead:
+
+| Avoid | Use instead |
+|-------|------------|
+| `val w = WALLETS.as("w")` | `val wallets = WALLETS.as("wallets")` |
+| `val sh = STOCK_HOLDINGS.as("sh")` | `val stockHoldings = STOCK_HOLDINGS.as("stock_holdings")` |
+| `val fh = FUND_HOLDINGS.as("fh")` | `val fundHoldings = FUND_HOLDINGS.as("fund_holdings")` |
+| `qty`, `pct`, `amt`, `cnt` | `quantity`, `percentage`, `amount`, `count` |
+| `for (h in holdings)` | `for (holding in holdings)` |
+| `baseCurrency` shorthand `base` | always `baseCurrency` |
+
+This applies to both the Kotlin variable name **and** the SQL alias string passed to `.as()`.
+
 ## Architecture
 
 `Application.kt` is the `@SpringBootApplication` bootstrap. Beyond that, the application layer
@@ -49,6 +65,13 @@ has:
 - `currencyrates` — `GET`/`PUT /private/v1/currency-rates`, addressed by `currencyCode` (not
   `external_id`); `PUT` upserts and, when `isBase: true`, clears the previous base row in the
   same transaction.
+- `holdingsoverview` — `GET /private/v1/holdings` with optional `kind` filter and Spring
+  `Pageable` for server-side pagination. Returns `HoldingRowResponse` rows from the
+  `holdings_overview` VIEW (joined with `wallets`). Computes `gain` and `gainPct` in Kotlin.
+- `overview` — `GET /private/v1/overview` (portfolio summary: `baseCurrency`, totals, per-kind
+  summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
+  invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
+  (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
 
 The persistence schema itself is fully defined (see below).
 
@@ -57,7 +80,8 @@ The persistence schema itself is fully defined (see below).
 - Persistence: PostgreSQL via `spring-boot-starter-jooq` + `spring-boot-starter-liquibase`. The
   full schema — `system`/`finances` Postgres schemas, `system.users`, the `finances` portfolio
   tables (wallets, stock/crypto/fund holdings + lots/contributions, type lists, currency rates),
-  the `finances.wallet_kind` enum, and the `finances.holdings_overview` materialized view — is
+  the `finances.wallet_kind` enum, and the `finances.holdings_overview` VIEW (regular view,
+  converted from materialized so writes are immediately reflected) — is
   defined in `src/main/resources/db/changelog/db.changelog-master.xml` and applied
   automatically by Liquibase on startup. `application.yaml` configures `spring.liquibase.*`
   (tracking tables renamed to `database_changelog`/`database_changelog_lock`);
