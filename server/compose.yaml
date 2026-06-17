@@ -10,14 +10,14 @@ services:
       - 'POSTGRES_PASSWORD=sa_investlog'
       - 'POSTGRES_USER=sa_investlog'
     ports:
-      - '5433'
+      - '5432:5432'
     volumes:
-      - data-postgres:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/docker
     networks:
       - default
 
 volumes:
-  data-postgres:
+  postgres-data:
     driver: local
 
 networks:
