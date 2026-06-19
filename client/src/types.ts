@@ -126,3 +126,9 @@ export interface PagedResponse<T> {
     totalPages: number
   }
 }
+
+export interface ProfileResponse {
+  name: string
+  email: string
+  avatarUrl: string | null
+}
