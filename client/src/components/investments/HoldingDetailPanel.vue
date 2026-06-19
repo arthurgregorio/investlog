@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { DialogProgrammatic as Dialog } from 'buefy'
+import { useDialog, useToast } from 'buefy'
 import PositionAdder from '@/components/investments/PositionAdder.vue'
+import NumberInput from '@/components/ui/NumberInput.vue'
 import { holdingsApi } from '@/api/holdings'
 import { fmt } from '@/composables/useFormat'
 import type { FundHoldingDetail, HoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
@@ -12,9 +13,14 @@ const emit = defineEmits<{
   positionAdded: []
 }>()
 
+const dialog = useDialog()
+const toast = useToast()
+
 const detail = ref<HoldingDetail | null>(null)
 const loading = ref(false)
 const adding = ref(false)
+const editingPrice = ref(false)
+const priceInput = ref<number | ''>('')
 
 const isFund = computed(() => props.row.kind === 'FUNDS')
 const isStock = computed(() => props.row.kind === 'STOCKS')
@@ -45,6 +51,12 @@ onMounted(async () => {
 })
 
 async function onPositionAdded() {
+  await reloadDetail()
+  adding.value = false
+  emit('positionAdded')
+}
+
+async function reloadDetail() {
   if (isStock.value) {
     detail.value = await holdingsApi.getStockHolding(props.row.walletId, props.row.id)
   } else if (props.row.kind === 'CRYPTO') {
@@ -52,12 +64,46 @@ async function onPositionAdded() {
   } else {
     detail.value = await holdingsApi.getFundHolding(props.row.walletId, props.row.id)
   }
-  adding.value = false
+}
+
+function startPriceEdit() {
+  if (!detail.value) return
+  // StockHoldingDetail and CryptoHoldingDetail both have currentPrice — casting to StockHoldingDetail is safe here
+  const currentAmount = isFund.value
+    ? (detail.value as FundHoldingDetail).currentValue
+    : (detail.value as StockHoldingDetail).currentPrice
+  priceInput.value = currentAmount ?? ''
+  editingPrice.value = true
+}
+
+function cancelPriceEdit() {
+  editingPrice.value = false
+  priceInput.value = ''
+}
+
+async function savePriceUpdate() {
+  if (priceInput.value === '') return
+  const amount = Number(priceInput.value)
+  if (isStock.value) {
+    await holdingsApi.updateStockHolding(props.row.walletId, props.row.id, { currentPrice: amount })
+  } else if (props.row.kind === 'CRYPTO') {
+    await holdingsApi.updateCryptoHolding(props.row.walletId, props.row.id, { currentPrice: amount })
+  } else {
+    await holdingsApi.updateFundHolding(props.row.walletId, props.row.id, { currentValue: amount })
+  }
+  toast.open({ message: isFund.value ? 'Valor atual atualizado.' : 'Preço atualizado.', type: 'is-success' })
+  cancelPriceEdit()
+  await reloadDetail()
   emit('positionAdded')
 }
 
+function startAdding() {
+  cancelPriceEdit()
+  adding.value = true
+}
+
 async function confirmRemove() {
-  Dialog.confirm({
+  dialog.confirm({
     title: 'Remover investimento',
     message: 'Esta ação <strong>não pode ser desfeita</strong>.',
     type: 'is-danger',
@@ -76,6 +122,44 @@ async function confirmRemove() {
     },
   })
 }
+
+function confirmDeleteLot(lotId: string) {
+  dialog.confirm({
+    title: isFund.value ? 'Remover aporte' : 'Remover compra',
+    message: 'Esta ação <strong>não pode ser desfeita</strong>.',
+    type: 'is-danger',
+    hasIcon: true,
+    confirmText: 'Remover',
+    cancelText: 'Cancelar',
+    onConfirm: async () => {
+      if (isStock.value) {
+        await holdingsApi.deleteStockLot(props.row.walletId, props.row.id, lotId)
+      } else {
+        await holdingsApi.deleteCryptoLot(props.row.walletId, props.row.id, lotId)
+      }
+      toast.open({ message: 'Compra removida.', type: 'is-success' })
+      await reloadDetail()
+      emit('positionAdded')
+    },
+  })
+}
+
+function confirmDeleteContribution(contributionId: string) {
+  dialog.confirm({
+    title: 'Remover aporte',
+    message: 'Esta ação <strong>não pode ser desfeita</strong>.',
+    type: 'is-danger',
+    hasIcon: true,
+    confirmText: 'Remover',
+    cancelText: 'Cancelar',
+    onConfirm: async () => {
+      await holdingsApi.deleteFundContribution(props.row.walletId, props.row.id, contributionId)
+      toast.open({ message: 'Aporte removido.', type: 'is-success' })
+      await reloadDetail()
+      emit('positionAdded')
+    },
+  })
+}
 </script>
 
 <template>
@@ -89,6 +173,7 @@ async function confirmRemove() {
           <th v-if="!isFund" class="c-num">Qtd.</th>
           <th v-if="!isFund" class="c-num">Preço</th>
           <th class="c-num">{{ isFund ? 'Valor' : 'Subtotal' }}</th>
+          <th class="c-act"></th>
         </tr>
       </thead>
       <tbody>
@@ -96,6 +181,15 @@ async function confirmRemove() {
           <tr v-for="contribution in fundDetail.contributions" :key="contribution.id">
             <td>{{ fmt.date(contribution.contributionDate) }}</td>
             <td class="c-num">{{ fmt.money(contribution.amount, row.walletCurrency) }}</td>
+            <td class="c-act">
+              <b-button
+                size="is-small"
+                type="is-text"
+                icon-left="delete"
+                style="color: var(--down)"
+                @click.stop="confirmDeleteContribution(contribution.id)"
+              />
+            </td>
           </tr>
         </template>
         <template v-else-if="tradeDetail">
@@ -104,6 +198,15 @@ async function confirmRemove() {
             <td class="c-num">{{ fmt.qty(lot.quantity) }}</td>
             <td class="c-num">{{ fmt.money(lot.price, row.walletCurrency) }}</td>
             <td class="c-num">{{ fmt.money(lot.quantity * lot.price, row.walletCurrency) }}</td>
+            <td class="c-act">
+              <b-button
+                size="is-small"
+                type="is-text"
+                icon-left="delete"
+                style="color: var(--down)"
+                @click.stop="confirmDeleteLot(lot.id)"
+              />
+            </td>
           </tr>
         </template>
       </tbody>
@@ -120,14 +223,43 @@ async function confirmRemove() {
     />
 
     <div v-else class="detail-foot">
-      <b-button type="is-text" icon-left="plus" @click="adding = true">
+      <b-button type="is-text" icon-left="plus" @click="startAdding">
         {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
       </b-button>
-      <div class="detail-foot-right">
+
+      <div v-if="editingPrice" class="detail-foot-right">
+        <NumberInput
+          v-model="priceInput"
+          :prefix="fmt.sym(row.walletCurrency)"
+          :placeholder="isFund ? 'Valor atual' : 'Preço atual'"
+          style="width: 170px"
+          min="0"
+        />
+        <b-button
+          type="is-primary"
+          size="is-small"
+          :disabled="priceInput === ''"
+          @click="savePriceUpdate"
+        >
+          Salvar
+        </b-button>
+        <b-button type="is-text" size="is-small" @click="cancelPriceEdit">
+          Cancelar
+        </b-button>
+      </div>
+      <div v-else class="detail-foot-right">
         <span v-if="!isFund && quantity" class="avg-note">
           Preço médio
           <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
         </span>
+        <b-button
+          type="is-text"
+          size="is-small"
+          icon-left="pencil"
+          @click="startPriceEdit"
+        >
+          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+        </b-button>
         <b-button
           type="is-text"
           size="is-small"
