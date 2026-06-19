@@ -14,7 +14,7 @@ vi.mock('buefy', () => ({
 const mockWallet: WalletResponse = {
   id: 'wallet-stocks-1',
   name: 'Carteira Ações',
-  kind: 'stocks',
+  kind: 'STOCKS',
   currency: 'BRL',
   holdingCount: 0,
   totalInvested: 0,
@@ -24,7 +24,7 @@ const mockWallet: WalletResponse = {
 const mockFundWallet: WalletResponse = {
   id: 'wallet-funds-1',
   name: 'Carteira Fundos',
-  kind: 'funds',
+  kind: 'FUNDS',
   currency: 'BRL',
   holdingCount: 0,
   totalInvested: 0,
@@ -49,14 +49,14 @@ describe('useAddInvestmentForm', () => {
     typesListStore.loaded = true
   })
 
-  it('starts with kind=stocks and selects first wallet', () => {
-    const { form } = useAddInvestmentForm('stocks')
-    expect(form.kind).toBe('stocks')
+  it('starts with kind=STOCKS and selects first wallet', () => {
+    const { form } = useAddInvestmentForm('STOCKS')
+    expect(form.kind).toBe('STOCKS')
     expect(form.walletId).toBe('wallet-stocks-1')
   })
 
   it('valid=false when ticker is empty', () => {
-    const { form } = useAddInvestmentForm('stocks')
+    const { form } = useAddInvestmentForm('STOCKS')
     form.ticker = ''
     form.quantity = 10
     form.price = 50
@@ -65,7 +65,7 @@ describe('useAddInvestmentForm', () => {
   })
 
   it('valid=true when all required stock fields are filled', () => {
-    const { form } = useAddInvestmentForm('stocks')
+    const { form } = useAddInvestmentForm('STOCKS')
     form.ticker = 'PETR4'
     form.quantity = 10
     form.price = 50
@@ -74,7 +74,7 @@ describe('useAddInvestmentForm', () => {
   })
 
   it('valid=false when stock quantity is 0', () => {
-    const { form } = useAddInvestmentForm('stocks')
+    const { form } = useAddInvestmentForm('STOCKS')
     form.ticker = 'PETR4'
     form.quantity = 0
     form.price = 50
@@ -83,15 +83,15 @@ describe('useAddInvestmentForm', () => {
   })
 
   it('switches walletsOfKind when kind changes to funds', () => {
-    const { form } = useAddInvestmentForm('stocks')
+    const { form } = useAddInvestmentForm('STOCKS')
     expect(form.walletsOfKind.map((wallet) => wallet.id)).toEqual(['wallet-stocks-1'])
 
-    form.kind = 'funds'
+    form.kind = 'FUNDS'
     expect(form.walletsOfKind.map((wallet) => wallet.id)).toEqual(['wallet-funds-1'])
   })
 
   it('valid=false for funds when name is empty', () => {
-    const { form } = useAddInvestmentForm('funds')
+    const { form } = useAddInvestmentForm('FUNDS')
     form.walletId = 'wallet-funds-1'
     form.name = ''
     form.amount = 500
@@ -100,7 +100,7 @@ describe('useAddInvestmentForm', () => {
   })
 
   it('valid=true for funds when all required fields are filled', () => {
-    const { form } = useAddInvestmentForm('funds')
+    const { form } = useAddInvestmentForm('FUNDS')
     form.walletId = 'wallet-funds-1'
     form.fundTypeId = 'type-fund-1'
     form.name = 'Tesouro Direto'
@@ -120,7 +120,7 @@ describe('useAddInvestmentForm', () => {
       lots: [],
     })
 
-    const { form, submit } = useAddInvestmentForm('stocks')
+    const { form, submit } = useAddInvestmentForm('STOCKS')
     form.ticker = 'PETR4'
     form.quantity = 10
     form.price = 36.5

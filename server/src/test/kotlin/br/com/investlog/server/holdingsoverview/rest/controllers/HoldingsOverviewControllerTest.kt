@@ -29,7 +29,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
         walletId = restTestClient.post()
             .uri("/private/v1/wallets")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Overview Test Wallet","kind":"stocks","currency":"BRL"}""")
+            .body("""{"name":"Overview Test Wallet","kind":"STOCKS","currency":"BRL"}""")
             .exchange()
             .returnResult<WalletResponse>()
             .responseBody!!
@@ -68,7 +68,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .expectStatus().isOk()
             .expectBody()
             .jsonPath("$.content[?(@.id == '$holdingId')].ticker").isEqualTo("OVTST3")
-            .jsonPath("$.content[?(@.id == '$holdingId')].kind").isEqualTo("stocks")
+            .jsonPath("$.content[?(@.id == '$holdingId')].kind").isEqualTo("STOCKS")
             .jsonPath("$.content[?(@.id == '$holdingId')].costBasis").isEqualTo(450.0)
             .jsonPath("$.content[?(@.id == '$holdingId')].currentValue").isEqualTo(500.0)
             .jsonPath("$.content[?(@.id == '$holdingId')].gain").isEqualTo(50.0)
@@ -79,7 +79,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
     @Order(2)
     fun `GET holdings with kind=stocks includes the created holding`() {
         restTestClient.get()
-            .uri("/private/v1/holdings?kind=stocks")
+            .uri("/private/v1/holdings?kind=STOCKS")
             .exchange()
             .expectStatus().isOk()
             .expectBody()
@@ -90,7 +90,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
     @Order(3)
     fun `GET holdings with kind=funds excludes the stocks holding`() {
         restTestClient.get()
-            .uri("/private/v1/holdings?kind=funds")
+            .uri("/private/v1/holdings?kind=FUNDS")
             .exchange()
             .expectStatus().isOk()
             .expectBody()

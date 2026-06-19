@@ -17,7 +17,9 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 @Repository
-class CryptoHoldingRepository(private val dsl: DSLContext) {
+class CryptoHoldingRepository(
+    private val dsl: DSLContext
+) {
 
     fun findAll(walletInternalId: Long, pageable: Pageable): PagedModel<CryptoHoldingResponse> {
         val wallets = WALLETS.`as`("wallets")
@@ -38,7 +40,14 @@ class CryptoHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        val content = dsl.select(cryptoHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, cryptoHoldings.TICKER, cryptoHoldings.NAME, cryptoHoldings.CURRENT_PRICE, lotsField)
+        val content = dsl.select(
+            cryptoHoldings.EXTERNAL_ID,
+            wallets.EXTERNAL_ID,
+            cryptoHoldings.TICKER,
+            cryptoHoldings.NAME,
+            cryptoHoldings.CURRENT_PRICE,
+            lotsField
+        )
             .from(cryptoHoldings)
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
             .where(cryptoHoldings.WALLET_ID.eq(walletInternalId))
@@ -63,7 +72,13 @@ class CryptoHoldingRepository(private val dsl: DSLContext) {
         return pagedModelOf(content, pageable, total.toLong())
     }
 
-    fun create(walletInternalId: Long, ticker: String, name: String, currentPrice: BigDecimal?, lot: LotCreateRequest): CryptoHoldingResponse {
+    fun create(
+        walletInternalId: Long,
+        ticker: String,
+        name: String,
+        currentPrice: BigDecimal?,
+        lot: LotCreateRequest
+    ): CryptoHoldingResponse {
         val holding = dsl.insertInto(CRYPTO_HOLDINGS)
             .set(CRYPTO_HOLDINGS.WALLET_ID, walletInternalId)
             .set(CRYPTO_HOLDINGS.TICKER, ticker.uppercase())
@@ -112,7 +127,13 @@ class CryptoHoldingRepository(private val dsl: DSLContext) {
             .and(CRYPTO_HOLDINGS.EXTERNAL_ID.eq(externalId))
             .fetchOne(CRYPTO_HOLDINGS.ID)
 
-    fun update(walletInternalId: Long, externalId: UUID, ticker: String?, name: String?, currentPrice: BigDecimal?): CryptoHoldingResponse? {
+    fun update(
+        walletInternalId: Long,
+        externalId: UUID,
+        ticker: String?,
+        name: String?,
+        currentPrice: BigDecimal?
+    ): CryptoHoldingResponse? {
         val existing = dsl.selectFrom(CRYPTO_HOLDINGS)
             .where(CRYPTO_HOLDINGS.WALLET_ID.eq(walletInternalId))
             .and(CRYPTO_HOLDINGS.EXTERNAL_ID.eq(externalId))
@@ -154,7 +175,14 @@ class CryptoHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        return dsl.select(cryptoHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, cryptoHoldings.TICKER, cryptoHoldings.NAME, cryptoHoldings.CURRENT_PRICE, lotsField)
+        return dsl.select(
+            cryptoHoldings.EXTERNAL_ID,
+            wallets.EXTERNAL_ID,
+            cryptoHoldings.TICKER,
+            cryptoHoldings.NAME,
+            cryptoHoldings.CURRENT_PRICE,
+            lotsField
+        )
             .from(cryptoHoldings)
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
             .where(cryptoHoldings.ID.eq(internalId))

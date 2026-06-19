@@ -19,7 +19,7 @@ onMounted(() => {
   Promise.all([walletsStore.load(), typesListStore.load()])
 })
 
-const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'stocks', () => {
+const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'STOCKS', () => {
   holdingsListStore.refresh()
   emit('close')
 })

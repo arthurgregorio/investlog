@@ -14,7 +14,7 @@ const mockSummary: PortfolioSummary = {
   totalGainPct: 10,
   kindSummaries: [
     {
-      kind: 'stocks',
+      kind: 'STOCKS',
       holdingCount: 3,
       totalCostBasis: 6000,
       totalCurrentValue: 6600,

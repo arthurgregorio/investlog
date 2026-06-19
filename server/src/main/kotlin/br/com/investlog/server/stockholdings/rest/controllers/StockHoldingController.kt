@@ -35,8 +35,10 @@ class StockHoldingController(private val service: StockHoldingService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun create(@PathVariable walletId: UUID, @Valid @RequestBody request: StockHoldingCreateRequest): StockHoldingResponse =
-        service.create(walletId, request)
+    fun create(
+        @PathVariable walletId: UUID,
+        @Valid @RequestBody request: StockHoldingCreateRequest
+    ): StockHoldingResponse = service.create(walletId, request)
 
     @PatchMapping("/{holdingId}")
     fun update(

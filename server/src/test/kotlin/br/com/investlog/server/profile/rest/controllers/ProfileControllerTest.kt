@@ -28,7 +28,7 @@ class ProfileControllerTest : BaseIntegrationTest() {
 
         assertEquals("Arthur Gregorio", response?.name)
         assertEquals("arthurshakal@gmail.com", response?.email)
-        assertEquals("teal", response?.accentColor)
+        assertEquals("teal", response?.accentColor?.text)
         assertEquals("BRL", response?.preferredCurrency)
     }
 
@@ -45,7 +45,7 @@ class ProfileControllerTest : BaseIntegrationTest() {
             .returnResult<ProfileResponse>()
             .responseBody
 
-        assertEquals("indigo", response?.accentColor)
+        assertEquals("indigo", response?.accentColor?.text)
         assertEquals("BRL", response?.preferredCurrency)
     }
 

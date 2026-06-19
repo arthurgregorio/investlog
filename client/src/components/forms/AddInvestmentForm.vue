@@ -15,9 +15,9 @@ const emit = defineEmits<{ 'create-wallet': [WalletKind] }>()
 const typesListStore = useTypesListStore()
 
 const KIND_OPTS: { value: WalletKind; label: string; icon: IconName }[] = [
-  { value: 'stocks', label: 'Ações', icon: 'trendUp' },
-  { value: 'crypto', label: 'Cripto', icon: 'coins' },
-  { value: 'funds', label: 'Fundos', icon: 'building' },
+  { value: 'STOCKS', label: 'Ações', icon: 'trendUp' },
+  { value: 'CRYPTO', label: 'Cripto', icon: 'coins' },
+  { value: 'FUNDS', label: 'Fundos', icon: 'building' },
 ]
 
 const walletCurrency = computed(() => {
@@ -31,7 +31,7 @@ const walletOptions = computed(() =>
 )
 
 const kindLabelPt = computed(() =>
-  props.form.kind === 'stocks' ? 'ações' : props.form.kind === 'crypto' ? 'cripto' : 'fundos',
+  props.form.kind === 'STOCKS' ? 'ações' : props.form.kind === 'CRYPTO' ? 'cripto' : 'fundos',
 )
 </script>
 
@@ -67,7 +67,7 @@ const kindLabelPt = computed(() =>
         </b-select>
       </b-field>
 
-      <b-field v-if="form.kind === 'stocks'" label="Tipo">
+      <b-field v-if="form.kind === 'STOCKS'" label="Tipo">
         <b-select v-model="form.stockTypeId">
           <option v-for="stockType in typesListStore.stockTypes" :key="stockType.id" :value="stockType.id">
             {{ stockType.name }}
@@ -75,12 +75,12 @@ const kindLabelPt = computed(() =>
         </b-select>
       </b-field>
 
-      <template v-if="form.kind !== 'funds'">
-        <b-field :label="form.kind === 'crypto' ? 'Sigla / código' : 'Ticker'">
-          <b-input v-model="form.ticker" :placeholder="form.kind === 'crypto' ? 'BTC' : 'PETR4'" />
+      <template v-if="form.kind !== 'FUNDS'">
+        <b-field :label="form.kind === 'CRYPTO' ? 'Sigla / código' : 'Ticker'">
+          <b-input v-model="form.ticker" :placeholder="form.kind === 'CRYPTO' ? 'BTC' : 'PETR4'" />
         </b-field>
-        <b-field label="Nome (opcional)" :style="form.kind === 'crypto' ? 'grid-column: 1/-1' : undefined">
-          <b-input v-model="form.name" :placeholder="form.kind === 'crypto' ? 'Bitcoin' : 'Petrobras'" />
+        <b-field label="Nome (opcional)" :style="form.kind === 'CRYPTO' ? 'grid-column: 1/-1' : undefined">
+          <b-input v-model="form.name" :placeholder="form.kind === 'CRYPTO' ? 'Bitcoin' : 'Petrobras'" />
         </b-field>
         <b-field label="Data da aquisição">
           <DateInput v-model="form.date" />

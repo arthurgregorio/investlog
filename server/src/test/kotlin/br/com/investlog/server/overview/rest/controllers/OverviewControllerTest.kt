@@ -79,7 +79,7 @@ class OverviewControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.kindSummaries[?(@.kind == 'stocks')].holdingCount").isNotEmpty()
+            .jsonPath("$.kindSummaries[?(@.kind == 'STOCKS')].holdingCount").isNotEmpty()
     }
 
     @Test

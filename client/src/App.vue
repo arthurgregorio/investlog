@@ -17,10 +17,10 @@ const theme = computed(() => (dark.value ? 'dark' : 'light'))
 const addModal = ref<{ kind: WalletKind } | null>(null)
 const walletModal = ref<{ type: WalletKind } | null>(null)
 
-function openAddInvestment(kind: WalletKind = 'stocks') {
+function openAddInvestment(kind: WalletKind = 'STOCKS') {
   addModal.value = { kind }
 }
-function openCreateWallet(type: WalletKind = 'stocks') {
+function openCreateWallet(type: WalletKind = 'STOCKS') {
   walletModal.value = { type }
 }
 provide(ModalKey, { openAddInvestment, openCreateWallet })

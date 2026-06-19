@@ -4,6 +4,6 @@ data class ProfileResponse(
     val name: String,
     val email: String,
     val avatarUrl: String?,
-    val accentColor: String,
+    val accentColor: AccentColor,
     val preferredCurrency: String,
 )

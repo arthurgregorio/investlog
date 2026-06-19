@@ -45,7 +45,6 @@ class WalletService(
         }
     }
 
-    /** Used by child modules (stock/crypto/fund holdings) to resolve the internal wallet PK. */
     fun resolveId(externalId: UUID): Long {
         val userId = currentUserProvider.getCurrentUser().id
         return walletRepository.findInternalId(userId, externalId)

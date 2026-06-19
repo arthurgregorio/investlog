@@ -16,7 +16,7 @@ class CurrentUserProviderTest : BaseIntegrationTest() {
 
         assertEquals("arthurshakal@gmail.com", user.email)
         assertEquals("Arthur Gregorio", user.name)
-        assertEquals("teal", user.accentColor)
+        assertEquals("teal", user.accentColor.text)
         assertEquals("BRL", user.preferredCurrency)
     }
 }

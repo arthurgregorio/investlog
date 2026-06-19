@@ -46,7 +46,11 @@ class CryptoHoldingService(
     }
 
     @Transactional
-    fun update(walletExternalId: UUID, holdingExternalId: UUID, request: CryptoHoldingUpdateRequest): CryptoHoldingResponse {
+    fun update(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: CryptoHoldingUpdateRequest
+    ): CryptoHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         return holdingRepo.update(
             walletInternalId = walletId,

@@ -24,12 +24,11 @@ class CurrencyRateControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.page.totalElements").isEqualTo(3)
+            .jsonPath("$.page.totalElements").isEqualTo(2)
             .jsonPath("$.content[0].currencyCode").isEqualTo("BRL")
             .jsonPath("$.content[0].isBase").isEqualTo(true)
-            .jsonPath("$.content[1].currencyCode").isEqualTo("EUR")
-            .jsonPath("$.content[2].currencyCode").isEqualTo("USD")
-            .jsonPath("$.content[2].isBase").isEqualTo(false)
+            .jsonPath("$.content[1].currencyCode").isEqualTo("USD")
+            .jsonPath("$.content[1].isBase").isEqualTo(false)
     }
 
     @Test
@@ -71,8 +70,8 @@ class CurrencyRateControllerTest : BaseIntegrationTest() {
             .expectBody()
             .jsonPath("$.content[0].currencyCode").isEqualTo("BRL")
             .jsonPath("$.content[0].isBase").isEqualTo(false)
-            .jsonPath("$.content[2].currencyCode").isEqualTo("USD")
-            .jsonPath("$.content[2].isBase").isEqualTo(true)
+            .jsonPath("$.content[1].currencyCode").isEqualTo("USD")
+            .jsonPath("$.content[1].isBase").isEqualTo(true)
     }
 
     @Test

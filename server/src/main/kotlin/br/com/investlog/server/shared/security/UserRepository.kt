@@ -2,6 +2,7 @@ package br.com.investlog.server.shared.security
 
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
 import br.com.investlog.server.jooq.system.tables.references.USERS
+import br.com.investlog.server.profile.rest.payloads.AccentColor
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
 import java.time.OffsetDateTime
@@ -33,7 +34,7 @@ class UserRepository(private val dsl: DSLContext) {
         name = name!!,
         email = email!!,
         avatarUrl = avatarUrl,
-        accentColor = accentColor!!,
+        accentColor = AccentColor.fromText(accentColor),
         preferredCurrency = preferredCurrency!!,
     )
 }

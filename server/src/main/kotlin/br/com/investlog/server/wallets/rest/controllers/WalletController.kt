@@ -23,7 +23,9 @@ import java.util.UUID
 @Validated
 @RestController
 @RequestMapping("/wallets")
-class WalletController(private val walletService: WalletService) {
+class WalletController(
+    private val walletService: WalletService
+) {
 
     @GetMapping
     fun findAll(pageable: Pageable): PagedModel<WalletResponse> = walletService.findAll(pageable)

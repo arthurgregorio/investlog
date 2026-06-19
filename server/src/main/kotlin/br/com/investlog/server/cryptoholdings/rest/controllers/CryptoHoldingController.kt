@@ -23,7 +23,9 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/wallets/{walletId}/crypto-holdings")
-class CryptoHoldingController(private val service: CryptoHoldingService) {
+class CryptoHoldingController(
+    private val service: CryptoHoldingService
+) {
 
     @GetMapping
     fun findAll(@PathVariable walletId: UUID, pageable: Pageable): PagedModel<CryptoHoldingResponse> =

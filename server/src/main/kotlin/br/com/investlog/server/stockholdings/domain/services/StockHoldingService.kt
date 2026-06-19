@@ -49,7 +49,11 @@ class StockHoldingService(
     }
 
     @Transactional
-    fun update(walletExternalId: UUID, holdingExternalId: UUID, request: StockHoldingUpdateRequest): StockHoldingResponse {
+    fun update(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: StockHoldingUpdateRequest
+    ): StockHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val stockTypeId = request.stockTypeId?.let {
             holdingRepo.findStockTypeInternalId(it) ?: throw NotFoundException("Stock type not found: $it")

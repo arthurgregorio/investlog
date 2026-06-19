@@ -29,7 +29,7 @@ class CryptoHoldingControllerTest : BaseIntegrationTest() {
         walletId = restTestClient.post()
             .uri("/private/v1/wallets")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Crypto Wallet","kind":"crypto","currency":"USD"}""")
+            .body("""{"name":"Crypto Wallet","kind":"CRYPTO","currency":"USD"}""")
             .exchange()
             .returnResult<WalletResponse>()
             .responseBody!!

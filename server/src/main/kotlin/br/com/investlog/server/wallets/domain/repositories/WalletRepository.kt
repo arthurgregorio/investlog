@@ -111,7 +111,7 @@ class WalletRepository(private val dsl: DSLContext) {
     private fun org.jooq.Record.toResponse() = WalletResponse(
         id = get(WALLETS.EXTERNAL_ID)!!,
         name = get(WALLETS.NAME)!!,
-        kind = get(WALLETS.KIND)!!.literal,
+        kind = WalletKind.fromText(get(WALLETS.KIND)!!.literal),
         currency = get(WALLETS.CURRENCY)!!,
         holdingCount = get("holding_count", Int::class.java) ?: 0,
         totalInvested = get("total_invested", BigDecimal::class.java) ?: BigDecimal.ZERO,

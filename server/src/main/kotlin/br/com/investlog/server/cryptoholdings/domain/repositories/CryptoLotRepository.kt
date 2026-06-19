@@ -18,6 +18,7 @@ class CryptoLotRepository(private val dsl: DSLContext) {
             .set(CRYPTO_LOTS.PRICE, request.price)
             .returning()
             .fetchSingle()
+
         return LotResponse(
             id = rec.externalId!!,
             lotDate = rec.lotDate!!,

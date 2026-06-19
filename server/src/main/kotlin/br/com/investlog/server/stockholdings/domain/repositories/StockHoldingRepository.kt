@@ -18,7 +18,9 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 @Repository
-class StockHoldingRepository(private val dsl: DSLContext) {
+class StockHoldingRepository(
+    private val dsl: DSLContext
+) {
 
     fun findAll(walletInternalId: Long, pageable: Pageable): PagedModel<StockHoldingResponse> {
         val wallets = WALLETS.`as`("wallets")
@@ -40,7 +42,15 @@ class StockHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        val content = dsl.select(stockHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, stockTypes.EXTERNAL_ID, stockHoldings.TICKER, stockHoldings.NAME, stockHoldings.CURRENT_PRICE, lotsField)
+        val content = dsl.select(
+            stockHoldings.EXTERNAL_ID,
+            wallets.EXTERNAL_ID,
+            stockTypes.EXTERNAL_ID,
+            stockHoldings.TICKER,
+            stockHoldings.NAME,
+            stockHoldings.CURRENT_PRICE,
+            lotsField
+        )
             .from(stockHoldings)
             .join(wallets).on(wallets.ID.eq(stockHoldings.WALLET_ID))
             .join(stockTypes).on(stockTypes.ID.eq(stockHoldings.STOCK_TYPE_ID))
@@ -184,7 +194,15 @@ class StockHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        return dsl.select(stockHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, stockTypes.EXTERNAL_ID, stockHoldings.TICKER, stockHoldings.NAME, stockHoldings.CURRENT_PRICE, lotsField)
+        return dsl.select(
+            stockHoldings.EXTERNAL_ID,
+            wallets.EXTERNAL_ID,
+            stockTypes.EXTERNAL_ID,
+            stockHoldings.TICKER,
+            stockHoldings.NAME,
+            stockHoldings.CURRENT_PRICE,
+            lotsField
+        )
             .from(stockHoldings)
             .join(wallets).on(wallets.ID.eq(stockHoldings.WALLET_ID))
             .join(stockTypes).on(stockTypes.ID.eq(stockHoldings.STOCK_TYPE_ID))

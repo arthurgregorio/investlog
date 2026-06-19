@@ -11,7 +11,7 @@
             SELECT
                 sh.external_id,
                 sh.wallet_id,
-                'stocks'::finances.wallet_kind AS kind,
+                'STOCKS'::finances.wallet_kind AS kind,
                 sh.name,
                 sh.ticker,
                 st.name AS type_label,
@@ -29,7 +29,7 @@
             SELECT
                 ch.external_id,
                 ch.wallet_id,
-                'crypto'::finances.wallet_kind AS kind,
+                'CRYPTO'::finances.wallet_kind AS kind,
                 ch.name,
                 ch.ticker,
                 NULL::TEXT AS type_label,
@@ -46,7 +46,7 @@
             SELECT
                 fh.external_id,
                 fh.wallet_id,
-                'funds'::finances.wallet_kind AS kind,
+                'FUNDS'::finances.wallet_kind AS kind,
                 fh.name,
                 NULL::TEXT AS ticker,
                 ft.name AS type_label,

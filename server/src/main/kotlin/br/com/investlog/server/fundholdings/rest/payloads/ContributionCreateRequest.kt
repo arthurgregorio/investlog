@@ -6,6 +6,9 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 data class ContributionCreateRequest(
-    @field:NotNull val contributionDate: LocalDate,
-    @field:NotNull @field:Positive val amount: BigDecimal,
+    @field:NotNull
+    val contributionDate: LocalDate,
+    @field:NotNull
+    @field:Positive
+    val amount: BigDecimal
 )

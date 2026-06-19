@@ -12,7 +12,7 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
   const typesListStore = useTypesListStore()
 
   const form = reactive({
-    kind: initialKind ?? 'stocks',
+    kind: initialKind ?? 'STOCKS',
     walletId: '' as string,
     stockTypeId: '' as string,
     fundTypeId: '' as string,
@@ -29,7 +29,7 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
     walletsOfKind: computed(() => walletsStore.wallets.filter((wallet) => wallet.kind === form.kind)),
     valid: computed(() => {
       if (!form.walletId) return false
-      if (form.kind === 'funds') {
+      if (form.kind === 'FUNDS') {
         return !!form.fundTypeId && !!form.name.trim() && !!form.date && Number(form.amount) > 0
       }
       return !!form.ticker.trim() && !!form.date && Number(form.quantity) > 0 && Number(form.price) > 0
@@ -81,7 +81,7 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
     const currentPriceNum = Number(form.currentPrice) > 0 ? Number(form.currentPrice) : undefined
 
     try {
-      if (form.kind === 'stocks') {
+      if (form.kind === 'STOCKS') {
         await holdingsApi.createStockHolding(form.walletId, {
           stockTypeId: form.stockTypeId,
           ticker: form.ticker.trim().toUpperCase(),
@@ -89,7 +89,7 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
           currentPrice: currentPriceNum,
           lot: { lotDate: dateStr, quantity: Number(form.quantity), price: Number(form.price) },
         })
-      } else if (form.kind === 'crypto') {
+      } else if (form.kind === 'CRYPTO') {
         await holdingsApi.createCryptoHolding(form.walletId, {
           ticker: form.ticker.trim().toUpperCase(),
           name: form.name.trim() || undefined,

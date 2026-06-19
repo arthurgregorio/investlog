@@ -2,11 +2,6 @@ spring:
   application:
     name: server
 
-  data:
-    web:
-      pageable:
-        default-page-size: 20
-
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
     database-change-log-table: database_changelog

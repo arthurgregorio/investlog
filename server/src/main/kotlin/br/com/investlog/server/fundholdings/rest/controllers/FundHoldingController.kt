@@ -23,7 +23,9 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/wallets/{walletId}/fund-holdings")
-class FundHoldingController(private val service: FundHoldingService) {
+class FundHoldingController(
+    private val service: FundHoldingService
+) {
 
     @GetMapping
     fun findAll(@PathVariable walletId: UUID, pageable: Pageable): PagedModel<FundHoldingResponse> =
@@ -35,7 +37,10 @@ class FundHoldingController(private val service: FundHoldingService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun create(@PathVariable walletId: UUID, @Valid @RequestBody request: FundHoldingCreateRequest): FundHoldingResponse =
+    fun create(
+        @PathVariable walletId: UUID,
+        @Valid @RequestBody request: FundHoldingCreateRequest
+    ): FundHoldingResponse =
         service.create(walletId, request)
 
     @PatchMapping("/{holdingId}")

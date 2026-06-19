@@ -8,6 +8,6 @@ data class FundHoldingResponse(
     val walletId: UUID,
     val fundTypeId: UUID,
     val name: String,
-    val currentValue: BigDecimal?,
     val contributions: List<ContributionResponse>,
+    val currentValue: BigDecimal?
 )

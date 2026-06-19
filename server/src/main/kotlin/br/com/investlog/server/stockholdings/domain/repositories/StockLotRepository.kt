@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-class StockLotRepository(private val dsl: DSLContext) {
+class StockLotRepository(
+    private val dsl: DSLContext
+) {
 
     fun addLot(holdingInternalId: Long, request: LotCreateRequest): LotResponse {
         val rec = dsl.insertInto(STOCK_LOTS)

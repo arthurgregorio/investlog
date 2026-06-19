@@ -31,15 +31,15 @@ BEGIN
 
     -- Wallets
     INSERT INTO finances.wallets (user_id, name, kind, currency)
-    VALUES (v_user_id, 'Carteira de Ações', 'stocks', 'BRL')
+    VALUES (v_user_id, 'Carteira de Ações', 'STOCKS', 'BRL')
     RETURNING id INTO v_stocks_wallet;
 
     INSERT INTO finances.wallets (user_id, name, kind, currency)
-    VALUES (v_user_id, 'Crypto Portfolio', 'crypto', 'USD')
+    VALUES (v_user_id, 'Crypto Portfolio', 'CRYPTO', 'USD')
     RETURNING id INTO v_crypto_wallet;
 
     INSERT INTO finances.wallets (user_id, name, kind, currency)
-    VALUES (v_user_id, 'Fundos e FIIs', 'funds', 'BRL')
+    VALUES (v_user_id, 'Fundos e FIIs', 'FUNDS', 'BRL')
     RETURNING id INTO v_funds_wallet;
 
     -- Stock types

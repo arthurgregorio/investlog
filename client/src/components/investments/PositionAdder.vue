@@ -19,7 +19,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const isFund = computed(() => props.kind === 'funds')
+const isFund = computed(() => props.kind === 'FUNDS')
 const sym = computed(() => fmt.sym(props.walletCurrency))
 
 const date = ref<Date | null>(new Date())
@@ -45,7 +45,7 @@ async function submit() {
         amount: Number(amount.value),
       })
       Toast.open({ message: 'Aporte registrado!', type: 'is-success' })
-    } else if (props.kind === 'stocks') {
+    } else if (props.kind === 'STOCKS') {
       await holdingsApi.addStockLot(props.walletId, props.holdingId, {
         lotDate: dateStr,
         quantity: Number(quantity.value),
@@ -81,7 +81,7 @@ async function submit() {
       </template>
     </div>
     <div class="adder-actions">
-      <b-button size="is-small" type="is-text" :disabled="submitting" @click="emit('close')">Cancelar</b-button>
+      <b-button size="is-small" type="is-dark" outlined :disabled="submitting" @click="emit('close')">Cancelar</b-button>
       <b-button
         size="is-small"
         type="is-primary"

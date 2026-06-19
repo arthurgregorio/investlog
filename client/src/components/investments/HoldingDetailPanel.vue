@@ -16,8 +16,8 @@ const detail = ref<HoldingDetail | null>(null)
 const loading = ref(false)
 const adding = ref(false)
 
-const isFund = computed(() => props.row.kind === 'funds')
-const isStock = computed(() => props.row.kind === 'stocks')
+const isFund = computed(() => props.row.kind === 'FUNDS')
+const isStock = computed(() => props.row.kind === 'STOCKS')
 
 const fundDetail = computed(() =>
   detail.value && isFund.value ? (detail.value as FundHoldingDetail) : null,
@@ -34,7 +34,7 @@ onMounted(async () => {
   try {
     if (isStock.value) {
       detail.value = await holdingsApi.getStockHolding(props.row.walletId, props.row.id)
-    } else if (props.row.kind === 'crypto') {
+    } else if (props.row.kind === 'CRYPTO') {
       detail.value = await holdingsApi.getCryptoHolding(props.row.walletId, props.row.id)
     } else {
       detail.value = await holdingsApi.getFundHolding(props.row.walletId, props.row.id)
@@ -47,7 +47,7 @@ onMounted(async () => {
 async function onPositionAdded() {
   if (isStock.value) {
     detail.value = await holdingsApi.getStockHolding(props.row.walletId, props.row.id)
-  } else if (props.row.kind === 'crypto') {
+  } else if (props.row.kind === 'CRYPTO') {
     detail.value = await holdingsApi.getCryptoHolding(props.row.walletId, props.row.id)
   } else {
     detail.value = await holdingsApi.getFundHolding(props.row.walletId, props.row.id)
@@ -67,7 +67,7 @@ async function confirmRemove() {
     onConfirm: async () => {
       if (isStock.value) {
         await holdingsApi.deleteStockHolding(props.row.walletId, props.row.id)
-      } else if (props.row.kind === 'crypto') {
+      } else if (props.row.kind === 'CRYPTO') {
         await holdingsApi.deleteCryptoHolding(props.row.walletId, props.row.id)
       } else {
         await holdingsApi.deleteFundHolding(props.row.walletId, props.row.id)

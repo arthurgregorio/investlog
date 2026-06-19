@@ -37,7 +37,7 @@ const walletCountByKind = computed(() => {
   return counts
 })
 
-const ALL_KINDS: WalletKind[] = ['stocks', 'crypto', 'funds']
+const ALL_KINDS: WalletKind[] = ['STOCKS', 'CRYPTO', 'FUNDS']
 
 const typeRows = computed(() => {
   const summaryByKind = Object.fromEntries(

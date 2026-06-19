@@ -1,7 +1,7 @@
 /* InvestLog domain types — API response shapes and shared presentation types. */
 
 /** The three wallet/holding categories. */
-export type WalletKind = 'stocks' | 'crypto' | 'funds'
+export type WalletKind = 'STOCKS' | 'CRYPTO' | 'FUNDS'
 
 export interface WalletTypeMeta {
   label: string

@@ -21,11 +21,11 @@ const modals = useModals()
 
 const tabs: { key: Filter; label: string; icon: IconName }[] = [
   { key: 'all', label: 'Todos', icon: 'layers' },
-  { key: 'stocks', label: 'Ações', icon: 'trendUp' },
-  { key: 'crypto', label: 'Cripto', icon: 'coins' },
-  { key: 'funds', label: 'Fundos', icon: 'building' },
+  { key: 'STOCKS', label: 'Ações', icon: 'trendUp' },
+  { key: 'CRYPTO', label: 'Cripto', icon: 'coins' },
+  { key: 'FUNDS', label: 'Fundos', icon: 'building' },
 ]
-const validFilters: Filter[] = ['all', 'stocks', 'crypto', 'funds']
+const validFilters: Filter[] = ['all', 'STOCKS', 'CRYPTO', 'FUNDS']
 
 function filterFromRoute(): Filter {
   const filterParam = route.query.filter
@@ -76,8 +76,8 @@ function displayName(row: HoldingRow): string {
 }
 
 function subLabel(row: HoldingRow): string {
-  if (row.kind === 'funds') return row.typeLabel ?? 'Fundo'
-  if (row.kind === 'crypto') return 'Cripto'
+  if (row.kind === 'FUNDS') return row.typeLabel ?? 'Fundo'
+  if (row.kind === 'CRYPTO') return 'Cripto'
   return row.typeLabel ?? 'Ação'
 }
 </script>
@@ -120,74 +120,87 @@ function subLabel(row: HoldingRow): string {
     </EmptyState>
 
     <Card v-else class="table-card">
-      <b-table
-        :data="holdingsListStore.rows"
-        :loading="holdingsListStore.loading"
-        backend-pagination
-        :total="holdingsListStore.totalElements"
-        :per-page="holdingsListStore.pageSize"
-        :current-page="holdingsListStore.page + 1"
-        paginated
-        pagination-simple
-        hoverable
-        detailed
-        :show-detail-icon="false"
-        detail-key="id"
-        :opened-detailed="openedDetails"
-        @page-change="onPageChange"
-        @click="(row: HoldingRow) => toggleRow(row)"
-      >
-        <b-table-column v-slot="{ row }" label="Investimento" cell-class="c-name">
-          <div class="name-cell">
-            <TickerBadge :ticker="displayName(row)" :color="badgeColor(row.ticker, row.kind)" />
-            <div class="name-meta">
-              <div class="name-line">
-                <span class="t-ticker">{{ displayName(row) }}</span>
-                <span class="type-tag" :class="`tt-${row.kind}`">{{ subLabel(row) }}</span>
-              </div>
-              <div v-if="row.kind !== 'funds' && row.name" class="t-name">{{ row.name }}</div>
-            </div>
-          </div>
-        </b-table-column>
-
-        <b-table-column v-slot="{ row }" label="Carteira">
-          <span class="wallet-ref">
-            <span class="wref-dot" :style="{ background: WALLET_TYPES[row.kind].accent }" />
-            {{ row.walletName }}
-          </span>
-        </b-table-column>
-
-        <b-table-column v-slot="{ row }" label="Qtd." cell-class="c-num">
-          {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
-        </b-table-column>
-
-        <b-table-column v-slot="{ row }" label="Investido" cell-class="c-num">
-          <div class="cell-strong">{{ fmt.money(row.costBasis, row.walletCurrency) }}</div>
-        </b-table-column>
-
-        <b-table-column v-slot="{ row }" label="Valor atual" cell-class="c-num">
-          <span v-if="row.currentValue == null" class="gl-empty">—</span>
-          <template v-else>{{ fmt.money(row.currentValue, row.walletCurrency) }}</template>
-        </b-table-column>
-
-        <b-table-column v-slot="{ row }" label="Resultado" cell-class="c-num">
-          <GainChip :value="row.gain" :pct="row.gainPct" :cur="row.walletCurrency" />
-        </b-table-column>
-
-        <b-table-column v-slot="{ row }" cell-class="c-act">
-          <span class="chev">
-            <AppIcon :name="isOpen(row) ? 'chevronUp' : 'chevronDown'" :size="18" />
-          </span>
-        </b-table-column>
-
-        <template #detail="{ row }">
-          <HoldingDetailPanel
-            :row="row"
-            @deleted="onHoldingDeleted"
-            @position-added="holdingsListStore.refresh()"
+      <div class="table-wrap">
+        <b-loading :is-full-page="false" :active="holdingsListStore.loading" />
+        <div class="table-scroll">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>Investimento</th>
+                <th>Carteira</th>
+                <th class="c-num">Qtd.</th>
+                <th class="c-num">Investido</th>
+                <th class="c-num">Valor atual</th>
+                <th class="c-num">Resultado</th>
+                <th class="c-act"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="row in holdingsListStore.rows" :key="row.id">
+                <tr
+                  class="inv-row"
+                  :class="{ 'is-open': isOpen(row) }"
+                  @click="toggleRow(row)"
+                >
+                  <td>
+                    <div class="name-cell">
+                      <TickerBadge :ticker="displayName(row)" :color="badgeColor(row.ticker, row.kind)" />
+                      <div class="name-meta">
+                        <div class="name-line">
+                          <span class="t-ticker">{{ displayName(row) }}</span>
+                          <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{ subLabel(row) }}</span>
+                        </div>
+                        <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">{{ row.name }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="wallet-ref">
+                      <span class="wref-dot" :style="{ background: WALLET_TYPES[row.kind].accent }" />
+                      {{ row.walletName }}
+                    </span>
+                  </td>
+                  <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
+                  <td class="c-num">
+                    <div class="cell-strong">{{ fmt.money(row.costBasis, row.walletCurrency) }}</div>
+                  </td>
+                  <td class="c-num">
+                    <span v-if="row.currentValue == null" class="gl-empty">—</span>
+                    <template v-else>{{ fmt.money(row.currentValue, row.walletCurrency) }}</template>
+                  </td>
+                  <td class="c-num">
+                    <GainChip :value="row.gain" :pct="row.gainPct" :cur="row.walletCurrency" />
+                  </td>
+                  <td class="c-act">
+                    <span class="chev">
+                      <AppIcon :name="isOpen(row) ? 'chevronUp' : 'chevronDown'" :size="18" />
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="isOpen(row)" class="detail-row">
+                  <td colspan="7">
+                    <HoldingDetailPanel
+                      :row="row"
+                      @deleted="onHoldingDeleted"
+                      @position-added="holdingsListStore.refresh()"
+                    />
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <div v-if="holdingsListStore.totalPages > 1" class="table-foot">
+          <b-pagination
+            :model-value="holdingsListStore.page + 1"
+            :total="holdingsListStore.totalElements"
+            :per-page="holdingsListStore.pageSize"
+            order="is-right"
+            simple
+            @change="onPageChange"
           />
-        </template>
-      </b-table>
+        </div>
+      </div>
     </Card>
   </div>
 </template>

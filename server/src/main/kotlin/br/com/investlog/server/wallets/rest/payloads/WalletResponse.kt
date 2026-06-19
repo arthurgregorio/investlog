@@ -7,7 +7,7 @@ import java.util.UUID
 data class WalletResponse(
     val id: UUID,
     val name: String,
-    val kind: String,
+    val kind: WalletKind,
     val currency: String,
     val holdingCount: Int,
     val totalInvested: BigDecimal,

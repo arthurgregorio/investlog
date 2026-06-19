@@ -18,7 +18,9 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 @Repository
-class FundHoldingRepository(private val dsl: DSLContext) {
+class FundHoldingRepository(
+    private val dsl: DSLContext
+) {
 
     fun findAll(walletInternalId: Long, pageable: Pageable): PagedModel<FundHoldingResponse> {
         val wallets = WALLETS.`as`("wallets")
@@ -39,7 +41,14 @@ class FundHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        val content = dsl.select(fundHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, fundTypes.EXTERNAL_ID, fundHoldings.NAME, fundHoldings.CURRENT_VALUE, contributionsField)
+        val content = dsl.select(
+            fundHoldings.EXTERNAL_ID,
+            wallets.EXTERNAL_ID,
+            fundTypes.EXTERNAL_ID,
+            fundHoldings.NAME,
+            fundHoldings.CURRENT_VALUE,
+            contributionsField
+        )
             .from(fundHoldings)
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
             .join(fundTypes).on(fundTypes.ID.eq(fundHoldings.FUND_TYPE_ID))
@@ -65,7 +74,13 @@ class FundHoldingRepository(private val dsl: DSLContext) {
         return pagedModelOf(content, pageable, total.toLong())
     }
 
-    fun create(walletInternalId: Long, fundTypeInternalId: Long, name: String, currentValue: BigDecimal?, contribution: ContributionCreateRequest): FundHoldingResponse {
+    fun create(
+        walletInternalId: Long,
+        fundTypeInternalId: Long,
+        name: String,
+        currentValue: BigDecimal?,
+        contribution: ContributionCreateRequest
+    ): FundHoldingResponse {
         val holding = dsl.insertInto(FUND_HOLDINGS)
             .set(FUND_HOLDINGS.WALLET_ID, walletInternalId)
             .set(FUND_HOLDINGS.FUND_TYPE_ID, fundTypeInternalId)
@@ -120,7 +135,13 @@ class FundHoldingRepository(private val dsl: DSLContext) {
             .and(FUND_HOLDINGS.EXTERNAL_ID.eq(externalId))
             .fetchOne(FUND_HOLDINGS.ID)
 
-    fun update(walletInternalId: Long, externalId: UUID, fundTypeInternalId: Long?, name: String?, currentValue: BigDecimal?): FundHoldingResponse? {
+    fun update(
+        walletInternalId: Long,
+        externalId: UUID,
+        fundTypeInternalId: Long?,
+        name: String?,
+        currentValue: BigDecimal?
+    ): FundHoldingResponse? {
         val existing = dsl.selectFrom(FUND_HOLDINGS)
             .where(FUND_HOLDINGS.WALLET_ID.eq(walletInternalId))
             .and(FUND_HOLDINGS.EXTERNAL_ID.eq(externalId))
@@ -162,7 +183,14 @@ class FundHoldingRepository(private val dsl: DSLContext) {
             }
         }
 
-        return dsl.select(fundHoldings.EXTERNAL_ID, wallets.EXTERNAL_ID, fundTypes.EXTERNAL_ID, fundHoldings.NAME, fundHoldings.CURRENT_VALUE, contributionsField)
+        return dsl.select(
+            fundHoldings.EXTERNAL_ID,
+            wallets.EXTERNAL_ID,
+            fundTypes.EXTERNAL_ID,
+            fundHoldings.NAME,
+            fundHoldings.CURRENT_VALUE,
+            contributionsField
+        )
             .from(fundHoldings)
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
             .join(fundTypes).on(fundTypes.ID.eq(fundHoldings.FUND_TYPE_ID))

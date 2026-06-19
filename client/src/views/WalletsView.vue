@@ -18,9 +18,9 @@ const modals = useModals()
 onMounted(() => walletsStore.load())
 
 const tagTypeFor: Record<WalletKind, string> = {
-  stocks: 'is-link',
-  crypto: 'is-warning',
-  funds: 'is-success',
+  STOCKS: 'is-link',
+  CRYPTO: 'is-warning',
+  FUNDS: 'is-success',
 }
 
 function gotoType(kind: WalletKind) {

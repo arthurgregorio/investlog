@@ -21,8 +21,8 @@ class HoldingsOverviewService(
         val jooqKind = kind?.let {
             try {
                 JooqWalletKind.valueOf(it)
-            } catch (exception: IllegalArgumentException) {
-                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid kind: $it")
+            } catch (ex: IllegalArgumentException) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid kind: $it", ex)
             }
         }
         return holdingsOverviewRepository.findAll(userId, jooqKind, pageable)

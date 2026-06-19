@@ -1,6 +1,7 @@
 package br.com.investlog.server.wallets.rest.controllers
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.wallets.rest.payloads.WalletKind
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import org.junit.jupiter.api.Order
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,23 +17,28 @@ class WalletControllerTest : BaseIntegrationTest() {
     @Autowired
     lateinit var restTestClient: RestTestClient
 
-    private fun createWallet(name: String = "My Stocks", kind: String = "stocks", currency: String = "BRL"): WalletResponse =
-        restTestClient.post()
-            .uri("/private/v1/wallets")
-            .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"$name","kind":"$kind","currency":"$currency"}""")
-            .exchange()
-            .expectStatus().isCreated()
-            .returnResult<WalletResponse>()
-            .responseBody!!
+    private fun createWallet(
+        name: String = "My Stocks",
+        kind: WalletKind = WalletKind.STOCKS,
+        currency: String = "BRL"
+    ): WalletResponse = restTestClient.post()
+        .uri("/private/v1/wallets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("""{"name":"$name","kind":"$kind","currency":"$currency"}""")
+        .exchange()
+        .expectStatus().isCreated()
+        .returnResult<WalletResponse>()
+        .responseBody!!
 
     @Test
     @Order(1)
     fun `creates a wallet and returns 201`() {
+
         val wallet = createWallet()
+
         assertNotNull(wallet.id)
         assertEquals("My Stocks", wallet.name)
-        assertEquals("stocks", wallet.kind)
+        assertEquals("STOCKS", wallet.kind.text)
         assertEquals("BRL", wallet.currency)
         assertEquals(0, wallet.holdingCount)
     }
@@ -52,7 +58,9 @@ class WalletControllerTest : BaseIntegrationTest() {
     @Test
     @Order(3)
     fun `fetches a wallet by id`() {
-        val wallet = createWallet("Crypto Bag", "crypto", "USD")
+
+        val wallet = createWallet("Crypto Bag", WalletKind.CRYPTO, "USD")
+
         restTestClient.get()
             .uri("/private/v1/wallets/${wallet.id}")
             .exchange()
@@ -65,7 +73,9 @@ class WalletControllerTest : BaseIntegrationTest() {
     @Test
     @Order(4)
     fun `renames a wallet`() {
-        val wallet = createWallet("Old Name", "funds", "EUR")
+
+        val wallet = createWallet(name = "Old Name", currency = "EUR")
+
         restTestClient.patch()
             .uri("/private/v1/wallets/${wallet.id}")
             .contentType(MediaType.APPLICATION_JSON)
@@ -79,7 +89,9 @@ class WalletControllerTest : BaseIntegrationTest() {
     @Test
     @Order(5)
     fun `deletes a wallet`() {
-        val wallet = createWallet("To Delete", "stocks", "BRL")
+
+        val wallet = createWallet("To Delete")
+
         restTestClient.delete()
             .uri("/private/v1/wallets/${wallet.id}")
             .exchange()

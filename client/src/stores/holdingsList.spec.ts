@@ -6,7 +6,7 @@ import type { HoldingRow, PagedResponse } from '@/types'
 
 vi.mock('@/api/holdings')
 
-const makeRow = (id: string, kind: 'stocks' | 'crypto' | 'funds' = 'stocks'): HoldingRow => ({
+const makeRow = (id: string, kind: 'STOCKS' | 'CRYPTO' | 'FUNDS' = 'STOCKS'): HoldingRow => ({
   id,
   kind,
   name: 'Test Holding',
@@ -40,7 +40,7 @@ describe('useHoldingsListStore', () => {
   })
 
   it('loadKind fetches all holdings when kind=all', async () => {
-    const rows = [makeRow('h1', 'stocks'), makeRow('h2', 'crypto')]
+    const rows = [makeRow('h1', 'STOCKS'), makeRow('h2', 'CRYPTO')]
     vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse(rows))
 
     const store = useHoldingsListStore()
@@ -57,28 +57,28 @@ describe('useHoldingsListStore', () => {
 
   it('loadKind passes kind filter for specific tabs', async () => {
     vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(
-      makePagedResponse([makeRow('h1', 'funds')]),
+      makePagedResponse([makeRow('h1', 'FUNDS')]),
     )
 
     const store = useHoldingsListStore()
-    await store.loadKind('funds')
+    await store.loadKind('FUNDS')
 
     expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenCalledWith({
-      kind: 'funds',
+      kind: 'FUNDS',
       page: 0,
       size: 20,
     })
-    expect(store.currentKind).toBe('funds')
+    expect(store.currentKind).toBe('FUNDS')
   })
 
   it('loadKind with page number passes it to the API', async () => {
     vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
 
     const store = useHoldingsListStore()
-    await store.loadKind('stocks', 2)
+    await store.loadKind('STOCKS', 2)
 
     expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenCalledWith({
-      kind: 'stocks',
+      kind: 'STOCKS',
       page: 2,
       size: 20,
     })
@@ -89,12 +89,12 @@ describe('useHoldingsListStore', () => {
     vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
 
     const store = useHoldingsListStore()
-    await store.loadKind('crypto', 1)
+    await store.loadKind('CRYPTO', 1)
     await store.refresh()
 
     expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenCalledTimes(2)
     expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({
-      kind: 'crypto',
+      kind: 'CRYPTO',
       page: 1,
       size: 20,
     })

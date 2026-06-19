@@ -233,7 +233,3 @@ tasks {
         imageName.set("investlog/${project.name}:v${project.version}")
     }
 }
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}

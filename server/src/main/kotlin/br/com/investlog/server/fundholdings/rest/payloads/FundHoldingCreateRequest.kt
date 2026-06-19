@@ -8,8 +8,12 @@ import java.math.BigDecimal
 import java.util.UUID
 
 data class FundHoldingCreateRequest(
-    @field:NotNull val fundTypeId: UUID,
-    @field:NotBlank val name: String,
-    @field:PositiveOrZero val currentValue: BigDecimal? = null,
-    @field:Valid @field:NotNull val contribution: ContributionCreateRequest,
+    @field:NotNull
+    val fundTypeId: UUID,
+    @field:NotBlank
+    val name: String,
+    @field:Valid @field:NotNull
+    val contribution: ContributionCreateRequest,
+    @field:PositiveOrZero
+    val currentValue: BigDecimal? = null
 )

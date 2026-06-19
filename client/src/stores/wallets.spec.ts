@@ -9,7 +9,7 @@ vi.mock('@/api/wallets')
 const mockWallet: WalletResponse = {
   id: 'wallet-1',
   name: 'Test Wallet',
-  kind: 'stocks',
+  kind: 'STOCKS',
   currency: 'BRL',
   holdingCount: 3,
   totalInvested: 1500,

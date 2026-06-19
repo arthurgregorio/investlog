@@ -1,5 +1,6 @@
 package br.com.investlog.server.shared.security
 
+import br.com.investlog.server.profile.rest.payloads.AccentColor
 import java.util.UUID
 
 data class CurrentUser(
@@ -8,6 +9,6 @@ data class CurrentUser(
     val name: String,
     val email: String,
     val avatarUrl: String?,
-    val accentColor: String,
+    val accentColor: AccentColor,
     val preferredCurrency: String,
 )

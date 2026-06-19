@@ -8,8 +8,12 @@ import jakarta.validation.constraints.PositiveOrZero
 import java.math.BigDecimal
 
 data class CryptoHoldingCreateRequest(
-    @field:NotBlank val ticker: String,
-    val name: String? = null,
-    @field:PositiveOrZero val currentPrice: BigDecimal? = null,
-    @field:Valid @field:NotNull val lot: LotCreateRequest,
+    @field:Valid
+    @field:NotNull
+    val lot: LotCreateRequest,
+    @field:NotBlank
+    val ticker: String,
+    val name: String?,
+    @field:PositiveOrZero
+    val currentPrice: BigDecimal?,
 )

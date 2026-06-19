@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository
 import java.util.UUID
 
 @Repository
-class FundContributionRepository(private val dsl: DSLContext) {
+class FundContributionRepository(
+    private val dsl: DSLContext
+) {
 
     fun addContribution(holdingInternalId: Long, request: ContributionCreateRequest): ContributionResponse {
         val rec = dsl.insertInto(FUND_CONTRIBUTIONS)

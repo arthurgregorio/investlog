@@ -16,15 +16,15 @@ const walletsStore = useWalletsStore()
 const ratesStore = useRatesStore()
 
 const name = ref('')
-const kind = ref<WalletKind>(props.initialType ?? 'stocks')
+const kind = ref<WalletKind>(props.initialType ?? 'STOCKS')
 const currency = ref(ratesStore.baseCurrency || 'BRL')
 const submitting = ref(false)
 const valid = computed(() => name.value.trim().length > 0)
 
 const KIND_OPTS: { value: WalletKind; label: string; icon: IconName }[] = [
-  { value: 'stocks', label: 'Ações', icon: 'trendUp' },
-  { value: 'crypto', label: 'Cripto', icon: 'coins' },
-  { value: 'funds', label: 'Fundos', icon: 'building' },
+  { value: 'STOCKS', label: 'Ações', icon: 'trendUp' },
+  { value: 'CRYPTO', label: 'Cripto', icon: 'coins' },
+  { value: 'FUNDS', label: 'Fundos', icon: 'building' },
 ]
 
 const currencyOptions = computed(() =>
