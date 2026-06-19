@@ -1209,6 +1209,7 @@ a {
     border-bottom: 1px solid var(--border-2);
     color: var(--text-2);
     font-variant-numeric: tabular-nums;
+    vertical-align: middle;
 }
 
 .sub-table tbody tr:last-child td {
@@ -1411,6 +1412,7 @@ a {
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 9px;
+    min-height: 52px;
 }
 
 .rate-cur {
