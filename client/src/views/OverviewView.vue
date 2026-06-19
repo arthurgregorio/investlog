@@ -20,7 +20,7 @@ const router = useRouter()
 useModals()
 
 onMounted(() => {
-  Promise.all([overviewStore.load(), walletsStore.load()])
+  Promise.all([overviewStore.refresh(), walletsStore.load()])
 })
 
 const summary = computed(() => overviewStore.summary)
