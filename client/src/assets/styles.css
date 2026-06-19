@@ -1219,7 +1219,7 @@ a {
 .detail-foot {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     flex-wrap: wrap;
     gap: 8px;
     padding: 12px 2px 2px;
