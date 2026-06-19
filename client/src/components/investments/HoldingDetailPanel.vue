@@ -226,11 +226,6 @@ function confirmDeleteContribution(contributionId: string) {
     />
 
     <div v-else class="detail-foot">
-      <span v-if="!isFund && quantity" class="avg-note">
-        Preço médio
-        <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
-      </span>
-
       <template v-if="editingPrice">
         <NumberInput
           v-model="priceInput"
@@ -269,6 +264,11 @@ function confirmDeleteContribution(contributionId: string) {
           Remover
         </b-button>
       </template>
+
+      <span v-if="!isFund && quantity" class="avg-note">
+        Preço médio
+        <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
+      </span>
     </div>
   </div>
 </template>
