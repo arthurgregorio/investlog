@@ -84,17 +84,20 @@ function cancelPriceEdit() {
 async function savePriceUpdate() {
   if (priceInput.value === '') return
   const amount = Number(priceInput.value)
-  if (isStock.value) {
-    await holdingsApi.updateStockHolding(props.row.walletId, props.row.id, { currentPrice: amount })
-  } else if (props.row.kind === 'CRYPTO') {
-    await holdingsApi.updateCryptoHolding(props.row.walletId, props.row.id, { currentPrice: amount })
-  } else {
-    await holdingsApi.updateFundHolding(props.row.walletId, props.row.id, { currentValue: amount })
+  try {
+    if (isStock.value) {
+      await holdingsApi.updateStockHolding(props.row.walletId, props.row.id, { currentPrice: amount })
+    } else if (props.row.kind === 'CRYPTO') {
+      await holdingsApi.updateCryptoHolding(props.row.walletId, props.row.id, { currentPrice: amount })
+    } else {
+      await holdingsApi.updateFundHolding(props.row.walletId, props.row.id, { currentValue: amount })
+    }
+    await reloadDetail()
+    toast.open({ message: isFund.value ? 'Valor atual atualizado.' : 'Preço atualizado.', type: 'is-success' })
+    emit('positionAdded')
+  } finally {
+    cancelPriceEdit()
   }
-  toast.open({ message: isFund.value ? 'Valor atual atualizado.' : 'Preço atualizado.', type: 'is-success' })
-  cancelPriceEdit()
-  await reloadDetail()
-  emit('positionAdded')
 }
 
 function startAdding() {
