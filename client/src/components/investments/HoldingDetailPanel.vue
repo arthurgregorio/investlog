@@ -226,22 +226,12 @@ function confirmDeleteContribution(contributionId: string) {
     />
 
     <div v-else class="detail-foot">
-      <div class="detail-foot-left">
-        <b-button type="is-text" icon-left="plus" @click="startAdding">
-          {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
-        </b-button>
-        <b-button
-          v-if="!editingPrice"
-          type="is-text"
-          size="is-small"
-          icon-left="pencil"
-          @click="startPriceEdit"
-        >
-          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
-        </b-button>
-      </div>
+      <span v-if="!isFund && quantity" class="avg-note">
+        Preço médio
+        <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
+      </span>
 
-      <div v-if="editingPrice" class="detail-foot-right">
+      <template v-if="editingPrice">
         <NumberInput
           v-model="priceInput"
           :prefix="fmt.sym(row.walletCurrency)"
@@ -252,30 +242,33 @@ function confirmDeleteContribution(contributionId: string) {
         <b-button
           type="is-primary"
           size="is-small"
+          outlined
           :disabled="priceInput === ''"
           @click="savePriceUpdate"
         >
           Salvar
         </b-button>
-        <b-button type="is-text" size="is-small" @click="cancelPriceEdit">
+        <b-button size="is-small" outlined @click="cancelPriceEdit">
           Cancelar
         </b-button>
-      </div>
-      <div v-else class="detail-foot-right">
-        <span v-if="!isFund && quantity" class="avg-note">
-          Preço médio
-          <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
-        </span>
+      </template>
+      <template v-else>
+        <b-button size="is-small" outlined icon-left="plus" @click="startAdding">
+          {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
+        </b-button>
+        <b-button size="is-small" outlined icon-left="pencil" @click="startPriceEdit">
+          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+        </b-button>
         <b-button
-          type="is-text"
+          type="is-danger"
           size="is-small"
+          outlined
           icon-left="delete"
-          style="color: var(--down)"
           @click="confirmRemove"
         >
           Remover
         </b-button>
-      </div>
+      </template>
     </div>
   </div>
 </template>

@@ -1219,22 +1219,10 @@ a {
 .detail-foot {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     padding: 12px 2px 2px;
-}
-
-.detail-foot-left {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.detail-foot-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
 }
 
 .avg-note {
