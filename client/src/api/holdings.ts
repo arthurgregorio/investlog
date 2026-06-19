@@ -41,6 +41,16 @@ export const holdingsApi = {
     return apiClient.delete(`/wallets/${walletId}/stock-holdings/${holdingId}`).then(() => undefined)
   },
 
+  updateStockHolding(
+    walletId: string,
+    holdingId: string,
+    payload: { currentPrice?: number },
+  ): Promise<StockHoldingDetail> {
+    return apiClient
+      .patch<StockHoldingDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}`, payload)
+      .then((r) => r.data)
+  },
+
   addStockLot(
     walletId: string,
     holdingId: string,
@@ -75,6 +85,16 @@ export const holdingsApi = {
 
   deleteCryptoHolding(walletId: string, holdingId: string): Promise<void> {
     return apiClient.delete(`/wallets/${walletId}/crypto-holdings/${holdingId}`).then(() => undefined)
+  },
+
+  updateCryptoHolding(
+    walletId: string,
+    holdingId: string,
+    payload: { currentPrice?: number },
+  ): Promise<CryptoHoldingDetail> {
+    return apiClient
+      .patch<CryptoHoldingDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}`, payload)
+      .then((r) => r.data)
   },
 
   addCryptoLot(
@@ -113,6 +133,16 @@ export const holdingsApi = {
     return apiClient.delete(`/wallets/${walletId}/fund-holdings/${holdingId}`).then(() => undefined)
   },
 
+  updateFundHolding(
+    walletId: string,
+    holdingId: string,
+    payload: { currentValue?: number },
+  ): Promise<FundHoldingDetail> {
+    return apiClient
+      .patch<FundHoldingDetail>(`/wallets/${walletId}/fund-holdings/${holdingId}`, payload)
+      .then((r) => r.data)
+  },
+
   addContribution(
     walletId: string,
     holdingId: string,
@@ -124,5 +154,23 @@ export const holdingsApi = {
         payload,
       )
       .then((r) => r.data)
+  },
+
+  deleteStockLot(walletId: string, holdingId: string, lotId: string): Promise<void> {
+    return apiClient
+      .delete(`/wallets/${walletId}/stock-holdings/${holdingId}/lots/${lotId}`)
+      .then(() => undefined)
+  },
+
+  deleteCryptoLot(walletId: string, holdingId: string, lotId: string): Promise<void> {
+    return apiClient
+      .delete(`/wallets/${walletId}/crypto-holdings/${holdingId}/lots/${lotId}`)
+      .then(() => undefined)
+  },
+
+  deleteFundContribution(walletId: string, holdingId: string, contributionId: string): Promise<void> {
+    return apiClient
+      .delete(`/wallets/${walletId}/fund-holdings/${holdingId}/contributions/${contributionId}`)
+      .then(() => undefined)
   },
 }
