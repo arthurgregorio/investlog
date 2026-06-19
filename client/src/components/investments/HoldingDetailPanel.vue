@@ -226,9 +226,20 @@ function confirmDeleteContribution(contributionId: string) {
     />
 
     <div v-else class="detail-foot">
-      <b-button type="is-text" icon-left="plus" @click="startAdding">
-        {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
-      </b-button>
+      <div class="detail-foot-left">
+        <b-button type="is-text" icon-left="plus" @click="startAdding">
+          {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
+        </b-button>
+        <b-button
+          v-if="!editingPrice"
+          type="is-text"
+          size="is-small"
+          icon-left="pencil"
+          @click="startPriceEdit"
+        >
+          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+        </b-button>
+      </div>
 
       <div v-if="editingPrice" class="detail-foot-right">
         <NumberInput
@@ -255,14 +266,6 @@ function confirmDeleteContribution(contributionId: string) {
           Preço médio
           <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
         </span>
-        <b-button
-          type="is-text"
-          size="is-small"
-          icon-left="pencil"
-          @click="startPriceEdit"
-        >
-          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
-        </b-button>
         <b-button
           type="is-text"
           size="is-small"

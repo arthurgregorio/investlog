@@ -1225,6 +1225,12 @@ a {
     padding: 12px 2px 2px;
 }
 
+.detail-foot-left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .detail-foot-right {
     display: flex;
     align-items: center;
