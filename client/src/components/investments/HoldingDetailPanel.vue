@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useDialog, useToast } from 'buefy'
+import {BButton, useDialog, useToast} from 'buefy'
 import PositionAdder from '@/components/investments/PositionAdder.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import { holdingsApi } from '@/api/holdings'
@@ -187,10 +187,10 @@ function confirmDeleteContribution(contributionId: string) {
             <td class="c-num">{{ fmt.money(contribution.amount, row.walletCurrency) }}</td>
             <td class="c-act">
               <b-button
-                size="is-small"
-                type="is-text"
-                icon-left="delete"
-                style="color: var(--down)"
+                  outlined
+                  type="is-danger"
+                  size="is-small"
+                  icon-left="delete"
                 @click.stop="confirmDeleteContribution(contribution.id)"
               />
             </td>
@@ -204,10 +204,10 @@ function confirmDeleteContribution(contributionId: string) {
             <td class="c-num">{{ fmt.money(lot.quantity * lot.price, row.walletCurrency) }}</td>
             <td class="c-act">
               <b-button
+                  outlined
+                  type="is-danger"
                 size="is-small"
-                type="is-text"
                 icon-left="delete"
-                style="color: var(--down)"
                 @click.stop="confirmDeleteLot(lot.id)"
               />
             </td>
