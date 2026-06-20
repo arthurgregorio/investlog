@@ -88,8 +88,9 @@ function subLabel(row: HoldingRow): string {
       <div>
         <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Investimentos</h1>
+        <p class="page-desc">Aqui você gerencia seus investimentos</p>
       </div>
-      <b-button type="is-primary" icon-left="plus" @click="modals.openAddInvestment()">
+      <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="modals.openAddInvestment()">
         Adicionar investimento
       </b-button>
     </div>

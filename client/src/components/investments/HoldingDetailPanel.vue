@@ -155,6 +155,7 @@ function confirmDeleteContribution(contributionId: string) {
     hasIcon: true,
     confirmText: 'Remover',
     cancelText: 'Cancelar',
+
     onConfirm: async () => {
       await holdingsApi.deleteFundContribution(props.row.walletId, props.row.id, contributionId)
       toast.open({ message: 'Aporte removido.', type: 'is-success' })
@@ -237,27 +238,26 @@ function confirmDeleteContribution(contributionId: string) {
         <b-button
           type="is-primary"
           size="is-small"
-          outlined
           :disabled="priceInput === ''"
           @click="savePriceUpdate"
         >
           Salvar
         </b-button>
-        <b-button size="is-small" outlined @click="cancelPriceEdit">
+        <b-button size="is-small" @click="cancelPriceEdit">
           Cancelar
         </b-button>
       </template>
       <template v-else>
-        <b-button size="is-small" outlined icon-left="plus" @click="startAdding">
+        <b-button size="is-small" icon-left="plus" @click="startAdding">
           {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
         </b-button>
-        <b-button size="is-small" outlined icon-left="pencil" @click="startPriceEdit">
+        <b-button size="is-small" icon-left="pencil" @click="startPriceEdit">
           {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
         </b-button>
         <b-button
-          type="is-danger"
-          size="is-small"
-          outlined
+            outlined type="is-danger"
+            size="is-small"
+
           icon-left="delete"
           @click="confirmRemove"
         >

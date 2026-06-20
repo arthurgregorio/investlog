@@ -82,15 +82,15 @@ async function submit() {
       </template>
     </div>
     <div class="adder-actions">
-      <b-button size="is-small" type="is-dark" outlined :disabled="submitting" @click="emit('close')">Cancelar</b-button>
+      <b-button size="is-small" type="is-danger" outlined :disabled="submitting" @click="emit('close')">Cancelar</b-button>
       <b-button
         size="is-small"
-        type="is-primary"
+        type="is-success"
         :disabled="!valid"
         :loading="submitting"
         @click="submit"
       >
-        {{ isFund ? 'Adicionar aporte' : 'Adicionar compra' }}
+        Adicionar
       </b-button>
     </div>
   </div>

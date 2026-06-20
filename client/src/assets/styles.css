@@ -1044,14 +1044,18 @@ a {
     white-space: nowrap;
 }
 
-.inv-table th.c-num, .inv-table td.c-num {
+.inv-table th.c-num {
+    text-align: right !important;
+}
+
+.inv-table td.c-num {
     text-align: right;
 }
 
 .inv-table td {
-    padding: 13px 16px;
+    padding: 13px 16px !important;
     border-bottom: 1px solid var(--border-2);
-    vertical-align: middle;
+    vertical-align: middle !important;
 }
 
 [data-density="compact"] .inv-table td {
@@ -1173,7 +1177,6 @@ a {
 /* expanded detail */
 .detail-row td {
     background: var(--surface-2);
-    padding: 0 16px 14px !important;
 }
 
 .detail {
@@ -1188,6 +1191,7 @@ a {
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
+    margin-bottom: 0 !important;
 }
 
 .sub-table th {
@@ -1210,7 +1214,7 @@ a {
     border-bottom: 1px solid var(--border-2);
     color: var(--text-2);
     font-variant-numeric: tabular-nums;
-    vertical-align: middle;
+    vertical-align: middle !important;
 }
 
 .sub-table tbody tr:last-child td {
@@ -1584,84 +1588,6 @@ a {
 
 /* ===== Buefy/Bulma component overrides ===== */
 
-/* --- Buttons: restore original .btn visual language --- */
-.button {
-    height: 40px;
-    padding: 0 16px;
-    font-size: 13.5px;
-    font-weight: 600;
-    border-radius: var(--radius-sm);
-    border-width: 1px;
-    border-style: solid;
-    border-color: var(--border);
-    background-color: var(--surface-2);
-    color: var(--text);
-    font-family: var(--font);
-    box-shadow: none;
-    transition: background-color .13s, border-color .13s, color .13s;
-}
-.button:hover, .button.is-hovered {
-    border-color: var(--border);
-    background-color: var(--surface-hover);
-    color: var(--text);
-    box-shadow: none;
-}
-.button:focus-visible, .button.is-focused {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.button.is-small {
-    height: 32px;
-    padding: 0 11px;
-    font-size: 12.5px;
-    border-radius: 6px;
-}
-
-.button.is-primary {
-    background-color: var(--primary);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 1px 2px var(--primary-soft);
-}
-.button.is-primary:hover, .button.is-primary.is-hovered {
-    background-color: var(--primary-d);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 1px 2px var(--primary-soft);
-}
-.button.is-primary:focus-visible, .button.is-primary.is-focused {
-    box-shadow: 0 0 0 3px var(--primary-soft);
-}
-.button.is-primary[disabled] {
-    background-color: var(--primary);
-    border-color: transparent;
-    opacity: .45;
-    box-shadow: none;
-}
-
-.button.is-text {
-    height: auto;
-    padding: 2px 0;
-    background-color: transparent;
-    border-color: transparent;
-    color: var(--primary-d);
-    font-size: 13px;
-    font-weight: 600;
-    box-shadow: none;
-    text-decoration: none;
-}
-.button.is-text:hover, .button.is-text.is-hovered {
-    background-color: transparent;
-    border-color: transparent;
-    text-decoration: underline;
-    color: var(--primary-d);
-    box-shadow: none;
-}
-.button.is-small.is-text { font-size: 12.5px; padding: 1px 0; }
-[data-theme="dark"] .button.is-text { color: #7fb3ec; }
-[data-theme="dark"] .button.is-text:hover { color: #7fb3ec; }
-
 /* Navbar icon-only button (dark/light toggle) */
 .navbar .button:not(.is-primary):not(.is-text) {
     width: 38px;
@@ -1860,3 +1786,13 @@ a {
     color: var(--primary-d);
 }
 [data-theme="dark"] .b-radio.radio.button.is-selected { color: var(--primary); }
+
+/* align modal text to the middle */
+.modal-card-body .media-content {
+    margin: auto;
+}
+
+/* fix color for ghost buttons */
+.button {
+    --bulma-button-ghost-color: var(--bulma-text);
+}

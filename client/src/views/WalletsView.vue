@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useDialog, useToast } from 'buefy'
+import {BButton, useDialog, useToast} from 'buefy'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
@@ -75,9 +75,8 @@ function renameWallet(walletId: string, currentName: string) {
       <div>
         <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Carteiras</h1>
-        <p class="page-desc">Cada carteira tem um tipo e uma moeda.</p>
+        <p class="page-desc">Carteiras podem ter tipos e moedas distintas</p>
       </div>
-      <b-button type="is-primary" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
     </div>
 
     <EmptyState
@@ -108,17 +107,17 @@ function renameWallet(walletId: string, currentName: string) {
             </div>
             <div style="display: flex; gap: 6px; margin-left: auto">
               <b-button
-                type="is-light"
+                  outlined
+                  type="is-primary"
                 size="is-small"
                 icon-left="pencil"
-                outlined
                 @click.stop="renameWallet(wallet.id, wallet.name)"
               />
               <b-button
-                type="is-danger"
+                  outlined
+                  type="is-danger"
                 size="is-small"
                 icon-left="delete"
-                outlined
                 @click.stop="confirmDeleteWallet(wallet.id, wallet.name)"
               />
             </div>
@@ -130,7 +129,7 @@ function renameWallet(walletId: string, currentName: string) {
             <span class="wallet-count">
               {{ wallet.holdingCount }} {{ wallet.holdingCount === 1 ? 'ativo' : 'ativos' }}
             </span>
-            <b-button type="is-text" icon-right="chevron-right" @click="gotoType(wallet.kind)">
+            <b-button type="is-ghost" size="is-small" @click="gotoType(wallet.kind)">
               Ver investimentos
             </b-button>
           </div>

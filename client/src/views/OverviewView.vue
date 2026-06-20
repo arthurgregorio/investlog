@@ -101,9 +101,10 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
       <div>
         <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Visão geral</h1>
+        <p class="page-desc">Uma visão consolidada dos seus investimentos</p>
       </div>
       <div class="head-actions">
-        <b-button type="is-primary" icon-left="wallet" @click="router.push({ name: 'wallets' })">Carteiras</b-button>
+        <b-button type="is-primary" class="has-text-light" icon-left="wallet" @click="router.push({ name: 'wallets' })">Carteiras</b-button>
       </div>
     </div>
 
