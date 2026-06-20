@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import {BButton, useDialog, useToast} from 'buefy'
-import PositionAdder from '@/components/investments/PositionAdder.vue'
-import NumberInput from '@/components/ui/NumberInput.vue'
+import { BButton, useDialog, useToast } from 'buefy'
+import AddPositionModal from '@/components/investments/AddPositionModal.vue'
+import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import { holdingsApi } from '@/api/holdings'
 import { fmt } from '@/composables/useFormat'
 import type { FundHoldingDetail, HoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
@@ -18,9 +18,8 @@ const toast = useToast()
 
 const detail = ref<HoldingDetail | null>(null)
 const loading = ref(false)
-const adding = ref(false)
-const editingPrice = ref(false)
-const priceInput = ref<number | ''>('')
+const showAddPositionModal = ref(false)
+const showUpdatePriceModal = ref(false)
 
 const isFund = computed(() => props.row.kind === 'FUNDS')
 const isStock = computed(() => props.row.kind === 'STOCKS')
@@ -34,6 +33,13 @@ const tradeDetail = computed(() =>
 
 const costBasis = computed(() => props.row.costBasis)
 const quantity = computed(() => props.row.quantity)
+
+const currentAmount = computed<number | null>(() => {
+  if (!detail.value) return null
+  return isFund.value
+    ? (detail.value as FundHoldingDetail).currentValue
+    : (detail.value as StockHoldingDetail).currentPrice
+})
 
 onMounted(async () => {
   loading.value = true
@@ -50,12 +56,6 @@ onMounted(async () => {
   }
 })
 
-async function onPositionAdded() {
-  await reloadDetail()
-  adding.value = false
-  emit('positionAdded')
-}
-
 async function reloadDetail() {
   if (isStock.value) {
     detail.value = await holdingsApi.getStockHolding(props.row.walletId, props.row.id)
@@ -66,43 +66,14 @@ async function reloadDetail() {
   }
 }
 
-function startPriceEdit() {
-  if (!detail.value) return
-  // StockHoldingDetail and CryptoHoldingDetail both have currentPrice — casting to StockHoldingDetail is safe here
-  const currentAmount = isFund.value
-    ? (detail.value as FundHoldingDetail).currentValue
-    : (detail.value as StockHoldingDetail).currentPrice
-  priceInput.value = currentAmount ?? ''
-  editingPrice.value = true
+async function onPositionAdded() {
+  await reloadDetail()
+  emit('positionAdded')
 }
 
-function cancelPriceEdit() {
-  editingPrice.value = false
-  priceInput.value = ''
-}
-
-async function savePriceUpdate() {
-  if (priceInput.value === '') return
-  const amount = Number(priceInput.value)
-  try {
-    if (isStock.value) {
-      await holdingsApi.updateStockHolding(props.row.walletId, props.row.id, { currentPrice: amount })
-    } else if (props.row.kind === 'CRYPTO') {
-      await holdingsApi.updateCryptoHolding(props.row.walletId, props.row.id, { currentPrice: amount })
-    } else {
-      await holdingsApi.updateFundHolding(props.row.walletId, props.row.id, { currentValue: amount })
-    }
-    await reloadDetail()
-    toast.open({ message: isFund.value ? 'Valor atual atualizado.' : 'Preço atualizado.', type: 'is-success' })
-    emit('positionAdded')
-  } finally {
-    cancelPriceEdit()
-  }
-}
-
-function startAdding() {
-  cancelPriceEdit()
-  adding.value = true
+async function onPriceUpdated() {
+  await reloadDetail()
+  emit('positionAdded')
 }
 
 async function confirmRemove() {
@@ -155,7 +126,6 @@ function confirmDeleteContribution(contributionId: string) {
     hasIcon: true,
     confirmText: 'Remover',
     cancelText: 'Cancelar',
-
     onConfirm: async () => {
       await holdingsApi.deleteFundContribution(props.row.walletId, props.row.id, contributionId)
       toast.open({ message: 'Aporte removido.', type: 'is-success' })
@@ -187,10 +157,10 @@ function confirmDeleteContribution(contributionId: string) {
             <td class="c-num">{{ fmt.money(contribution.amount, row.walletCurrency) }}</td>
             <td class="c-act">
               <b-button
-                  outlined
-                  type="is-danger"
-                  size="is-small"
-                  icon-left="delete"
+                outlined
+                type="is-danger"
+                size="is-small"
+                icon-left="delete"
                 @click.stop="confirmDeleteContribution(contribution.id)"
               />
             </td>
@@ -204,8 +174,8 @@ function confirmDeleteContribution(contributionId: string) {
             <td class="c-num">{{ fmt.money(lot.quantity * lot.price, row.walletCurrency) }}</td>
             <td class="c-act">
               <b-button
-                  outlined
-                  type="is-danger"
+                outlined
+                type="is-danger"
                 size="is-small"
                 icon-left="delete"
                 @click.stop="confirmDeleteLot(lot.id)"
@@ -216,59 +186,42 @@ function confirmDeleteContribution(contributionId: string) {
       </tbody>
     </table>
 
-    <PositionAdder
-      v-if="adding"
-      :holding-id="row.id"
-      :wallet-id="row.walletId"
-      :kind="row.kind"
-      :wallet-currency="row.walletCurrency"
-      @added="onPositionAdded"
-      @close="adding = false"
-    />
-
-    <div v-else class="detail-foot">
-      <template v-if="editingPrice">
-        <NumberInput
-          v-model="priceInput"
-          :prefix="fmt.sym(row.walletCurrency)"
-          :placeholder="isFund ? 'Valor atual' : 'Preço atual'"
-          style="width: 170px"
-          min="0"
-        />
-        <b-button
-          type="is-primary"
-          size="is-small"
-          :disabled="priceInput === ''"
-          @click="savePriceUpdate"
-        >
-          Salvar
-        </b-button>
-        <b-button size="is-small" @click="cancelPriceEdit">
-          Cancelar
-        </b-button>
-      </template>
-      <template v-else>
-        <b-button size="is-small" icon-left="plus" @click="startAdding">
-          {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
-        </b-button>
-        <b-button size="is-small" icon-left="pencil" @click="startPriceEdit">
-          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
-        </b-button>
-        <b-button
-            outlined type="is-danger"
-            size="is-small"
-
-          icon-left="delete"
-          @click="confirmRemove"
-        >
-          Remover
-        </b-button>
-      </template>
+    <div class="detail-foot">
+      <b-button size="is-small" type="is-success" outlined icon-left="plus" @click="showAddPositionModal = true">
+        {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
+      </b-button>
+      <b-button size="is-small" type="is-info" outlined icon-left="pencil" @click="showUpdatePriceModal = true">
+        {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+      </b-button>
+      <b-button outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
+        Remover
+      </b-button>
 
       <span v-if="!isFund && quantity" class="avg-note">
         Preço médio
         <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
       </span>
     </div>
+
+    <AddPositionModal
+      v-if="showAddPositionModal"
+      :holding-id="row.id"
+      :wallet-id="row.walletId"
+      :kind="row.kind"
+      :wallet-currency="row.walletCurrency"
+      @added="onPositionAdded"
+      @close="showAddPositionModal = false"
+    />
+
+    <UpdatePriceModal
+      v-if="showUpdatePriceModal"
+      :holding-id="row.id"
+      :wallet-id="row.walletId"
+      :kind="row.kind"
+      :wallet-currency="row.walletCurrency"
+      :initial-value="currentAmount"
+      @updated="onPriceUpdated"
+      @close="showUpdatePriceModal = false"
+    />
   </div>
 </template>

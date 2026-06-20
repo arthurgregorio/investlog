@@ -37,6 +37,7 @@ const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'STOCKS', () 
       <b-button outlined type="is-danger" :disabled="form.submitting" @click="emit('close')">Cancelar</b-button>
       <b-button
         type="is-success"
+        class="has-text-light"
         icon-left="check"
         :disabled="!form.valid"
         :loading="form.submitting"
