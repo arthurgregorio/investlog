@@ -114,7 +114,7 @@ function subLabel(row: HoldingRow): string {
       text="Registre uma aquisição para vê-la no seu logbook."
     >
       <template #action>
-        <b-button type="is-primary" icon-left="plus" @click="modals.openAddInvestment()">
+        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="modals.openAddInvestment()">
           Adicionar investimento
         </b-button>
       </template>
@@ -130,6 +130,7 @@ function subLabel(row: HoldingRow): string {
                 <th>Investimento</th>
                 <th>Carteira</th>
                 <th class="c-num">Qtd.</th>
+                <th class="c-num">Preço atual</th>
                 <th class="c-num">Investido</th>
                 <th class="c-num">Valor atual</th>
                 <th class="c-num">Resultado</th>
@@ -163,6 +164,11 @@ function subLabel(row: HoldingRow): string {
                   </td>
                   <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
                   <td class="c-num">
+                    <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">{{ fmt.money(row.currentPrice, row.walletCurrency) }}</template>
+                    <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">{{ fmt.money(row.currentValue, row.walletCurrency) }}</template>
+                    <span v-else class="gl-empty">—</span>
+                  </td>
+                  <td class="c-num">
                     <div class="cell-strong">{{ fmt.money(row.costBasis, row.walletCurrency) }}</div>
                   </td>
                   <td class="c-num">
@@ -179,7 +185,7 @@ function subLabel(row: HoldingRow): string {
                   </td>
                 </tr>
                 <tr v-if="isOpen(row)" class="detail-row">
-                  <td colspan="7">
+                  <td colspan="8">
                     <HoldingDetailPanel
                       :row="row"
                       @deleted="onHoldingDeleted"

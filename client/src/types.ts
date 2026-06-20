@@ -35,6 +35,7 @@ export interface HoldingRow {
   walletCurrency: string
   quantity: number | null
   costBasis: number
+  currentPrice: number | null
   currentValue: number | null
   gain: number | null
   gainPct: number | null

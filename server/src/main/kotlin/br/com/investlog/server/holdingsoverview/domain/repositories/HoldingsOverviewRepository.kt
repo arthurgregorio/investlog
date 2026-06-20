@@ -34,6 +34,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             wallets.CURRENCY,
             overview.QUANTITY,
             overview.COST_BASIS,
+            overview.CURRENT_PRICE,
             overview.CURRENT_VALUE,
         )
             .from(overview)
@@ -61,6 +62,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     walletCurrency = record.get(wallets.CURRENCY)!!,
                     quantity = record.get(overview.QUANTITY),
                     costBasis = costBasis,
+                    currentPrice = record.get(overview.CURRENT_PRICE),
                     currentValue = currentValue,
                     gain = gain,
                     gainPct = gainPct,

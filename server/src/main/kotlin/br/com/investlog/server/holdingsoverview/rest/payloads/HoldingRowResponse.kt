@@ -14,6 +14,7 @@ data class HoldingRowResponse(
     val walletCurrency: String,
     val quantity: BigDecimal?,
     val costBasis: BigDecimal,
+    val currentPrice: BigDecimal?,
     val currentValue: BigDecimal?,
     val gain: BigDecimal?,
     val gainPct: BigDecimal?,
