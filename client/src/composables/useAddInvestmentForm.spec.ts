@@ -8,7 +8,7 @@ import type { WalletResponse, AssetType } from '@/types'
 
 vi.mock('@/api/holdings')
 vi.mock('buefy', () => ({
-  ToastProgrammatic: { open: vi.fn() },
+  useToast: () => ({ open: vi.fn() }),
 }))
 
 const mockWallet: WalletResponse = {

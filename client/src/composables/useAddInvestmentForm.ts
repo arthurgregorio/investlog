@@ -1,5 +1,5 @@
 import { computed, reactive, watch } from 'vue'
-import { ToastProgrammatic as Toast } from 'buefy'
+import { useToast } from 'buefy'
 import { holdingsApi } from '@/api/holdings'
 import { useWalletsStore } from '@/stores/wallets'
 import { useTypesListStore } from '@/stores/typesList'
@@ -8,6 +8,7 @@ import type { WalletKind } from '@/types'
 export type InvestmentKind = WalletKind
 
 export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind: InvestmentKind) => void) {
+  const toast = useToast()
   const walletsStore = useWalletsStore()
   const typesListStore = useTypesListStore()
 
@@ -106,7 +107,7 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
         })
       }
       onDone?.(form.kind)
-      Toast.open({ message: 'Investimento registrado!', type: 'is-success' })
+      toast.open({ message: 'Investimento registrado!', type: 'is-success' })
     } finally {
       form.submitting = false
     }

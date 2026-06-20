@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ToastProgrammatic as Toast } from 'buefy'
+import { useToast } from 'buefy'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import { holdingsApi } from '@/api/holdings'
@@ -19,6 +19,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const toast = useToast()
 const isFund = computed(() => props.kind === 'FUNDS')
 const sym = computed(() => fmt.sym(props.walletCurrency))
 
@@ -44,21 +45,21 @@ async function submit() {
         contributionDate: dateStr,
         amount: Number(amount.value),
       })
-      Toast.open({ message: 'Aporte registrado!', type: 'is-success' })
+      toast.open({ message: 'Aporte registrado!', type: 'is-success' })
     } else if (props.kind === 'STOCKS') {
       await holdingsApi.addStockLot(props.walletId, props.holdingId, {
         lotDate: dateStr,
         quantity: Number(quantity.value),
         price: Number(price.value),
       })
-      Toast.open({ message: 'Compra registrada!', type: 'is-success' })
+      toast.open({ message: 'Compra registrada!', type: 'is-success' })
     } else {
       await holdingsApi.addCryptoLot(props.walletId, props.holdingId, {
         lotDate: dateStr,
         quantity: Number(quantity.value),
         price: Number(price.value),
       })
-      Toast.open({ message: 'Compra registrada!', type: 'is-success' })
+      toast.open({ message: 'Compra registrada!', type: 'is-success' })
     }
     emit('added')
   } finally {
@@ -85,7 +86,6 @@ async function submit() {
       <b-button
         size="is-small"
         type="is-primary"
-        icon-left="check"
         :disabled="!valid"
         :loading="submitting"
         @click="submit"

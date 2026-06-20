@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ToastProgrammatic as Toast } from 'buefy'
+import { useToast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { walletsApi } from '@/api/wallets'
@@ -12,6 +12,7 @@ import type { WalletKind } from '@/types'
 const props = defineProps<{ initialType?: WalletKind }>()
 const emit = defineEmits<{ close: []; created: [id: string, kind: WalletKind] }>()
 
+const toast = useToast()
 const walletsStore = useWalletsStore()
 const ratesStore = useRatesStore()
 
@@ -39,7 +40,7 @@ async function submit() {
     await walletsStore.refresh()
     emit('created', wallet.id, kind.value)
     emit('close')
-    Toast.open({ message: 'Carteira criada!', type: 'is-success' })
+    toast.open({ message: 'Carteira criada!', type: 'is-success' })
   } finally {
     submitting.value = false
   }

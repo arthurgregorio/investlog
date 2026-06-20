@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import TheNavbar from '@/components/layout/TheNavbar.vue'
 import TheTopNav from '@/components/layout/TheTopNav.vue'
@@ -12,6 +12,11 @@ import type { WalletKind } from '@/types'
 const appearance = useAppearanceStore()
 const { dark, accent } = storeToRefs(appearance)
 const theme = computed(() => (dark.value ? 'dark' : 'light'))
+
+watchEffect(() => {
+  document.documentElement.setAttribute('data-theme', theme.value)
+  document.documentElement.setAttribute('data-accent', accent.value)
+})
 
 /* App-shell modal state (add-investment is always a modal). */
 const addModal = ref<{ kind: WalletKind } | null>(null)

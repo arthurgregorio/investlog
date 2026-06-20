@@ -1,5 +1,7 @@
 import axios from 'axios'
-import { ToastProgrammatic as Toast } from 'buefy'
+import { ToastProgrammatic } from 'buefy'
+
+const toast = new ToastProgrammatic()
 
 export const apiClient = axios.create({
   baseURL: '/private/v1',
@@ -13,7 +15,7 @@ apiClient.interceptors.response.use(
       error.response?.data?.detail ??
       error.response?.data?.message ??
       'Erro ao comunicar com o servidor.'
-    Toast.open({ message, type: 'is-danger', duration: 4000 })
+    toast.open({ message, type: 'is-danger', duration: 4000 })
     return Promise.reject(error)
   },
 )
