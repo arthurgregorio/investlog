@@ -86,7 +86,7 @@ function renameWallet(walletId: string, currentName: string) {
       text="Crie sua primeira carteira para começar a registrar investimentos."
     >
       <template #action>
-        <b-button type="is-primary" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
+        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
       </template>
     </EmptyState>
 
