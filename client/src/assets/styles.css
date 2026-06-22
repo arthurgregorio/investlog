@@ -1448,6 +1448,14 @@ a {
     width: 150px;
 }
 
+/* Buefy renders the addon button and input as inline-flex controls, whose line-box
+   strut adds phantom height below them and breaks vertical alignment with the row
+   text. Zeroing the control font-size collapses the strut; the button and input keep
+   their own font-size for content. */
+.rate-input .field .control {
+    font-size: 0;
+}
+
 .chip-edit {
     display: flex;
     flex-wrap: wrap;
