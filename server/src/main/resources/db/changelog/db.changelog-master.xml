@@ -19,6 +19,4 @@
 
     <include file="db/changelog/changes/2026/06/14-1050-seed-dev-data.xml" relativeToChangelogFile="false"/>
 
-    <include file="db/changelog/changes/2026/06/17-1000-convert-holdings-overview-to-view.xml" relativeToChangelogFile="false"/>
-
 </databaseChangeLog>

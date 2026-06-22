@@ -6,8 +6,12 @@
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
 
     <changeSet id="12-1050-1" author="${claude}">
+        <comment>
+            holdings_overview is a regular VIEW so it always reflects current data without
+            needing explicit REFRESH calls after every write.
+        </comment>
         <sql>
-            CREATE MATERIALIZED VIEW finances.holdings_overview AS
+            CREATE VIEW finances.holdings_overview AS
             SELECT
                 sh.external_id,
                 sh.wallet_id,
@@ -60,21 +64,7 @@
             GROUP BY fh.id, fh.external_id, fh.wallet_id, fh.name, ft.name, fh.current_value;
         </sql>
         <rollback>
-            <sql>DROP MATERIALIZED VIEW finances.holdings_overview;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="12-1050-2" author="${claude}">
-        <sql>CREATE UNIQUE INDEX uq_holdings_overview_external_id ON finances.holdings_overview (external_id);</sql>
-        <rollback>
-            <sql>DROP INDEX finances.uq_holdings_overview_external_id;</sql>
-        </rollback>
-    </changeSet>
-
-    <changeSet id="12-1050-3" author="${claude}">
-        <sql>CREATE INDEX idx_holdings_overview_wallet_id ON finances.holdings_overview (wallet_id);</sql>
-        <rollback>
-            <sql>DROP INDEX finances.idx_holdings_overview_wallet_id;</sql>
+            <sql>DROP VIEW finances.holdings_overview;</sql>
         </rollback>
     </changeSet>
 

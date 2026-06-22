@@ -80,8 +80,8 @@ The persistence schema itself is fully defined (see below).
 - Persistence: PostgreSQL via `spring-boot-starter-jooq` + `spring-boot-starter-liquibase`. The
   full schema — `system`/`finances` Postgres schemas, `system.users`, the `finances` portfolio
   tables (wallets, stock/crypto/fund holdings + lots/contributions, type lists, currency rates),
-  the `finances.wallet_kind` enum, and the `finances.holdings_overview` VIEW (regular view,
-  converted from materialized so writes are immediately reflected) — is
+  the `finances.wallet_kind` enum, and the `finances.holdings_overview` regular VIEW
+  (so writes are immediately reflected) — is
   defined in `src/main/resources/db/changelog/db.changelog-master.xml` and applied
   automatically by Liquibase on startup. `application.yaml` configures `spring.liquibase.*`
   (tracking tables renamed to `database_changelog`/`database_changelog_lock`);
