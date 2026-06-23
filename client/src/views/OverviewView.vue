@@ -99,7 +99,6 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
 
     <div class="page-head page-head-row">
       <div>
-        <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Visão geral</h1>
         <p class="page-desc">Uma visão consolidada dos seus investimentos</p>
       </div>

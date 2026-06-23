@@ -73,7 +73,6 @@ function renameWallet(walletId: string, currentName: string) {
 
     <div class="page-head page-head-row">
       <div>
-        <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Carteiras</h1>
         <p class="page-desc">Carteiras podem ter tipos e moedas distintas</p>
       </div>

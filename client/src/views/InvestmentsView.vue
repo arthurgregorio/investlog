@@ -86,7 +86,6 @@ function subLabel(row: HoldingRow): string {
   <div class="page">
     <div class="page-head page-head-row">
       <div>
-        <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Investimentos</h1>
         <p class="page-desc">Aqui você gerencia seus investimentos</p>
       </div>

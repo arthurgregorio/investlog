@@ -51,7 +51,6 @@ async function setRate(currencyCode: string, value: number | '') {
 <template>
   <div class="page page-narrow">
     <div class="page-head">
-      <div class="page-eyebrow">Logbook</div>
       <h1 class="page-title">Configurações</h1>
       <p class="page-desc">Defina as taxas de conversão e os tipos de ativo usados no cadastro.</p>
     </div>
