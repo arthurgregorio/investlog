@@ -180,4 +180,40 @@ export const holdingsApi = {
       .delete(`/wallets/${walletId}/fund-holdings/${holdingId}/contributions/${contributionId}`)
       .then(() => undefined)
   },
+
+  updateStockLotDate(
+    walletId: string,
+    holdingId: string,
+    lotId: string,
+    payload: { lotDate: string },
+  ): Promise<LotDetail> {
+    return apiClient
+      .patch<LotDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}/lots/${lotId}`, payload)
+      .then((r) => r.data)
+  },
+
+  updateCryptoLotDate(
+    walletId: string,
+    holdingId: string,
+    lotId: string,
+    payload: { lotDate: string },
+  ): Promise<LotDetail> {
+    return apiClient
+      .patch<LotDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}/lots/${lotId}`, payload)
+      .then((r) => r.data)
+  },
+
+  updateFundContributionDate(
+    walletId: string,
+    holdingId: string,
+    contributionId: string,
+    payload: { contributionDate: string },
+  ): Promise<ContributionDetail> {
+    return apiClient
+      .patch<ContributionDetail>(
+        `/wallets/${walletId}/fund-holdings/${holdingId}/contributions/${contributionId}`,
+        payload,
+      )
+      .then((r) => r.data)
+  },
 }
