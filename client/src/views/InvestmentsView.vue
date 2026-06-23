@@ -1,21 +1,25 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
+import SortTh from '@/components/ui/SortTh.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
 import { useHoldingsListStore } from '@/stores/holdingsList'
+import { useTypesListStore } from '@/stores/typesList'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
 import type { HoldingRow, WalletKind } from '@/types'
 
 type Filter = 'all' | WalletKind
+type SortKey = 'wallet' | 'price' | 'invested' | 'current' | 'gain'
 
 const holdingsListStore = useHoldingsListStore()
+const typesListStore = useTypesListStore()
 const route = useRoute()
 const router = useRouter()
 const modals = useModals()
@@ -37,23 +41,73 @@ function filterFromRoute(): Filter {
 
 const activeFilter = ref<Filter>(filterFromRoute())
 const openedDetails = ref<HoldingRow[]>([])
+const typeLabelFilter = ref<string | undefined>(undefined)
+const searchQuery = ref('')
+const sortKey = ref<SortKey | null>(null)
+const sortDirection = ref<'asc' | 'desc'>('desc')
+
+let searchDebounceHandle: ReturnType<typeof setTimeout> | undefined
+
+const typeLabelOptions = computed(() => {
+  if (activeFilter.value === 'STOCKS') return typesListStore.stockTypes
+  if (activeFilter.value === 'FUNDS') return typesListStore.fundTypes
+  return []
+})
+
+function reload(pageNumber = 0) {
+  holdingsListStore.loadKind(activeFilter.value, pageNumber, {
+    typeLabel: typeLabelFilter.value,
+    search: searchQuery.value.trim() || undefined,
+    sort: sortKey.value ? `${sortKey.value},${sortDirection.value}` : undefined,
+  })
+}
 
 watch(() => route.query.filter, () => {
   activeFilter.value = filterFromRoute()
+  typeLabelFilter.value = undefined
+  searchQuery.value = ''
   openedDetails.value = []
-  holdingsListStore.loadKind(activeFilter.value, 0)
+  reload(0)
 })
 
-onMounted(() => holdingsListStore.loadKind(activeFilter.value, 0))
+onMounted(() => {
+  typesListStore.load()
+  reload(0)
+})
 
 function selectTab(filter: Filter) {
   if (filter === activeFilter.value) return
   router.replace({ query: { ...route.query, filter: filter === 'all' ? undefined : filter } })
 }
 
+function onTypeLabelChange(value: string) {
+  typeLabelFilter.value = value || undefined
+  openedDetails.value = []
+  reload(0)
+}
+
+function onSearchChange(value: string) {
+  searchQuery.value = value
+  if (searchDebounceHandle) clearTimeout(searchDebounceHandle)
+  searchDebounceHandle = setTimeout(() => {
+    openedDetails.value = []
+    reload(0)
+  }, 300)
+}
+
+function toggleSort(key: string) {
+  if (sortKey.value === key) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key as SortKey
+    sortDirection.value = 'asc'
+  }
+  reload(0)
+}
+
 function onPageChange(newPage: number) {
   openedDetails.value = []
-  holdingsListStore.loadKind(activeFilter.value, newPage - 1)
+  reload(newPage - 1)
 }
 
 function toggleRow(row: HoldingRow) {
@@ -109,6 +163,26 @@ function openAddInvestment() {
       </button>
     </div>
 
+    <div class="inv-toolbar">
+      <b-select
+        v-if="typeLabelOptions.length > 0"
+        :model-value="typeLabelFilter ?? ''"
+        @update:model-value="onTypeLabelChange"
+      >
+        <option value="">Todos os tipos</option>
+        <option v-for="assetType in typeLabelOptions" :key="assetType.id" :value="assetType.name">
+          {{ assetType.name }}
+        </option>
+      </b-select>
+      <b-input
+        class="search-input"
+        :model-value="searchQuery"
+        icon="magnify"
+        placeholder="Buscar por nome ou ticker"
+        @update:model-value="onSearchChange"
+      />
+    </div>
+
     <EmptyState
       v-if="holdingsListStore.loaded && !holdingsListStore.loading && holdingsListStore.rows.length === 0"
       icon="layers"
@@ -130,12 +204,12 @@ function openAddInvestment() {
             <thead>
               <tr>
                 <th>Investimento</th>
-                <th>Carteira</th>
+                <SortTh sort-key="wallet" :active-key="sortKey" :direction="sortDirection" align="left" @toggle="toggleSort">Carteira</SortTh>
                 <th class="c-num">Qtd.</th>
-                <th class="c-num">Preço atual</th>
-                <th class="c-num">Investido</th>
-                <th class="c-num">Valor atual</th>
-                <th class="c-num">Resultado</th>
+                <SortTh sort-key="price" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Preço atual</SortTh>
+                <SortTh sort-key="invested" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Investido</SortTh>
+                <SortTh sort-key="current" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Valor atual</SortTh>
+                <SortTh sort-key="gain" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Resultado</SortTh>
                 <th class="c-act"></th>
               </tr>
             </thead>

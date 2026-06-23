@@ -999,6 +999,17 @@ a {
     box-shadow: var(--shadow);
 }
 
+.inv-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 14px 0 4px;
+}
+
+.inv-toolbar .search-input {
+    max-width: 280px;
+}
+
 /* ===== Tables ===== */
 .table-card {
     overflow: hidden;
@@ -1069,6 +1080,26 @@ a {
 
 .inv-table tbody tr:last-child td {
     border-bottom: none;
+}
+
+.sort-th {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sort-th-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.sort-icon-idle {
+    opacity: .35;
+}
+
+.sort-icon-active {
+    opacity: 1;
+    color: var(--primary);
 }
 
 .name-cell {
