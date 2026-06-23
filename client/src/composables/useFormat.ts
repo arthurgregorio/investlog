@@ -3,7 +3,6 @@
 
 const SYM: Record<string, string> = { BRL: 'R$', USD: 'US$', EUR: '€' }
 const num2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const num0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 })
 const numQ = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 })
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
@@ -11,8 +10,12 @@ export const fmt = {
   sym: (cur = 'BRL') => SYM[cur] || cur + ' ',
   money: (v: number, cur = 'BRL', opts: { compact?: boolean } = {}) => {
     const s = SYM[cur] || cur + ' '
-    const big = opts.compact && Math.abs(v) >= 100000
-    return s + ' ' + (big ? num0.format(v) : num2.format(v))
+    if (opts.compact) {
+      const abs = Math.abs(v)
+      if (abs >= 1_000_000) return s + ' ' + (v / 1_000_000).toFixed(1).replace('.', ',') + 'M'
+      if (abs >= 100_000) return s + ' ' + Math.round(v / 1_000) + 'k'
+    }
+    return s + ' ' + num2.format(v)
   },
   moneySigned: (v: number, cur = 'BRL') => (v >= 0 ? '+' : '−') + fmt.money(Math.abs(v), cur),
   pct: (v: number) => num2.format(Math.abs(v)) + '%',
