@@ -21,6 +21,9 @@ export interface WalletResponse {
   currency: string
   holdingCount: number
   totalInvested: number
+  currentValue: number | null
+  gain: number | null
+  gainPct: number | null
   createdAt: string
 }
 

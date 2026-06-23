@@ -6,6 +6,7 @@ import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import GainChip from '@/components/ui/GainChip.vue'
 import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useModals } from '@/composables/useModals'
@@ -123,6 +124,9 @@ function renameWallet(walletId: string, currentName: string) {
           </div>
           <div class="wallet-invested">
             <div class="wi-value">{{ fmt.money(wallet.totalInvested, wallet.currency) }}</div>
+            <div class="wi-base">
+              <GainChip :value="wallet.gain" :pct="wallet.gainPct" :cur="wallet.currency" />
+            </div>
           </div>
           <div class="wallet-foot">
             <span class="wallet-count">
