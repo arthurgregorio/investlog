@@ -710,7 +710,27 @@ a {
 .type-result-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin: 11px 0;
+}
+
+.type-result-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.type-result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.type-result-value {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .type-meta {
@@ -728,7 +748,7 @@ a {
 /* ===== Wallet cards ===== */
 .wallet-grid {
     display: grid;
-    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
     gap: 16px;
 }
 
@@ -811,6 +831,32 @@ a {
     font-size: 12px;
     color: var(--text-muted);
     margin-top: 2px;
+}
+
+.wallet-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.wallet-result-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wallet-result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.wallet-result-value {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .wallet-holdings {

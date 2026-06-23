@@ -51,6 +51,7 @@ const typeRows = computed(() => {
       label: WALLET_TYPES[kind].label,
       accent: WALLET_TYPES[kind].accent,
       invested: kindSummary?.totalCostBasis ?? 0,
+      currentValue: kindSummary?.totalCurrentValue ?? 0,
       gain: kindSummary ? kindSummary.totalGain : null,
       gainPct: kindSummary ? kindSummary.totalGainPct : null,
       walletCount: walletCountByKind.value[kind] ?? 0,
@@ -226,7 +227,16 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
                 </div>
                 <div class="type-value">{{ fmt.money(typeRow.invested, baseCurrency) }}</div>
                 <div class="type-result-row">
-                  <GainChip :value="typeRow.gain" :pct="typeRow.gainPct" :cur="baseCurrency" />
+                  <div class="type-result-item">
+                    <div class="type-result-label">Valor atual</div>
+                    <div class="type-result-value">
+                      {{ fmt.money(typeRow.currentValue, baseCurrency, { compact: true }) }}
+                    </div>
+                  </div>
+                  <div class="type-result-item">
+                    <div class="type-result-label">Resultado</div>
+                    <GainChip :value="typeRow.gain" :pct="typeRow.gainPct" :cur="baseCurrency" />
+                  </div>
                 </div>
                 <div class="type-meta">
                   <span>{{ typeRow.walletCount }} {{ typeRow.walletCount === 1 ? 'carteira' : 'carteiras' }}</span>
