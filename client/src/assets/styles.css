@@ -707,18 +707,10 @@ a {
     letter-spacing: -.02em;
 }
 
-.type-bar {
-    height: 6px;
-    border-radius: 4px;
-    background: var(--surface-2);
-    overflow: hidden;
-    margin: 11px 0 11px;
-}
-
-.type-bar span {
-    display: block;
-    height: 100%;
-    border-radius: 4px;
+.type-result-row {
+    display: flex;
+    align-items: center;
+    margin: 11px 0;
 }
 
 .type-meta {
