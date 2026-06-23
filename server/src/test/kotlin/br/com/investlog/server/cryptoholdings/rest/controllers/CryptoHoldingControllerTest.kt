@@ -138,4 +138,38 @@ class CryptoHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isNotFound()
     }
+
+    @Test
+    @Order(8)
+    fun `updates a lot's date`() {
+        val h = createHolding("DOGE")
+        val lot = restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${h.id}/lots")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-03-01","quantity":1000.0,"price":0.10}""")
+            .exchange()
+            .returnResult<LotResponse>()
+            .responseBody!!
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${h.id}/lots/${lot.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-03-20"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.lotDate").isEqualTo("2024-03-20")
+    }
+
+    @Test
+    @Order(9)
+    fun `returns 404 when updating an unknown lot's date`() {
+        val h = createHolding("LTC")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${h.id}/lots/${UUID.randomUUID()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-03-20"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+    }
 }
