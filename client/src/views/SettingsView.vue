@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useToast } from 'buefy'
 import AppIcon from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
@@ -10,6 +11,7 @@ import { useAppearanceStore } from '@/stores/appearance'
 import { fmt } from '@/composables/useFormat'
 import type { AccentKey } from '@/types'
 
+const toast = useToast()
 const typesListStore = useTypesListStore()
 const ratesStore = useRatesStore()
 const appearance = useAppearanceStore()
@@ -33,6 +35,7 @@ async function addStockType() {
   if (!name) return
   await typesListStore.addStockType(name)
   newStockType.value = ''
+  toast.open({ message: 'Tipo de ação adicionado.', type: 'is-success' })
 }
 
 async function addFundType() {
@@ -40,11 +43,23 @@ async function addFundType() {
   if (!name) return
   await typesListStore.addFundType(name)
   newFundType.value = ''
+  toast.open({ message: 'Tipo de fundo adicionado.', type: 'is-success' })
+}
+
+async function removeStockType(stockTypeId: string) {
+  await typesListStore.removeStockType(stockTypeId)
+  toast.open({ message: 'Tipo de ação removido.', type: 'is-success' })
+}
+
+async function removeFundType(fundTypeId: string) {
+  await typesListStore.removeFundType(fundTypeId)
+  toast.open({ message: 'Tipo de fundo removido.', type: 'is-success' })
 }
 
 async function setRate(currencyCode: string, value: number | '') {
   if (value === '' || value <= 0) return
   await ratesStore.upsertRate(currencyCode, Number(value), false)
+  toast.open({ message: 'Taxa de conversão atualizada.', type: 'is-success' })
 }
 </script>
 
@@ -95,7 +110,7 @@ async function setRate(currencyCode: string, value: number | '') {
         <div class="chip-edit">
           <span v-for="stockType in typesListStore.stockTypes" :key="stockType.id" class="edit-chip">
             {{ stockType.name }}
-            <button :aria-label="`Remover ${stockType.name}`" @click="typesListStore.removeStockType(stockType.id)">
+            <button :aria-label="`Remover ${stockType.name}`" @click="removeStockType(stockType.id)">
               <AppIcon name="x" :size="14" />
             </button>
           </span>
@@ -114,7 +129,7 @@ async function setRate(currencyCode: string, value: number | '') {
         <div class="chip-edit">
           <span v-for="fundType in typesListStore.fundTypes" :key="fundType.id" class="edit-chip">
             {{ fundType.name }}
-            <button :aria-label="`Remover ${fundType.name}`" @click="typesListStore.removeFundType(fundType.id)">
+            <button :aria-label="`Remover ${fundType.name}`" @click="removeFundType(fundType.id)">
               <AppIcon name="x" :size="14" />
             </button>
           </span>
