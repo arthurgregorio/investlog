@@ -32,10 +32,10 @@ function initials(name: string): string {
 <template>
   <header class="navbar">
     <div class="navbar-inner">
-      <div class="brand">
+      <RouterLink to="/" class="brand">
         <span class="brand-mark"><AppIcon name="trendUp" :size="20" :stroke="2.4" /></span>
         <span class="brand-name">Invest<b>Log</b></span>
-      </div>
+      </RouterLink>
       <div class="navbar-spacer" />
       <span class="base-chip"><AppIcon name="repeat" :size="14" />Base&nbsp;<b>{{ baseCurrency }}</b></span>
       <b-button :icon-left="dark ? 'weather-sunny' : 'weather-night'" aria-label="Tema" @click="appearance.toggleDark()" />
