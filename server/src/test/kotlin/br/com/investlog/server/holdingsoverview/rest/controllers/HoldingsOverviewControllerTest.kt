@@ -105,4 +105,73 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isBadRequest()
     }
+
+    @Test
+    @Order(5)
+    fun `GET holdings with matching typeLabel includes the holding`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?typeLabel={typeLabel}", "Overview Test Type")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[?(@.id == '$holdingId')]").isNotEmpty()
+    }
+
+    @Test
+    @Order(6)
+    fun `GET holdings with non-matching typeLabel excludes the holding`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?typeLabel={typeLabel}", "Nonexistent Type")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[?(@.id == '$holdingId')]").isEmpty()
+    }
+
+    @Test
+    @Order(7)
+    fun `GET holdings with matching search includes the holding`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?search=ovtst")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[?(@.id == '$holdingId')]").isNotEmpty()
+    }
+
+    @Test
+    @Order(8)
+    fun `GET holdings with non-matching search excludes the holding`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?search=nomatch")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[?(@.id == '$holdingId')]").isEmpty()
+    }
+
+    @Test
+    @Order(9)
+    fun `GET holdings sorted by invested ascending orders the smaller position first`() {
+        // costBasis = 1 * 10.00 = 10.00, versus the @BeforeAll fixture's OVTST3 at 450.00 —
+        // scoping by typeLabel to just these two stockTypeId siblings keeps content[0]
+        // deterministic regardless of any other holdings the dev user already has.
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"stockTypeId":"$stockTypeId","ticker":"OVSML3",
+                   "currentPrice":12.00,
+                   "lot":{"lotDate":"2025-02-01","quantity":1,"price":10.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?typeLabel={typeLabel}&sort=invested,asc", "Overview Test Type")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].ticker").isEqualTo("OVSML3")
+    }
 }

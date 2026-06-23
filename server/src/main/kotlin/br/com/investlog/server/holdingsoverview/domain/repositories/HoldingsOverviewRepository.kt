@@ -5,6 +5,8 @@ import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.shared.persistence.pagedModelOf
 import org.jooq.DSLContext
+import org.jooq.Field
+import org.jooq.SortField
 import org.jooq.impl.DSL
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -16,12 +18,36 @@ import br.com.investlog.server.jooq.finances.enums.WalletKind as JooqWalletKind
 @Repository
 class HoldingsOverviewRepository(private val dsl: DSLContext) {
 
-    fun findAll(userId: Long, kind: JooqWalletKind?, pageable: Pageable): PagedModel<HoldingRowResponse> {
+    fun findAll(
+        userId: Long,
+        kind: JooqWalletKind?,
+        typeLabel: String?,
+        search: String?,
+        pageable: Pageable,
+    ): PagedModel<HoldingRowResponse> {
         val wallets = WALLETS.`as`("wallets")
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
 
         val baseCondition = wallets.USER_ID.eq(userId)
         val kindCondition = if (kind != null) overview.KIND.eq(kind) else DSL.noCondition()
+        val typeLabelCondition = if (typeLabel != null) overview.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
+        val searchCondition = if (!search.isNullOrBlank()) {
+            overview.NAME.likeIgnoreCase("%$search%").or(overview.TICKER.likeIgnoreCase("%$search%"))
+        } else {
+            DSL.noCondition()
+        }
+
+        val sortFields: List<SortField<*>> = pageable.sort.mapNotNull { order ->
+            val field: Field<*>? = when (order.property) {
+                "wallet" -> wallets.NAME
+                "price" -> overview.CURRENT_PRICE
+                "invested" -> overview.COST_BASIS
+                "current" -> overview.CURRENT_VALUE
+                "gain" -> overview.CURRENT_VALUE.sub(overview.COST_BASIS)
+                else -> null
+            }
+            field?.let { if (order.isAscending) it.asc().nullsLast() else it.desc().nullsLast() }
+        }.ifEmpty { listOf(overview.COST_BASIS.desc().nullsLast()) }
 
         val content = dsl.select(
             overview.EXTERNAL_ID,
@@ -39,8 +65,8 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         )
             .from(overview)
             .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
-            .where(baseCondition).and(kindCondition)
-            .orderBy(overview.COST_BASIS.desc())
+            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(searchCondition)
+            .orderBy(sortFields)
             .limit(pageable.pageSize)
             .offset(pageable.offset.toInt())
             .fetch { record ->
@@ -73,7 +99,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             dsl.select(DSL.one())
                 .from(overview)
                 .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
-                .where(baseCondition).and(kindCondition)
+                .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(searchCondition)
         )
 
         return pagedModelOf(content, pageable, total.toLong())
