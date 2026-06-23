@@ -11,5 +11,8 @@ data class WalletResponse(
     val currency: String,
     val holdingCount: Int,
     val totalInvested: BigDecimal,
+    val currentValue: BigDecimal?,
+    val gain: BigDecimal?,
+    val gainPct: BigDecimal?,
     val createdAt: OffsetDateTime,
 )

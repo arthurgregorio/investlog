@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Repository
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.OffsetDateTime
 import java.util.UUID
 import br.com.investlog.server.jooq.finances.enums.WalletKind as JooqWalletKind
@@ -21,7 +22,7 @@ class WalletRepository(private val dsl: DSLContext) {
     fun findAll(userId: Long, pageable: Pageable): PagedModel<WalletResponse> {
         val content = dsl.select(
             WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(),
+            holdingCountField(), totalInvestedField(), currentValueField(),
         )
             .from(WALLETS)
             .where(WALLETS.USER_ID.eq(userId))
@@ -46,7 +47,7 @@ class WalletRepository(private val dsl: DSLContext) {
 
         return dsl.select(
             WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(),
+            holdingCountField(), totalInvestedField(), currentValueField(),
         )
             .from(WALLETS)
             .where(WALLETS.ID.eq(wallet.id))
@@ -56,7 +57,7 @@ class WalletRepository(private val dsl: DSLContext) {
     fun findByExternalId(userId: Long, externalId: UUID): WalletResponse? =
         dsl.select(
             WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(),
+            holdingCountField(), totalInvestedField(), currentValueField(),
         )
             .from(WALLETS)
             .where(WALLETS.USER_ID.eq(userId))
@@ -81,7 +82,7 @@ class WalletRepository(private val dsl: DSLContext) {
 
         return dsl.select(
             WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(),
+            holdingCountField(), totalInvestedField(), currentValueField(),
         )
             .from(WALLETS)
             .where(WALLETS.ID.eq(updated.id))
@@ -108,13 +109,32 @@ class WalletRepository(private val dsl: DSLContext) {
                 .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
         ).`as`("total_invested")
 
-    private fun org.jooq.Record.toResponse() = WalletResponse(
-        id = get(WALLETS.EXTERNAL_ID)!!,
-        name = get(WALLETS.NAME)!!,
-        kind = WalletKind.fromText(get(WALLETS.KIND)!!.literal),
-        currency = get(WALLETS.CURRENCY)!!,
-        holdingCount = get("holding_count", Int::class.java) ?: 0,
-        totalInvested = get("total_invested", BigDecimal::class.java) ?: BigDecimal.ZERO,
-        createdAt = get(WALLETS.CREATED_AT)!!,
-    )
+    private fun currentValueField() =
+        DSL.field(
+            DSL.select(DSL.sum(HOLDINGS_OVERVIEW.CURRENT_VALUE))
+                .from(HOLDINGS_OVERVIEW)
+                .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
+        ).`as`("current_value")
+
+    private fun org.jooq.Record.toResponse(): WalletResponse {
+        val totalInvested = get("total_invested", BigDecimal::class.java) ?: BigDecimal.ZERO
+        val currentValue = get("current_value", BigDecimal::class.java)
+        val gain = currentValue?.let { it - totalInvested }
+        val gainPct = if (gain != null && totalInvested.signum() != 0) {
+            gain.divide(totalInvested, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))
+        } else null
+
+        return WalletResponse(
+            id = get(WALLETS.EXTERNAL_ID)!!,
+            name = get(WALLETS.NAME)!!,
+            kind = WalletKind.fromText(get(WALLETS.KIND)!!.literal),
+            currency = get(WALLETS.CURRENCY)!!,
+            holdingCount = get("holding_count", Int::class.java) ?: 0,
+            totalInvested = totalInvested,
+            currentValue = currentValue,
+            gain = gain,
+            gainPct = gainPct,
+            createdAt = get(WALLETS.CREATED_AT)!!,
+        )
+    }
 }
