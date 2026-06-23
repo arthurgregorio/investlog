@@ -1,6 +1,7 @@
 package br.com.investlog.server.wallets.rest.controllers
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import br.com.investlog.server.wallets.rest.payloads.WalletKind
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import org.junit.jupiter.api.Order
@@ -112,5 +113,40 @@ class WalletControllerTest : BaseIntegrationTest() {
             .body("""{"name":"X","currency":"BRL"}""")
             .exchange()
             .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(7)
+    fun `wallet response includes currentValue and gain computed from its holdings`() {
+        val wallet = createWallet("Wallet With Holdings", WalletKind.STOCKS, "BRL")
+
+        val stockTypeId = restTestClient.post()
+            .uri("/private/v1/stock-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Wallet Gain Test Type"}""")
+            .exchange()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/${wallet.id}/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"stockTypeId":"$stockTypeId","ticker":"WGAIN3",
+                   "currentPrice":60.00,
+                   "lot":{"lotDate":"2025-01-01","quantity":10,"price":50.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/${wallet.id}")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.totalInvested").isEqualTo(500.0)
+            .jsonPath("$.currentValue").isEqualTo(600.0)
+            .jsonPath("$.gain").isEqualTo(100.0)
     }
 }

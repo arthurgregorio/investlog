@@ -6,6 +6,7 @@ import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingRespons
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
+import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -70,4 +71,12 @@ class CryptoHoldingController(
         @PathVariable holdingId: UUID,
         @PathVariable lotId: UUID,
     ) = service.deleteLot(walletId, holdingId, lotId)
+
+    @PatchMapping("/{holdingId}/lots/{lotId}")
+    fun updateLotDate(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @PathVariable lotId: UUID,
+        @Valid @RequestBody request: LotUpdateRequest,
+    ): LotResponse = service.updateLotDate(walletId, holdingId, lotId, request)
 }

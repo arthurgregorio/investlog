@@ -5,6 +5,7 @@ import AppIcon from '@/components/AppIcon.vue'
 import type { IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
+import GainChip from '@/components/ui/GainChip.vue'
 import AreaChart from '@/components/charts/AreaChart.vue'
 import DonutChart from '@/components/charts/DonutChart.vue'
 import { useOverviewStore } from '@/stores/overview'
@@ -50,6 +51,9 @@ const typeRows = computed(() => {
       label: WALLET_TYPES[kind].label,
       accent: WALLET_TYPES[kind].accent,
       invested: kindSummary?.totalCostBasis ?? 0,
+      currentValue: kindSummary?.totalCurrentValue ?? 0,
+      gain: kindSummary ? kindSummary.totalGain : null,
+      gainPct: kindSummary ? kindSummary.totalGainPct : null,
       walletCount: walletCountByKind.value[kind] ?? 0,
       holdings: kindSummary?.holdingCount ?? 0,
     }
@@ -99,7 +103,6 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
 
     <div class="page-head page-head-row">
       <div>
-        <div class="page-eyebrow">Logbook</div>
         <h1 class="page-title">Visão geral</h1>
         <p class="page-desc">Uma visão consolidada dos seus investimentos</p>
       </div>
@@ -223,13 +226,17 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
                   </span>
                 </div>
                 <div class="type-value">{{ fmt.money(typeRow.invested, baseCurrency) }}</div>
-                <div class="type-bar">
-                  <span
-                    :style="{
-                      width: (grandInvestedBase ? (typeRow.invested / grandInvestedBase) * 100 : 0) + '%',
-                      background: typeRow.accent,
-                    }"
-                  />
+                <div class="type-result-row">
+                  <div class="type-result-item">
+                    <div class="type-result-label">Valor atual</div>
+                    <div class="type-result-value">
+                      {{ fmt.money(typeRow.currentValue, baseCurrency, { compact: true }) }}
+                    </div>
+                  </div>
+                  <div class="type-result-item">
+                    <div class="type-result-label">Resultado</div>
+                    <GainChip :value="typeRow.gain" :pct="typeRow.gainPct" :cur="baseCurrency" />
+                  </div>
                 </div>
                 <div class="type-meta">
                   <span>{{ typeRow.walletCount }} {{ typeRow.walletCount === 1 ? 'carteira' : 'carteiras' }}</span>

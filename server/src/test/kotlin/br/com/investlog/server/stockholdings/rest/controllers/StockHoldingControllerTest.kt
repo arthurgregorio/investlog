@@ -162,4 +162,38 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isNotFound()
     }
+
+    @Test
+    @Order(8)
+    fun `updates a lot's date`() {
+        val h = createHolding("RENT3")
+        val lot = restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${h.id}/lots")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-02-01","quantity":20,"price":18.00}""")
+            .exchange()
+            .returnResult<LotResponse>()
+            .responseBody!!
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${h.id}/lots/${lot.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-02-15"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.lotDate").isEqualTo("2024-02-15")
+    }
+
+    @Test
+    @Order(9)
+    fun `returns 404 when updating an unknown lot's date`() {
+        val h = createHolding("CSAN3")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${h.id}/lots/${UUID.randomUUID()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-02-15"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+    }
 }

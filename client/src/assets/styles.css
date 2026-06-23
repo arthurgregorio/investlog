@@ -707,18 +707,30 @@ a {
     letter-spacing: -.02em;
 }
 
-.type-bar {
-    height: 6px;
-    border-radius: 4px;
-    background: var(--surface-2);
-    overflow: hidden;
-    margin: 11px 0 11px;
+.type-result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 11px 0;
 }
 
-.type-bar span {
-    display: block;
-    height: 100%;
-    border-radius: 4px;
+.type-result-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.type-result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.type-result-value {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .type-meta {
@@ -736,7 +748,7 @@ a {
 /* ===== Wallet cards ===== */
 .wallet-grid {
     display: grid;
-    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
     gap: 16px;
 }
 
@@ -819,6 +831,32 @@ a {
     font-size: 12px;
     color: var(--text-muted);
     margin-top: 2px;
+}
+
+.wallet-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.wallet-result-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wallet-result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.wallet-result-value {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
 .wallet-holdings {
@@ -1007,6 +1045,17 @@ a {
     box-shadow: var(--shadow);
 }
 
+.inv-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 14px 0 4px;
+}
+
+.inv-toolbar .search-input {
+    max-width: 280px;
+}
+
 /* ===== Tables ===== */
 .table-card {
     overflow: hidden;
@@ -1077,6 +1126,26 @@ a {
 
 .inv-table tbody tr:last-child td {
     border-bottom: none;
+}
+
+.sort-th {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sort-th-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.sort-icon-idle {
+    opacity: .35;
+}
+
+.sort-icon-active {
+    opacity: 1;
+    color: var(--primary);
 }
 
 .name-cell {
@@ -1219,6 +1288,21 @@ a {
 
 .sub-table tbody tr:last-child td {
     border-bottom: none;
+}
+
+.date-edit {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--border);
+}
+
+.date-edit:hover {
+    border-bottom-color: var(--primary);
+    color: var(--primary-d);
 }
 
 .detail-foot {

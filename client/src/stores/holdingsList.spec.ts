@@ -99,4 +99,37 @@ describe('useHoldingsListStore', () => {
       size: 20,
     })
   })
+
+  it('loadKind passes typeLabel, search and sort through to the API', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
+
+    const store = useHoldingsListStore()
+    await store.loadKind('STOCKS', 0, { typeLabel: 'Ação ON', search: 'PETR', sort: 'invested,asc' })
+
+    expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenCalledWith({
+      kind: 'STOCKS',
+      typeLabel: 'Ação ON',
+      search: 'PETR',
+      sort: 'invested,asc',
+      page: 0,
+      size: 20,
+    })
+  })
+
+  it('refresh re-fetches with the same typeLabel, search and sort', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
+
+    const store = useHoldingsListStore()
+    await store.loadKind('STOCKS', 0, { typeLabel: 'Ação ON', search: 'PETR', sort: 'invested,asc' })
+    await store.refresh()
+
+    expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({
+      kind: 'STOCKS',
+      typeLabel: 'Ação ON',
+      search: 'PETR',
+      sort: 'invested,asc',
+      page: 0,
+      size: 20,
+    })
+  })
 })

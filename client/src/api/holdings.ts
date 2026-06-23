@@ -10,7 +10,14 @@ import type {
 } from '@/types'
 
 export const holdingsApi = {
-  findAll(params: { kind?: string; page?: number; size?: number }): Promise<PagedResponse<HoldingRow>> {
+  findAll(params: {
+    kind?: string
+    typeLabel?: string
+    search?: string
+    sort?: string
+    page?: number
+    size?: number
+  }): Promise<PagedResponse<HoldingRow>> {
     return apiClient.get<PagedResponse<HoldingRow>>('/holdings', { params }).then((r) => r.data)
   },
 
@@ -172,5 +179,41 @@ export const holdingsApi = {
     return apiClient
       .delete(`/wallets/${walletId}/fund-holdings/${holdingId}/contributions/${contributionId}`)
       .then(() => undefined)
+  },
+
+  updateStockLotDate(
+    walletId: string,
+    holdingId: string,
+    lotId: string,
+    payload: { lotDate: string },
+  ): Promise<LotDetail> {
+    return apiClient
+      .patch<LotDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}/lots/${lotId}`, payload)
+      .then((r) => r.data)
+  },
+
+  updateCryptoLotDate(
+    walletId: string,
+    holdingId: string,
+    lotId: string,
+    payload: { lotDate: string },
+  ): Promise<LotDetail> {
+    return apiClient
+      .patch<LotDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}/lots/${lotId}`, payload)
+      .then((r) => r.data)
+  },
+
+  updateFundContributionDate(
+    walletId: string,
+    holdingId: string,
+    contributionId: string,
+    payload: { contributionDate: string },
+  ): Promise<ContributionDetail> {
+    return apiClient
+      .patch<ContributionDetail>(
+        `/wallets/${walletId}/fund-holdings/${holdingId}/contributions/${contributionId}`,
+        payload,
+      )
+      .then((r) => r.data)
   },
 }

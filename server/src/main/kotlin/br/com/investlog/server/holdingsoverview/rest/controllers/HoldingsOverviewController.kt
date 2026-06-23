@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RestController
 class HoldingsOverviewController(private val holdingsOverviewService: HoldingsOverviewService) {
 
     @GetMapping
-    fun findAll(@RequestParam(required = false) kind: String?, pageable: Pageable): PagedModel<HoldingRowResponse> =
-        holdingsOverviewService.findAll(kind, pageable)
+    fun findAll(
+        @RequestParam(required = false) kind: String?,
+        @RequestParam(required = false) typeLabel: String?,
+        @RequestParam(required = false) search: String?,
+        pageable: Pageable,
+    ): PagedModel<HoldingRowResponse> = holdingsOverviewService.findAll(kind, typeLabel, search, pageable)
 }

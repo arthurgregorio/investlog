@@ -3,6 +3,7 @@ package br.com.investlog.server.fundholdings.rest.controllers
 import br.com.investlog.server.fundholdings.domain.services.FundHoldingService
 import br.com.investlog.server.fundholdings.rest.payloads.ContributionCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.ContributionResponse
+import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingUpdateRequest
@@ -70,4 +71,12 @@ class FundHoldingController(
         @PathVariable holdingId: UUID,
         @PathVariable contributionId: UUID,
     ) = service.deleteContribution(walletId, holdingId, contributionId)
+
+    @PatchMapping("/{holdingId}/contributions/{contributionId}")
+    fun updateContributionDate(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @PathVariable contributionId: UUID,
+        @Valid @RequestBody request: ContributionUpdateRequest,
+    ): ContributionResponse = service.updateContributionDate(walletId, holdingId, contributionId, request)
 }

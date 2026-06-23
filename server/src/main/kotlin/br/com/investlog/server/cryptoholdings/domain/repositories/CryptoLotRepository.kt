@@ -5,6 +5,7 @@ import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
 import java.util.UUID
 
 @Repository
@@ -18,6 +19,22 @@ class CryptoLotRepository(private val dsl: DSLContext) {
             .set(CRYPTO_LOTS.PRICE, request.price)
             .returning()
             .fetchSingle()
+
+        return LotResponse(
+            id = rec.externalId!!,
+            lotDate = rec.lotDate!!,
+            quantity = rec.quantity!!,
+            price = rec.price!!,
+        )
+    }
+
+    fun updateLotDate(holdingInternalId: Long, externalId: UUID, lotDate: LocalDate): LotResponse? {
+        val rec = dsl.update(CRYPTO_LOTS)
+            .set(CRYPTO_LOTS.LOT_DATE, lotDate)
+            .where(CRYPTO_LOTS.CRYPTO_HOLDING_ID.eq(holdingInternalId))
+            .and(CRYPTO_LOTS.EXTERNAL_ID.eq(externalId))
+            .returning()
+            .fetchOne() ?: return null
 
         return LotResponse(
             id = rec.externalId!!,

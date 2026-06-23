@@ -8,6 +8,7 @@ import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingUpdateR
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
+import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.wallets.domain.services.WalletService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -85,5 +86,19 @@ class CryptoHoldingService(
         if (lotRepo.deleteByExternalId(holdingId, lotExternalId) == 0) {
             throw NotFoundException("Lot not found: $lotExternalId")
         }
+    }
+
+    @Transactional
+    fun updateLotDate(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        lotExternalId: UUID,
+        request: LotUpdateRequest,
+    ): LotResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
+            ?: throw NotFoundException("Crypto holding not found: $holdingExternalId")
+        return lotRepo.updateLotDate(holdingId, lotExternalId, request.lotDate)
+            ?: throw NotFoundException("Lot not found: $lotExternalId")
     }
 }

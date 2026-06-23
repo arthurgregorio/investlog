@@ -5,6 +5,7 @@ import br.com.investlog.server.stockholdings.domain.repositories.StockHoldingRep
 import br.com.investlog.server.stockholdings.domain.repositories.StockLotRepository
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
+import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingUpdateRequest
@@ -90,5 +91,19 @@ class StockHoldingService(
             ?: throw NotFoundException("Stock holding not found: $holdingExternalId")
         val deleted = lotRepo.deleteByExternalId(holdingId, lotExternalId)
         if (deleted == 0) throw NotFoundException("Lot not found: $lotExternalId")
+    }
+
+    @Transactional
+    fun updateLotDate(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        lotExternalId: UUID,
+        request: LotUpdateRequest,
+    ): LotResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
+            ?: throw NotFoundException("Stock holding not found: $holdingExternalId")
+        return lotRepo.updateLotDate(holdingId, lotExternalId, request.lotDate)
+            ?: throw NotFoundException("Lot not found: $lotExternalId")
     }
 }

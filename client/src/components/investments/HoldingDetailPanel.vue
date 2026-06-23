@@ -3,9 +3,10 @@ import { computed, onMounted, ref } from 'vue'
 import { BButton, useDialog, useToast } from 'buefy'
 import AddPositionModal from '@/components/investments/AddPositionModal.vue'
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
+import DateInput from '@/components/ui/DateInput.vue'
 import { holdingsApi } from '@/api/holdings'
 import { fmt } from '@/composables/useFormat'
-import type { FundHoldingDetail, HoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
+import type { ContributionDetail, FundHoldingDetail, HoldingDetail, HoldingRow, LotDetail, StockHoldingDetail } from '@/types'
 
 const props = defineProps<{ row: HoldingRow }>()
 const emit = defineEmits<{
@@ -134,6 +135,44 @@ function confirmDeleteContribution(contributionId: string) {
     },
   })
 }
+
+const editingDateId = ref<string | null>(null)
+
+function parseDate(iso: string): Date {
+  return new Date(iso + 'T00:00:00')
+}
+
+function toIsoDate(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+function startEditDate(id: string) {
+  editingDateId.value = id
+}
+
+async function saveLotDate(lot: LotDetail, date: Date | null) {
+  if (!date) return
+  if (isStock.value) {
+    await holdingsApi.updateStockLotDate(props.row.walletId, props.row.id, lot.id, { lotDate: toIsoDate(date) })
+  } else {
+    await holdingsApi.updateCryptoLotDate(props.row.walletId, props.row.id, lot.id, { lotDate: toIsoDate(date) })
+  }
+  editingDateId.value = null
+  toast.open({ message: 'Data atualizada.', type: 'is-success' })
+  await reloadDetail()
+  emit('positionAdded')
+}
+
+async function saveContributionDate(contribution: ContributionDetail, date: Date | null) {
+  if (!date) return
+  await holdingsApi.updateFundContributionDate(props.row.walletId, props.row.id, contribution.id, {
+    contributionDate: toIsoDate(date),
+  })
+  editingDateId.value = null
+  toast.open({ message: 'Data atualizada.', type: 'is-success' })
+  await reloadDetail()
+  emit('positionAdded')
+}
 </script>
 
 <template>
@@ -153,7 +192,16 @@ function confirmDeleteContribution(contributionId: string) {
       <tbody>
         <template v-if="fundDetail">
           <tr v-for="contribution in fundDetail.contributions" :key="contribution.id">
-            <td>{{ fmt.date(contribution.contributionDate) }}</td>
+            <td>
+              <DateInput
+                v-if="editingDateId === contribution.id"
+                :model-value="parseDate(contribution.contributionDate)"
+                @update:model-value="(date) => saveContributionDate(contribution, date)"
+              />
+              <button v-else class="date-edit" @click.stop="startEditDate(contribution.id)">
+                {{ fmt.date(contribution.contributionDate) }}
+              </button>
+            </td>
             <td class="c-num">{{ fmt.money(contribution.amount, row.walletCurrency) }}</td>
             <td class="c-act">
               <b-button
@@ -168,7 +216,16 @@ function confirmDeleteContribution(contributionId: string) {
         </template>
         <template v-else-if="tradeDetail">
           <tr v-for="lot in tradeDetail.lots" :key="lot.id">
-            <td>{{ fmt.date(lot.lotDate) }}</td>
+            <td>
+              <DateInput
+                v-if="editingDateId === lot.id"
+                :model-value="parseDate(lot.lotDate)"
+                @update:model-value="(date) => saveLotDate(lot, date)"
+              />
+              <button v-else class="date-edit" @click.stop="startEditDate(lot.id)">
+                {{ fmt.date(lot.lotDate) }}
+              </button>
+            </td>
             <td class="c-num">{{ fmt.qty(lot.quantity) }}</td>
             <td class="c-num">{{ fmt.money(lot.price, row.walletCurrency) }}</td>
             <td class="c-num">{{ fmt.money(lot.quantity * lot.price, row.walletCurrency) }}</td>

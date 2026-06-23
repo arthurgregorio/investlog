@@ -151,4 +151,38 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isNotFound()
     }
+
+    @Test
+    @Order(8)
+    fun `updates a contribution's date`() {
+        val h = createHolding("Tesouro Selic 2027")
+        val contribution = restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${h.id}/contributions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"contributionDate":"2024-05-01","amount":3000.00}""")
+            .exchange()
+            .returnResult<ContributionResponse>()
+            .responseBody!!
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${h.id}/contributions/${contribution.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"contributionDate":"2024-05-20"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.contributionDate").isEqualTo("2024-05-20")
+    }
+
+    @Test
+    @Order(9)
+    fun `returns 404 when updating an unknown contribution's date`() {
+        val h = createHolding("Tesouro Prefixado 2030")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${h.id}/contributions/${UUID.randomUUID()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"contributionDate":"2024-05-20"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+    }
 }
