@@ -10,7 +10,14 @@ import type {
 } from '@/types'
 
 export const holdingsApi = {
-  findAll(params: { kind?: string; page?: number; size?: number }): Promise<PagedResponse<HoldingRow>> {
+  findAll(params: {
+    kind?: string
+    typeLabel?: string
+    search?: string
+    sort?: string
+    page?: number
+    size?: number
+  }): Promise<PagedResponse<HoldingRow>> {
     return apiClient.get<PagedResponse<HoldingRow>>('/holdings', { params }).then((r) => r.data)
   },
 
