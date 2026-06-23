@@ -26,6 +26,13 @@ const walletCurrency = computed(() => {
 })
 const sym = computed(() => fmt.sym(walletCurrency.value))
 
+const ticker = computed({
+  get: () => props.form.ticker,
+  set: (value: string) => {
+    props.form.ticker = value.toUpperCase()
+  },
+})
+
 const walletOptions = computed(() =>
   props.form.walletsOfKind.map((wallet) => ({ value: wallet.id, label: `${wallet.name} · ${wallet.currency}` })),
 )
@@ -77,7 +84,7 @@ const kindLabelPt = computed(() =>
 
       <template v-if="form.kind !== 'FUNDS'">
         <b-field :label="form.kind === 'CRYPTO' ? 'Sigla / código' : 'Ticker'">
-          <b-input v-model="form.ticker" :placeholder="form.kind === 'CRYPTO' ? 'BTC' : 'PETR4'" />
+          <b-input v-model="ticker" :placeholder="form.kind === 'CRYPTO' ? 'BTC' : 'PETR4'" />
         </b-field>
         <b-field label="Nome (opcional)" :style="form.kind === 'CRYPTO' ? 'grid-column: 1/-1' : undefined">
           <b-input v-model="form.name" :placeholder="form.kind === 'CRYPTO' ? 'Bitcoin' : 'Petrobras'" />
