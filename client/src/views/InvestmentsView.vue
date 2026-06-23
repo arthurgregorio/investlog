@@ -79,6 +79,10 @@ function subLabel(row: HoldingRow): string {
   if (row.kind === 'CRYPTO') return 'Cripto'
   return row.typeLabel ?? 'Ação'
 }
+
+function openAddInvestment() {
+  modals.openAddInvestment(activeFilter.value !== 'all' ? activeFilter.value : undefined)
+}
 </script>
 
 <template>
@@ -88,7 +92,7 @@ function subLabel(row: HoldingRow): string {
         <h1 class="page-title">Investimentos</h1>
         <p class="page-desc">Aqui você gerencia seus investimentos</p>
       </div>
-      <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="modals.openAddInvestment()">
+      <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="openAddInvestment">
         Adicionar investimento
       </b-button>
     </div>
@@ -112,7 +116,7 @@ function subLabel(row: HoldingRow): string {
       text="Registre uma aquisição para vê-la no seu logbook."
     >
       <template #action>
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="modals.openAddInvestment()">
+        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="openAddInvestment">
           Adicionar investimento
         </b-button>
       </template>
