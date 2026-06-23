@@ -1244,6 +1244,21 @@ a {
     border-bottom: none;
 }
 
+.date-edit {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--border);
+}
+
+.date-edit:hover {
+    border-bottom-color: var(--primary);
+    color: var(--primary-d);
+}
+
 .detail-foot {
     display: flex;
     align-items: center;
