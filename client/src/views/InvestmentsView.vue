@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -17,6 +17,7 @@ type Filter = 'all' | WalletKind
 
 const holdingsListStore = useHoldingsListStore()
 const route = useRoute()
+const router = useRouter()
 const modals = useModals()
 
 const tabs: { key: Filter; label: string; icon: IconName }[] = [
@@ -47,9 +48,7 @@ onMounted(() => holdingsListStore.loadKind(activeFilter.value, 0))
 
 function selectTab(filter: Filter) {
   if (filter === activeFilter.value) return
-  activeFilter.value = filter
-  openedDetails.value = []
-  holdingsListStore.loadKind(filter, 0)
+  router.replace({ query: { ...route.query, filter: filter === 'all' ? undefined : filter } })
 }
 
 function onPageChange(newPage: number) {
