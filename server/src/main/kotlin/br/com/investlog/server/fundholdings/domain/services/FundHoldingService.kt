@@ -4,6 +4,7 @@ import br.com.investlog.server.fundholdings.domain.repositories.FundContribution
 import br.com.investlog.server.fundholdings.domain.repositories.FundHoldingRepository
 import br.com.investlog.server.fundholdings.rest.payloads.ContributionCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.ContributionResponse
+import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingUpdateRequest
@@ -86,5 +87,19 @@ class FundHoldingService(
         if (contributionRepo.deleteByExternalId(holdingId, contributionExternalId) == 0) {
             throw NotFoundException("Contribution not found: $contributionExternalId")
         }
+    }
+
+    @Transactional
+    fun updateContributionDate(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        contributionExternalId: UUID,
+        request: ContributionUpdateRequest,
+    ): ContributionResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
+            ?: throw NotFoundException("Fund holding not found: $holdingExternalId")
+        return contributionRepo.updateContributionDate(holdingId, contributionExternalId, request.contributionDate)
+            ?: throw NotFoundException("Contribution not found: $contributionExternalId")
     }
 }
