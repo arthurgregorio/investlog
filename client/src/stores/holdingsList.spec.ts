@@ -17,6 +17,7 @@ const makeRow = (id: string, kind: 'STOCKS' | 'CRYPTO' | 'FUNDS' = 'STOCKS'): Ho
   walletCurrency: 'BRL',
   quantity: 10,
   costBasis: 1000,
+  currentPrice: 110,
   currentValue: 1100,
   gain: 100,
   gainPct: 10,

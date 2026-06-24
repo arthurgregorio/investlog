@@ -3,16 +3,34 @@ import { useToast } from 'buefy'
 import { holdingsApi } from '@/api/holdings'
 import { useWalletsStore } from '@/stores/wallets'
 import { useTypesListStore } from '@/stores/typesList'
-import type { WalletKind } from '@/types'
+import type { WalletKind, WalletResponse } from '@/types'
 
 export type InvestmentKind = WalletKind
+
+interface AddInvestmentFormState {
+  kind: InvestmentKind
+  walletId: string
+  stockTypeId: string
+  fundTypeId: string
+  ticker: string
+  name: string
+  date: Date | null
+  quantity: number | ''
+  price: number | ''
+  currentPrice: number | ''
+  amount: number | ''
+  currentValue: number | ''
+  submitting: boolean
+  walletsOfKind: WalletResponse[]
+  valid: boolean
+}
 
 export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind: InvestmentKind) => void) {
   const toast = useToast()
   const walletsStore = useWalletsStore()
   const typesListStore = useTypesListStore()
 
-  const form = reactive({
+  const form: AddInvestmentFormState = reactive({
     kind: initialKind ?? 'STOCKS',
     walletId: '' as string,
     stockTypeId: '' as string,

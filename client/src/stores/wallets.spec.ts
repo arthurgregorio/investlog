@@ -13,6 +13,9 @@ const mockWallet: WalletResponse = {
   currency: 'BRL',
   holdingCount: 3,
   totalInvested: 1500,
+  currentValue: null,
+  gain: null,
+  gainPct: null,
   createdAt: '2024-01-01T00:00:00Z',
 }
 
