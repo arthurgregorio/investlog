@@ -1,6 +1,7 @@
 package br.com.investlog.server.overview.rest.controllers
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.overview.rest.payloads.PortfolioSummaryResponse
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
 import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
@@ -11,8 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.UUID
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OverviewControllerTest : BaseIntegrationTest() {
@@ -114,5 +118,97 @@ class OverviewControllerTest : BaseIntegrationTest() {
             }
             previousTotal = totalInvested
         }
+    }
+
+    @Test
+    @Order(5)
+    fun `GET overview converts a wallet in a different currency using the configured rate`() {
+
+        restTestClient.put()
+            .uri("/private/v1/currency-rates/USD")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"rate":5.00}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        val before = restTestClient.get()
+            .uri("/private/v1/overview")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<PortfolioSummaryResponse>()
+            .responseBody!!
+
+        val usdStockTypeId = restTestClient.post()
+            .uri("/private/v1/stock-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"USD Overview Stock Type"}""")
+            .exchange()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+            .id
+
+        val usdWalletId = restTestClient.post()
+            .uri("/private/v1/wallets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"USD Overview Wallet","kind":"stocks","currency":"USD"}""")
+            .exchange()
+            .returnResult<WalletResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$usdWalletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"stockTypeId":"$usdStockTypeId","ticker":"USDOV3","currentPrice":110.00,
+                   "lot":{"lotDate":"2025-04-10","quantity":2,"price":100.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
+
+        val after = restTestClient.get()
+            .uri("/private/v1/overview")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<PortfolioSummaryResponse>()
+            .responseBody!!
+
+        assertEquals("BRL", after.displayCurrency)
+        assertEquals(0, after.totalCostBasis.compareTo(before.totalCostBasis + BigDecimal("1000.00")))
+        assertEquals(0, after.totalCurrentValue.compareTo(before.totalCurrentValue + BigDecimal("1100.00")))
+    }
+
+    @Test
+    @Order(6)
+    fun `GET overview uses the currently selected preferred currency for conversion`() {
+
+        val beforeSwitch = restTestClient.get()
+            .uri("/private/v1/overview")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<PortfolioSummaryResponse>()
+            .responseBody!!
+
+        restTestClient.patch()
+            .uri("/private/v1/profile")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"preferredCurrency":"USD"}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        val afterSwitch = restTestClient.get()
+            .uri("/private/v1/overview")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<PortfolioSummaryResponse>()
+            .responseBody!!
+
+        assertEquals("USD", afterSwitch.displayCurrency)
+        assertEquals(
+            0,
+            afterSwitch.totalCostBasis.compareTo(
+                beforeSwitch.totalCostBasis.divide(BigDecimal("5.00"), 10, RoundingMode.HALF_UP)
+            ),
+        )
     }
 }
