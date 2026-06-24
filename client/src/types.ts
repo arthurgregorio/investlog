@@ -54,7 +54,7 @@ export interface KindSummary {
 }
 
 export interface PortfolioSummary {
-  baseCurrency: string | null
+  displayCurrency: string
   totalCostBasis: number
   totalCurrentValue: number
   totalGain: number
@@ -135,4 +135,11 @@ export interface ProfileResponse {
   name: string
   email: string
   avatarUrl: string | null
+  accentColor: string
+  preferredCurrency: string
+}
+
+export interface ProfileUpdateRequest {
+  accentColor?: string
+  preferredCurrency?: string
 }
