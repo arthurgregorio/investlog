@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useToast } from 'buefy'
 import AppIcon from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
@@ -56,8 +56,20 @@ async function removeFundType(fundTypeId: string) {
   toast.open({ message: 'Tipo de fundo removido.', type: 'is-success' })
 }
 
-async function setRate(currencyCode: string, value: number | '') {
-  if (value === '' || value <= 0) return
+const rateDrafts = reactive<Record<string, number | ''>>({})
+
+function rateDisplayValue(currencyCode: string, storedRate: number) {
+  return currencyCode in rateDrafts ? rateDrafts[currencyCode] : storedRate
+}
+
+function draftRate(currencyCode: string, value: number | '') {
+  rateDrafts[currencyCode] = value
+}
+
+async function commitRate(currencyCode: string) {
+  const value = rateDrafts[currencyCode]
+  delete rateDrafts[currencyCode]
+  if (value === undefined || value === '' || value <= 0) return
   await ratesStore.upsertRate(currencyCode, Number(value), false)
   toast.open({ message: 'Taxa de conversão atualizada.', type: 'is-success' })
 }
@@ -92,9 +104,10 @@ async function setRate(currencyCode: string, value: number | '') {
             <label v-else class="rate-input">
               <span>1 {{ rate.currencyCode }} =</span>
               <NumberInput
-                :model-value="rate.rate"
+                :model-value="rateDisplayValue(rate.currencyCode, rate.rate)"
                 :prefix="fmt.sym(ratesStore.baseCurrency)"
-                @update:model-value="(v) => setRate(rate.currencyCode, v)"
+                @update:model-value="(v) => draftRate(rate.currencyCode, v)"
+                @blur="commitRate(rate.currencyCode)"
               />
             </label>
           </div>

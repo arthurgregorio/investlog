@@ -128,14 +128,14 @@ function renameWallet(walletId: string, currentName: string) {
           </div>
           <div class="wallet-result">
             <div class="wallet-result-item">
-              <div class="wallet-result-label">Valor atual</div>
               <div class="wallet-result-value">
                 {{ wallet.currentValue == null ? '—' : fmt.money(wallet.currentValue, wallet.currency) }}
               </div>
+              <div class="wallet-result-label">Valor atual</div>
             </div>
             <div class="wallet-result-item">
-              <div class="wallet-result-label">Resultado</div>
               <GainChip :value="wallet.gain" :pct="wallet.gainPct" :cur="wallet.currency" />
+              <div class="wallet-result-label">Resultado</div>
             </div>
           </div>
           <div class="wallet-foot">
