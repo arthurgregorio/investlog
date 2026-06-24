@@ -3,10 +3,14 @@ import { computed } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { fmt } from '@/composables/useFormat'
 
-const props = withDefaults(defineProps<{ value: number | null; pct?: number | null; cur?: string }>(), {
-  pct: null,
-  cur: 'BRL',
-})
+const props = withDefaults(
+  defineProps<{ value: number | null; pct?: number | null; cur?: string; compact?: boolean }>(),
+  {
+    pct: null,
+    cur: 'BRL',
+    compact: false,
+  },
+)
 
 const dir = computed(() => {
   if (props.value == null) return 'empty'
@@ -26,7 +30,7 @@ const dir = computed(() => {
       :stroke="2.6"
       :style="{ transform: dir === 'up' ? 'rotate(180deg)' : 'none' }"
     />
-    <span>{{ fmt.moneySigned(value, cur) }}</span>
+    <span>{{ fmt.moneySigned(value, cur, { compact }) }}</span>
     <span v-if="pct != null" class="gl-pct">{{ fmt.pctSigned(pct) }}</span>
   </span>
 </template>

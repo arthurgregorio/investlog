@@ -197,7 +197,7 @@ springBoot {
 tasks {
     test {
         useJUnitPlatform()
-        maxParallelForks = Runtime.getRuntime().availableProcessors()
+        maxParallelForks = 4
     }
 
     bootJar {

@@ -104,10 +104,15 @@ The persistence schema itself is fully defined (see below).
 
 ### Testing
 
-- JUnit 5 (`useJUnitPlatform()`, parallel forks = available processors) + `kotlin-test-junit5`.
+- JUnit 5 (`useJUnitPlatform()`, `maxParallelForks = 4`) + `kotlin-test-junit5`. Forks are capped
+  (rather than using all available processors) to avoid Docker/Testcontainers connection-pool
+  contention when many forks start a Postgres container at once.
 - `TestcontainersConfiguration` (`src/test/.../TestcontainersConfiguration.kt`) registers a
   Postgres `@ServiceConnection` testcontainer; `ServerApplicationTests` imports it for
-  `@SpringBootTest`.
+  `@SpringBootTest`. `BaseIntegrationTest` carries `@DirtiesContext(classMode = AFTER_CLASS)` so
+  each test class gets its own fresh container/schema — controller test classes assert exact row
+  counts assuming a clean table at class start, and the Spring test-context cache would otherwise
+  share one container/database across classes with identical `@SpringBootTest` config.
 - `TestServerApplication` is an alternate `main` that boots the app with
   `TestcontainersConfiguration` applied, for running locally against a throwaway
   Testcontainers-managed Postgres.

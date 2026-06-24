@@ -13,11 +13,12 @@ export const fmt = {
     if (opts.compact) {
       const absoluteValue = Math.abs(v)
       if (absoluteValue >= 1_000_000) return s + ' ' + (v / 1_000_000).toFixed(1).replace('.', ',') + 'M'
-      if (absoluteValue >= 100_000) return s + ' ' + Math.round(v / 1_000) + 'k'
+      if (absoluteValue >= 1_000) return s + ' ' + (v / 1_000).toFixed(1).replace('.', ',') + 'k'
     }
     return s + ' ' + num2.format(v)
   },
-  moneySigned: (v: number, cur = 'BRL') => (v >= 0 ? '+' : '−') + fmt.money(Math.abs(v), cur),
+  moneySigned: (v: number, cur = 'BRL', opts: { compact?: boolean } = {}) =>
+    (v >= 0 ? '+' : '−') + fmt.money(Math.abs(v), cur, opts),
   pct: (v: number) => num2.format(Math.abs(v)) + '%',
   pctSigned: (v: number) => (v >= 0 ? '+' : '−') + num2.format(Math.abs(v)) + '%',
   qty: (v: number) => (Number.isInteger(v) ? String(v) : numQ.format(v)),

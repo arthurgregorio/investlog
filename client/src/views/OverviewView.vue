@@ -118,7 +118,7 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
             <Card class="kpi-card">
               <CardBody>
                 <div class="kpi-label">Total investido</div>
-                <div class="kpi-value">{{ fmt.money(grandInvestedBase, baseCurrency) }}</div>
+                <div class="kpi-value">{{ fmt.money(grandInvestedBase, baseCurrency, { compact: true }) }}</div>
                 <div class="kpi-foot">
                   <span class="kpi-sub">
                     {{ walletsStore.wallets.length }} carteiras · {{ totalHoldings }} investimentos
@@ -132,7 +132,7 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
             <Card class="kpi-card">
               <CardBody>
                 <div class="kpi-label">Valor atual estimado</div>
-                <div class="kpi-value">{{ fmt.money(summary.totalCurrentValue, baseCurrency) }}</div>
+                <div class="kpi-value">{{ fmt.money(summary.totalCurrentValue, baseCurrency, { compact: true }) }}</div>
                 <div class="kpi-foot">
                   <span class="kpi-sub">posições com valor atual</span>
                 </div>
@@ -145,7 +145,7 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
               <CardBody>
                 <div class="kpi-label">Resultado</div>
                 <div class="kpi-value" :class="summary.totalGain >= 0 ? 'gl-up' : 'gl-down'">
-                  {{ fmt.moneySigned(summary.totalGain, baseCurrency) }}
+                  {{ fmt.moneySigned(summary.totalGain, baseCurrency, { compact: true }) }}
                 </div>
                 <div class="kpi-foot">
                   <span class="kpi-sub" :class="summary.totalGain >= 0 ? 'gl-up' : 'gl-down'">
@@ -221,11 +221,13 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
                     <AppIcon :name="iconFor(typeRow.key)" :size="20" />
                   </span>
                   <div class="type-name">{{ typeRow.label }}</div>
-                  <span class="type-share">
-                    {{ fmt.pct(grandInvestedBase ? (typeRow.invested / grandInvestedBase) * 100 : 0) }}
-                  </span>
+                  <div class="type-meta">
+                    <span>{{ typeRow.walletCount }} {{ typeRow.walletCount === 1 ? 'carteira' : 'carteiras' }}</span>
+                    <span class="dot">·</span>
+                    <span>{{ typeRow.holdings }} {{ typeRow.holdings === 1 ? 'ativo' : 'ativos' }}</span>
+                  </div>
                 </div>
-                <div class="type-value">{{ fmt.money(typeRow.invested, baseCurrency) }}</div>
+                <div class="type-value">{{ fmt.money(typeRow.invested, baseCurrency, { compact: true }) }}</div>
                 <div class="type-result-row">
                   <div class="type-result-item">
                     <div class="type-result-label">Valor atual</div>
@@ -235,13 +237,8 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
                   </div>
                   <div class="type-result-item">
                     <div class="type-result-label">Resultado</div>
-                    <GainChip :value="typeRow.gain" :pct="typeRow.gainPct" :cur="baseCurrency" />
+                    <GainChip :value="typeRow.gain" :pct="typeRow.gainPct" :cur="baseCurrency" compact />
                   </div>
-                </div>
-                <div class="type-meta">
-                  <span>{{ typeRow.walletCount }} {{ typeRow.walletCount === 1 ? 'carteira' : 'carteiras' }}</span>
-                  <span class="dot">·</span>
-                  <span>{{ typeRow.holdings }} {{ typeRow.holdings === 1 ? 'ativo' : 'ativos' }}</span>
                 </div>
               </CardBody>
             </Card>
