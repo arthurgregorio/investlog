@@ -25,7 +25,7 @@ onMounted(() => {
 })
 
 const summary = computed(() => overviewStore.summary)
-const baseCurrency = computed(() => summary.value?.baseCurrency ?? 'BRL')
+const baseCurrency = computed(() => summary.value?.displayCurrency ?? 'BRL')
 const totalHoldings = computed(() =>
   summary.value?.kindSummaries.reduce((sum, ks) => sum + ks.holdingCount, 0) ?? 0,
 )
