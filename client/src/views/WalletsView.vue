@@ -10,6 +10,7 @@ import GainChip from '@/components/ui/GainChip.vue'
 import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
+import { useRatesStore } from '@/stores/rates'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES } from '@/utils/walletTypes'
@@ -19,10 +20,15 @@ const dialog = useDialog()
 const toast = useToast()
 const walletsStore = useWalletsStore()
 const currencyStore = useCurrencyStore()
+const ratesStore = useRatesStore()
 const router = useRouter()
 const modals = useModals()
 
-onMounted(() => walletsStore.load())
+onMounted(() => {
+  walletsStore.load()
+  currencyStore.load()
+  ratesStore.load()
+})
 
 const tagTypeFor: Record<WalletKind, string> = {
   STOCKS: 'is-link',

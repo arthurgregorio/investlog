@@ -211,4 +211,22 @@ class OverviewControllerTest : BaseIntegrationTest() {
             ),
         )
     }
+
+    @Test
+    @Order(7)
+    fun `GET overview series converts to the currently selected preferred currency`() {
+
+        val body = restTestClient.get()
+            .uri("/private/v1/overview/series")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody(List::class.java)
+            .returnResult().responseBody!!
+
+        @Suppress("UNCHECKED_CAST")
+        val aprilPoint = body.map { it as Map<String, Any> }.first { it["month"] == "2025-04" }
+        val totalInvested = BigDecimal((aprilPoint["totalInvested"] as Number).toString())
+
+        assertEquals(0, totalInvested.compareTo(BigDecimal("250.00")))
+    }
 }

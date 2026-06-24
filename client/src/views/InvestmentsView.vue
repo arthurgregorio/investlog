@@ -11,6 +11,7 @@ import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useTypesListStore } from '@/stores/typesList'
 import { useCurrencyStore } from '@/stores/currency'
+import { useRatesStore } from '@/stores/rates'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
@@ -22,6 +23,7 @@ type SortKey = 'wallet' | 'price' | 'invested' | 'current' | 'gain'
 const holdingsListStore = useHoldingsListStore()
 const typesListStore = useTypesListStore()
 const currencyStore = useCurrencyStore()
+const ratesStore = useRatesStore()
 const route = useRoute()
 const router = useRouter()
 const modals = useModals()
@@ -74,6 +76,8 @@ watch(() => route.query.filter, () => {
 
 onMounted(() => {
   typesListStore.load()
+  currencyStore.load()
+  ratesStore.load()
   reload(0)
 })
 

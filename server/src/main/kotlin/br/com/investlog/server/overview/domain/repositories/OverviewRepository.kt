@@ -29,8 +29,6 @@ class OverviewRepository(private val dsl: DSLContext) {
 
         val displayCurrencyRate = displayCurrencyRate(userId, displayCurrency)
         val appliedRate = DSL.coalesce(currencyRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)
-        // `Field<BigDecimal>.div(Number)` should resolve directly; if jOOQ's overload
-        // resolution complains, use `.div(DSL.`val`(displayCurrencyRate))` instead.
 
         val kindSummaries = dsl.select(
             overview.KIND,

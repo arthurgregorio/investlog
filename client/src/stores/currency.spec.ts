@@ -75,4 +75,11 @@ describe('useCurrencyStore', () => {
     expect(currencyStore.displayCurrency).toBe('USD')
     expect(currencyStore.loaded).toBe(true)
   })
+
+  it('hydrate sets the display currency without calling the API', () => {
+    const currencyStore = useCurrencyStore()
+    currencyStore.hydrate('USD')
+    expect(currencyStore.displayCurrency).toBe('USD')
+    expect(currencyStore.loaded).toBe(true)
+  })
 })

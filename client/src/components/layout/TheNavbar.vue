@@ -24,7 +24,8 @@ const currencyOptions = computed(() =>
 
 onMounted(async () => {
   profile.value = await profileApi.getProfile()
-  await Promise.all([ratesStore.load(), currencyStore.load()])
+  currencyStore.hydrate(profile.value.preferredCurrency)
+  await ratesStore.load()
 })
 
 async function onCurrencyChange(currencyCode: string) {

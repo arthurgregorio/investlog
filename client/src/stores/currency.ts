@@ -21,6 +21,11 @@ export const useCurrencyStore = defineStore('currency', () => {
     }
   }
 
+  function hydrate(currencyCode: string) {
+    displayCurrency.value = currencyCode
+    loaded.value = true
+  }
+
   async function setDisplayCurrency(currencyCode: string) {
     if (currencyCode === displayCurrency.value) return
     const profile = await profileApi.updateProfile({ preferredCurrency: currencyCode })
@@ -37,5 +42,5 @@ export const useCurrencyStore = defineStore('currency', () => {
     return amount * (rateToAnchor(fromCurrency) / rateToAnchor(displayCurrency.value))
   }
 
-  return { displayCurrency, loaded, loading, load, setDisplayCurrency, convert }
+  return { displayCurrency, loaded, loading, load, setDisplayCurrency, convert, hydrate }
 })
