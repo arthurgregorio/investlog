@@ -5,6 +5,7 @@ import AddPositionModal from '@/components/investments/AddPositionModal.vue'
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import { holdingsApi } from '@/api/holdings'
+import { useCurrencyStore } from '@/stores/currency'
 import { fmt } from '@/composables/useFormat'
 import type { ContributionDetail, FundHoldingDetail, HoldingDetail, HoldingRow, LotDetail, StockHoldingDetail } from '@/types'
 
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 
 const dialog = useDialog()
 const toast = useToast()
+const currencyStore = useCurrencyStore()
 
 const detail = ref<HoldingDetail | null>(null)
 const loading = ref(false)
@@ -202,7 +204,9 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
                 {{ fmt.date(contribution.contributionDate) }}
               </button>
             </td>
-            <td class="c-num">{{ fmt.money(contribution.amount, row.walletCurrency) }}</td>
+            <td class="c-num">
+              {{ fmt.money(currencyStore.convert(contribution.amount, row.walletCurrency), currencyStore.displayCurrency) }}
+            </td>
             <td class="c-act">
               <b-button
                 outlined
@@ -227,8 +231,12 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
               </button>
             </td>
             <td class="c-num">{{ fmt.qty(lot.quantity) }}</td>
-            <td class="c-num">{{ fmt.money(lot.price, row.walletCurrency) }}</td>
-            <td class="c-num">{{ fmt.money(lot.quantity * lot.price, row.walletCurrency) }}</td>
+            <td class="c-num">
+              {{ fmt.money(currencyStore.convert(lot.price, row.walletCurrency), currencyStore.displayCurrency) }}
+            </td>
+            <td class="c-num">
+              {{ fmt.money(currencyStore.convert(lot.quantity * lot.price, row.walletCurrency), currencyStore.displayCurrency) }}
+            </td>
             <td class="c-act">
               <b-button
                 outlined
@@ -256,7 +264,7 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
 
       <span v-if="!isFund && quantity" class="avg-note">
         Preço médio
-        <b>{{ fmt.money(costBasis / quantity, row.walletCurrency) }}</b>
+        <b>{{ fmt.money(currencyStore.convert(costBasis / quantity, row.walletCurrency), currencyStore.displayCurrency) }}</b>
       </span>
     </div>
 
