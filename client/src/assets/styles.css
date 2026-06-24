@@ -358,6 +358,10 @@ a {
     font-weight: 700;
 }
 
+.currency-select select {
+    height: 32px;
+}
+
 .navbar-user {
     display: flex;
     align-items: center;
