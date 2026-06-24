@@ -22,18 +22,13 @@ import java.math.RoundingMode
 @Repository
 class OverviewRepository(private val dsl: DSLContext) {
 
-    fun findSummary(userId: Long): PortfolioSummaryResponse {
+    fun findSummary(userId: Long, displayCurrency: String): PortfolioSummaryResponse {
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
         val wallets = WALLETS.`as`("wallets")
         val currencyRates = CURRENCY_RATES.`as`("currency_rates")
 
-        val baseCurrency = dsl.select(CURRENCY_RATES.CURRENCY_CODE)
-            .from(CURRENCY_RATES)
-            .where(CURRENCY_RATES.USER_ID.eq(userId))
-            .and(CURRENCY_RATES.IS_BASE.isTrue())
-            .fetchOne(CURRENCY_RATES.CURRENCY_CODE)
-
-        val appliedRate = DSL.coalesce(currencyRates.RATE, BigDecimal.ONE)
+        val displayCurrencyRate = displayCurrencyRate(userId, displayCurrency)
+        val appliedRate = DSL.coalesce(currencyRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)
 
         val kindSummaries = dsl.select(
             overview.KIND,
@@ -68,7 +63,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         val totalGain = totalCurrentValue - totalCostBasis
 
         return PortfolioSummaryResponse(
-            baseCurrency = baseCurrency,
+            displayCurrency = displayCurrency,
             totalCostBasis = totalCostBasis,
             totalCurrentValue = totalCurrentValue,
             totalGain = totalGain,
@@ -77,7 +72,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         )
     }
 
-    fun findSeries(userId: Long): List<SeriesPointResponse> {
+    fun findSeries(userId: Long, displayCurrency: String): List<SeriesPointResponse> {
         val stockRates = CURRENCY_RATES.`as`("stock_rates")
         val cryptoRates = CURRENCY_RATES.`as`("crypto_rates")
         val fundRates = CURRENCY_RATES.`as`("fund_rates")
@@ -85,12 +80,14 @@ class OverviewRepository(private val dsl: DSLContext) {
         val cryptoWallets = WALLETS.`as`("crypto_wallets")
         val fundWallets = WALLETS.`as`("fund_wallets")
 
+        val displayCurrencyRate = displayCurrencyRate(userId, displayCurrency)
+
         data class MonthAmount(val month: String, val amount: BigDecimal)
 
         val stockAmounts = dsl.select(
             DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, STOCK_LOTS.LOT_DATE).`as`("month"),
             STOCK_LOTS.QUANTITY.mul(STOCK_LOTS.PRICE)
-                .mul(DSL.coalesce(stockRates.RATE, BigDecimal.ONE)).`as`("amount"),
+                .mul(DSL.coalesce(stockRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)).`as`("amount"),
         )
             .from(STOCK_LOTS)
             .join(STOCK_HOLDINGS).on(STOCK_HOLDINGS.ID.eq(STOCK_LOTS.STOCK_HOLDING_ID))
@@ -104,7 +101,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         val cryptoAmounts = dsl.select(
             DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, CRYPTO_LOTS.LOT_DATE).`as`("month"),
             CRYPTO_LOTS.QUANTITY.mul(CRYPTO_LOTS.PRICE)
-                .mul(DSL.coalesce(cryptoRates.RATE, BigDecimal.ONE)).`as`("amount"),
+                .mul(DSL.coalesce(cryptoRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)).`as`("amount"),
         )
             .from(CRYPTO_LOTS)
             .join(CRYPTO_HOLDINGS).on(CRYPTO_HOLDINGS.ID.eq(CRYPTO_LOTS.CRYPTO_HOLDING_ID))
@@ -118,7 +115,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         val fundAmounts = dsl.select(
             DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, FUND_CONTRIBUTIONS.CONTRIBUTION_DATE).`as`("month"),
             FUND_CONTRIBUTIONS.AMOUNT
-                .mul(DSL.coalesce(fundRates.RATE, BigDecimal.ONE)).`as`("amount"),
+                .mul(DSL.coalesce(fundRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)).`as`("amount"),
         )
             .from(FUND_CONTRIBUTIONS)
             .join(FUND_HOLDINGS).on(FUND_HOLDINGS.ID.eq(FUND_CONTRIBUTIONS.FUND_HOLDING_ID))
@@ -140,6 +137,17 @@ class OverviewRepository(private val dsl: DSLContext) {
             SeriesPointResponse(month = month, totalInvested = cumulative)
         }
     }
+
+    /**
+     * Rate of [displayCurrency] relative to the rates-anchor currency (1 if it has no
+     * configured row, e.g. it IS the anchor — the anchor's own row always stores rate=1).
+     */
+    private fun displayCurrencyRate(userId: Long, displayCurrency: String): BigDecimal =
+        dsl.select(CURRENCY_RATES.RATE)
+            .from(CURRENCY_RATES)
+            .where(CURRENCY_RATES.USER_ID.eq(userId))
+            .and(CURRENCY_RATES.CURRENCY_CODE.eq(displayCurrency))
+            .fetchOne(CURRENCY_RATES.RATE) ?: BigDecimal.ONE
 
     private fun gainPct(gain: BigDecimal, costBasis: BigDecimal): BigDecimal? =
         if (costBasis.signum() != 0) gain.divide(costBasis, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))

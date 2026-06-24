@@ -13,12 +13,12 @@ class OverviewService(
 ) {
 
     fun getSummary(): PortfolioSummaryResponse {
-        val userId = currentUserProvider.getCurrentUser().id
-        return overviewRepository.findSummary(userId)
+        val user = currentUserProvider.getCurrentUser()
+        return overviewRepository.findSummary(user.id, user.preferredCurrency)
     }
 
     fun getSeries(): List<SeriesPointResponse> {
-        val userId = currentUserProvider.getCurrentUser().id
-        return overviewRepository.findSeries(userId)
+        val user = currentUserProvider.getCurrentUser()
+        return overviewRepository.findSeries(user.id, user.preferredCurrency)
     }
 }

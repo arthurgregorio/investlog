@@ -10,6 +10,8 @@ import SortTh from '@/components/ui/SortTh.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useTypesListStore } from '@/stores/typesList'
+import { useCurrencyStore } from '@/stores/currency'
+import { useRatesStore } from '@/stores/rates'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
@@ -20,6 +22,8 @@ type SortKey = 'wallet' | 'price' | 'invested' | 'current' | 'gain'
 
 const holdingsListStore = useHoldingsListStore()
 const typesListStore = useTypesListStore()
+const currencyStore = useCurrencyStore()
+const ratesStore = useRatesStore()
 const route = useRoute()
 const router = useRouter()
 const modals = useModals()
@@ -72,6 +76,8 @@ watch(() => route.query.filter, () => {
 
 onMounted(() => {
   typesListStore.load()
+  currencyStore.load()
+  ratesStore.load()
   reload(0)
 })
 
@@ -240,19 +246,31 @@ function openAddInvestment() {
                   </td>
                   <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
                   <td class="c-num">
-                    <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">{{ fmt.money(row.currentPrice, row.walletCurrency) }}</template>
-                    <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">{{ fmt.money(row.currentValue, row.walletCurrency) }}</template>
+                    <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
+                      {{ fmt.money(currencyStore.convert(row.currentPrice, row.walletCurrency), currencyStore.displayCurrency) }}
+                    </template>
+                    <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">
+                      {{ fmt.money(currencyStore.convert(row.currentValue, row.walletCurrency), currencyStore.displayCurrency) }}
+                    </template>
                     <span v-else class="gl-empty">—</span>
                   </td>
                   <td class="c-num">
-                    <div class="cell-strong">{{ fmt.money(row.costBasis, row.walletCurrency) }}</div>
+                    <div class="cell-strong">
+                      {{ fmt.money(currencyStore.convert(row.costBasis, row.walletCurrency), currencyStore.displayCurrency) }}
+                    </div>
                   </td>
                   <td class="c-num">
                     <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                    <template v-else>{{ fmt.money(row.currentValue, row.walletCurrency) }}</template>
+                    <template v-else>
+                      {{ fmt.money(currencyStore.convert(row.currentValue, row.walletCurrency), currencyStore.displayCurrency) }}
+                    </template>
                   </td>
                   <td class="c-num">
-                    <GainChip :value="row.gain" :pct="row.gainPct" :cur="row.walletCurrency" />
+                    <GainChip
+                      :value="row.gain == null ? null : currencyStore.convert(row.gain, row.walletCurrency)"
+                      :pct="row.gainPct"
+                      :cur="currencyStore.displayCurrency"
+                    />
                   </td>
                   <td class="c-act">
                     <span class="chev">

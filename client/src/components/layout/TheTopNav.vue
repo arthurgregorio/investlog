@@ -3,16 +3,14 @@ import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import { useOverviewStore } from '@/stores/overview'
-import { useRatesStore } from '@/stores/rates'
 import { fmt } from '@/composables/useFormat'
 
 const overviewStore = useOverviewStore()
-const ratesStore = useRatesStore()
 const route = useRoute()
 const router = useRouter()
 
 onMounted(() => {
-  Promise.all([overviewStore.load(), ratesStore.load()])
+  overviewStore.load()
 })
 
 const nav: { name: string; label: string; icon: IconName }[] = [
@@ -42,9 +40,9 @@ const nav: { name: string; label: string; icon: IconName }[] = [
       <div class="topnav-total">
         <span class="tn-label">Total investido</span>
         <span class="tn-value">
-          {{ fmt.money(overviewStore.summary?.totalCostBasis ?? 0, ratesStore.baseCurrency, { compact: true }) }}
+          {{ fmt.money(overviewStore.summary?.totalCostBasis ?? 0, overviewStore.summary?.displayCurrency, { compact: true }) }}
         </span>
-        <span class="tn-sub">· {{ ratesStore.baseCurrency }}</span>
+        <span class="tn-sub">· {{ overviewStore.summary?.displayCurrency ?? 'BRL' }}</span>
       </div>
     </div>
   </nav>

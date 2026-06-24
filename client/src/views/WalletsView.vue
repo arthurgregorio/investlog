@@ -9,6 +9,8 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
+import { useCurrencyStore } from '@/stores/currency'
+import { useRatesStore } from '@/stores/rates'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES } from '@/utils/walletTypes'
@@ -17,10 +19,16 @@ import type { WalletKind } from '@/types'
 const dialog = useDialog()
 const toast = useToast()
 const walletsStore = useWalletsStore()
+const currencyStore = useCurrencyStore()
+const ratesStore = useRatesStore()
 const router = useRouter()
 const modals = useModals()
 
-onMounted(() => walletsStore.load())
+onMounted(() => {
+  walletsStore.load()
+  currencyStore.load()
+  ratesStore.load()
+})
 
 const tagTypeFor: Record<WalletKind, string> = {
   STOCKS: 'is-link',
@@ -123,18 +131,28 @@ function renameWallet(walletId: string, currentName: string) {
             </div>
           </div>
           <div class="wallet-invested">
-            <div class="wi-value">{{ fmt.money(wallet.totalInvested, wallet.currency) }}</div>
+            <div class="wi-value">
+              {{ fmt.money(currencyStore.convert(wallet.totalInvested, wallet.currency), currencyStore.displayCurrency) }}
+            </div>
             <div class="wi-base">Investido</div>
           </div>
           <div class="wallet-result">
             <div class="wallet-result-item">
               <div class="wallet-result-value">
-                {{ wallet.currentValue == null ? '—' : fmt.money(wallet.currentValue, wallet.currency) }}
+                {{
+                  wallet.currentValue == null
+                    ? '—'
+                    : fmt.money(currencyStore.convert(wallet.currentValue, wallet.currency), currencyStore.displayCurrency)
+                }}
               </div>
               <div class="wallet-result-label">Valor atual</div>
             </div>
             <div class="wallet-result-item">
-              <GainChip :value="wallet.gain" :pct="wallet.gainPct" :cur="wallet.currency" />
+              <GainChip
+                :value="wallet.gain == null ? null : currencyStore.convert(wallet.gain, wallet.currency)"
+                :pct="wallet.gainPct"
+                :cur="currencyStore.displayCurrency"
+              />
               <div class="wallet-result-label">Resultado</div>
             </div>
           </div>
