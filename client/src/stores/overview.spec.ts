@@ -7,7 +7,7 @@ import type { PortfolioSummary, SeriesPoint } from '@/types'
 vi.mock('@/api/overview')
 
 const mockSummary: PortfolioSummary = {
-  baseCurrency: 'BRL',
+  displayCurrency: 'BRL',
   totalCostBasis: 10000,
   totalCurrentValue: 11000,
   totalGain: 1000,
