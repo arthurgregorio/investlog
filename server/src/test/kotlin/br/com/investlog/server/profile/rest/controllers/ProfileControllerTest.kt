@@ -51,6 +51,23 @@ class ProfileControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(3)
+    fun `updates preferred currency and preserves the previously set accent color`() {
+
+        val response = restTestClient.patch()
+            .uri("/private/v1/profile")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"preferredCurrency":"USD"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<ProfileResponse>()
+            .responseBody
+
+        assertEquals("indigo", response?.accentColor?.text)
+        assertEquals("USD", response?.preferredCurrency)
+    }
+
+    @Test
+    @Order(4)
     fun `rejects an invalid accent color`() {
         restTestClient.patch()
             .uri("/private/v1/profile")
