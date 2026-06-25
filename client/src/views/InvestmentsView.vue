@@ -10,6 +10,7 @@ import SortTh from '@/components/ui/SortTh.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useTypesListStore } from '@/stores/typesList'
+import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
 import { useModals } from '@/composables/useModals'
@@ -22,6 +23,7 @@ type SortKey = 'wallet' | 'price' | 'invested' | 'current' | 'gain'
 
 const holdingsListStore = useHoldingsListStore()
 const typesListStore = useTypesListStore()
+const walletsStore = useWalletsStore()
 const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
 const route = useRoute()
@@ -46,6 +48,7 @@ function filterFromRoute(): Filter {
 const activeFilter = ref<Filter>(filterFromRoute())
 const openedDetails = ref<HoldingRow[]>([])
 const typeLabelFilter = ref<string | undefined>(undefined)
+const walletIdFilter = ref<string | undefined>(undefined)
 const searchQuery = ref('')
 const sortKey = ref<SortKey | null>(null)
 const sortDirection = ref<'asc' | 'desc'>('desc')
@@ -58,9 +61,15 @@ const typeLabelOptions = computed(() => {
   return []
 })
 
+const walletOptions = computed(() => {
+  if (activeFilter.value === 'all') return walletsStore.wallets
+  return walletsStore.wallets.filter((wallet) => wallet.kind === activeFilter.value)
+})
+
 function reload(pageNumber = 0) {
   holdingsListStore.loadKind(activeFilter.value, pageNumber, {
     typeLabel: typeLabelFilter.value,
+    walletId: walletIdFilter.value,
     search: searchQuery.value.trim() || undefined,
     sort: sortKey.value ? `${sortKey.value},${sortDirection.value}` : undefined,
   })
@@ -69,6 +78,7 @@ function reload(pageNumber = 0) {
 watch(() => route.query.filter, () => {
   activeFilter.value = filterFromRoute()
   typeLabelFilter.value = undefined
+  walletIdFilter.value = undefined
   searchQuery.value = ''
   openedDetails.value = []
   reload(0)
@@ -76,6 +86,7 @@ watch(() => route.query.filter, () => {
 
 onMounted(() => {
   typesListStore.load()
+  walletsStore.load()
   currencyStore.load()
   ratesStore.load()
   reload(0)
@@ -88,6 +99,12 @@ function selectTab(filter: Filter) {
 
 function onTypeLabelChange(value: string) {
   typeLabelFilter.value = value || undefined
+  openedDetails.value = []
+  reload(0)
+}
+
+function onWalletIdChange(value: string) {
+  walletIdFilter.value = value || undefined
   openedDetails.value = []
   reload(0)
 }
@@ -147,14 +164,9 @@ function openAddInvestment() {
 
 <template>
   <div class="page">
-    <div class="page-head page-head-row">
-      <div>
-        <h1 class="page-title">Investimentos</h1>
-        <p class="page-desc">Aqui você gerencia seus investimentos</p>
-      </div>
-      <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="openAddInvestment">
-        Adicionar investimento
-      </b-button>
+    <div class="page-head">
+      <h1 class="page-title">Investimentos</h1>
+      <p class="page-desc">Aqui você gerencia seus investimentos</p>
     </div>
 
     <div class="seg-tabs">
@@ -170,6 +182,16 @@ function openAddInvestment() {
     </div>
 
     <div class="inv-toolbar">
+      <b-select
+        v-if="walletOptions.length > 0"
+        :model-value="walletIdFilter ?? ''"
+        @update:model-value="onWalletIdChange"
+      >
+        <option value="">Todas as carteiras</option>
+        <option v-for="wallet in walletOptions" :key="wallet.id" :value="wallet.id">
+          {{ wallet.name }}
+        </option>
+      </b-select>
       <b-select
         v-if="typeLabelOptions.length > 0"
         :model-value="typeLabelFilter ?? ''"
@@ -187,6 +209,14 @@ function openAddInvestment() {
         placeholder="Buscar por nome ou ticker"
         @update:model-value="onSearchChange"
       />
+      <b-button
+        type="is-primary"
+        class="has-text-light toolbar-add"
+        icon-left="plus"
+        @click="openAddInvestment"
+      >
+        Adicionar investimento
+      </b-button>
     </div>
 
     <EmptyState

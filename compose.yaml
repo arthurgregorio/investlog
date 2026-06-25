@@ -1,0 +1,60 @@
+name: investlog
+
+# Single-file orchestration for the full InvestLog stack.
+# Build the images first with ./build.sh (or build.ps1), then: docker compose up -d
+# The app is served at http://localhost:${WEB_PORT:-8081}
+
+services:
+
+  postgres:
+    container_name: investlog-postgres
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-investlog}
+      POSTGRES_USER: ${POSTGRES_USER:-sa_investlog}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sa_investlog}
+    volumes:
+      # postgres:18 sets PGDATA=/var/lib/postgresql/18/docker — mount the volume there
+      # so data actually persists across `docker compose down`.
+      - postgres-data:/var/lib/postgresql/18/docker
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sa_investlog} -d ${POSTGRES_DB:-investlog}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - investlog
+
+  server:
+    container_name: investlog-server
+    image: investlog/server:${SERVER_IMAGE_TAG:-v0.1.0}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${DB_NAME:-investlog}
+      DB_USER: ${DB_USER:-sa_investlog}
+      DB_PASSWORD: ${DB_PASSWORD:-sa_investlog}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - investlog
+
+  client:
+    container_name: investlog-client
+    image: investlog/client:${CLIENT_IMAGE_TAG:-v0.1.0}
+    ports:
+      - "${WEB_PORT:-8081}:80"
+    depends_on:
+      - server
+    networks:
+      - investlog
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  investlog:
+    driver: bridge

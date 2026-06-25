@@ -130,6 +130,28 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(7)
+    fun `GET holdings with matching walletId includes the holding`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={walletId}", walletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[?(@.id == '$holdingId')]").isNotEmpty()
+    }
+
+    @Test
+    @Order(8)
+    fun `GET holdings with non-matching walletId excludes the holding`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={walletId}", UUID.randomUUID())
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[?(@.id == '$holdingId')]").isEmpty()
+    }
+
+    @Test
+    @Order(9)
     fun `GET holdings with matching search includes the holding`() {
         restTestClient.get()
             .uri("/private/v1/holdings?search=ovtst")
@@ -140,7 +162,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(8)
+    @Order(10)
     fun `GET holdings with non-matching search excludes the holding`() {
         restTestClient.get()
             .uri("/private/v1/holdings?search=nomatch")
@@ -151,7 +173,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(9)
+    @Order(11)
     fun `GET holdings sorted by invested ascending orders the smaller position first`() {
         // costBasis = 1 * 10.00 = 10.00, versus the @BeforeAll fixture's OVTST3 at 450.00 —
         // scoping by typeLabel to just these two stockTypeId siblings keeps content[0]

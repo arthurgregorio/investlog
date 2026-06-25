@@ -1,0 +1,8 @@
+# Local environment configuration (copy from .env.example)
+.env
+
+# Database backups produced by backup.sh / backup.ps1
+backups/
+
+# Claude local settings
+.claude/*.local*

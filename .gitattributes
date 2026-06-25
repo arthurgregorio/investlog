@@ -1,0 +1,4 @@
+# Normalize line endings. Shell scripts must stay LF so they run under bash even
+# when cloned on Windows (where autocrlf would otherwise rewrite them to CRLF).
+* text=auto
+*.sh text eol=lf

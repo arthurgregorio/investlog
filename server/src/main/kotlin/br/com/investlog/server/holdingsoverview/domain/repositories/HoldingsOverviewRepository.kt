@@ -13,6 +13,7 @@ import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Repository
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.util.UUID
 import br.com.investlog.server.jooq.finances.enums.WalletKind as JooqWalletKind
 
 @Repository
@@ -22,6 +23,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         userId: Long,
         kind: JooqWalletKind?,
         typeLabel: String?,
+        walletId: UUID?,
         search: String?,
         pageable: Pageable,
     ): PagedModel<HoldingRowResponse> {
@@ -31,6 +33,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         val baseCondition = wallets.USER_ID.eq(userId)
         val kindCondition = if (kind != null) overview.KIND.eq(kind) else DSL.noCondition()
         val typeLabelCondition = if (typeLabel != null) overview.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
+        val walletIdCondition = if (walletId != null) wallets.EXTERNAL_ID.eq(walletId) else DSL.noCondition()
         val searchCondition = if (!search.isNullOrBlank()) {
             overview.NAME.likeIgnoreCase("%$search%").or(overview.TICKER.likeIgnoreCase("%$search%"))
         } else {
@@ -65,7 +68,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         )
             .from(overview)
             .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
-            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(searchCondition)
+            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
             .orderBy(sortFields)
             .limit(pageable.pageSize)
             .offset(pageable.offset.toInt())
@@ -99,7 +102,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             dsl.select(DSL.one())
                 .from(overview)
                 .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
-                .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(searchCondition)
+                .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
         )
 
         return pagedModelOf(content, pageable, total.toLong())

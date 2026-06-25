@@ -7,6 +7,7 @@ type KindFilter = 'all' | WalletKind
 
 export interface HoldingsListOptions {
   typeLabel?: string
+  walletId?: string
   search?: string
   sort?: string
 }
@@ -15,6 +16,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
   const rows = ref<HoldingRow[]>([])
   const currentKind = ref<KindFilter>('all')
   const currentTypeLabel = ref<string | undefined>(undefined)
+  const currentWalletId = ref<string | undefined>(undefined)
   const currentSearch = ref<string | undefined>(undefined)
   const currentSort = ref<string | undefined>(undefined)
   const page = ref(0)
@@ -28,6 +30,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
     loading.value = true
     currentKind.value = kind
     currentTypeLabel.value = options.typeLabel
+    currentWalletId.value = options.walletId
     currentSearch.value = options.search
     currentSort.value = options.sort
     page.value = pageNumber
@@ -35,6 +38,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
       const result = await holdingsApi.findAll({
         kind: kind === 'all' ? undefined : kind,
         typeLabel: options.typeLabel,
+        walletId: options.walletId,
         search: options.search,
         sort: options.sort,
         page: pageNumber,
@@ -52,6 +56,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
   async function refresh() {
     await loadKind(currentKind.value, page.value, {
       typeLabel: currentTypeLabel.value,
+      walletId: currentWalletId.value,
       search: currentSearch.value,
       sort: currentSort.value,
     })

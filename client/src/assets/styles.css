@@ -1065,6 +1065,10 @@ a {
     max-width: 280px;
 }
 
+.inv-toolbar .toolbar-add {
+    margin-left: auto;
+}
+
 /* ===== Tables ===== */
 .table-card {
     overflow: hidden;

@@ -13,6 +13,7 @@ export const holdingsApi = {
   findAll(params: {
     kind?: string
     typeLabel?: string
+    walletId?: string
     search?: string
     sort?: string
     page?: number
