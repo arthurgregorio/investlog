@@ -9,8 +9,6 @@ InvestLog ships as three Docker containers orchestrated by a single Compose file
 - **server** — Spring Boot 4 REST API (Kotlin / Java 25), built as a Cloud Native image.
 - **postgres** — PostgreSQL 18 for persistence.
 
-> _Screenshot placeholder — add a screenshot of the dashboard here._
-
 ## Architecture
 
 ```
