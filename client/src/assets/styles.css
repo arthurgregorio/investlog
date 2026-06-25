@@ -358,8 +358,16 @@ a {
     font-weight: 700;
 }
 
-.currency-select select {
-    height: 32px;
+.currency-toggle {
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.currency-toggle:hover,
+.currency-toggle:hover b {
+    border-color: var(--primary);
+    color: var(--primary-d);
 }
 
 .navbar-user {

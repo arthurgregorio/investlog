@@ -33,6 +33,13 @@ async function onCurrencyChange(currencyCode: string) {
   await overviewStore.refresh()
 }
 
+function cycleCurrency() {
+  const options = currencyOptions.value
+  const currentIndex = options.indexOf(currencyStore.displayCurrency)
+  const nextCurrency = options[(currentIndex + 1) % options.length]
+  onCurrencyChange(nextCurrency)
+}
+
 function initials(name: string): string {
   return name
     .split(' ')
@@ -51,16 +58,15 @@ function initials(name: string): string {
         <span class="brand-name">Invest<b>Log</b></span>
       </RouterLink>
       <div class="navbar-spacer" />
-      <b-select
-        :model-value="currencyStore.displayCurrency"
-        size="is-small"
-        class="currency-select"
-        @update:model-value="onCurrencyChange"
+      <button
+        type="button"
+        class="base-chip currency-toggle"
+        :aria-label="`Moeda de exibição: ${currencyStore.displayCurrency}. Clique para alternar.`"
+        @click="cycleCurrency"
       >
-        <option v-for="currencyCode in currencyOptions" :key="currencyCode" :value="currencyCode">
-          {{ currencyCode }}
-        </option>
-      </b-select>
+        <AppIcon name="repeat" :size="14" />
+        <b>{{ currencyStore.displayCurrency }}</b>
+      </button>
       <b-button :icon-left="dark ? 'weather-sunny' : 'weather-night'" aria-label="Tema" @click="appearance.toggleDark()" />
       <div class="navbar-user">
         <Avatar :initials="profile ? initials(profile.name) : '?'" />
