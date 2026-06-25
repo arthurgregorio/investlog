@@ -1,7 +1,11 @@
 <script setup lang="ts">
-/* Donut chart for allocation. Segments render as stroked arcs via
-   stroke-dasharray / strokeDashoffset, rotated -90deg to start at 12 o'clock. */
-import { computed } from 'vue'
+/* Donut chart for allocation, rendered via Chart.js so segment-label text (none here,
+   but axis text in the sibling AreaChart) is never subject to non-uniform SVG scaling. */
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ArcElement, Chart, DoughnutController, Tooltip } from 'chart.js'
+import { donutCutoutPercent, resolveColor, useChartThemeSync } from '@/composables/useChartTheme'
+
+Chart.register(DoughnutController, ArcElement, Tooltip)
 
 interface Segment {
   value: number
@@ -14,49 +18,67 @@ const props = withDefaults(defineProps<{ segments: Segment[]; size?: number; thi
   thickness: 22,
 })
 
-const geometry = computed(() => {
-  const r = (props.size - props.thickness) / 2
-  const c = props.size / 2
-  const total = props.segments.reduce((s, d) => s + d.value, 0) || 1
-  const C = 2 * Math.PI * r
+const canvasElement = ref<HTMLCanvasElement | null>(null)
+let chart: Chart<'doughnut'> | null = null
 
-  let offset = 0
-  const arcs = props.segments.map((d) => {
-    const len = (d.value / total) * C
-    const arc = { color: d.color, dasharray: `${len} ${C - len}`, dashoffset: -offset }
-    offset += len
-    return arc
+function createChart() {
+  if (!canvasElement.value) return
+  chart = new Chart(canvasElement.value, {
+    type: 'doughnut',
+    data: {
+      labels: props.segments.map((segment) => segment.label),
+      datasets: [
+        {
+          data: props.segments.map((segment) => segment.value),
+          backgroundColor: props.segments.map((segment) => resolveColor(segment.color)),
+          borderWidth: 0,
+          spacing: 0,
+        },
+      ],
+    },
+    options: {
+      cutout: donutCutoutPercent(props.size, props.thickness),
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const total = (context.dataset.data as number[]).reduce((sum, value) => sum + value, 0)
+              const percent = total ? ((Number(context.parsed) / total) * 100).toFixed(1) : '0'
+              return `${context.label}: ${percent}%`
+            },
+          },
+        },
+      },
+    },
   })
-  return { r, c, C, arcs }
+}
+
+onMounted(createChart)
+
+watch(
+  [() => props.size, () => props.thickness, () => props.segments],
+  () => {
+    chart?.destroy()
+    createChart()
+  },
+  { deep: true, flush: 'post' },
+)
+
+useChartThemeSync(() => {
+  if (!chart) return
+  chart.data.datasets[0].backgroundColor = props.segments.map((segment) => resolveColor(segment.color))
+  chart.update()
 })
+
+onBeforeUnmount(() => chart?.destroy())
 </script>
 
 <template>
   <div :style="{ position: 'relative', width: `${size}px`, height: `${size}px` }">
-    <svg :width="size" :height="size" style="transform: rotate(-90deg)">
-      <circle
-        :cx="geometry.c"
-        :cy="geometry.c"
-        :r="geometry.r"
-        fill="none"
-        stroke="var(--chart-grid)"
-        :stroke-width="thickness"
-        opacity="0.5"
-      />
-      <circle
-        v-for="(arc, i) in geometry.arcs"
-        :key="i"
-        :cx="geometry.c"
-        :cy="geometry.c"
-        :r="geometry.r"
-        fill="none"
-        :stroke="arc.color"
-        :stroke-width="thickness"
-        :stroke-dasharray="arc.dasharray"
-        :stroke-dashoffset="arc.dashoffset"
-        stroke-linecap="butt"
-      />
-    </svg>
+    <canvas ref="canvasElement" />
     <div
       style="
         position: absolute;
@@ -66,6 +88,7 @@ const geometry = computed(() => {
         align-items: center;
         justify-content: center;
         text-align: center;
+        pointer-events: none;
       "
     >
       <slot />
