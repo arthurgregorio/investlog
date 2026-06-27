@@ -77,12 +77,23 @@ async function submit() {
         <NumberInput v-model="amount" :prefix="sym" placeholder="0,00" />
       </label>
       <template v-else>
-        <label class="ad-f"><span>Quantidade</span><NumberInput v-model="quantity" placeholder="0" /></label>
-        <label class="ad-f"><span>Preço</span><NumberInput v-model="price" :prefix="sym" placeholder="0,00" /></label>
+        <label class="ad-f"
+          ><span>Quantidade</span><NumberInput v-model="quantity" placeholder="0"
+        /></label>
+        <label class="ad-f"
+          ><span>Preço</span><NumberInput v-model="price" :prefix="sym" placeholder="0,00"
+        /></label>
       </template>
     </div>
     <div class="adder-actions">
-      <b-button size="is-small" type="is-danger" outlined :disabled="submitting" @click="emit('close')">Cancelar</b-button>
+      <b-button
+        size="is-small"
+        type="is-danger"
+        outlined
+        :disabled="submitting"
+        @click="emit('close')"
+        >Cancelar</b-button
+      >
       <b-button
         size="is-small"
         class="has-text-light"

@@ -11,7 +11,14 @@ npm run build      # vue-tsc --noEmit -p tsconfig.app.json, then vite build (fai
 npm run preview    # preview the production build
 npm run type-check # vue-tsc --noEmit -p tsconfig.app.json only
 npm run test       # vitest (unit tests)
+npm run lint       # eslint . --fix
+npm run format     # prettier --write src/
 ```
+
+Code style is enforced by `.prettierrc.json` (no semicolons, single quotes, trailing commas) and
+`eslint.config.js` (Vue + TypeScript + Prettier, flat config). Point WebStorm's formatter at
+Prettier (Settings → Languages & Frameworks → JavaScript → Prettier → set package path, enable
+"On code reformat" and "On save") so `Ctrl+Alt+L` matches `npm run format`/`npm run lint`.
 
 `tsconfig.app.json` has `strict`, `noUnusedLocals` and `noUnusedParameters` enabled,
 so unused imports/variables fail `npm run build` / `npm run type-check`.

@@ -67,7 +67,11 @@ function initials(name: string): string {
         <AppIcon name="repeat" :size="14" />
         <b>{{ currencyStore.displayCurrency }}</b>
       </button>
-      <b-button :icon-left="dark ? 'weather-sunny' : 'weather-night'" aria-label="Tema" @click="appearance.toggleDark()" />
+      <b-button
+        :icon-left="dark ? 'weather-sunny' : 'weather-night'"
+        aria-label="Tema"
+        @click="appearance.toggleDark()"
+      />
       <div class="navbar-user">
         <Avatar :initials="profile ? initials(profile.name) : '?'" />
         <div class="nu-meta">

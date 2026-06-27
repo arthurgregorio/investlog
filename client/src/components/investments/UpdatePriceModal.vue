@@ -33,13 +33,20 @@ async function submit() {
   const amount = Number(priceInput.value)
   try {
     if (isStock.value) {
-      await holdingsApi.updateStockHolding(props.walletId, props.holdingId, { currentPrice: amount })
+      await holdingsApi.updateStockHolding(props.walletId, props.holdingId, {
+        currentPrice: amount,
+      })
     } else if (props.kind === 'CRYPTO') {
-      await holdingsApi.updateCryptoHolding(props.walletId, props.holdingId, { currentPrice: amount })
+      await holdingsApi.updateCryptoHolding(props.walletId, props.holdingId, {
+        currentPrice: amount,
+      })
     } else {
       await holdingsApi.updateFundHolding(props.walletId, props.holdingId, { currentValue: amount })
     }
-    toast.open({ message: isFund.value ? 'Valor atual atualizado.' : 'Preço atualizado.', type: 'is-success' })
+    toast.open({
+      message: isFund.value ? 'Valor atual atualizado.' : 'Preço atualizado.',
+      type: 'is-success',
+    })
     emit('updated')
     emit('close')
   } finally {
@@ -60,7 +67,9 @@ async function submit() {
       </b-field>
     </div>
     <template #footer>
-      <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')">Cancelar</b-button>
+      <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"
+        >Cancelar</b-button
+      >
       <b-button
         type="is-success"
         icon-left="check"

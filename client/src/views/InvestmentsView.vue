@@ -15,7 +15,7 @@ import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
-import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
+import { badgeColor, WALLET_TYPES } from '@/utils/walletTypes'
 import type { HoldingRow, WalletKind } from '@/types'
 
 type Filter = 'all' | WalletKind
@@ -75,14 +75,17 @@ function reload(pageNumber = 0) {
   })
 }
 
-watch(() => route.query.filter, () => {
-  activeFilter.value = filterFromRoute()
-  typeLabelFilter.value = undefined
-  walletIdFilter.value = undefined
-  searchQuery.value = ''
-  openedDetails.value = []
-  reload(0)
-})
+watch(
+  () => route.query.filter,
+  () => {
+    activeFilter.value = filterFromRoute()
+    typeLabelFilter.value = undefined
+    walletIdFilter.value = undefined
+    searchQuery.value = ''
+    openedDetails.value = []
+    reload(0)
+  },
+)
 
 onMounted(() => {
   typesListStore.load()
@@ -220,13 +223,22 @@ function openAddInvestment() {
     </div>
 
     <EmptyState
-      v-if="holdingsListStore.loaded && !holdingsListStore.loading && holdingsListStore.rows.length === 0"
+      v-if="
+        holdingsListStore.loaded &&
+        !holdingsListStore.loading &&
+        holdingsListStore.rows.length === 0
+      "
       icon="layers"
       title="Nenhum investimento aqui"
       text="Registre uma aquisição para vê-la no seu logbook."
     >
       <template #action>
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="openAddInvestment">
+        <b-button
+          type="is-primary"
+          class="has-text-light"
+          icon-left="plus"
+          @click="openAddInvestment"
+        >
           Adicionar investimento
         </b-button>
       </template>
@@ -240,64 +252,125 @@ function openAddInvestment() {
             <thead>
               <tr>
                 <th>Investimento</th>
-                <SortTh sort-key="wallet" :active-key="sortKey" :direction="sortDirection" align="left" @toggle="toggleSort">Carteira</SortTh>
+                <SortTh
+                  sort-key="wallet"
+                  :active-key="sortKey"
+                  :direction="sortDirection"
+                  align="left"
+                  @toggle="toggleSort"
+                  >Carteira</SortTh
+                >
                 <th class="c-num">Qtd.</th>
-                <SortTh sort-key="price" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Preço atual</SortTh>
-                <SortTh sort-key="invested" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Investido</SortTh>
-                <SortTh sort-key="current" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Valor atual</SortTh>
-                <SortTh sort-key="gain" :active-key="sortKey" :direction="sortDirection" @toggle="toggleSort">Resultado</SortTh>
+                <SortTh
+                  sort-key="price"
+                  :active-key="sortKey"
+                  :direction="sortDirection"
+                  @toggle="toggleSort"
+                  >Preço atual</SortTh
+                >
+                <SortTh
+                  sort-key="invested"
+                  :active-key="sortKey"
+                  :direction="sortDirection"
+                  @toggle="toggleSort"
+                  >Investido</SortTh
+                >
+                <SortTh
+                  sort-key="current"
+                  :active-key="sortKey"
+                  :direction="sortDirection"
+                  @toggle="toggleSort"
+                  >Valor atual</SortTh
+                >
+                <SortTh
+                  sort-key="gain"
+                  :active-key="sortKey"
+                  :direction="sortDirection"
+                  @toggle="toggleSort"
+                  >Resultado</SortTh
+                >
                 <th class="c-act"></th>
               </tr>
             </thead>
             <tbody>
               <template v-for="row in holdingsListStore.rows" :key="row.id">
-                <tr
-                  class="inv-row"
-                  :class="{ 'is-open': isOpen(row) }"
-                  @click="toggleRow(row)"
-                >
+                <tr class="inv-row" :class="{ 'is-open': isOpen(row) }" @click="toggleRow(row)">
                   <td>
                     <div class="name-cell">
-                      <TickerBadge :ticker="displayName(row)" :color="badgeColor(row.ticker, row.kind)" />
+                      <TickerBadge
+                        :ticker="displayName(row)"
+                        :color="badgeColor(row.ticker, row.kind)"
+                      />
                       <div class="name-meta">
                         <div class="name-line">
                           <span class="t-ticker">{{ displayName(row) }}</span>
-                          <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{ subLabel(row) }}</span>
+                          <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
+                            subLabel(row)
+                          }}</span>
                         </div>
-                        <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">{{ row.name }}</div>
+                        <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
+                          {{ row.name }}
+                        </div>
                       </div>
                     </div>
                   </td>
                   <td>
                     <span class="wallet-ref">
-                      <span class="wref-dot" :style="{ background: WALLET_TYPES[row.kind].accent }" />
+                      <span
+                        class="wref-dot"
+                        :style="{ background: WALLET_TYPES[row.kind].accent }"
+                      />
                       {{ row.walletName }}
                     </span>
                   </td>
                   <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
                   <td class="c-num">
                     <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
-                      {{ fmt.money(currencyStore.convert(row.currentPrice, row.walletCurrency), currencyStore.displayCurrency) }}
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.currentPrice, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
                     </template>
                     <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">
-                      {{ fmt.money(currencyStore.convert(row.currentValue, row.walletCurrency), currencyStore.displayCurrency) }}
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.currentValue, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
                     </template>
                     <span v-else class="gl-empty">—</span>
                   </td>
                   <td class="c-num">
                     <div class="cell-strong">
-                      {{ fmt.money(currencyStore.convert(row.costBasis, row.walletCurrency), currencyStore.displayCurrency) }}
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.costBasis, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
                     </div>
                   </td>
                   <td class="c-num">
                     <span v-if="row.currentValue == null" class="gl-empty">—</span>
                     <template v-else>
-                      {{ fmt.money(currencyStore.convert(row.currentValue, row.walletCurrency), currencyStore.displayCurrency) }}
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.currentValue, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
                     </template>
                   </td>
                   <td class="c-num">
                     <GainChip
-                      :value="row.gain == null ? null : currencyStore.convert(row.gain, row.walletCurrency)"
+                      :value="
+                        row.gain == null
+                          ? null
+                          : currencyStore.convert(row.gain, row.walletCurrency)
+                      "
                       :pct="row.gainPct"
                       :cur="currencyStore.displayCurrency"
                     />

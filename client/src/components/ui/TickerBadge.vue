@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{ ticker?: string; color?: string; size?: number }>(), {
   ticker: '',
+  color: 'var(--primary)',
   size: 36,
 })
 

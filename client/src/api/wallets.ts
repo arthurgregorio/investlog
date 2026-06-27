@@ -3,11 +3,9 @@ import type { PagedResponse, WalletResponse } from '@/types'
 
 export const walletsApi = {
   findAll(): Promise<PagedResponse<WalletResponse>> {
-    return apiClient.get<PagedResponse<WalletResponse>>('/wallets', { params: { size: 100 } }).then((r) => r.data)
-  },
-
-  findById(walletId: string): Promise<WalletResponse> {
-    return apiClient.get<WalletResponse>(`/wallets/${walletId}`).then((r) => r.data)
+    return apiClient
+      .get<PagedResponse<WalletResponse>>('/wallets', { params: { size: 100 } })
+      .then((r) => r.data)
   },
 
   create(payload: { name: string; kind: string; currency: string }): Promise<WalletResponse> {

@@ -13,10 +13,13 @@ interface Segment {
   label: string
 }
 
-const props = withDefaults(defineProps<{ segments: Segment[]; size?: number; thickness?: number }>(), {
-  size: 168,
-  thickness: 22,
-})
+const props = withDefaults(
+  defineProps<{ segments: Segment[]; size?: number; thickness?: number }>(),
+  {
+    size: 168,
+    thickness: 22,
+  },
+)
 
 const canvasElement = ref<HTMLCanvasElement | null>(null)
 let chart: Chart<'doughnut'> | null = null
@@ -45,7 +48,10 @@ function createChart() {
         tooltip: {
           callbacks: {
             label: (context) => {
-              const total = (context.dataset.data as number[]).reduce((sum, value) => sum + value, 0)
+              const total = (context.dataset.data as number[]).reduce(
+                (sum, value) => sum + value,
+                0,
+              )
               const percent = total ? ((Number(context.parsed) / total) * 100).toFixed(1) : '0'
               return `${context.label}: ${percent}%`
             },
@@ -69,7 +75,9 @@ watch(
 
 useChartThemeSync(() => {
   if (!chart) return
-  chart.data.datasets[0].backgroundColor = props.segments.map((segment) => resolveColor(segment.color))
+  chart.data.datasets[0].backgroundColor = props.segments.map((segment) =>
+    resolveColor(segment.color),
+  )
   chart.update()
 })
 

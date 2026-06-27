@@ -105,7 +105,11 @@ describe('useHoldingsListStore', () => {
     vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
 
     const store = useHoldingsListStore()
-    await store.loadKind('STOCKS', 0, { typeLabel: 'Ação ON', search: 'PETR', sort: 'invested,asc' })
+    await store.loadKind('STOCKS', 0, {
+      typeLabel: 'Ação ON',
+      search: 'PETR',
+      sort: 'invested,asc',
+    })
 
     expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenCalledWith({
       kind: 'STOCKS',
@@ -121,7 +125,11 @@ describe('useHoldingsListStore', () => {
     vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
 
     const store = useHoldingsListStore()
-    await store.loadKind('STOCKS', 0, { typeLabel: 'Ação ON', search: 'PETR', sort: 'invested,asc' })
+    await store.loadKind('STOCKS', 0, {
+      typeLabel: 'Ação ON',
+      search: 'PETR',
+      sort: 'invested,asc',
+    })
     await store.refresh()
 
     expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({

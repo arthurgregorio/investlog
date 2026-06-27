@@ -38,7 +38,10 @@ export const useAppearanceStore = defineStore('appearance', () => {
     [dark, accent],
     () => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ dark: dark.value, accent: accent.value }))
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ dark: dark.value, accent: accent.value }),
+        )
       } catch {
         /* ignore quota / privacy-mode errors */
       }

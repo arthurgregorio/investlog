@@ -2,11 +2,11 @@
 import { computed, ref } from 'vue'
 import { useToast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
+import type { IconName } from '@/components/AppIcon.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useRatesStore } from '@/stores/rates'
-import type { IconName } from '@/components/AppIcon.vue'
 import type { WalletKind } from '@/types'
 
 const props = defineProps<{ initialType?: WalletKind }>()
@@ -36,7 +36,11 @@ async function submit() {
   if (!valid.value || submitting.value) return
   submitting.value = true
   try {
-    const wallet = await walletsApi.create({ name: name.value.trim(), kind: kind.value, currency: currency.value })
+    const wallet = await walletsApi.create({
+      name: name.value.trim(),
+      kind: kind.value,
+      currency: currency.value,
+    })
     await walletsStore.refresh()
     emit('created', wallet.id, kind.value)
     emit('close')
@@ -57,7 +61,11 @@ async function submit() {
       <b-field label="Nome da carteira" style="grid-column: 1/-1">
         <b-input v-model="name" placeholder="ex.: Carteira de Dividendos" autofocus />
       </b-field>
-      <b-field label="Tipo" message="Define quais investimentos a carteira aceita." style="grid-column: 1/-1">
+      <b-field
+        label="Tipo"
+        message="Define quais investimentos a carteira aceita."
+        style="grid-column: 1/-1"
+      >
         <b-field grouped>
           <b-radio-button
             v-for="opt in KIND_OPTS"
@@ -78,8 +86,16 @@ async function submit() {
       </b-field>
     </div>
     <template #footer>
-      <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')">Cancelar</b-button>
-      <b-button type="is-success" class="has-text-light" :disabled="!valid" :loading="submitting" @click="submit">
+      <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"
+        >Cancelar</b-button
+      >
+      <b-button
+        type="is-success"
+        class="has-text-light"
+        :disabled="!valid"
+        :loading="submitting"
+        @click="submit"
+      >
         Criar carteira
       </b-button>
     </template>

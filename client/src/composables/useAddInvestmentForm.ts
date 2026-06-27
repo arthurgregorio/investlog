@@ -25,7 +25,10 @@ interface AddInvestmentFormState {
   valid: boolean
 }
 
-export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind: InvestmentKind) => void) {
+export function useAddInvestmentForm(
+  initialKind: InvestmentKind,
+  onDone?: (kind: InvestmentKind) => void,
+) {
   const toast = useToast()
   const walletsStore = useWalletsStore()
   const typesListStore = useTypesListStore()
@@ -45,13 +48,17 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
     currentValue: '' as number | '',
     submitting: false,
 
-    walletsOfKind: computed(() => walletsStore.wallets.filter((wallet) => wallet.kind === form.kind)),
+    walletsOfKind: computed(() =>
+      walletsStore.wallets.filter((wallet) => wallet.kind === form.kind),
+    ),
     valid: computed(() => {
       if (!form.walletId) return false
       if (form.kind === 'FUNDS') {
         return !!form.fundTypeId && !!form.name.trim() && !!form.date && Number(form.amount) > 0
       }
-      return !!form.ticker.trim() && !!form.date && Number(form.quantity) > 0 && Number(form.price) > 0
+      return (
+        !!form.ticker.trim() && !!form.date && Number(form.quantity) > 0 && Number(form.price) > 0
+      )
     }),
   })
 
@@ -116,7 +123,8 @@ export function useAddInvestmentForm(initialKind: InvestmentKind, onDone?: (kind
           lot: { lotDate: dateStr, quantity: Number(form.quantity), price: Number(form.price) },
         })
       } else {
-        const currentValueNum = Number(form.currentValue) > 0 ? Number(form.currentValue) : undefined
+        const currentValueNum =
+          Number(form.currentValue) > 0 ? Number(form.currentValue) : undefined
         await holdingsApi.createFundHolding(form.walletId, {
           fundTypeId: form.fundTypeId,
           name: form.name.trim(),

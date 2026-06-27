@@ -2,7 +2,7 @@
 defineOptions({ inheritAttrs: false })
 withDefaults(
   defineProps<{ modelValue: number | ''; placeholder?: string; prefix?: string; step?: string; min?: string }>(),
-  { step: 'any' }
+  { placeholder: '', prefix: '', step: 'any', min: undefined }
 )
 const emit = defineEmits<{ 'update:modelValue': [number | ''] }>()
 function onInput(v: string) {

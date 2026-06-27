@@ -40,7 +40,13 @@ const nav: { name: string; label: string; icon: IconName }[] = [
       <div class="topnav-total">
         <span class="tn-label">Total investido</span>
         <span class="tn-value">
-          {{ fmt.money(overviewStore.summary?.totalCostBasis ?? 0, overviewStore.summary?.displayCurrency, { compact: true }) }}
+          {{
+            fmt.money(
+              overviewStore.summary?.totalCostBasis ?? 0,
+              overviewStore.summary?.displayCurrency,
+              { compact: true },
+            )
+          }}
         </span>
         <span class="tn-sub">· {{ overviewStore.summary?.displayCurrency ?? 'BRL' }}</span>
       </div>

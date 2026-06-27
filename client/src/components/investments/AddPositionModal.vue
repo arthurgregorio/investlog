@@ -70,7 +70,9 @@ async function submit() {
 <template>
   <AppModal
     :title="isFund ? 'Registrar aporte' : 'Registrar compra'"
-    :subtitle="isFund ? 'Registre um novo aporte neste fundo.' : 'Registre uma nova compra para este ativo.'"
+    :subtitle="
+      isFund ? 'Registre um novo aporte neste fundo.' : 'Registre uma nova compra para este ativo.'
+    "
     @close="emit('close')"
   >
     <div class="form-grid">
@@ -90,7 +92,9 @@ async function submit() {
       </template>
     </div>
     <template #footer>
-      <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')">Cancelar</b-button>
+      <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"
+        >Cancelar</b-button
+      >
       <b-button
         type="is-success"
         class="has-text-light"

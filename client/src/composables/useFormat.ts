@@ -12,7 +12,8 @@ export const fmt = {
     const s = SYM[cur] || cur + ' '
     if (opts.compact) {
       const absoluteValue = Math.abs(v)
-      if (absoluteValue >= 1_000_000) return s + ' ' + (v / 1_000_000).toFixed(1).replace('.', ',') + 'M'
+      if (absoluteValue >= 1_000_000)
+        return s + ' ' + (v / 1_000_000).toFixed(1).replace('.', ',') + 'M'
       if (absoluteValue >= 1_000) return s + ' ' + (v / 1_000).toFixed(1).replace('.', ',') + 'k'
     }
     return s + ' ' + num2.format(v)

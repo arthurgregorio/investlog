@@ -3,6 +3,7 @@
    pixels (no SVG viewBox stretch), so axis-label glyphs are never non-uniformly scaled —
    that distortion is what made "US$" render as "JS$" in the previous SVG implementation. */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import type { ChartOptions, Plugin } from 'chart.js'
 import {
   CategoryScale,
   Chart,
@@ -13,10 +14,17 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js'
-import type { ChartOptions, Plugin } from 'chart.js'
 import { hexToRgba, resolveColor, useChartThemeSync } from '@/composables/useChartTheme'
 
-Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip)
+Chart.register(
+  LineController,
+  LineElement,
+  PointElement,
+  LinearScale,
+  CategoryScale,
+  Filler,
+  Tooltip,
+)
 
 const props = withDefaults(
   defineProps<{
@@ -27,7 +35,13 @@ const props = withDefaults(
     fmtY?: (v: number) => string
     xLabels?: string[]
   }>(),
-  { color: '#2fb344', height: 240, showGrid: true },
+  {
+    color: '#2fb344',
+    height: 240,
+    showGrid: true,
+    fmtY: (v: number) => String(v),
+    xLabels: () => [],
+  },
 )
 
 const canvasElement = ref<HTMLCanvasElement | null>(null)
@@ -113,7 +127,13 @@ function buildOptions(lo: number, hi: number): ChartOptions<'line'> {
         type: 'category',
         grid: { display: false },
         border: { display: false },
-        ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6, color: textMutedColor, font: { size: 11.5 } },
+        ticks: {
+          maxRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 6,
+          color: textMutedColor,
+          font: { size: 11.5 },
+        },
       },
     },
   }
@@ -159,7 +179,13 @@ function createChart() {
 onMounted(createChart)
 
 watch(
-  [() => props.data, () => props.xLabels, () => props.color, () => props.fmtY, () => props.showGrid],
+  [
+    () => props.data,
+    () => props.xLabels,
+    () => props.color,
+    () => props.fmtY,
+    () => props.showGrid,
+  ],
   () => {
     refreshResolvedColors()
     chart?.destroy()

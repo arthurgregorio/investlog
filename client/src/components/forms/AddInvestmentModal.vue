@@ -34,7 +34,9 @@ const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'STOCKS', () 
   >
     <AddInvestmentForm :form="form" @create-wallet="(kind) => emit('create-wallet', kind)" />
     <template #footer>
-      <b-button outlined type="is-danger" :disabled="form.submitting" @click="emit('close')">Cancelar</b-button>
+      <b-button outlined type="is-danger" :disabled="form.submitting" @click="emit('close')">
+        Cancelar
+      </b-button>
       <b-button
         type="is-success"
         class="has-text-light"

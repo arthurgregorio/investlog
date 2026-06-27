@@ -46,7 +46,9 @@ export const holdingsApi = {
   },
 
   deleteStockHolding(walletId: string, holdingId: string): Promise<void> {
-    return apiClient.delete(`/wallets/${walletId}/stock-holdings/${holdingId}`).then(() => undefined)
+    return apiClient
+      .delete(`/wallets/${walletId}/stock-holdings/${holdingId}`)
+      .then(() => undefined)
   },
 
   updateStockHolding(
@@ -92,7 +94,9 @@ export const holdingsApi = {
   },
 
   deleteCryptoHolding(walletId: string, holdingId: string): Promise<void> {
-    return apiClient.delete(`/wallets/${walletId}/crypto-holdings/${holdingId}`).then(() => undefined)
+    return apiClient
+      .delete(`/wallets/${walletId}/crypto-holdings/${holdingId}`)
+      .then(() => undefined)
   },
 
   updateCryptoHolding(
@@ -176,7 +180,11 @@ export const holdingsApi = {
       .then(() => undefined)
   },
 
-  deleteFundContribution(walletId: string, holdingId: string, contributionId: string): Promise<void> {
+  deleteFundContribution(
+    walletId: string,
+    holdingId: string,
+    contributionId: string,
+  ): Promise<void> {
     return apiClient
       .delete(`/wallets/${walletId}/fund-holdings/${holdingId}/contributions/${contributionId}`)
       .then(() => undefined)

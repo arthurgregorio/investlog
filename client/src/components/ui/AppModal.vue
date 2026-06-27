@@ -4,7 +4,13 @@ const emit = defineEmits<{ close: [] }>()
 </script>
 
 <template>
-  <b-modal :model-value="true" has-modal-card trap-focus :can-cancel="['escape', 'outside']" @close="emit('close')">
+  <b-modal
+    :model-value="true"
+    has-modal-card
+    trap-focus
+    :can-cancel="['escape', 'outside']"
+    @close="emit('close')"
+  >
     <div class="modal-card" :style="wide ? { width: '600px' } : undefined">
       <header class="modal-card-head">
         <p class="modal-card-title">{{ title }}</p>

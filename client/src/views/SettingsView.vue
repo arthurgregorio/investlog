@@ -92,7 +92,8 @@ async function commitRate(currencyCode: string) {
           </span>
         </div>
         <p class="set-desc">
-          A visão consolidada converte cada carteira para {{ ratesStore.baseCurrency }} usando estas taxas.
+          A visão consolidada converte cada carteira para {{ ratesStore.baseCurrency }} usando estas
+          taxas.
         </p>
         <div class="rate-list">
           <div v-for="rate in ratesStore.rates" :key="rate.currencyCode" class="rate-row">
@@ -121,15 +122,26 @@ async function commitRate(currencyCode: string) {
         <div class="set-head"><h2 class="set-title">Tipos de ação</h2></div>
         <p class="set-desc">Cadastrados antes de registrar uma ação (escolhidos no formulário).</p>
         <div class="chip-edit">
-          <span v-for="stockType in typesListStore.stockTypes" :key="stockType.id" class="edit-chip">
+          <span
+            v-for="stockType in typesListStore.stockTypes"
+            :key="stockType.id"
+            class="edit-chip"
+          >
             {{ stockType.name }}
-            <button :aria-label="`Remover ${stockType.name}`" @click="removeStockType(stockType.id)">
+            <button
+              :aria-label="`Remover ${stockType.name}`"
+              @click="removeStockType(stockType.id)"
+            >
               <AppIcon name="x" :size="14" />
             </button>
           </span>
         </div>
         <div class="chip-add">
-          <b-input v-model="newStockType" placeholder="ex.: Stock, REIT…" @keyup.enter="addStockType" />
+          <b-input
+            v-model="newStockType"
+            placeholder="ex.: Stock, REIT…"
+            @keyup.enter="addStockType"
+          />
           <b-button icon-left="plus" @click="addStockType">Adicionar tipo</b-button>
         </div>
       </CardBody>
@@ -148,7 +160,11 @@ async function commitRate(currencyCode: string) {
           </span>
         </div>
         <div class="chip-add">
-          <b-input v-model="newFundType" placeholder="ex.: Previdência, Cambial…" @keyup.enter="addFundType" />
+          <b-input
+            v-model="newFundType"
+            placeholder="ex.: Previdência, Cambial…"
+            @keyup.enter="addFundType"
+          />
           <b-button icon-left="plus" @click="addFundType">Adicionar tipo</b-button>
         </div>
       </CardBody>
