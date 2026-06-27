@@ -8,6 +8,7 @@ import org.jooq.codegen.gradle.CodegenPluginExtension
 import org.jooq.meta.jaxb.Jdbc
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import java.security.MessageDigest
 import java.sql.DriverManager
 
 buildscript {
@@ -133,8 +134,25 @@ tasks.named("compileKotlin") {
 
 val jooqDb = PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"))
 
+val changelogDir = file("src/main/resources/db/changelog")
+val jooqCodegenMarker = layout.buildDirectory.file("jooq-codegen-changelog.sha256")
+
+fun changelogDigest(): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    changelogDir.walkTopDown().filter { it.isFile }.sortedBy { it.path }.forEach { changelogFile ->
+        digest.update(changelogFile.readBytes())
+    }
+    return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+}
+
+fun changelogUnchangedSinceLastCodegen(): Boolean {
+    val markerFile = jooqCodegenMarker.get().asFile
+    return markerFile.exists() && markerFile.readText() == changelogDigest()
+}
+
 val startJooqDb by tasks.registering {
     description = "start jooq to generate database metadata from schema"
+    onlyIf { !changelogUnchangedSinceLastCodegen() }
     doLast {
         jooqDb.start()
 
@@ -166,6 +184,7 @@ val startJooqDb by tasks.registering {
 
 val stopJooqDb by tasks.registering {
     description = "stop jooq to generate database metadata from schema"
+    onlyIf { startJooqDb.get().didWork }
     doLast {
         jooqDb.stop()
     }
@@ -178,6 +197,13 @@ startJooqDb {
 tasks.named("jooqCodegen") {
     dependsOn(startJooqDb)
     finalizedBy(stopJooqDb)
+    onlyIf { startJooqDb.get().didWork }
+    doLast {
+        jooqCodegenMarker.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText(changelogDigest())
+        }
+    }
 }
 
 springBoot {
