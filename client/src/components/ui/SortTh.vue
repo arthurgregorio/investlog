@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import AppIcon from '@/components/AppIcon.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -20,9 +19,9 @@ const isActive = computed(() => props.activeKey === props.sortKey)
   <th :class="align === 'right' ? 'c-num sort-th' : 'sort-th'" @click="emit('toggle', sortKey)">
     <span class="sort-th-inner">
       <slot />
-      <AppIcon
-        :name="isActive && direction === 'asc' ? 'chevronUp' : 'chevronDown'"
-        :size="13"
+      <b-icon
+        :icon="isActive && direction === 'asc' ? 'chevron-up' : 'chevron-down'"
+        size="is-small"
         :class="isActive ? 'sort-icon-active' : 'sort-icon-idle'"
       />
     </span>

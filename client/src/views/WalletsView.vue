@@ -2,7 +2,6 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {BButton, useDialog, useToast} from 'buefy'
-import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -40,7 +39,7 @@ function gotoType(kind: WalletKind) {
   router.push({ name: 'investments', query: { filter: kind } })
 }
 
-const iconFor = (kind: WalletKind): IconName => WALLET_TYPES[kind].icon as IconName
+const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
 
 function confirmDeleteWallet(walletId: string, walletName: string) {
   dialog.confirm({
@@ -89,7 +88,7 @@ function renameWallet(walletId: string, currentName: string) {
 
     <EmptyState
       v-if="walletsStore.loaded && walletsStore.wallets.length === 0"
-      icon="wallet"
+      icon="wallet-outline"
       title="Nenhuma carteira ainda"
       text="Crie sua primeira carteira para começar a registrar investimentos."
     >
@@ -104,7 +103,7 @@ function renameWallet(walletId: string, currentName: string) {
         <CardBody>
           <div class="wallet-head">
             <span class="type-ic sm" :style="{ background: WALLET_TYPES[wallet.kind].accent }">
-              <AppIcon :name="iconFor(wallet.kind)" :size="18" />
+              <b-icon :icon="iconFor(wallet.kind)" size="is-small" />
             </span>
             <div class="wallet-titles">
               <div class="wallet-name">{{ wallet.name }}</div>
@@ -168,7 +167,7 @@ function renameWallet(walletId: string, currentName: string) {
       </Card>
 
       <button class="wallet-card wallet-add" @click="modals.openCreateWallet()">
-        <AppIcon name="plusCircle" :size="26" /><span>Nova carteira</span>
+        <b-icon icon="plus-circle-outline" size="is-medium" /><span>Nova carteira</span>
       </button>
     </div>
   </div>

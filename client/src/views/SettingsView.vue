@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useToast } from 'buefy'
-import AppIcon from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
@@ -88,7 +87,7 @@ async function commitRate(currencyCode: string) {
         <div class="set-head">
           <h2 class="set-title">Moeda base e conversão</h2>
           <span class="base-chip">
-            <AppIcon name="repeat" :size="14" />Base <b>{{ ratesStore.baseCurrency }}</b>
+            <b-icon icon="repeat" size="is-small" />Base <b>{{ ratesStore.baseCurrency }}</b>
           </span>
         </div>
         <p class="set-desc">
@@ -132,7 +131,7 @@ async function commitRate(currencyCode: string) {
               :aria-label="`Remover ${stockType.name}`"
               @click="removeStockType(stockType.id)"
             >
-              <AppIcon name="x" :size="14" />
+              <b-icon icon="close" size="is-small" />
             </button>
           </span>
         </div>
@@ -155,7 +154,7 @@ async function commitRate(currencyCode: string) {
           <span v-for="fundType in typesListStore.fundTypes" :key="fundType.id" class="edit-chip">
             {{ fundType.name }}
             <button :aria-label="`Remover ${fundType.name}`" @click="removeFundType(fundType.id)">
-              <AppIcon name="x" :size="14" />
+              <b-icon icon="close" size="is-small" />
             </button>
           </span>
         </div>
@@ -184,12 +183,11 @@ async function commitRate(currencyCode: string) {
             :aria-label="`Cor ${accentOption.key}`"
             @click="appearance.setAccent(accentOption.key)"
           >
-            <AppIcon
+            <b-icon
               v-if="appearance.accent === accentOption.key"
-              name="check"
-              :size="18"
+              icon="check"
+              size="is-small"
               class="sw-check"
-              :stroke="2.6"
             />
           </button>
         </div>

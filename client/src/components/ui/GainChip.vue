@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import AppIcon from '@/components/AppIcon.vue'
 import { fmt } from '@/composables/useFormat'
 
 const props = withDefaults(
@@ -23,13 +22,7 @@ const dir = computed(() => {
 <template>
   <span v-if="value == null" class="gl-empty">—</span>
   <span v-else class="gl" :class="`gl-${dir}`">
-    <AppIcon
-      v-if="dir !== 'flat'"
-      name="chevronDown"
-      :size="14"
-      :stroke="2.6"
-      :style="{ transform: dir === 'up' ? 'rotate(180deg)' : 'none' }"
-    />
+    <b-icon v-if="dir !== 'flat'" :icon="dir === 'up' ? 'chevron-up' : 'chevron-down'" size="is-small" />
     <span>{{ fmt.moneySigned(value, cur, { compact }) }}</span>
     <span v-if="pct != null" class="gl-pct">{{ fmt.pctSigned(pct) }}</span>
   </span>

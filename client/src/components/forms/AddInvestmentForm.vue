@@ -2,8 +2,6 @@
 import { computed } from 'vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
-import type { IconName } from '@/components/AppIcon.vue'
-import AppIcon from '@/components/AppIcon.vue'
 import { useTypesListStore } from '@/stores/typesList'
 import { fmt } from '@/composables/useFormat'
 import type { AddInvestmentForm } from '@/composables/useAddInvestmentForm'
@@ -14,10 +12,10 @@ const emit = defineEmits<{ 'create-wallet': [WalletKind] }>()
 
 const typesListStore = useTypesListStore()
 
-const KIND_OPTS: { value: WalletKind; label: string; icon: IconName }[] = [
-  { value: 'STOCKS', label: 'Ações', icon: 'trendUp' },
-  { value: 'CRYPTO', label: 'Cripto', icon: 'coins' },
-  { value: 'FUNDS', label: 'Fundos', icon: 'building' },
+const KIND_OPTS: { value: WalletKind; label: string; icon: string }[] = [
+  { value: 'STOCKS', label: 'Ações', icon: 'trending-up' },
+  { value: 'CRYPTO', label: 'Cripto', icon: 'bitcoin' },
+  { value: 'FUNDS', label: 'Fundos', icon: 'office-building-outline' },
 ]
 
 const walletCurrency = computed(() => {
@@ -56,14 +54,14 @@ const kindLabelPt = computed(() =>
           :native-value="opt.value"
           type="is-primary"
         >
-          <AppIcon :name="opt.icon" :size="17" />
+          <b-icon :icon="opt.icon" size="is-small" />
           <span>{{ opt.label }}</span>
         </b-radio-button>
       </b-field>
     </b-field>
 
     <div v-if="form.walletsOfKind.length === 0" class="form-notice">
-      <AppIcon name="info" :size="18" />
+      <b-icon icon="information-outline" />
       <span
         >Nenhuma carteira de <b>{{ kindLabelPt }}</b> ainda.</span
       >

@@ -110,6 +110,17 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 and a fixed `data-density="comfortable"` on `.app-root`. Accent color is the only
 user-configurable appearance setting.
 
+### Buefy/Bulma gotchas
+
+- **Never write a global `.button { }` rule in `styles.css`.** Bulma 1.x button types
+  (`is-success`, `is-danger`, etc.) set `--bulma-button-h/s/l` HSL variables that modifiers like
+  `is-outlined` consume to compute colors. A global override with static values fights this
+  cascade and breaks every typed/modifier button in the app. Scope button styling tightly instead
+  (`.navbar .button`, `.modal-card-head .button`, `.button.is-static`).
+- **Use `type="is-ghost"`, not `is-text"`,** for transparent/icon-only buttons (subtle inline
+  triggers, link-like actions). For per-row destructive icon actions (e.g. delete in a table row),
+  use `type="is-danger" outlined`.
+
 ### Composables
 
 - `useFormat` — pure pt-BR formatting helpers (money, signed money, percent, quantity, date).

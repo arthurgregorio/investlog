@@ -1,9 +1,9 @@
 import type { WalletKind, WalletTypeMeta } from '@/types'
 
 export const WALLET_TYPES: Record<WalletKind, WalletTypeMeta> = {
-  STOCKS: { label: 'Ações', accent: 'var(--wt-stocks)', icon: 'trendUp' },
-  CRYPTO: { label: 'Cripto', accent: 'var(--wt-crypto)', icon: 'coins' },
-  FUNDS: { label: 'Fundos', accent: 'var(--wt-funds)', icon: 'building' },
+  STOCKS: { label: 'Ações', accent: 'var(--wt-stocks)', icon: 'trending-up' },
+  CRYPTO: { label: 'Cripto', accent: 'var(--wt-crypto)', icon: 'bitcoin' },
+  FUNDS: { label: 'Fundos', accent: 'var(--wt-funds)', icon: 'office-building-outline' },
 }
 
 /** Derives a consistent badge color for a ticker/fund name via a simple hash. */

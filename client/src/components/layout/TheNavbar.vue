@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import AppIcon from '@/components/AppIcon.vue'
 import Avatar from '@/components/ui/Avatar.vue'
 import { useRatesStore } from '@/stores/rates'
 import { useCurrencyStore } from '@/stores/currency'
@@ -54,7 +53,7 @@ function initials(name: string): string {
   <header class="navbar">
     <div class="navbar-inner">
       <RouterLink to="/" class="brand">
-        <span class="brand-mark"><AppIcon name="trendUp" :size="20" :stroke="2.4" /></span>
+        <span class="brand-mark"><b-icon icon="trending-up" /></span>
         <span class="brand-name">Invest<b>Log</b></span>
       </RouterLink>
       <div class="navbar-spacer" />
@@ -64,7 +63,7 @@ function initials(name: string): string {
         :aria-label="`Moeda de exibição: ${currencyStore.displayCurrency}. Clique para alternar.`"
         @click="cycleCurrency"
       >
-        <AppIcon name="repeat" :size="14" />
+        <b-icon icon="repeat" size="is-small" />
         <b>{{ currencyStore.displayCurrency }}</b>
       </button>
       <b-button

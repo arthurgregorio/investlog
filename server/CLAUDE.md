@@ -37,6 +37,16 @@ table aliases, and loop iterators. Examples of what to avoid and what to use ins
 
 This applies to both the Kotlin variable name **and** the SQL alias string passed to `.as()`.
 
+## Migrations
+
+**Never edit an existing Liquibase changelog file** under
+`src/main/resources/db/changelog/changes/**`, even to add "just one more changeset" to a
+recent-looking file. Liquibase tracks applied changesets by id+author+checksum in
+`database_changelog`; editing one that already ran breaks startup (checksum mismatch) or
+silently skips the new SQL. Always create a new file under
+`db/changelog/changes/<year>/<month>/<DD-HHMM>-<description>.xml` and add an `<include>` for
+it in `db.changelog-master.xml`.
+
 ## Architecture
 
 `Application.kt` is the `@SpringBootApplication` bootstrap. Beyond that, the application layer

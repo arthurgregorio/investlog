@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import { useOverviewStore } from '@/stores/overview'
 import { fmt } from '@/composables/useFormat'
 
@@ -13,11 +12,11 @@ onMounted(() => {
   overviewStore.load()
 })
 
-const nav: { name: string; label: string; icon: IconName }[] = [
-  { name: 'overview', label: 'Visão geral', icon: 'dashboard' },
-  { name: 'wallets', label: 'Carteiras', icon: 'wallet' },
-  { name: 'investments', label: 'Investimentos', icon: 'layers' },
-  { name: 'settings', label: 'Configurações', icon: 'settings' },
+const nav: { name: string; label: string; icon: string }[] = [
+  { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
+  { name: 'wallets', label: 'Carteiras', icon: 'wallet-outline' },
+  { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
+  { name: 'settings', label: 'Configurações', icon: 'cog-outline' },
 ]
 </script>
 
@@ -33,7 +32,7 @@ const nav: { name: string; label: string; icon: IconName }[] = [
           :title="item.label"
           @click="router.push({ name: item.name })"
         >
-          <span class="nav-icon"><AppIcon :name="item.icon" :size="18" /></span>
+          <span class="nav-icon"><b-icon :icon="item.icon" size="is-small" /></span>
           <span class="nav-label">{{ item.label }}</span>
         </button>
       </div>

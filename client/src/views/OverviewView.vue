@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import type { IconName } from '@/components/AppIcon.vue'
-import AppIcon from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import GainChip from '@/components/ui/GainChip.vue'
@@ -98,7 +96,7 @@ function gotoType(key: WalletKind) {
   router.push({ name: 'investments', query: { filter: key } })
 }
 
-const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconName
+const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
 </script>
 
 <template>
@@ -242,7 +240,7 @@ const iconFor = (key: WalletKind): IconName => WALLET_TYPES[key].icon as IconNam
               <CardBody>
                 <div class="type-card-head">
                   <span class="type-ic" :style="{ background: typeRow.accent }">
-                    <AppIcon :name="iconFor(typeRow.key)" :size="20" />
+                    <b-icon :icon="iconFor(typeRow.key)" />
                   </span>
                   <div class="type-name">{{ typeRow.label }}</div>
                   <div class="type-meta">

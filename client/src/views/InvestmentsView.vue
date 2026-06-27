@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
@@ -30,11 +29,11 @@ const route = useRoute()
 const router = useRouter()
 const modals = useModals()
 
-const tabs: { key: Filter; label: string; icon: IconName }[] = [
-  { key: 'all', label: 'Todos', icon: 'layers' },
-  { key: 'STOCKS', label: 'Ações', icon: 'trendUp' },
-  { key: 'CRYPTO', label: 'Cripto', icon: 'coins' },
-  { key: 'FUNDS', label: 'Fundos', icon: 'building' },
+const tabs: { key: Filter; label: string; icon: string }[] = [
+  { key: 'all', label: 'Todos', icon: 'layers-outline' },
+  { key: 'STOCKS', label: 'Ações', icon: 'trending-up' },
+  { key: 'CRYPTO', label: 'Cripto', icon: 'bitcoin' },
+  { key: 'FUNDS', label: 'Fundos', icon: 'office-building-outline' },
 ]
 const validFilters: Filter[] = ['all', 'STOCKS', 'CRYPTO', 'FUNDS']
 
@@ -180,7 +179,7 @@ function openAddInvestment() {
         :class="{ active: tab.key === activeFilter }"
         @click="selectTab(tab.key)"
       >
-        <AppIcon :name="tab.icon" :size="16" />{{ tab.label }}
+        <b-icon :icon="tab.icon" size="is-small" />{{ tab.label }}
       </button>
     </div>
 
@@ -228,7 +227,7 @@ function openAddInvestment() {
         !holdingsListStore.loading &&
         holdingsListStore.rows.length === 0
       "
-      icon="layers"
+      icon="layers-outline"
       title="Nenhum investimento aqui"
       text="Registre uma aquisição para vê-la no seu logbook."
     >
@@ -377,7 +376,7 @@ function openAddInvestment() {
                   </td>
                   <td class="c-act">
                     <span class="chev">
-                      <AppIcon :name="isOpen(row) ? 'chevronUp' : 'chevronDown'" :size="18" />
+                      <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
                     </span>
                   </td>
                 </tr>
