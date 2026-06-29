@@ -52,4 +52,41 @@ class AuthControllerTest : BaseIntegrationTest() {
         assertEquals("Administrador", response?.name)
         assertEquals("admin@admin.com", response?.email)
     }
+
+    @Test
+    @Order(4)
+    fun `session reflects the cookie set by login, and logout clears it`() {
+        val cookie = restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"admin@admin.com","password":"admin"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders
+            .getFirst("Set-Cookie")
+            ?.substringBefore(";")
+            ?: error("Login did not set a session cookie")
+
+        restTestClient.get()
+            .uri("/private/v1/auth/session")
+            .header("Cookie", cookie)
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseBody
+            .let { assertEquals("admin@admin.com", it?.email) }
+
+        restTestClient.post()
+            .uri("/private/v1/auth/logout")
+            .header("Cookie", cookie)
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.get()
+            .uri("/private/v1/auth/session")
+            .header("Cookie", cookie)
+            .exchange()
+            .expectStatus().isUnauthorized()
+    }
 }

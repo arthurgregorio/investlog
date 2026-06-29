@@ -3,6 +3,7 @@ package br.com.investlog.server.auth.domain.services
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
+import br.com.investlog.server.shared.security.CurrentUser
 import br.com.investlog.server.shared.security.UserRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -45,5 +46,16 @@ class AuthService(
         )
 
         return SessionResponse(name = user.name, email = user.email, role = user.role)
+    }
+
+    fun currentSession(): SessionResponse {
+        val user = SecurityContextHolder.getContext().authentication?.principal as? CurrentUser
+            ?: throw InvalidCredentialsException("Not authenticated")
+        return SessionResponse(name = user.name, email = user.email, role = user.role)
+    }
+
+    fun logout(servletRequest: HttpServletRequest) {
+        servletRequest.getSession(false)?.invalidate()
+        SecurityContextHolder.clearContext()
     }
 }

@@ -5,6 +5,7 @@ import br.com.investlog.server.auth.rest.payloads.LoginRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -21,4 +22,10 @@ class AuthController(private val authService: AuthService) {
         servletResponse: HttpServletResponse,
     ): SessionResponse =
         authService.login(request, servletRequest, servletResponse)
+
+    @GetMapping("/session")
+    fun session(): SessionResponse = authService.currentSession()
+
+    @PostMapping("/logout")
+    fun logout(servletRequest: HttpServletRequest) = authService.logout(servletRequest)
 }
