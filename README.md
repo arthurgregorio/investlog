@@ -46,6 +46,10 @@ docker compose up -d
 
 Open **http://localhost:8081**.
 
+Log in with the seeded admin account: `admin@admin.com` / `admin` (from
+`ADMIN_DEFAULT_PASSWORD`, see below) — **change this password immediately** in a real
+deployment.
+
 On first start the server runs its database migrations and seeds the default user, so
 the app is immediately usable (with no data yet). Use the script below to add demo data.
 
@@ -88,6 +92,7 @@ the box for a local run.
 | `SERVER_IMAGE_TAG` | `v0.1.0` | Tag for the `investlog/server` image |
 | `CLIENT_IMAGE_TAG` | `v0.1.0` | Tag for the `investlog/client` image |
 | `WEB_PORT` | `8081` | Host port the web app is published on |
+| `ADMIN_DEFAULT_PASSWORD` | `admin` | Password set on the seeded admin account on first boot |
 
 ## Stop / reset
 
