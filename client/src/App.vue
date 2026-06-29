@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, provide, ref, watchEffect } from 'vue'
+import { computed, onMounted, provide, ref, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import TheNavbar from '@/components/layout/TheNavbar.vue'
 import TheTopNav from '@/components/layout/TheTopNav.vue'
 import CreateWalletModal from '@/components/forms/CreateWalletModal.vue'
 import AddInvestmentModal from '@/components/forms/AddInvestmentModal.vue'
 import { useAppearanceStore } from '@/stores/appearance'
+import { useAuthStore } from '@/stores/auth'
 import { ModalKey } from '@/composables/useModals'
 import type { WalletKind } from '@/types'
 
 const appearance = useAppearanceStore()
+const auth = useAuthStore()
+onMounted(() => {
+  auth.restoreSession()
+})
 const { dark, accent } = storeToRefs(appearance)
 const theme = computed(() => (dark.value ? 'dark' : 'light'))
 
