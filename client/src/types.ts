@@ -131,6 +131,14 @@ export interface PagedResponse<T> {
   }
 }
 
+export type UserRole = 'ADMIN' | 'USER'
+
+export interface SessionResponse {
+  name: string
+  email: string
+  role: UserRole
+}
+
 export interface ProfileResponse {
   name: string
   email: string
