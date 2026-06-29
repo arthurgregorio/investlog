@@ -17,6 +17,28 @@ class UserRepository(private val dsl: DSLContext) {
             ?.toCurrentUser()
     }
 
+    fun findByEmail(email: String): CurrentUser? {
+        return dsl.selectFrom(USERS)
+            .where(USERS.EMAIL.eq(email))
+            .fetchOne()
+            ?.toCurrentUser()
+    }
+
+    fun findPasswordHashByEmail(email: String): String? {
+        return dsl.select(USERS.PASSWORD_HASH)
+            .from(USERS)
+            .where(USERS.EMAIL.eq(email))
+            .fetchOne(USERS.PASSWORD_HASH)
+    }
+
+    fun updatePasswordHash(userId: Long, passwordHash: String) {
+        dsl.update(USERS)
+            .set(USERS.PASSWORD_HASH, passwordHash)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .execute()
+    }
+
     fun updatePreferences(userId: Long, accentColor: String, preferredCurrency: String): CurrentUser {
         return dsl.update(USERS)
             .set(USERS.ACCENT_COLOR, accentColor)
@@ -36,5 +58,8 @@ class UserRepository(private val dsl: DSLContext) {
         avatarUrl = avatarUrl,
         accentColor = AccentColor.fromText(accentColor),
         preferredCurrency = preferredCurrency!!,
+        role = UserRole.valueOf(role!!),
+        status = UserStatus.valueOf(status!!),
+        authProvider = AuthProvider.valueOf(authProvider!!),
     )
 }

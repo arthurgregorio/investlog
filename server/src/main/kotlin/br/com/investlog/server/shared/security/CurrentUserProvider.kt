@@ -12,10 +12,10 @@ class FixedCurrentUserProvider(
 ) : CurrentUserProvider {
 
     override fun getCurrentUser(): CurrentUser =
-        userRepository.findByGoogleSub(DEV_USER_GOOGLE_SUB)
-            ?: error("Dev user '$DEV_USER_GOOGLE_SUB' not found — check the 14-1050-seed-dev-data.xml changeset")
+        userRepository.findByEmail(DEV_USER_EMAIL)
+            ?: error("Dev user '$DEV_USER_EMAIL' not found — check the 14-1050-seed-dev-data.xml changeset")
 
     companion object {
-        private const val DEV_USER_GOOGLE_SUB = "dev-user"
+        private const val DEV_USER_EMAIL = "admin@admin.com"
     }
 }

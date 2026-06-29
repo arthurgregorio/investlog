@@ -11,4 +11,7 @@ data class CurrentUser(
     val avatarUrl: String?,
     val accentColor: AccentColor,
     val preferredCurrency: String,
+    val role: UserRole,
+    val status: UserStatus,
+    val authProvider: AuthProvider,
 )
