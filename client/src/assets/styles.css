@@ -1984,13 +1984,7 @@ a {
 .auth-head{margin-bottom:22px;}
 .auth-title{font-size:23px;font-weight:800;letter-spacing:-.03em;margin:0;}
 .auth-sub{font-size:13.5px;color:var(--text-2);margin:6px 0 0;line-height:1.5;}
-.auth-pw-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
-.auth-forgot{font-size:12px;}
 .auth-submit{margin-top:4px;height:44px;font-size:14.5px;}
-.auth-divider{display:flex;align-items:center;gap:12px;color:var(--text-muted);font-size:12px;font-weight:600;margin:2px 0;}
-.auth-divider::before,.auth-divider::after{content:"";height:1px;background:var(--border);flex:1;}
-.auth-g{font-weight:800;font-size:15px;color:#4285f4;}
-.auth-foot{text-align:center;font-size:13px;color:var(--text-2);margin:22px 0 0;}
 .auth-error{font-size:13px;color:var(--down);background:var(--down-soft);border-radius:8px;padding:10px 12px;margin-bottom:4px;}
 @media(max-width:860px){
   .auth-aside{display:none;}

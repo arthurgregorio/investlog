@@ -17,7 +17,7 @@ class SecurityConfigTest : BaseIntegrationTest() {
     lateinit var passwordEncoder: PasswordEncoder
 
     @Test
-    fun `existing endpoints remain reachable without authentication for now`() {
+    fun `authenticated requests reach private endpoints`() {
         restTestClient.get()
             .uri("/private/v1/profile")
             .exchange()

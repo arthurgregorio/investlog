@@ -7,5 +7,11 @@ spring:
     database-change-log-table: database_changelog
     database-change-log-lock-table: database_changelog_lock
 
+server:
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+
 investlog:
   admin-default-password: ${ADMIN_DEFAULT_PASSWORD:admin}

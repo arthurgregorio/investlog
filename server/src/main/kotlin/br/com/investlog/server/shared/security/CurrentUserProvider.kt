@@ -1,5 +1,6 @@
 package br.com.investlog.server.shared.security
 
+import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 
@@ -21,6 +22,6 @@ class SecurityContextCurrentUserProvider(private val userRepository: UserReposit
             ?: error("No authenticated user in the current security context")
 
         return userRepository.findByEmail(sessionPrincipal.email)
-            ?: error("Authenticated user no longer exists")
+            ?: throw InvalidCredentialsException("Authenticated user no longer exists")
     }
 }

@@ -32,6 +32,9 @@ class AuthService(
             throw InvalidCredentialsException("Invalid email or password")
         }
 
+        servletRequest.getSession(true)
+        servletRequest.changeSessionId()
+
         val authorities = listOf(SimpleGrantedAuthority("ROLE_${user.role}"))
         val authentication = UsernamePasswordAuthenticationToken(user, null, authorities)
 
