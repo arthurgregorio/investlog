@@ -1,0 +1,6 @@
+package br.com.investlog.server.auth.rest.payloads
+
+data class LoginRequest(
+    val email: String,
+    val password: String,
+)

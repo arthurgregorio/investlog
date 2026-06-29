@@ -1,5 +1,6 @@
 package br.com.investlog.server.config
 
+import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.ConstraintViolationException
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.http.HttpStatus.UNAUTHORIZED
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
@@ -48,6 +50,15 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleNotFound(ex: NotFoundException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(NOT_FOUND, ex.message ?: "Resource not found")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidCredentialsException::class)
+    fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
