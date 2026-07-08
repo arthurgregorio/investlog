@@ -14,4 +14,5 @@ data class CurrentUser(
     val role: UserRole,
     val status: UserStatus,
     val authProvider: AuthProvider,
+    val totpEnabled: Boolean,
 )
