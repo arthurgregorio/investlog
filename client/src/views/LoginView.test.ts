@@ -26,7 +26,7 @@ describe('LoginView', () => {
 
   it('logs in and navigates to overview on submit', async () => {
     const store = useAuthStore()
-    const loginSpy = vi.spyOn(store, 'login').mockResolvedValue()
+    const loginSpy = vi.spyOn(store, 'login').mockResolvedValue('authenticated')
     router.push('/login')
     await router.isReady()
 

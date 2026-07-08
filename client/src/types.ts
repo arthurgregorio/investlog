@@ -139,6 +139,17 @@ export interface SessionResponse {
   role: UserRole
 }
 
+export interface TotpEnrollResponse {
+  secretKey: string
+  qrCodeDataUri: string
+}
+
+export type LoginOutcome =
+  | { status: 'authenticated'; session: SessionResponse }
+  | { status: 'needs_enrollment' }
+  | { status: 'totp_required' }
+  | { status: 'invalid_totp_code' }
+
 export interface ProfileResponse {
   name: string
   email: string
