@@ -31,8 +31,3 @@ per-layer PRs target that feature branch, not `main`; the feature branch itself 
 
 Every commit and PR description should reference the tracking issue for the phase/feature it
 belongs to (`Closes #N` / `Refs #N`) when one exists.
-
-## Migrations
-
-Never edit an existing Liquibase changelog file — always add a new one. See `server/CLAUDE.md`
-("Migrations") for the file-naming convention and why this matters.
