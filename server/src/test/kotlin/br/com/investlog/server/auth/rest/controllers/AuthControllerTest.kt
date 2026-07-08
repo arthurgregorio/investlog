@@ -46,7 +46,6 @@ class AuthControllerTest : BaseIntegrationTest() {
         val response = restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Cookie", NO_SESSION_COOKIE)
             .body("""{"email":"admin@admin.com","password":"admin"}""")
             .exchange()
             .expectStatus().isOk()
@@ -63,7 +62,6 @@ class AuthControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Cookie", NO_SESSION_COOKIE)
             .body("""{"email":"admin@admin.com","password":"wrong"}""")
             .exchange()
             .expectStatus().isUnauthorized()
@@ -75,7 +73,6 @@ class AuthControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/totp/verify")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Cookie", NO_SESSION_COOKIE)
             .body("""{"email":"admin@admin.com","password":"admin","code":"000000"}""")
             .exchange()
             .expectStatus().isUnauthorized()
@@ -98,7 +95,6 @@ class AuthControllerTest : BaseIntegrationTest() {
         val secret = restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Cookie", NO_SESSION_COOKIE)
             .body("""{"email":"admin@admin.com","password":"admin"}""")
             .exchange()
             .expectStatus().isOk()
@@ -112,7 +108,6 @@ class AuthControllerTest : BaseIntegrationTest() {
         val response = restTestClient.post()
             .uri("/private/v1/auth/totp/verify")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Cookie", NO_SESSION_COOKIE)
             .body("""{"email":"admin@admin.com","password":"admin","code":"${currentTotpCode(secret)}"}""")
             .exchange()
             .expectStatus().isOk()
@@ -129,7 +124,6 @@ class AuthControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Cookie", NO_SESSION_COOKIE)
             .body("""{"email":"admin@admin.com","password":"admin"}""")
             .exchange()
             .expectStatus().isEqualTo(409)
@@ -211,17 +205,6 @@ class AuthControllerTest : BaseIntegrationTest() {
 
     companion object {
         private lateinit var adminTotpSecret: String
-
-        /**
-         * `TestcontainersConfiguration`'s `AdminSessionCookieInterceptor` attaches an admin
-         * session cookie (by performing a plain login) to any request through the shared
-         * `restTestClient` that has no `Cookie` header and isn't itself a call to `/login`. The
-         * enroll/verify endpoints are `permitAll` and never read a session, so this dummy cookie
-         * is inert for them — it exists purely to make the interceptor skip its lazy admin login,
-         * which would otherwise fail with `check(response.statusCode() == 200)` while the admin
-         * is still unenrolled (login returns 202 in that state).
-         */
-        private const val NO_SESSION_COOKIE = "no-session=1"
 
         private fun currentTotpCode(secret: String): String =
             DefaultCodeGenerator().generate(secret, System.currentTimeMillis() / 1000L / 30L)
