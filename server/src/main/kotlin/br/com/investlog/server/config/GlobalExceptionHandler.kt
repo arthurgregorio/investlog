@@ -1,7 +1,10 @@
 package br.com.investlog.server.config
 
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
+import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
+import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.ConstraintViolationException
 import org.springframework.context.support.DefaultMessageSourceResolvable
@@ -59,6 +62,35 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(TotpRequiredException::class)
+    fun handleTotpRequired(ex: TotpRequiredException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "TOTP code required")
+        problemDetail.setProperty("error", "totp_required")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidTotpCodeException::class)
+    fun handleInvalidTotpCode(ex: InvalidTotpCodeException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid TOTP code")
+        problemDetail.setProperty("error", "invalid_totp_code")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(TotpAlreadyEnabledException::class)
+    fun handleTotpAlreadyEnabled(ex: TotpAlreadyEnabledException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "TOTP is already enabled")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
