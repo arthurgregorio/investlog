@@ -6,6 +6,7 @@ import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import { holdingsApi } from '@/api/holdings'
 import { useCurrencyStore } from '@/stores/currency'
+import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
 import type {
   ContributionDetail,
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 const dialog = useDialog()
 const toast = useToast()
 const currencyStore = useCurrencyStore()
+const auth = useAuthStore()
 
 const detail = ref<HoldingDetail | null>(null)
 const loading = ref(false)
@@ -225,6 +227,7 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
             </td>
             <td class="c-act">
               <b-button
+                v-if="auth.isAdmin"
                 outlined
                 type="is-danger"
                 size="is-small"
@@ -265,6 +268,7 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
             </td>
             <td class="c-act">
               <b-button
+                v-if="auth.isAdmin"
                 outlined
                 type="is-danger"
                 size="is-small"
@@ -296,7 +300,7 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
       >
         {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
       </b-button>
-      <b-button outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
+      <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
         Remover
       </b-button>
 

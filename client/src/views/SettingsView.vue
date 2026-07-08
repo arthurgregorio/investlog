@@ -191,6 +191,7 @@ function confirmDeleteUser(id: string, name: string) {
           >
             {{ stockType.name }}
             <button
+              v-if="auth.isAdmin"
               :aria-label="`Remover ${stockType.name}`"
               @click="removeStockType(stockType.id)"
             >
@@ -216,7 +217,7 @@ function confirmDeleteUser(id: string, name: string) {
         <div class="chip-edit">
           <span v-for="fundType in typesListStore.fundTypes" :key="fundType.id" class="edit-chip">
             {{ fundType.name }}
-            <button :aria-label="`Remover ${fundType.name}`" @click="removeFundType(fundType.id)">
+            <button v-if="auth.isAdmin" :aria-label="`Remover ${fundType.name}`" @click="removeFundType(fundType.id)">
               <b-icon icon="close" size="is-small" />
             </button>
           </span>
