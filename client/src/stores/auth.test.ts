@@ -10,6 +10,7 @@ vi.mock('@/api/auth', () => ({
     fetchSession: vi.fn(),
     enroll: vi.fn(),
     verify: vi.fn(),
+    register: vi.fn(),
   },
 }))
 
@@ -22,14 +23,19 @@ describe('auth store', () => {
   it('sets the session after a successful login', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
       status: 'authenticated',
-      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' },
+      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
     })
 
     const store = useAuthStore()
     const status = await store.login('admin@admin.com', 'admin')
 
     expect(status).toBe('authenticated')
-    expect(store.session).toEqual({ name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' })
+    expect(store.session).toEqual({
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    })
   })
 
   it('does not set a session when enrollment is required', async () => {
@@ -45,7 +51,7 @@ describe('auth store', () => {
   it('clears the session on logout', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
       status: 'authenticated',
-      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' },
+      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
     })
     vi.mocked(authApi.logout).mockResolvedValue(undefined)
 
@@ -66,7 +72,12 @@ describe('auth store', () => {
   })
 
   it('restoreSession populates the session when authenticated', async () => {
-    vi.mocked(authApi.fetchSession).mockResolvedValue({ name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' })
+    vi.mocked(authApi.fetchSession).mockResolvedValue({
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    })
 
     const store = useAuthStore()
     await store.restoreSession()
@@ -85,12 +96,38 @@ describe('auth store', () => {
   })
 
   it('verifyTotp sets the session on success', async () => {
-    vi.mocked(authApi.verify).mockResolvedValue({ name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' })
+    vi.mocked(authApi.verify).mockResolvedValue({
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    })
 
     const store = useAuthStore()
     await store.verifyTotp('admin@admin.com', 'admin', '123456')
 
     expect(authApi.verify).toHaveBeenCalledWith('admin@admin.com', 'admin', '123456')
     expect(store.session?.email).toBe('admin@admin.com')
+  })
+
+  it('register delegates to the API', async () => {
+    vi.mocked(authApi.register).mockResolvedValue(undefined)
+
+    const store = useAuthStore()
+    await store.register('Nova Usuária', 'nova@example.com', 'senha123')
+
+    expect(authApi.register).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'senha123')
+  })
+
+  it('isAdmin reflects the session role', async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      status: 'authenticated',
+      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
+    })
+
+    const store = useAuthStore()
+    expect(store.isAdmin).toBe(false)
+    await store.login('admin@admin.com', 'admin')
+    expect(store.isAdmin).toBe(true)
   })
 })
