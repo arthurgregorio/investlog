@@ -29,5 +29,19 @@ When a feature is developed on a long-lived feature branch (e.g. `feature/authen
 per-layer PRs target that feature branch, not `main`; the feature branch itself gets one PR into
 `main` once all its layer PRs have landed.
 
-Every commit and PR description should reference the tracking issue for the phase/feature it
-belongs to (`Closes #N` / `Refs #N`) when one exists.
+**Every PR must, at creation time:**
+- Get the `feature` label (or whatever label matches the work — `bug`, `documentation`, etc. —
+  `feature` is the default for anything adding new functionality).
+- Be assigned to `arthurgregorio`.
+- Reference its tracking issue in the body, using the issue number from the phase/feature this
+  work belongs to.
+  - **One PR closes one issue:** use `Closes #N` — GitHub auto-closes the issue when this PR
+    merges.
+  - **Multiple PRs address the same issue** (the normal case, since server/client/docs are
+    always split — see above): every one of those PRs uses `Refs #N`, never `Closes #N`. Using
+    `Closes #N` on more than one PR auto-closes the issue the moment the *first* of them merges,
+    even though the others (and the rest of the phase) are still open. Close the issue manually
+    once every PR for that phase has actually merged.
+
+Use `gh pr edit <N> --add-label feature --add-assignee arthurgregorio` right after `gh pr create`
+if the label/assignee weren't set at creation time — don't leave a PR unlabeled or unassigned.
