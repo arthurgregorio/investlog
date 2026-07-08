@@ -285,6 +285,27 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             .let { assertEquals("pending_approval", it?.get("error")) }
     }
 
+    @Test
+    @Order(13)
+    fun `reject rejects targeting your own account`() {
+        val adminId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "admin@admin.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$adminId/reject")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
     companion object {
         private lateinit var approveTargetId: String
         private lateinit var rejectTargetId: String

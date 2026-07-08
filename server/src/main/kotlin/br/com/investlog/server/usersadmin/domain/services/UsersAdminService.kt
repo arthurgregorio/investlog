@@ -23,7 +23,11 @@ class UsersAdminService(
 
     fun approve(externalId: UUID): UserAdminResponse = updateStatus(externalId, UserStatus.APPROVED)
 
-    fun reject(externalId: UUID): UserAdminResponse = updateStatus(externalId, UserStatus.REJECTED)
+    fun reject(externalId: UUID): UserAdminResponse {
+        val user = requireUser(externalId)
+        requireNotSelf(user)
+        return updateStatus(externalId, UserStatus.REJECTED)
+    }
 
     fun changeRole(externalId: UUID, request: RoleUpdateRequest): UserAdminResponse {
         val user = requireUser(externalId)
