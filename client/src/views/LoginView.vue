@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import LogoMark from '@/components/icons/LogoMark.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -7,19 +7,80 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const auth = useAuthStore()
 
+type Step = 'credentials' | 'enroll' | 'totp'
+
+const step = ref<Step>('credentials')
 const email = ref('')
 const password = ref('')
+const totpCode = ref('')
+const qrCodeDataUri = ref('')
 const error = ref('')
 const submitting = ref(false)
 
-async function submit() {
+const title = computed(() => {
+  if (step.value === 'enroll') return 'Configure a autenticação em duas etapas'
+  if (step.value === 'totp') return 'Confirme o código de autenticação'
+  return 'Bem-vindo de volta'
+})
+
+const subtitle = computed(() => {
+  if (step.value === 'enroll') return 'Escaneie o QR code com um aplicativo autenticador e digite o código gerado.'
+  if (step.value === 'totp') return 'Digite o código do seu aplicativo autenticador.'
+  return 'Entre para acompanhar seus investimentos.'
+})
+
+async function submitCredentials() {
   error.value = ''
   submitting.value = true
   try {
-    await auth.login(email.value, password.value)
-    await router.push({ name: 'overview' })
+    const status = await auth.login(email.value, password.value)
+    if (status === 'authenticated') {
+      await router.push({ name: 'overview' })
+      return
+    }
+    if (status === 'needs_enrollment') {
+      const enrollment = await auth.enrollTotp(email.value, password.value)
+      qrCodeDataUri.value = enrollment.qrCodeDataUri
+      step.value = 'enroll'
+      return
+    }
+    if (status === 'totp_required') {
+      step.value = 'totp'
+      return
+    }
+    error.value = 'E-mail ou senha inválidos.'
   } catch {
     error.value = 'E-mail ou senha inválidos.'
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function submitEnrollment() {
+  error.value = ''
+  submitting.value = true
+  try {
+    await auth.verifyTotp(email.value, password.value, totpCode.value)
+    await router.push({ name: 'overview' })
+  } catch {
+    error.value = 'Código inválido. Tente novamente.'
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function submitTotpCode() {
+  error.value = ''
+  submitting.value = true
+  try {
+    const status = await auth.login(email.value, password.value, totpCode.value)
+    if (status === 'authenticated') {
+      await router.push({ name: 'overview' })
+      return
+    }
+    error.value = 'Código inválido. Tente novamente.'
+  } catch {
+    error.value = 'Código inválido. Tente novamente.'
   } finally {
     submitting.value = false
   }
@@ -56,38 +117,54 @@ async function submit() {
     </aside>
 
     <main class="auth-main">
-      <form class="auth-card" @submit.prevent="submit">
+      <div class="auth-card">
         <div class="auth-card-brand">
           <span class="brand-mark"><LogoMark :size="20" /></span>
           <span class="brand-name">Invest<b>Log</b></span>
         </div>
 
         <div class="auth-head">
-          <h1 class="auth-title">Bem-vindo de volta</h1>
-          <p class="auth-sub">Entre para acompanhar seus investimentos.</p>
+          <h1 class="auth-title">{{ title }}</h1>
+          <p class="auth-sub">{{ subtitle }}</p>
         </div>
 
         <p v-if="error" class="auth-error">{{ error }}</p>
 
-        <div class="form-stack">
+        <form v-if="step === 'credentials'" class="form-stack" @submit.prevent="submitCredentials">
           <b-field label="E-mail">
             <b-input v-model="email" type="email" placeholder="voce@email.com" required />
           </b-field>
           <b-field label="Senha">
             <b-input v-model="password" type="password" placeholder="••••••••" required />
           </b-field>
-
-          <b-button
-            type="is-primary"
-            expanded
-            native-type="submit"
-            :loading="submitting"
-            class="auth-submit"
-          >
+          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
             Entrar
           </b-button>
-        </div>
-      </form>
+        </form>
+
+        <form v-else-if="step === 'enroll'" class="form-stack" @submit.prevent="submitEnrollment">
+          <img
+            :src="qrCodeDataUri"
+            alt="QR code para configurar a autenticação em duas etapas"
+            class="auth-totp-qr"
+          />
+          <b-field label="Código de 6 dígitos">
+            <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
+          </b-field>
+          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
+            Confirmar
+          </b-button>
+        </form>
+
+        <form v-else class="form-stack" @submit.prevent="submitTotpCode">
+          <b-field label="Código de 6 dígitos">
+            <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
+          </b-field>
+          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
+            Entrar
+          </b-button>
+        </form>
+      </div>
     </main>
   </div>
 </template>
