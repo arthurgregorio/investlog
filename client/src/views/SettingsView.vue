@@ -292,16 +292,16 @@ function confirmDeleteUser(id: string, name: string) {
                 >
                   Aprovar
                 </b-button>
-                <b-button
-                  v-if="user.status !== 'REJECTED'"
-                  size="is-small"
-                  type="is-warning"
-                  outlined
-                  @click="rejectUser(user.id)"
-                >
-                  Rejeitar
-                </b-button>
                 <template v-if="!isSelf(user.email)">
+                  <b-button
+                    v-if="user.status !== 'REJECTED'"
+                    size="is-small"
+                    type="is-warning"
+                    outlined
+                    @click="rejectUser(user.id)"
+                  >
+                    Rejeitar
+                  </b-button>
                   <b-button size="is-small" type="is-link" outlined @click="confirmRoleChange(user.id, user.name, user.role)">
                     {{ user.role === 'ADMIN' ? 'Remover admin' : 'Promover a admin' }}
                   </b-button>
