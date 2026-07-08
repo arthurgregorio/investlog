@@ -7,7 +7,7 @@ import LoginView from './LoginView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/api/auth', () => ({
-  authApi: { login: vi.fn(), logout: vi.fn(), fetchSession: vi.fn(), enroll: vi.fn(), verify: vi.fn() },
+  authApi: { login: vi.fn(), logout: vi.fn(), fetchSession: vi.fn(), enroll: vi.fn(), verify: vi.fn(), register: vi.fn() },
 }))
 
 describe('LoginView', () => {
@@ -20,6 +20,7 @@ describe('LoginView', () => {
       routes: [
         { path: '/', name: 'overview', component: { template: '<div />' } },
         { path: '/login', name: 'login', component: LoginView },
+        { path: '/pending-approval', name: 'pending-approval', component: { template: '<div />' } },
       ],
     })
   })
@@ -94,6 +95,24 @@ describe('LoginView', () => {
 
     expect(loginSpy).toHaveBeenLastCalledWith('admin@admin.com', 'admin', '654321')
     expect(router.currentRoute.value.name).toBe('overview')
+  })
+
+  it('registers a new account and navigates to the pending-approval screen', async () => {
+    const store = useAuthStore()
+    const registerSpy = vi.spyOn(store, 'register').mockResolvedValue()
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await wrapper.find('[data-testid="toggle-register"]').trigger('click')
+    await wrapper.find('input[type="text"]').setValue('Nova Usuária')
+    await wrapper.find('input[type="email"]').setValue('nova@example.com')
+    await wrapper.find('input[type="password"]').setValue('senha123')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'senha123')
+    expect(router.currentRoute.value.name).toBe('pending-approval')
   })
 })
 

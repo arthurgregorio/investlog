@@ -1987,6 +1987,7 @@ a {
 .auth-submit{margin-top:4px;height:44px;font-size:14.5px;}
 .auth-error{font-size:13px;color:var(--down);background:var(--down-soft);border-radius:8px;padding:10px 12px;margin-bottom:4px;}
 .auth-totp-qr{display:block;width:200px;height:200px;margin:0 auto 4px;border-radius:12px;border:1px solid var(--border);background:#fff;padding:10px;}
+.auth-toggle{background:none;border:none;color:var(--primary);font-size:13px;font-weight:600;cursor:pointer;text-align:center;margin-top:4px;padding:0;}
 @media(max-width:860px){
   .auth-aside{display:none;}
   .auth-card-brand{display:flex;}
