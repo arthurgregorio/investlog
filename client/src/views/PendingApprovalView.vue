@@ -1,18 +1,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LogoMark from '@/components/icons/LogoMark.vue'
 
 const auth = useAuthStore()
+const router = useRouter()
 
-const message = computed(() =>
-  auth.session
-    ? `Olá, ${auth.session.name}! Sua conta ainda está aguardando aprovação de um administrador.`
-    : 'Cadastro enviado! Aguarde a aprovação de um administrador para acessar sua conta.',
-)
+const message = computed(() => {
+  if (!auth.session) {
+    return 'Cadastro enviado! Aguarde a aprovação de um administrador para acessar sua conta.'
+  }
+
+  if (auth.session.status === 'REJECTED') {
+    return `Olá, ${auth.session.name}. Seu cadastro não foi aprovado por um administrador.`
+  }
+
+  return `Olá, ${auth.session.name}! Sua conta ainda está aguardando aprovação de um administrador.`
+})
 
 async function logout() {
   await auth.logout()
+  router.push({ name: 'login' })
 }
 </script>
 
