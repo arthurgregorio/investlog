@@ -44,6 +44,30 @@ class UsersAdminRepository(private val dsl: DSLContext) {
             .fetchSingle()
             .toAdminResponse()
 
+    fun updateRole(userId: Long, role: UserRole): UserAdminResponse =
+        dsl.update(USERS)
+            .set(USERS.ROLE, role.name)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .returning()
+            .fetchSingle()
+            .toAdminResponse()
+
+    fun resetTotp(userId: Long): UserAdminResponse =
+        dsl.update(USERS)
+            .set(USERS.TOTP_SECRET, null as String?)
+            .set(USERS.TOTP_ENABLED, false)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .returning()
+            .fetchSingle()
+            .toAdminResponse()
+
+    fun deleteByExternalId(externalId: UUID): Int =
+        dsl.deleteFrom(USERS)
+            .where(USERS.EXTERNAL_ID.eq(externalId))
+            .execute()
+
     private fun UsersRecord.toAdminResponse() = UserAdminResponse(
         id = externalId!!,
         name = name!!,

@@ -3,6 +3,7 @@ package br.com.investlog.server.config
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.exceptions.UserNotApprovedException
@@ -64,6 +65,15 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(SelfActionNotAllowedException::class)
+    fun handleSelfActionNotAllowed(ex: SelfActionNotAllowedException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message ?: "This action cannot target your own account")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
