@@ -1,7 +1,16 @@
 # CLAUDE.md
 
-This file provides repository-wide guidance to Claude Code. See also `client/CLAUDE.md` and
-`server/CLAUDE.md` for stack-specific conventions.
+This file provides repository-wide guidance to Claude Code. InvestLog is a monorepo with two
+independently built projects:
+
+| Folder | Stack | Read its CLAUDE.md when you |
+|---|---|---|
+| `server/` | Kotlin / Spring Boot 4 / jOOQ / Liquibase | touch server code, write a migration, add an endpoint, or run/build the backend |
+| `client/` | Vue 3 / TypeScript / Pinia / Buefy | touch client code, add a component/view/store, or run/build the frontend |
+
+Each subfolder's `CLAUDE.md` is the source of truth for that stack's commands, coding
+conventions, and architecture — read it before making changes there. This root file only holds
+conventions that apply across the whole repo, regardless of which folder you're working in.
 
 ## Pull request conventions
 
@@ -25,5 +34,5 @@ belongs to (`Closes #N` / `Refs #N`) when one exists.
 
 ## Migrations
 
-Never edit an existing Liquibase changelog file — always add a new one under
-`server/src/main/resources/db/changelog/changes/**`.
+Never edit an existing Liquibase changelog file — always add a new one. See `server/CLAUDE.md`
+("Migrations") for the file-naming convention and why this matters.
