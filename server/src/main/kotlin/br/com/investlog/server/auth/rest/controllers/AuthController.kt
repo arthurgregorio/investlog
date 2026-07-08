@@ -3,6 +3,7 @@ package br.com.investlog.server.auth.rest.controllers
 import br.com.investlog.server.auth.domain.services.AuthService
 import br.com.investlog.server.auth.domain.services.LoginResult
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
+import br.com.investlog.server.auth.rest.payloads.RegisterRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
@@ -10,12 +11,14 @@ import br.com.investlog.server.auth.rest.payloads.TotpEnrollmentRequiredResponse
 import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -50,4 +53,10 @@ class AuthController(private val authService: AuthService) {
 
     @PostMapping("/logout")
     fun logout(servletRequest: HttpServletRequest) = authService.logout(servletRequest)
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun register(@Valid @RequestBody request: RegisterRequest) {
+        authService.register(request)
+    }
 }

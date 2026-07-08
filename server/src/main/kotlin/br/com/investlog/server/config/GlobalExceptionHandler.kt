@@ -5,6 +5,7 @@ import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
+import br.com.investlog.server.shared.exceptions.UserNotApprovedException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.ConstraintViolationException
 import org.springframework.context.support.DefaultMessageSourceResolvable
@@ -12,6 +13,7 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CONFLICT
+import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.HttpStatus.UNAUTHORIZED
@@ -62,6 +64,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(UserNotApprovedException::class)
+    fun handleUserNotApproved(ex: UserNotApprovedException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, ex.message ?: "Your account is not approved")
+        problemDetail.setProperty("error", "pending_approval")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

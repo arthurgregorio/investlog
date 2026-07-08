@@ -1,6 +1,7 @@
 package br.com.investlog.server.auth.domain.services
 
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
+import br.com.investlog.server.auth.rest.payloads.RegisterRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
@@ -86,10 +87,14 @@ class AuthService(
         return establishSession(user.copy(totpEnabled = true), servletRequest, servletResponse)
     }
 
+    fun register(request: RegisterRequest) {
+        userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
+    }
+
     fun currentSession(): SessionResponse {
         val user = SecurityContextHolder.getContext().authentication?.principal as? CurrentUser
             ?: throw InvalidCredentialsException("Not authenticated")
-        return SessionResponse(name = user.name, email = user.email, role = user.role)
+        return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
     }
 
     fun logout(servletRequest: HttpServletRequest) {
@@ -116,7 +121,10 @@ class AuthService(
         servletRequest.getSession(true)
         servletRequest.changeSessionId()
 
-        val authorities = listOf(SimpleGrantedAuthority("ROLE_${user.role}"))
+        val authorities = listOf(
+            SimpleGrantedAuthority("ROLE_${user.role}"),
+            SimpleGrantedAuthority("STATUS_${user.status}"),
+        )
         val authentication = UsernamePasswordAuthenticationToken(user, null, authorities)
 
         val context = SecurityContextHolder.createEmptyContext()
@@ -125,6 +133,6 @@ class AuthService(
 
         HttpSessionSecurityContextRepository().saveContext(context, servletRequest, servletResponse)
 
-        return SessionResponse(name = user.name, email = user.email, role = user.role)
+        return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
     }
 }
