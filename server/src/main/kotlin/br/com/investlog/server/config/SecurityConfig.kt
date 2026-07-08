@@ -25,6 +25,8 @@ class SecurityConfig {
             anonymous { disable() }
             authorizeHttpRequests {
                 authorize("/private/v1/auth/login", permitAll)
+                authorize("/private/v1/auth/totp/enroll", permitAll)
+                authorize("/private/v1/auth/totp/verify", permitAll)
                 authorize(anyRequest, authenticated)
             }
             exceptionHandling {
