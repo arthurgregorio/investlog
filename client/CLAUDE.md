@@ -58,6 +58,8 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `overview.ts` | `GET /overview`, `GET /overview/series` |
 | `assetTypes.ts` | `GET/POST/DELETE /stock-types`, `/fund-types` |
 | `rates.ts` | `GET /currency-rates`, `PUT /currency-rates/{code}` |
+| `auth.ts` | `POST /auth/login`, `/register`, `/totp/enroll`, `/totp/verify`, `GET /auth/session`, `POST /auth/logout` |
+| `usersAdmin.ts` | `GET /users`, `PATCH /users/{id}/approve`\|`reject`\|`role`\|`totp-reset`, `DELETE /users/{id}` (admin-only) |
 
 ### Domain types (`src/types.ts`)
 
@@ -69,6 +71,9 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 - `PortfolioSummary`, `KindSummary`, `SeriesPoint` — overview endpoint shapes.
 - `AssetType`, `CurrencyRate` — settings endpoint shapes.
 - `PagedResponse<T>` — Spring `PagedModel` envelope: `{ content, page: { size, number, totalElements, totalPages } }`.
+- `UserStatus` = `'PENDING' | 'APPROVED' | 'REJECTED'`; `SessionResponse` (`name`, `email`, `role`,
+  `status`) and `UserAdminResponse` (adds `id`, `authProvider`, `totpEnabled`) are the auth-facing
+  shapes — see **Authentication & Authorization** below.
 
 ### State (`src/stores/`)
 
@@ -82,6 +87,8 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `typesList` | `GET /stock-types` + `/fund-types` | `stockTypes[]`, `fundTypes[]`, CRUD actions |
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
 | `appearance` | `localStorage` | `dark`, `accent` — persisted across sessions |
+| `auth` | `GET/POST /auth/*` | `session`, `isAdmin`, `login/register/enrollTotp/verifyTotp/logout/restoreSession` |
+| `usersAdmin` | `GET/PATCH/DELETE /users/*` | `users[]`, `approve/reject/changeRole/resetTotp/remove` |
 
 **Pessimistic updates**: every mutation awaits the API response before updating store state.
 **Lazy loading**: each store is loaded by the view/component that needs it, in `onMounted`.
@@ -109,6 +116,35 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 `App.vue` sets `data-theme` (`light`/`dark`), `data-accent` (`blue`/`indigo`/`teal`/`green`)
 and a fixed `data-density="comfortable"` on `.app-root`. Accent color is the only
 user-configurable appearance setting.
+
+### Authentication & Authorization
+
+`router/index.ts`'s `beforeEach` guard drives the whole flow off `auth.session`: no session on a
+non-public route → `/login`; session with `status !== 'APPROVED'` → `/pending-approval`; non-admin
+on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` is the allow-list for routes reachable without
+(or despite) an approved session — extend it rather than adding one-off exceptions in the guard
+body. `LoginView.vue` is a single 4-step state machine (`credentials`/`register`/`enroll`/`totp`)
+driven by one `step` ref, not four separate views — Phase 4's Google button is another entry point
+into the same `credentials` step, not a new step.
+
+**`v-if="auth.isAdmin"` and the router's role/status redirects are presentational only — they are
+not the security boundary.** The server enforces every gate independently (`ROLE_ADMIN` on
+`/users/**`, `STATUS_APPROVED` everywhere else, re-checked live via `CurrentUserProvider` — see
+`server/CLAUDE.md`). Hiding a button or redirecting a route improves the UX for a legitimate user;
+it does nothing against a client that calls the API directly. Don't reason about client-side gating
+as if it were access control.
+
+`PendingApprovalView.vue` branches its message on `auth.session?.status`, not just on whether a
+session exists — a `REJECTED` user must see different copy than a `PENDING` one, or the distinct
+`REJECTED` status (introduced specifically to avoid this) is pointless. Known, accepted gap: `GET
+/auth/session` echoes the status cached at login, so a user rejected mid-session won't see this
+screen update until their next real API call 403s or they refresh — the server-side revocation
+(next action, not next login) is the actual security guarantee; this view is UX, not enforcement.
+
+In `SettingsView.vue`'s "Usuários locais" section, the acting admin's own row hides
+role-change/reject/delete (`isSelf(user.email)`) but leaves approve and TOTP-reset visible — those
+two are safe no-ops on your own account, not lockout risks, so hiding them would remove a valid
+self-recovery path for no benefit.
 
 ### Buefy/Bulma gotchas
 

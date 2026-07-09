@@ -52,21 +52,37 @@ it in `db.changelog-master.xml`.
 `Application.kt` is the `@SpringBootApplication` bootstrap. Beyond that, the application layer
 has:
 
-- `shared/security` — cross-cutting current-user resolution: `CurrentUser` (domain model),
-  `UserRepository` (queries/updates `system.users` via the generated jOOQ `USERS` table), and
-  `CurrentUserProvider`/`FixedCurrentUserProvider` (resolves the current user; fixed to a dev
-  user for now).
+- `shared/security` — cross-cutting current-user resolution: `CurrentUser` (domain model, with a
+  nested `CurrentUser.Status` enum — `PENDING`/`APPROVED`/`REJECTED`), `UserRole`, `AuthProvider`,
+  `UserRepository` (queries/updates `system.users` via the generated jOOQ `USERS` table),
+  `AdminBootstrapRunner` (seeds the admin account from `ADMIN_DEFAULT_PASSWORD` on first boot),
+  and `CurrentUserProvider`/`SecurityContextCurrentUserProvider` — see **Authentication &
+  Authorization** below, this is more load-bearing than it looks.
+- `auth` — `POST /auth/login`, `POST /auth/register`, `GET /auth/session`, `POST /auth/logout`,
+  `POST /auth/totp/enroll`, `POST /auth/totp/verify`. `AuthService` owns session establishment
+  (the *only* code path that issues a session — see below); `TotpService` wraps
+  `dev.samstevens.totp` (QR generation, code verification). `LoginResult` (sealed interface:
+  `Authenticated`/`EnrollmentRequired`) is `auth`'s own return type, kept in its own file rather
+  than co-located in `AuthService.kt` — one type per file, even for small/tightly-coupled types.
+- `usersadmin` — admin-only user management: `GET /users` (paginated), `PATCH
+  /users/{id}/approve|reject|role|totp-reset`, `DELETE /users/{id}`. Gated to `ROLE_ADMIN` in
+  `SecurityConfig`. `changeRole`/`reject`/`delete` all guard against the caller targeting their
+  own account (`SelfActionNotAllowedException`, 400) to prevent a self-lockout; `approve` and
+  `resetTotp` don't need the guard since self-targeting them is a genuine no-op, not a lockout.
 - `shared/persistence` — `pagedModelOf(content, pageable, total)`, the single place jOOQ page
   results become `org.springframework.data.web.PagedModel<T>` for collection endpoints.
-- `shared/exceptions` — `NotFoundException`, mapped by `GlobalExceptionHandler` to a 404
-  `ProblemDetail`.
+- `shared/exceptions` — domain exceptions (`NotFoundException`, `InvalidCredentialsException`,
+  `InvalidTotpCodeException`, `TotpAlreadyEnabledException`, `TotpRequiredException`,
+  `UserNotApprovedException`, `SelfActionNotAllowedException`), each mapped by
+  `GlobalExceptionHandler` to a `ProblemDetail`.
 - `config` — `WebMvcConfig` (path-segment API versioning, prefixes `@RestController`s under
-  `/private/{version}`; `@EnableSpringDataWebSupport` activates `Pageable` parameter resolution)
-  and `GlobalExceptionHandler` (RFC 7807 `ProblemDetail` error responses: 400 validation errors,
-  404 `NotFoundException`, 409 `DataIntegrityViolationException` from unique/FK-restrict
-  violations, 500 catch-all).
-- `shared/rest/payloads` — shared REST payload types; currently holds `CurrencyCode`, a typed
-  enum used as a path variable in the currency-rates controller.
+  `/private/{version}`; `@EnableSpringDataWebSupport` activates `Pageable` parameter resolution),
+  `SecurityConfig` (the filter chain — see below), and `GlobalExceptionHandler` (RFC 7807
+  `ProblemDetail` error responses: 400 validation errors, 404 `NotFoundException`, 409
+  `DataIntegrityViolationException` from unique/FK-restrict violations, 500 catch-all).
+- `shared/rest/payloads` — shared REST payload types: `CurrencyCode` (typed enum used as a path
+  variable in the currency-rates controller) and `AccessDeniedResponse` (the JSON shape written
+  by `SecurityConfig`'s `AccessDeniedHandler`).
 - `profile` — `GET`/`PATCH /private/v1/profile`, following a `rest/{controllers,payloads}` +
   `domain/services` layout.
 - `typelists` — `GET`/`POST`/`DELETE /private/v1/stock-types` and `.../fund-types`, paginated,
@@ -82,6 +98,39 @@ has:
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
   (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
+
+### Authentication & Authorization
+
+- **Session authorities are computed once at login and never re-evaluated per request.**
+  `AuthService.establishSession` bakes `ROLE_${role}` and `STATUS_${status}` into the session's
+  `Authentication` at login time; `SecurityConfig`'s filter chain (`hasAuthority(...)`) only ever
+  checks those cached values, never the database. Concretely: promoting/demoting a user, or
+  approving them, takes effect on their *next login*, not immediately. Rejecting or deleting a
+  user is different and more urgent — a stale `STATUS_APPROVED` authority would otherwise leave
+  their access open for the rest of that session. That gap is closed by a **second, independent
+  check**: `SecurityContextCurrentUserProvider.getCurrentUser()` re-fetches the user row from the
+  database on every call (every real business service resolves the current user through this,
+  not through the raw session principal) and throws `UserNotApprovedException` the moment status
+  is no longer `APPROVED` — so revocation actually lands on the user's *next real action*, not
+  their next login. **When adding any new authorization-relevant, mutable attribute to `CurrentUser`
+  (Phase 4's Google-linked accounts included), route the live check through `CurrentUserProvider`,
+  not just the filter chain — the filter chain alone will always be one login stale.**
+  `/auth/session` and `/auth/logout` deliberately read the raw session principal instead (so a
+  pending/rejected user can still check their status and log out).
+- **`establishSession` is the only session-issuing code path** — every login flow (password,
+  TOTP verify, and Phase 4's Google callback) must funnel through it rather than open-coding a
+  second way to mint a session, or a gate implemented in one path silently won't apply to another.
+- Jackson 3 (Spring Boot 4): inject `tools.jackson.databind.json.JsonMapper`, not
+  `tools.jackson.databind.ObjectMapper` — Spring auto-configures a `JsonMapper` bean as the
+  concrete JSON mapper; `ObjectMapper` is now a more generic base type not meant for direct
+  injection. Needed anywhere you serialize a response body by hand outside the normal
+  controller/`ProblemDetail` pipeline (e.g. `SecurityConfig`'s `AccessDeniedHandler`).
+- The shared test harness (`RestClientTestConfiguration` /
+  `AdminSessionCookieInterceptor`, `src/test/.../AdminSessionCookieInterceptor.kt`) auto-injects
+  an admin session cookie into any `RestTestClient` request that doesn't already carry a `Cookie`
+  header. To test a non-admin or unauthenticated path, capture that user's own session cookie
+  (via a real login/TOTP-verify call) and pass it explicitly with `.header("Cookie", cookie)` —
+  passing an explicit header is what short-circuits the auto-injection.
 
 The persistence schema itself is fully defined (see below).
 
@@ -123,6 +172,11 @@ The persistence schema itself is fully defined (see below).
   each test class gets its own fresh container/schema — controller test classes assert exact row
   counts assuming a clean table at class start, and the Spring test-context cache would otherwise
   share one container/database across classes with identical `@SpringBootTest` config.
+- `RestClientTestConfiguration` / `AdminSessionCookieInterceptor`
+  (`src/test/.../AdminSessionCookieInterceptor.kt`, imported by `BaseIntegrationTest` alongside
+  `TestcontainersConfiguration`) auto-authenticates every `RestTestClient` request as the seeded
+  admin, so existing test classes don't need to log in explicitly — see **Authentication &
+  Authorization** above for how to test as a different/no user.
 - `TestServerApplication` is an alternate `main` that boots the app with
   `TestcontainersConfiguration` applied, for running locally against a throwaway
   Testcontainers-managed Postgres.
