@@ -28,6 +28,7 @@ class GoogleOAuth2Config {
             .registrationId("google")
             .clientId(googleClientId)
             .clientSecret(googleClientSecret)
+            .scope("openid", "profile", "email")
             .build()
 
         return InMemoryClientRegistrationRepository(googleRegistration)
