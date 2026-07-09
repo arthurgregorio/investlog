@@ -16,7 +16,6 @@ export const router = createRouter({
     { path: '/pending-approval', name: 'pending-approval', component: PendingApprovalView },
     { path: '/overview', name: 'overview', component: OverviewView },
     { path: '/wallets', name: 'wallets', component: WalletsView },
-    // ?filter=stocks|crypto|funds preselects the segmented tab
     { path: '/investments', name: 'investments', component: InvestmentsView },
     { path: '/settings', name: 'settings', component: SettingsView },
   ],
@@ -33,17 +32,26 @@ router.beforeEach((to) => {
   if (!PUBLIC_ROUTE_NAMES.includes(to.name as string) && !auth.session) {
     return { name: 'login' }
   }
+
   if (to.name === 'login' && auth.session) {
     return auth.session.status === 'APPROVED' ? { name: 'overview' } : { name: 'pending-approval' }
   }
-  if (auth.session && auth.session.status !== 'APPROVED' && !PUBLIC_ROUTE_NAMES.includes(to.name as string)) {
+
+  if (
+    auth.session &&
+    auth.session.status !== 'APPROVED' &&
+    !PUBLIC_ROUTE_NAMES.includes(to.name as string)
+  ) {
     return { name: 'pending-approval' }
   }
+
   if (to.name === 'pending-approval' && auth.session?.status === 'APPROVED') {
     return { name: 'overview' }
   }
+
   if (to.name === 'settings' && auth.session && auth.session.role !== 'ADMIN') {
     return { name: 'overview' }
   }
+
   return true
 })

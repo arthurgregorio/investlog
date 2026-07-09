@@ -1,9 +1,16 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 
 vi.mock('@/api/auth', () => ({
-  authApi: { login: vi.fn(), logout: vi.fn(), fetchSession: vi.fn(), enroll: vi.fn(), verify: vi.fn(), register: vi.fn() },
+  authApi: {
+    login: vi.fn(),
+    logout: vi.fn(),
+    fetchSession: vi.fn(),
+    enroll: vi.fn(),
+    verify: vi.fn(),
+    register: vi.fn(),
+  },
 }))
 
 describe('router auth guard', () => {
@@ -23,7 +30,12 @@ describe('router auth guard', () => {
   it('allows navigation when an approved session exists', async () => {
     vi.resetModules()
     const auth = useAuthStore()
-    auth.session = { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' }
+    auth.session = {
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    }
 
     const { router } = await import('./index')
     router.push('/wallets')
@@ -35,7 +47,12 @@ describe('router auth guard', () => {
   it('redirects a pending session to /pending-approval', async () => {
     vi.resetModules()
     const auth = useAuthStore()
-    auth.session = { name: 'Nova Usuária', email: 'nova@example.com', role: 'USER', status: 'PENDING' }
+    auth.session = {
+      name: 'Nova Usuária',
+      email: 'nova@example.com',
+      role: 'USER',
+      status: 'PENDING',
+    }
 
     const { router } = await import('./index')
     router.push('/wallets')
@@ -47,7 +64,12 @@ describe('router auth guard', () => {
   it('redirects an approved session away from /pending-approval', async () => {
     vi.resetModules()
     const auth = useAuthStore()
-    auth.session = { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' }
+    auth.session = {
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    }
 
     const { router } = await import('./index')
     router.push('/pending-approval')
@@ -59,7 +81,12 @@ describe('router auth guard', () => {
   it('redirects a non-admin away from /settings', async () => {
     vi.resetModules()
     const auth = useAuthStore()
-    auth.session = { name: 'Usuário Comum', email: 'user@example.com', role: 'USER', status: 'APPROVED' }
+    auth.session = {
+      name: 'Usuário Comum',
+      email: 'user@example.com',
+      role: 'USER',
+      status: 'APPROVED',
+    }
 
     const { router } = await import('./index')
     router.push('/settings')

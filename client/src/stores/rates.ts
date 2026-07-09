@@ -8,7 +8,9 @@ export const useRatesStore = defineStore('rates', () => {
   const loaded = ref(false)
   const loading = ref(false)
 
-  const baseCurrency = computed(() => rates.value.find((rate) => rate.isBase)?.currencyCode ?? 'BRL')
+  const baseCurrency = computed(
+    () => rates.value.find((rate) => rate.isBase)?.currencyCode ?? 'BRL',
+  )
   const currencyCodes = computed(() => rates.value.map((rate) => rate.currencyCode))
 
   async function load() {

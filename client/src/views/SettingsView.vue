@@ -95,7 +95,8 @@ async function rejectUser(id: string) {
 function confirmRoleChange(id: string, name: string, currentRole: UserRole) {
   const nextRole: UserRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN'
   dialog.confirm({
-    title: nextRole === 'ADMIN' ? 'Promover a administrador' : 'Remover privilégios de administrador',
+    title:
+      nextRole === 'ADMIN' ? 'Promover a administrador' : 'Remover privilégios de administrador',
     message: `Alterar o papel de <strong>${name}</strong> para <strong>${nextRole}</strong>?`,
     confirmText: 'Confirmar',
     cancelText: 'Cancelar',
@@ -217,7 +218,11 @@ function confirmDeleteUser(id: string, name: string) {
         <div class="chip-edit">
           <span v-for="fundType in typesListStore.fundTypes" :key="fundType.id" class="edit-chip">
             {{ fundType.name }}
-            <button v-if="auth.isAdmin" :aria-label="`Remover ${fundType.name}`" @click="removeFundType(fundType.id)">
+            <button
+              v-if="auth.isAdmin"
+              :aria-label="`Remover ${fundType.name}`"
+              @click="removeFundType(fundType.id)"
+            >
               <b-icon icon="close" size="is-small" />
             </button>
           </span>
@@ -270,10 +275,16 @@ function confirmDeleteUser(id: string, name: string) {
                 <div class="wallet-titles">
                   <div class="wallet-name">{{ user.name }}</div>
                   <div class="wallet-tags">
-                    <b-tag :type="user.role === 'ADMIN' ? 'is-link' : 'is-light'">{{ user.role }}</b-tag>
+                    <b-tag :type="user.role === 'ADMIN' ? 'is-link' : 'is-light'">{{
+                      user.role
+                    }}</b-tag>
                     <b-tag
                       :type="
-                        user.status === 'APPROVED' ? 'is-success' : user.status === 'REJECTED' ? 'is-danger' : 'is-warning'
+                        user.status === 'APPROVED'
+                          ? 'is-success'
+                          : user.status === 'REJECTED'
+                            ? 'is-danger'
+                            : 'is-warning'
                       "
                     >
                       {{ user.status }}
@@ -303,13 +314,28 @@ function confirmDeleteUser(id: string, name: string) {
                   >
                     Rejeitar
                   </b-button>
-                  <b-button size="is-small" type="is-link" outlined @click="confirmRoleChange(user.id, user.name, user.role)">
+                  <b-button
+                    size="is-small"
+                    type="is-link"
+                    outlined
+                    @click="confirmRoleChange(user.id, user.name, user.role)"
+                  >
                     {{ user.role === 'ADMIN' ? 'Remover admin' : 'Promover a admin' }}
                   </b-button>
-                  <b-button size="is-small" type="is-info" outlined @click="confirmTotpReset(user.id, user.name)">
+                  <b-button
+                    size="is-small"
+                    type="is-info"
+                    outlined
+                    @click="confirmTotpReset(user.id, user.name)"
+                  >
                     Redefinir 2FA
                   </b-button>
-                  <b-button size="is-small" type="is-danger" outlined @click="confirmDeleteUser(user.id, user.name)">
+                  <b-button
+                    size="is-small"
+                    type="is-danger"
+                    outlined
+                    @click="confirmDeleteUser(user.id, user.name)"
+                  >
                     Remover
                   </b-button>
                 </template>

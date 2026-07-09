@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import LogoMark from '@/components/icons/LogoMark.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -26,8 +26,10 @@ const title = computed(() => {
 })
 
 const subtitle = computed(() => {
-  if (step.value === 'register') return 'Sua conta ficará pendente até que um administrador a aprove.'
-  if (step.value === 'enroll') return 'Escaneie o QR code com um aplicativo autenticador e digite o código gerado.'
+  if (step.value === 'register')
+    return 'Sua conta ficará pendente até que um administrador a aprove.'
+  if (step.value === 'enroll')
+    return 'Escaneie o QR code com um aplicativo autenticador e digite o código gerado.'
   if (step.value === 'totp') return 'Digite o código do seu aplicativo autenticador.'
   return 'Entre para acompanhar seus investimentos.'
 })
@@ -120,8 +122,8 @@ async function submitTotpCode() {
       <div class="auth-aside-mid">
         <h2 class="auth-headline">Seu diário de<br />investimentos,<br />sempre em dia.</h2>
         <p class="auth-tagline">
-          Registre aportes, acompanhe carteiras em várias moedas e veja seu patrimônio
-          evoluir — tudo em um só lugar.
+          Registre aportes, acompanhe carteiras em várias moedas e veja seu patrimônio evoluir —
+          tudo em um só lugar.
         </p>
       </div>
       <ul class="auth-points">
@@ -130,10 +132,12 @@ async function submitTotpCode() {
         <li><span class="ap-dot" />Histórico completo de cada aporte</li>
       </ul>
       <div class="auth-deco" aria-hidden="true">
-        <span style="height: 34%" /><span style="height: 52%" />
-        <span style="height: 46%" /><span style="height: 68%" />
-        <span style="height: 60%" /><span style="height: 84%" />
-        <span style="height: 76%" /><span style="height: 100%" />
+        <span style="height: 34%" /><span style="height: 52%" /> <span style="height: 46%" /><span
+          style="height: 68%"
+        />
+        <span style="height: 60%" /><span style="height: 84%" /> <span style="height: 76%" /><span
+          style="height: 100%"
+        />
       </div>
     </aside>
 
@@ -158,15 +162,30 @@ async function submitTotpCode() {
           <b-field label="Senha">
             <b-input v-model="password" type="password" placeholder="••••••••" required />
           </b-field>
-          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
+          <b-button
+            type="is-primary"
+            expanded
+            native-type="submit"
+            :loading="submitting"
+            class="auth-submit"
+          >
             Entrar
           </b-button>
-          <button type="button" class="auth-toggle" data-testid="toggle-register" @click="toggleRegister">
+          <button
+            type="button"
+            class="auth-toggle"
+            data-testid="toggle-register"
+            @click="toggleRegister"
+          >
             Não tem uma conta? Criar conta
           </button>
         </form>
 
-        <form v-else-if="step === 'register'" class="form-stack" @submit.prevent="submitRegistration">
+        <form
+          v-else-if="step === 'register'"
+          class="form-stack"
+          @submit.prevent="submitRegistration"
+        >
           <b-field label="Nome">
             <b-input v-model="name" type="text" placeholder="Seu nome" required />
           </b-field>
@@ -176,10 +195,21 @@ async function submitTotpCode() {
           <b-field label="Senha">
             <b-input v-model="password" type="password" placeholder="••••••••" required />
           </b-field>
-          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
+          <b-button
+            type="is-primary"
+            expanded
+            native-type="submit"
+            :loading="submitting"
+            class="auth-submit"
+          >
             Criar conta
           </b-button>
-          <button type="button" class="auth-toggle" data-testid="toggle-register" @click="toggleRegister">
+          <button
+            type="button"
+            class="auth-toggle"
+            data-testid="toggle-register"
+            @click="toggleRegister"
+          >
             Já tem uma conta? Entrar
           </button>
         </form>
@@ -193,7 +223,13 @@ async function submitTotpCode() {
           <b-field label="Código de 6 dígitos">
             <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
           </b-field>
-          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
+          <b-button
+            type="is-primary"
+            expanded
+            native-type="submit"
+            :loading="submitting"
+            class="auth-submit"
+          >
             Confirmar
           </b-button>
         </form>
@@ -202,7 +238,13 @@ async function submitTotpCode() {
           <b-field label="Código de 6 dígitos">
             <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
           </b-field>
-          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
+          <b-button
+            type="is-primary"
+            expanded
+            native-type="submit"
+            :loading="submitting"
+            class="auth-submit"
+          >
             Entrar
           </b-button>
         </form>

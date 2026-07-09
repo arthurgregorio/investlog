@@ -3,7 +3,11 @@ import { computed, ref } from 'vue'
 import { authApi } from '@/api/auth'
 import type { SessionResponse, TotpEnrollResponse } from '@/types'
 
-export type LoginStatus = 'authenticated' | 'needs_enrollment' | 'totp_required' | 'invalid_totp_code'
+export type LoginStatus =
+  | 'authenticated'
+  | 'needs_enrollment'
+  | 'totp_required'
+  | 'invalid_totp_code'
 
 export const useAuthStore = defineStore('auth', () => {
   const session = ref<SessionResponse | null>(null)
@@ -46,5 +50,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { session, loading, isAdmin, login, enrollTotp, verifyTotp, register, logout, restoreSession }
+  return {
+    session,
+    loading,
+    isAdmin,
+    login,
+    enrollTotp,
+    verifyTotp,
+    register,
+    logout,
+    restoreSession,
+  }
 })

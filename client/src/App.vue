@@ -23,7 +23,6 @@ watchEffect(() => {
   document.documentElement.setAttribute('data-accent', accent.value)
 })
 
-/* App-shell modal state (add-investment is always a modal). */
 const addModal = ref<{ kind: WalletKind } | null>(null)
 const walletModal = ref<{ type: WalletKind } | null>(null)
 

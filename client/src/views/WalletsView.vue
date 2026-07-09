@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {BButton, useDialog, useToast} from 'buefy'
+import { BButton, useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -95,7 +95,13 @@ function renameWallet(walletId: string, currentName: string) {
       text="Crie sua primeira carteira para começar a registrar investimentos."
     >
       <template #action>
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
+        <b-button
+          type="is-primary"
+          class="has-text-light"
+          icon-left="plus"
+          @click="modals.openCreateWallet()"
+          >Nova carteira</b-button
+        >
       </template>
     </EmptyState>
 
@@ -116,16 +122,16 @@ function renameWallet(walletId: string, currentName: string) {
             </div>
             <div style="display: flex; gap: 6px; margin-left: auto">
               <b-button
-                  outlined
-                  type="is-primary"
+                outlined
+                type="is-primary"
                 size="is-small"
                 icon-left="pencil"
                 @click.stop="renameWallet(wallet.id, wallet.name)"
               />
               <b-button
-                  v-if="auth.isAdmin"
-                  outlined
-                  type="is-danger"
+                v-if="auth.isAdmin"
+                outlined
+                type="is-danger"
                 size="is-small"
                 icon-left="delete"
                 @click.stop="confirmDeleteWallet(wallet.id, wallet.name)"
@@ -134,7 +140,12 @@ function renameWallet(walletId: string, currentName: string) {
           </div>
           <div class="wallet-invested">
             <div class="wi-value">
-              {{ fmt.money(currencyStore.convert(wallet.totalInvested, wallet.currency), currencyStore.displayCurrency) }}
+              {{
+                fmt.money(
+                  currencyStore.convert(wallet.totalInvested, wallet.currency),
+                  currencyStore.displayCurrency,
+                )
+              }}
             </div>
             <div class="wi-base">Investido</div>
           </div>
@@ -144,14 +155,19 @@ function renameWallet(walletId: string, currentName: string) {
                 {{
                   wallet.currentValue == null
                     ? '—'
-                    : fmt.money(currencyStore.convert(wallet.currentValue, wallet.currency), currencyStore.displayCurrency)
+                    : fmt.money(
+                        currencyStore.convert(wallet.currentValue, wallet.currency),
+                        currencyStore.displayCurrency,
+                      )
                 }}
               </div>
               <div class="wallet-result-label">Valor atual</div>
             </div>
             <div class="wallet-result-item">
               <GainChip
-                :value="wallet.gain == null ? null : currencyStore.convert(wallet.gain, wallet.currency)"
+                :value="
+                  wallet.gain == null ? null : currencyStore.convert(wallet.gain, wallet.currency)
+                "
                 :pct="wallet.gainPct"
                 :cur="currencyStore.displayCurrency"
               />

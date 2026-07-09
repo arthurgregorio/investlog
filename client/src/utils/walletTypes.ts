@@ -6,7 +6,6 @@ export const WALLET_TYPES: Record<WalletKind, WalletTypeMeta> = {
   FUNDS: { label: 'Fundos', accent: 'var(--wt-funds)', icon: 'office-building-outline' },
 }
 
-/** Derives a consistent badge color for a ticker/fund name via a simple hash. */
 export function badgeColor(ticker: string | null | undefined, kind: WalletKind): string {
   if (!ticker) return kind === 'FUNDS' ? '#2a8f6f' : '#5b6dd8'
   let hash = 0

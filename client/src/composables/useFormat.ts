@@ -1,7 +1,5 @@
-/* Formatting helpers — multi-currency money, percentages, quantities, dates.
-   Pure functions; exposed as a composable for ergonomic use in <script setup>. */
-
 const SYM: Record<string, string> = { BRL: 'R$', USD: 'US$', EUR: '€' }
+// FIXME what is num2 and numQ?
 const num2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const numQ = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 })
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']

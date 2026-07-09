@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from './auth'
 import { authApi } from '@/api/auth'
@@ -23,7 +23,12 @@ describe('auth store', () => {
   it('sets the session after a successful login', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
       status: 'authenticated',
-      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
+      session: {
+        name: 'Administrador',
+        email: 'admin@admin.com',
+        role: 'ADMIN',
+        status: 'APPROVED',
+      },
     })
 
     const store = useAuthStore()
@@ -51,7 +56,12 @@ describe('auth store', () => {
   it('clears the session on logout', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
       status: 'authenticated',
-      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
+      session: {
+        name: 'Administrador',
+        email: 'admin@admin.com',
+        role: 'ADMIN',
+        status: 'APPROVED',
+      },
     })
     vi.mocked(authApi.logout).mockResolvedValue(undefined)
 
@@ -86,7 +96,10 @@ describe('auth store', () => {
   })
 
   it('enrollTotp delegates to the API and returns the enrollment payload', async () => {
-    vi.mocked(authApi.enroll).mockResolvedValue({ secretKey: 'JBSWY3DPEHPK3PXP', qrCodeDataUri: 'data:image/png;base64,abc' })
+    vi.mocked(authApi.enroll).mockResolvedValue({
+      secretKey: 'JBSWY3DPEHPK3PXP',
+      qrCodeDataUri: 'data:image/png;base64,abc',
+    })
 
     const store = useAuthStore()
     const enrollment = await store.enrollTotp('admin@admin.com', 'admin')
@@ -122,7 +135,12 @@ describe('auth store', () => {
   it('isAdmin reflects the session role', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
       status: 'authenticated',
-      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
+      session: {
+        name: 'Administrador',
+        email: 'admin@admin.com',
+        role: 'ADMIN',
+        status: 'APPROVED',
+      },
     })
 
     const store = useAuthStore()
