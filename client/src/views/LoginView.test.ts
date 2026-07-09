@@ -132,7 +132,12 @@ describe('LoginView', () => {
     const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
     await flushPromises()
 
-    expect(wrapper.find('.auth-google-button').exists()).toBe(true)
+    const googleButton = wrapper.find('.auth-google-button')
+    expect(googleButton.exists()).toBe(true)
+    // Must be a real anchor causing a full browser navigation, not a button/click handler —
+    // an OAuth2 authorization-code flow requires the browser to actually leave the SPA.
+    expect(googleButton.element.tagName).toBe('A')
+    expect(googleButton.attributes('href')).toBe('/private/oauth2/authorization/google')
   })
 
   it('hides the Google button when the server reports googleAuthEnabled: false', async () => {
