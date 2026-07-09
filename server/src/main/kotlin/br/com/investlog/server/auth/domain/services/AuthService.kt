@@ -21,11 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.stereotype.Service
 
-sealed interface LoginResult {
-    data class Authenticated(val session: SessionResponse) : LoginResult
-    data object EnrollmentRequired : LoginResult
-}
-
 @Service
 class AuthService(
     private val userRepository: UserRepository,
