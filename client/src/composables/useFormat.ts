@@ -14,7 +14,7 @@ export const fmt = {
       const absoluteValue = Math.abs(v)
       if (absoluteValue >= 1_000_000)
         return s + ' ' + (v / 1_000_000).toFixed(1).replace('.', ',') + 'M'
-      if (absoluteValue >= 1_000) return s + ' ' + (v / 1_000).toFixed(1).replace('.', ',') + 'k'
+      if (absoluteValue >= 100_000) return s + ' ' + Math.round(v / 1_000) + 'k'
     }
     return s + ' ' + twoDecimalFormatter.format(v)
   },
