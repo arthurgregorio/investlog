@@ -19,7 +19,7 @@ class UserRepositoryTest : BaseIntegrationTest() {
         assertNotNull(user)
         assertEquals("Administrador", user.name)
         assertEquals(UserRole.ADMIN, user.role)
-        assertEquals(UserStatus.APPROVED, user.status)
+        assertEquals(CurrentUser.Status.APPROVED, user.status)
         assertEquals(AuthProvider.LOCAL, user.authProvider)
     }
 
@@ -31,5 +31,23 @@ class UserRepositoryTest : BaseIntegrationTest() {
     @Test
     fun `the admin bootstrap runner sets a non-null password hash`() {
         assertNotNull(userRepository.findPasswordHashByEmail("admin@admin.com"))
+    }
+
+    @Test
+    fun `stores and retrieves a totp secret`() {
+        val user = userRepository.findByEmail("admin@admin.com")!!
+        userRepository.updateTotpSecret(user.id, "JBSWY3DPEHPK3PXP")
+
+        assertEquals("JBSWY3DPEHPK3PXP", userRepository.findTotpSecretByEmail("admin@admin.com"))
+    }
+
+    @Test
+    fun `enabling totp sets both the secret and the enabled flag`() {
+        val user = userRepository.findByEmail("admin@admin.com")!!
+        userRepository.enableTotp(user.id, "KRSXG5CTMVRXEZLU")
+
+        val updated = userRepository.findByEmail("admin@admin.com")!!
+        assertEquals(true, updated.totpEnabled)
+        assertEquals("KRSXG5CTMVRXEZLU", userRepository.findTotpSecretByEmail("admin@admin.com"))
     }
 }

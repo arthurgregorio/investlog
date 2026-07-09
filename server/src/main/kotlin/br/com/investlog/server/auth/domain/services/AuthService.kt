@@ -1,8 +1,15 @@
 package br.com.investlog.server.auth.domain.services
 
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
+import br.com.investlog.server.auth.rest.payloads.RegisterRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
+import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
+import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
+import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
+import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
+import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
+import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.security.CurrentUser
 import br.com.investlog.server.shared.security.UserRepository
 import jakarta.servlet.http.HttpServletRequest
@@ -14,51 +21,118 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.stereotype.Service
 
+sealed interface LoginResult {
+    data class Authenticated(val session: SessionResponse) : LoginResult
+    data object EnrollmentRequired : LoginResult
+}
+
 @Service
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val totpService: TotpService,
 ) {
 
-    fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): SessionResponse {
+    fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
 
-        val user = userRepository.findByEmail(request.email)
+        val user = verifyCredentials(request.email, request.password)
+
+        if (!user.totpEnabled) {
+            return LoginResult.EnrollmentRequired
+        }
+
+        val code = request.totpCode
+            ?: throw TotpRequiredException("A TOTP code is required to complete login")
+
+        val secret = userRepository.findTotpSecretByEmail(request.email)
+            ?: throw InvalidTotpCodeException("Invalid TOTP code")
+
+        if (!totpService.isCodeValid(secret, code)) {
+            throw InvalidTotpCodeException("Invalid TOTP code")
+        }
+
+        return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
+    }
+
+    fun enrollTotp(request: TotpEnrollRequest): TotpEnrollResponse {
+
+        val user = verifyCredentials(request.email, request.password)
+
+        if (user.totpEnabled) {
+            throw TotpAlreadyEnabledException("TOTP is already enabled for this account")
+        }
+
+        val secret = totpService.generateSecret()
+        userRepository.updateTotpSecret(user.id, secret)
+
+        return TotpEnrollResponse(
+            secretKey = secret,
+            qrCodeDataUri = totpService.qrCodeDataUri(user.email, secret),
+        )
+    }
+
+    fun verifyTotp(request: TotpVerifyRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): SessionResponse {
+
+        val user = verifyCredentials(request.email, request.password)
+
+        val secret = userRepository.findTotpSecretByEmail(request.email)
+            ?: throw InvalidTotpCodeException("Invalid TOTP code")
+
+        if (!totpService.isCodeValid(secret, request.code)) {
+            throw InvalidTotpCodeException("Invalid TOTP code")
+        }
+
+        userRepository.enableTotp(user.id, secret)
+
+        return establishSession(user.copy(totpEnabled = true), servletRequest, servletResponse)
+    }
+
+    fun register(request: RegisterRequest) {
+        userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
+    }
+
+    fun currentSession(): SessionResponse {
+        val user = SecurityContextHolder.getContext().authentication?.principal as? CurrentUser
+            ?: throw InvalidCredentialsException("Not authenticated")
+        return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
+    }
+
+    fun logout(servletRequest: HttpServletRequest) {
+        servletRequest.getSession(false)?.invalidate()
+        SecurityContextHolder.clearContext()
+    }
+
+    private fun verifyCredentials(email: String, password: String): CurrentUser {
+        val user = userRepository.findByEmail(email)
             ?: throw InvalidCredentialsException("Invalid email or password")
 
-        val passwordHash = userRepository.findPasswordHashByEmail(request.email)
+        val passwordHash = userRepository.findPasswordHashByEmail(email)
             ?: throw InvalidCredentialsException("Invalid email or password")
 
-        if (!passwordEncoder.matches(request.password, passwordHash)) {
+        if (!passwordEncoder.matches(password, passwordHash)) {
             throw InvalidCredentialsException("Invalid email or password")
         }
+
+        return user
+    }
+
+    private fun establishSession(user: CurrentUser, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): SessionResponse {
 
         servletRequest.getSession(true)
         servletRequest.changeSessionId()
 
-        val authorities = listOf(SimpleGrantedAuthority("ROLE_${user.role}"))
+        val authorities = listOf(
+            SimpleGrantedAuthority("ROLE_${user.role}"),
+            SimpleGrantedAuthority("STATUS_${user.status}"),
+        )
         val authentication = UsernamePasswordAuthenticationToken(user, null, authorities)
 
         val context = SecurityContextHolder.createEmptyContext()
         context.authentication = authentication
         SecurityContextHolder.setContext(context)
 
-        HttpSessionSecurityContextRepository().saveContext(
-            context,
-            servletRequest,
-            servletResponse,
-        )
+        HttpSessionSecurityContextRepository().saveContext(context, servletRequest, servletResponse)
 
-        return SessionResponse(name = user.name, email = user.email, role = user.role)
-    }
-
-    fun currentSession(): SessionResponse {
-        val user = SecurityContextHolder.getContext().authentication?.principal as? CurrentUser
-            ?: throw InvalidCredentialsException("Not authenticated")
-        return SessionResponse(name = user.name, email = user.email, role = user.role)
-    }
-
-    fun logout(servletRequest: HttpServletRequest) {
-        servletRequest.getSession(false)?.invalidate()
-        SecurityContextHolder.clearContext()
+        return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
     }
 }

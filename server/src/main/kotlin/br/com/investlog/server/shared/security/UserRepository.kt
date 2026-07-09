@@ -39,6 +39,42 @@ class UserRepository(private val dsl: DSLContext) {
             .execute()
     }
 
+    fun createLocalUser(name: String, email: String, passwordHash: String): CurrentUser =
+        dsl.insertInto(USERS)
+            .set(USERS.NAME, name)
+            .set(USERS.EMAIL, email)
+            .set(USERS.PASSWORD_HASH, passwordHash)
+            .set(USERS.AUTH_PROVIDER, AuthProvider.LOCAL.name)
+            .set(USERS.ROLE, UserRole.USER.name)
+            .set(USERS.STATUS, CurrentUser.Status.PENDING.name)
+            .returning()
+            .fetchSingle()
+            .toCurrentUser()
+
+    fun findTotpSecretByEmail(email: String): String? {
+        return dsl.select(USERS.TOTP_SECRET)
+            .from(USERS)
+            .where(USERS.EMAIL.eq(email))
+            .fetchOne(USERS.TOTP_SECRET)
+    }
+
+    fun updateTotpSecret(userId: Long, secret: String) {
+        dsl.update(USERS)
+            .set(USERS.TOTP_SECRET, secret)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .execute()
+    }
+
+    fun enableTotp(userId: Long, secret: String) {
+        dsl.update(USERS)
+            .set(USERS.TOTP_SECRET, secret)
+            .set(USERS.TOTP_ENABLED, true)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .execute()
+    }
+
     fun updatePreferences(userId: Long, accentColor: String, preferredCurrency: String): CurrentUser {
         return dsl.update(USERS)
             .set(USERS.ACCENT_COLOR, accentColor)
@@ -59,7 +95,8 @@ class UserRepository(private val dsl: DSLContext) {
         accentColor = AccentColor.fromText(accentColor),
         preferredCurrency = preferredCurrency!!,
         role = UserRole.valueOf(role!!),
-        status = UserStatus.valueOf(status!!),
+        status = CurrentUser.Status.valueOf(status!!),
         authProvider = AuthProvider.valueOf(authProvider!!),
+        totpEnabled = totpEnabled!!,
     )
 }
