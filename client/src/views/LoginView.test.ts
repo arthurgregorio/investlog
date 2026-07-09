@@ -5,9 +5,18 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import Buefy from 'buefy'
 import LoginView from './LoginView.vue'
 import { useAuthStore } from '@/stores/auth'
+import { authApi } from '@/api/auth'
 
 vi.mock('@/api/auth', () => ({
-  authApi: { login: vi.fn(), logout: vi.fn(), fetchSession: vi.fn(), enroll: vi.fn(), verify: vi.fn(), register: vi.fn() },
+  authApi: {
+    login: vi.fn(),
+    logout: vi.fn(),
+    fetchSession: vi.fn(),
+    enroll: vi.fn(),
+    verify: vi.fn(),
+    register: vi.fn(),
+    fetchConfig: vi.fn().mockResolvedValue({ googleAuthEnabled: false }),
+  },
 }))
 
 describe('LoginView', () => {
@@ -113,6 +122,37 @@ describe('LoginView', () => {
 
     expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'senha123')
     expect(router.currentRoute.value.name).toBe('pending-approval')
+  })
+
+  it('shows the Google button when the server reports googleAuthEnabled: true', async () => {
+    vi.mocked(authApi.fetchConfig).mockResolvedValueOnce({ googleAuthEnabled: true })
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await flushPromises()
+
+    expect(wrapper.find('.auth-google-button').exists()).toBe(true)
+  })
+
+  it('hides the Google button when the server reports googleAuthEnabled: false', async () => {
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await flushPromises()
+
+    expect(wrapper.find('.auth-google-button').exists()).toBe(false)
+  })
+
+  it('shows a friendly message when redirected back with ?error=email_in_use', async () => {
+    router.push('/login?error=email_in_use')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Já existe uma conta com este e-mail')
   })
 })
 

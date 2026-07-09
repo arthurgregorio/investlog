@@ -142,6 +142,10 @@ export interface SessionResponse {
   status: UserStatus
 }
 
+export interface AuthConfigResponse {
+  googleAuthEnabled: boolean
+}
+
 export interface UserAdminResponse {
   id: string
   name: string

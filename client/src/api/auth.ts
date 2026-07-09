@@ -1,6 +1,6 @@
 import { isAxiosError } from 'axios'
 import { apiClient } from './client'
-import type { LoginOutcome, SessionResponse, TotpEnrollResponse } from '@/types'
+import type { AuthConfigResponse, LoginOutcome, SessionResponse, TotpEnrollResponse } from '@/types'
 
 export const authApi = {
   async login(email: string, password: string, totpCode?: string): Promise<LoginOutcome> {
@@ -34,5 +34,8 @@ export const authApi = {
   },
   register(name: string, email: string, password: string): Promise<void> {
     return apiClient.post('/auth/register', { name, email, password }).then(() => undefined)
+  },
+  fetchConfig(): Promise<AuthConfigResponse> {
+    return apiClient.get<AuthConfigResponse>('/auth/config').then((response) => response.data)
   },
 }
