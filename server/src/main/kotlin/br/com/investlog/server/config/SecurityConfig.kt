@@ -14,7 +14,7 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
-import tools.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 
 @Configuration
 class SecurityConfig {
@@ -23,7 +23,7 @@ class SecurityConfig {
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Bean
-    fun accessDeniedHandler(objectMapper: ObjectMapper): AccessDeniedHandler = AccessDeniedHandler { _, response, _ ->
+    fun accessDeniedHandler(jsonMapper: JsonMapper): AccessDeniedHandler = AccessDeniedHandler { _, response, _ ->
         val authentication = SecurityContextHolder.getContext().authentication
         val isPendingApproval = authentication?.authorities.orEmpty().none { it.authority == "STATUS_APPROVED" }
 
@@ -35,11 +35,11 @@ class SecurityConfig {
 
         response.status = HttpStatus.FORBIDDEN.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
-        response.writer.write(objectMapper.writeValueAsString(body))
+        response.writer.write(jsonMapper.writeValueAsString(body))
     }
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity, objectMapper: ObjectMapper): SecurityFilterChain {
+    fun securityFilterChain(http: HttpSecurity, jsonMapper: JsonMapper): SecurityFilterChain {
         val unauthorizedEntryPoint: AuthenticationEntryPoint = HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
         http {
             csrf { disable() }
@@ -56,7 +56,7 @@ class SecurityConfig {
             }
             exceptionHandling {
                 authenticationEntryPoint = unauthorizedEntryPoint
-                accessDeniedHandler = accessDeniedHandler(objectMapper)
+                accessDeniedHandler = accessDeniedHandler(jsonMapper)
             }
         }
         return http.build()
