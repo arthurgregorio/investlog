@@ -7,6 +7,7 @@ import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
+import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
@@ -87,6 +88,25 @@ class AuthService(
 
     fun register(request: RegisterRequest) {
         userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
+    }
+
+    fun handleGoogleLogin(
+        googleSub: String,
+        email: String,
+        name: String,
+        avatarUrl: String?,
+        servletRequest: HttpServletRequest,
+        servletResponse: HttpServletResponse,
+    ): SessionResponse {
+
+        val user = userRepository.findByGoogleSub(googleSub) ?: run {
+            if (userRepository.findByEmail(email) != null) {
+                throw GoogleAccountEmailInUseException("An account with email $email already exists")
+            }
+            userRepository.createGoogleUser(googleSub, email, name, avatarUrl)
+        }
+
+        return establishSession(user, servletRequest, servletResponse)
     }
 
     fun currentSession(): SessionResponse {

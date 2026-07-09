@@ -51,6 +51,19 @@ class UserRepository(private val dsl: DSLContext) {
             .fetchSingle()
             .toCurrentUser()
 
+    fun createGoogleUser(googleSub: String, email: String, name: String, avatarUrl: String?): CurrentUser =
+        dsl.insertInto(USERS)
+            .set(USERS.NAME, name)
+            .set(USERS.EMAIL, email)
+            .set(USERS.GOOGLE_SUB, googleSub)
+            .set(USERS.AVATAR_URL, avatarUrl)
+            .set(USERS.AUTH_PROVIDER, AuthProvider.GOOGLE.name)
+            .set(USERS.ROLE, UserRole.USER.name)
+            .set(USERS.STATUS, CurrentUser.Status.PENDING.name)
+            .returning()
+            .fetchSingle()
+            .toCurrentUser()
+
     fun findTotpSecretByEmail(email: String): String? {
         return dsl.select(USERS.TOTP_SECRET)
             .from(USERS)
