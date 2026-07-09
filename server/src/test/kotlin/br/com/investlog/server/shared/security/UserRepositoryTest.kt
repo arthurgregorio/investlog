@@ -19,7 +19,7 @@ class UserRepositoryTest : BaseIntegrationTest() {
         assertNotNull(user)
         assertEquals("Administrador", user.name)
         assertEquals(UserRole.ADMIN, user.role)
-        assertEquals(UserStatus.APPROVED, user.status)
+        assertEquals(CurrentUser.Status.APPROVED, user.status)
         assertEquals(AuthProvider.LOCAL, user.authProvider)
     }
 

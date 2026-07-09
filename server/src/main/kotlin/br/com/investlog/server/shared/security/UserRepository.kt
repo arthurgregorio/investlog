@@ -39,6 +39,18 @@ class UserRepository(private val dsl: DSLContext) {
             .execute()
     }
 
+    fun createLocalUser(name: String, email: String, passwordHash: String): CurrentUser =
+        dsl.insertInto(USERS)
+            .set(USERS.NAME, name)
+            .set(USERS.EMAIL, email)
+            .set(USERS.PASSWORD_HASH, passwordHash)
+            .set(USERS.AUTH_PROVIDER, AuthProvider.LOCAL.name)
+            .set(USERS.ROLE, UserRole.USER.name)
+            .set(USERS.STATUS, CurrentUser.Status.PENDING.name)
+            .returning()
+            .fetchSingle()
+            .toCurrentUser()
+
     fun findTotpSecretByEmail(email: String): String? {
         return dsl.select(USERS.TOTP_SECRET)
             .from(USERS)
@@ -83,7 +95,7 @@ class UserRepository(private val dsl: DSLContext) {
         accentColor = AccentColor.fromText(accentColor),
         preferredCurrency = preferredCurrency!!,
         role = UserRole.valueOf(role!!),
-        status = UserStatus.valueOf(status!!),
+        status = CurrentUser.Status.valueOf(status!!),
         authProvider = AuthProvider.valueOf(authProvider!!),
         totpEnabled = totpEnabled!!,
     )
