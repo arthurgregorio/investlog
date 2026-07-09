@@ -9,11 +9,16 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+const SILENT_ERROR_CODES = ['totp_required', 'invalid_totp_code']
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && router.currentRoute.value.name !== 'login') {
       router.push({ name: 'login' })
+      return Promise.reject(error)
+    }
+    if (SILENT_ERROR_CODES.includes(error.response?.data?.error)) {
       return Promise.reject(error)
     }
     const message: string =

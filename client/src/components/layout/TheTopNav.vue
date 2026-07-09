@@ -1,23 +1,30 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useOverviewStore } from '@/stores/overview'
 import { fmt } from '@/composables/useFormat'
+import { useAuthStore } from '@/stores/auth'
 
 const overviewStore = useOverviewStore()
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 onMounted(() => {
   overviewStore.load()
 })
 
-const nav: { name: string; label: string; icon: string }[] = [
-  { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
-  { name: 'wallets', label: 'Carteiras', icon: 'wallet-outline' },
-  { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
-  { name: 'settings', label: 'Configurações', icon: 'cog-outline' },
-]
+const nav = computed(() => {
+  const items = [
+    { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
+    { name: 'wallets', label: 'Carteiras', icon: 'wallet-outline' },
+    { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
+  ]
+  if (auth.isAdmin) {
+    items.push({ name: 'settings', label: 'Configurações', icon: 'cog-outline' })
+  }
+  return items
+})
 </script>
 
 <template>

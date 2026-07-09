@@ -8,6 +8,9 @@ vi.mock('@/api/auth', () => ({
     login: vi.fn(),
     logout: vi.fn(),
     fetchSession: vi.fn(),
+    enroll: vi.fn(),
+    verify: vi.fn(),
+    register: vi.fn(),
   },
 }))
 
@@ -18,16 +21,38 @@ describe('auth store', () => {
   })
 
   it('sets the session after a successful login', async () => {
-    vi.mocked(authApi.login).mockResolvedValue({ name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' })
+    vi.mocked(authApi.login).mockResolvedValue({
+      status: 'authenticated',
+      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
+    })
 
     const store = useAuthStore()
-    await store.login('admin@admin.com', 'admin')
+    const status = await store.login('admin@admin.com', 'admin')
 
-    expect(store.session).toEqual({ name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' })
+    expect(status).toBe('authenticated')
+    expect(store.session).toEqual({
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    })
+  })
+
+  it('does not set a session when enrollment is required', async () => {
+    vi.mocked(authApi.login).mockResolvedValue({ status: 'needs_enrollment' })
+
+    const store = useAuthStore()
+    const status = await store.login('admin@admin.com', 'admin')
+
+    expect(status).toBe('needs_enrollment')
+    expect(store.session).toBeNull()
   })
 
   it('clears the session on logout', async () => {
-    vi.mocked(authApi.login).mockResolvedValue({ name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' })
+    vi.mocked(authApi.login).mockResolvedValue({
+      status: 'authenticated',
+      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
+    })
     vi.mocked(authApi.logout).mockResolvedValue(undefined)
 
     const store = useAuthStore()
@@ -47,11 +72,62 @@ describe('auth store', () => {
   })
 
   it('restoreSession populates the session when authenticated', async () => {
-    vi.mocked(authApi.fetchSession).mockResolvedValue({ name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN' })
+    vi.mocked(authApi.fetchSession).mockResolvedValue({
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    })
 
     const store = useAuthStore()
     await store.restoreSession()
 
     expect(store.session?.email).toBe('admin@admin.com')
+  })
+
+  it('enrollTotp delegates to the API and returns the enrollment payload', async () => {
+    vi.mocked(authApi.enroll).mockResolvedValue({ secretKey: 'JBSWY3DPEHPK3PXP', qrCodeDataUri: 'data:image/png;base64,abc' })
+
+    const store = useAuthStore()
+    const enrollment = await store.enrollTotp('admin@admin.com', 'admin')
+
+    expect(authApi.enroll).toHaveBeenCalledWith('admin@admin.com', 'admin')
+    expect(enrollment.secretKey).toBe('JBSWY3DPEHPK3PXP')
+  })
+
+  it('verifyTotp sets the session on success', async () => {
+    vi.mocked(authApi.verify).mockResolvedValue({
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+    })
+
+    const store = useAuthStore()
+    await store.verifyTotp('admin@admin.com', 'admin', '123456')
+
+    expect(authApi.verify).toHaveBeenCalledWith('admin@admin.com', 'admin', '123456')
+    expect(store.session?.email).toBe('admin@admin.com')
+  })
+
+  it('register delegates to the API', async () => {
+    vi.mocked(authApi.register).mockResolvedValue(undefined)
+
+    const store = useAuthStore()
+    await store.register('Nova Usuária', 'nova@example.com', 'senha123')
+
+    expect(authApi.register).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'senha123')
+  })
+
+  it('isAdmin reflects the session role', async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      status: 'authenticated',
+      session: { name: 'Administrador', email: 'admin@admin.com', role: 'ADMIN', status: 'APPROVED' },
+    })
+
+    const store = useAuthStore()
+    expect(store.isAdmin).toBe(false)
+    await store.login('admin@admin.com', 'admin')
+    expect(store.isAdmin).toBe(true)
   })
 })

@@ -133,11 +133,35 @@ export interface PagedResponse<T> {
 
 export type UserRole = 'ADMIN' | 'USER'
 
+export type UserStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
 export interface SessionResponse {
   name: string
   email: string
   role: UserRole
+  status: UserStatus
 }
+
+export interface UserAdminResponse {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  status: UserStatus
+  authProvider: 'LOCAL' | 'GOOGLE'
+  totpEnabled: boolean
+}
+
+export interface TotpEnrollResponse {
+  secretKey: string
+  qrCodeDataUri: string
+}
+
+export type LoginOutcome =
+  | { status: 'authenticated'; session: SessionResponse }
+  | { status: 'needs_enrollment' }
+  | { status: 'totp_required' }
+  | { status: 'invalid_totp_code' }
 
 export interface ProfileResponse {
   name: string
