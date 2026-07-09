@@ -47,6 +47,7 @@ class SecurityConfig {
             authorizeHttpRequests {
                 authorize("/private/v1/auth/login", permitAll)
                 authorize("/private/v1/auth/register", permitAll)
+                authorize("/private/v1/auth/config", permitAll)
                 authorize("/private/v1/auth/totp/enroll", permitAll)
                 authorize("/private/v1/auth/totp/verify", permitAll)
                 authorize("/private/v1/auth/session", authenticated)

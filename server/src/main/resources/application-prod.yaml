@@ -5,3 +5,6 @@ spring:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
+
+server:
+  forward-headers-strategy: framework

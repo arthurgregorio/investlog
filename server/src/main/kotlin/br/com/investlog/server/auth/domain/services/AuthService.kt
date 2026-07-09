@@ -1,5 +1,6 @@
 package br.com.investlog.server.auth.domain.services
 
+import br.com.investlog.server.auth.rest.payloads.AuthConfigResponse
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
 import br.com.investlog.server.auth.rest.payloads.RegisterRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
@@ -14,6 +15,7 @@ import br.com.investlog.server.shared.security.CurrentUser
 import br.com.investlog.server.shared.security.UserRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
@@ -26,6 +28,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val totpService: TotpService,
+    @Value("\${investlog.google-auth-enabled:false}") private val googleAuthEnabled: Boolean,
 ) {
 
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
@@ -91,6 +94,8 @@ class AuthService(
             ?: throw InvalidCredentialsException("Not authenticated")
         return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
     }
+
+    fun authConfig(): AuthConfigResponse = AuthConfigResponse(googleAuthEnabled = googleAuthEnabled)
 
     fun logout(servletRequest: HttpServletRequest) {
         servletRequest.getSession(false)?.invalidate()
