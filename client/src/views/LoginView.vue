@@ -7,9 +7,10 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const auth = useAuthStore()
 
-type Step = 'credentials' | 'enroll' | 'totp'
+type Step = 'credentials' | 'register' | 'enroll' | 'totp'
 
 const step = ref<Step>('credentials')
+const name = ref('')
 const email = ref('')
 const password = ref('')
 const totpCode = ref('')
@@ -18,16 +19,23 @@ const error = ref('')
 const submitting = ref(false)
 
 const title = computed(() => {
+  if (step.value === 'register') return 'Criar conta'
   if (step.value === 'enroll') return 'Configure a autenticação em duas etapas'
   if (step.value === 'totp') return 'Confirme o código de autenticação'
   return 'Bem-vindo de volta'
 })
 
 const subtitle = computed(() => {
+  if (step.value === 'register') return 'Sua conta ficará pendente até que um administrador a aprove.'
   if (step.value === 'enroll') return 'Escaneie o QR code com um aplicativo autenticador e digite o código gerado.'
   if (step.value === 'totp') return 'Digite o código do seu aplicativo autenticador.'
   return 'Entre para acompanhar seus investimentos.'
 })
+
+function toggleRegister() {
+  error.value = ''
+  step.value = step.value === 'register' ? 'credentials' : 'register'
+}
 
 async function submitCredentials() {
   error.value = ''
@@ -51,6 +59,19 @@ async function submitCredentials() {
     error.value = 'E-mail ou senha inválidos.'
   } catch {
     error.value = 'E-mail ou senha inválidos.'
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function submitRegistration() {
+  error.value = ''
+  submitting.value = true
+  try {
+    await auth.register(name.value, email.value, password.value)
+    await router.push({ name: 'pending-approval' })
+  } catch {
+    error.value = 'Não foi possível concluir o cadastro. Verifique os dados e tente novamente.'
   } finally {
     submitting.value = false
   }
@@ -140,6 +161,27 @@ async function submitTotpCode() {
           <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
             Entrar
           </b-button>
+          <button type="button" class="auth-toggle" data-testid="toggle-register" @click="toggleRegister">
+            Não tem uma conta? Criar conta
+          </button>
+        </form>
+
+        <form v-else-if="step === 'register'" class="form-stack" @submit.prevent="submitRegistration">
+          <b-field label="Nome">
+            <b-input v-model="name" type="text" placeholder="Seu nome" required />
+          </b-field>
+          <b-field label="E-mail">
+            <b-input v-model="email" type="email" placeholder="voce@email.com" required />
+          </b-field>
+          <b-field label="Senha">
+            <b-input v-model="password" type="password" placeholder="••••••••" required />
+          </b-field>
+          <b-button type="is-primary" expanded native-type="submit" :loading="submitting" class="auth-submit">
+            Criar conta
+          </b-button>
+          <button type="button" class="auth-toggle" data-testid="toggle-register" @click="toggleRegister">
+            Já tem uma conta? Entrar
+          </button>
         </form>
 
         <form v-else-if="step === 'enroll'" class="form-stack" @submit.prevent="submitEnrollment">

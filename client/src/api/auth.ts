@@ -32,4 +32,7 @@ export const authApi = {
   verify(email: string, password: string, code: string): Promise<SessionResponse> {
     return apiClient.post<SessionResponse>('/auth/totp/verify', { email, password, code }).then((response) => response.data)
   },
+  register(name: string, email: string, password: string): Promise<void> {
+    return apiClient.post('/auth/register', { name, email, password }).then(() => undefined)
+  },
 }

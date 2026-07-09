@@ -10,6 +10,7 @@ import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
+import { useAuthStore } from '@/stores/auth'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES } from '@/utils/walletTypes'
@@ -22,6 +23,7 @@ const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
 const router = useRouter()
 const modals = useModals()
+const auth = useAuthStore()
 
 onMounted(() => {
   walletsStore.load()
@@ -121,6 +123,7 @@ function renameWallet(walletId: string, currentName: string) {
                 @click.stop="renameWallet(wallet.id, wallet.name)"
               />
               <b-button
+                  v-if="auth.isAdmin"
                   outlined
                   type="is-danger"
                 size="is-small"
