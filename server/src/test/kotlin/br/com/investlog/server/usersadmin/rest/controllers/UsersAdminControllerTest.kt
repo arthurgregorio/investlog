@@ -306,6 +306,65 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             .expectStatus().isBadRequest()
     }
 
+    @Test
+    @Order(14)
+    fun `a non-admin user is forbidden from the users-admin endpoints`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Não Admin","email":"naoadmin@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val targetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "naoadmin@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        val secret = restTestClient.post()
+            .uri("/private/v1/auth/totp/enroll")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"naoadmin@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<TotpEnrollResponse>()
+            .responseBody
+            ?.secretKey
+            ?: error("Enroll did not return a secret")
+
+        val code = DefaultCodeGenerator().generate(secret, System.currentTimeMillis() / 1000L / 30L)
+
+        val cookie = restTestClient.post()
+            .uri("/private/v1/auth/totp/verify")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"naoadmin@example.com","password":"senha123","code":"$code"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders
+            .getFirst("Set-Cookie")
+            ?.substringBefore(";")
+            ?: error("Verify did not set a session cookie")
+
+        restTestClient.get()
+            .uri("/private/v1/users")
+            .header("Cookie", cookie)
+            .exchange()
+            .expectStatus().isEqualTo(403)
+    }
+
     companion object {
         private lateinit var approveTargetId: String
         private lateinit var rejectTargetId: String

@@ -4,8 +4,8 @@ import br.com.investlog.server.jooq.system.tables.records.UsersRecord
 import br.com.investlog.server.jooq.system.tables.references.USERS
 import br.com.investlog.server.shared.persistence.pagedModelOf
 import br.com.investlog.server.shared.security.AuthProvider
+import br.com.investlog.server.shared.security.CurrentUser.Status
 import br.com.investlog.server.shared.security.UserRole
-import br.com.investlog.server.shared.security.UserStatus
 import br.com.investlog.server.usersadmin.rest.payloads.UserAdminResponse
 import org.jooq.DSLContext
 import org.springframework.data.domain.Pageable
@@ -35,7 +35,7 @@ class UsersAdminRepository(private val dsl: DSLContext) {
             .where(USERS.EXTERNAL_ID.eq(externalId))
             .fetchOne()
 
-    fun updateStatus(userId: Long, status: UserStatus): UserAdminResponse =
+    fun updateStatus(userId: Long, status: Status): UserAdminResponse =
         dsl.update(USERS)
             .set(USERS.STATUS, status.name)
             .set(USERS.UPDATED_AT, OffsetDateTime.now())
@@ -73,7 +73,7 @@ class UsersAdminRepository(private val dsl: DSLContext) {
         name = name!!,
         email = email!!,
         role = UserRole.valueOf(role!!),
-        status = UserStatus.valueOf(status!!),
+        status = Status.valueOf(status!!),
         authProvider = AuthProvider.valueOf(authProvider!!),
         totpEnabled = totpEnabled!!,
     )

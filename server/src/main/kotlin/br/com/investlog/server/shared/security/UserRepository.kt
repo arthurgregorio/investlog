@@ -46,7 +46,7 @@ class UserRepository(private val dsl: DSLContext) {
             .set(USERS.PASSWORD_HASH, passwordHash)
             .set(USERS.AUTH_PROVIDER, AuthProvider.LOCAL.name)
             .set(USERS.ROLE, UserRole.USER.name)
-            .set(USERS.STATUS, UserStatus.PENDING.name)
+            .set(USERS.STATUS, CurrentUser.Status.PENDING.name)
             .returning()
             .fetchSingle()
             .toCurrentUser()
@@ -95,7 +95,7 @@ class UserRepository(private val dsl: DSLContext) {
         accentColor = AccentColor.fromText(accentColor),
         preferredCurrency = preferredCurrency!!,
         role = UserRole.valueOf(role!!),
-        status = UserStatus.valueOf(status!!),
+        status = CurrentUser.Status.valueOf(status!!),
         authProvider = AuthProvider.valueOf(authProvider!!),
         totpEnabled = totpEnabled!!,
     )

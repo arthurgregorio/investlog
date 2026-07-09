@@ -3,8 +3,8 @@ package br.com.investlog.server.usersadmin.domain.services
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
+import br.com.investlog.server.shared.security.CurrentUser.Status
 import br.com.investlog.server.shared.security.CurrentUserProvider
-import br.com.investlog.server.shared.security.UserStatus
 import br.com.investlog.server.usersadmin.domain.repositories.UsersAdminRepository
 import br.com.investlog.server.usersadmin.rest.payloads.RoleUpdateRequest
 import br.com.investlog.server.usersadmin.rest.payloads.UserAdminResponse
@@ -21,12 +21,12 @@ class UsersAdminService(
 
     fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminRepository.findAll(pageable)
 
-    fun approve(externalId: UUID): UserAdminResponse = updateStatus(externalId, UserStatus.APPROVED)
+    fun approve(externalId: UUID): UserAdminResponse = updateStatus(externalId, Status.APPROVED)
 
     fun reject(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
-        return updateStatus(externalId, UserStatus.REJECTED)
+        return updateStatus(externalId, Status.REJECTED)
     }
 
     fun changeRole(externalId: UUID, request: RoleUpdateRequest): UserAdminResponse {
@@ -46,7 +46,7 @@ class UsersAdminService(
         usersAdminRepository.deleteByExternalId(externalId)
     }
 
-    private fun updateStatus(externalId: UUID, status: UserStatus): UserAdminResponse {
+    private fun updateStatus(externalId: UUID, status: Status): UserAdminResponse {
         val user = requireUser(externalId)
         return usersAdminRepository.updateStatus(user.id!!, status)
     }
