@@ -2,6 +2,7 @@ package br.com.investlog.server.auth.rest.controllers
 
 import br.com.investlog.server.auth.domain.services.AuthService
 import br.com.investlog.server.auth.domain.services.LoginResult
+import br.com.investlog.server.auth.rest.payloads.AuthConfigResponse
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
 import br.com.investlog.server.auth.rest.payloads.RegisterRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
@@ -53,6 +54,9 @@ class AuthController(private val authService: AuthService) {
 
     @PostMapping("/logout")
     fun logout(servletRequest: HttpServletRequest) = authService.logout(servletRequest)
+
+    @GetMapping("/config")
+    fun config(): AuthConfigResponse = authService.authConfig()
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)

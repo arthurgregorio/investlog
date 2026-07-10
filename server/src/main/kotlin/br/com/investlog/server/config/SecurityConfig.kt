@@ -1,5 +1,7 @@
 package br.com.investlog.server.config
 
+import br.com.investlog.server.auth.security.GoogleLoginFailureHandler
+import br.com.investlog.server.auth.security.GoogleLoginSuccessHandler
 import br.com.investlog.server.shared.rest.payloads.AccessDeniedResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -10,6 +12,7 @@ import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
@@ -39,7 +42,13 @@ class SecurityConfig {
     }
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity, jsonMapper: JsonMapper): SecurityFilterChain {
+    fun securityFilterChain(
+        http: HttpSecurity,
+        jsonMapper: JsonMapper,
+        clientRegistrationRepository: ClientRegistrationRepository?,
+        googleLoginSuccessHandler: GoogleLoginSuccessHandler,
+        googleLoginFailureHandler: GoogleLoginFailureHandler,
+    ): SecurityFilterChain {
         val unauthorizedEntryPoint: AuthenticationEntryPoint = HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
         http {
             csrf { disable() }
@@ -47,16 +56,32 @@ class SecurityConfig {
             authorizeHttpRequests {
                 authorize("/private/v1/auth/login", permitAll)
                 authorize("/private/v1/auth/register", permitAll)
+                authorize("/private/v1/auth/config", permitAll)
                 authorize("/private/v1/auth/totp/enroll", permitAll)
                 authorize("/private/v1/auth/totp/verify", permitAll)
                 authorize("/private/v1/auth/session", authenticated)
                 authorize("/private/v1/auth/logout", authenticated)
+                authorize("/private/oauth2/**", permitAll)
+                authorize("/private/login/oauth2/**", permitAll)
                 authorize("/private/v1/users/**", hasAuthority("ROLE_ADMIN"))
                 authorize(anyRequest, hasAuthority("STATUS_APPROVED"))
             }
             exceptionHandling {
                 authenticationEntryPoint = unauthorizedEntryPoint
                 accessDeniedHandler = accessDeniedHandler(jsonMapper)
+            }
+            if (clientRegistrationRepository != null) {
+                oauth2Login {
+                    authorizationEndpoint {
+                        baseUri = "/private/oauth2/authorization"
+                    }
+                    redirectionEndpoint {
+                        baseUri = "/private/login/oauth2/code/*"
+                    }
+                    this.clientRegistrationRepository = clientRegistrationRepository
+                    authenticationSuccessHandler = googleLoginSuccessHandler
+                    authenticationFailureHandler = googleLoginFailureHandler
+                }
             }
         }
         return http.build()
