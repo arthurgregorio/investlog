@@ -93,6 +93,33 @@ the box for a local run.
 | `CLIENT_IMAGE_TAG` | `v0.1.0` | Tag for the `investlog/client` image |
 | `WEB_PORT` | `8081` | Host port the web app is published on |
 | `ADMIN_DEFAULT_PASSWORD` | `admin` | Password set on the seeded admin account on first boot |
+| `GOOGLE_AUTH_ENABLED` | `false` | Enables Google OAuth2 login and shows the button client-side |
+| `GOOGLE_CLIENT_ID` | _(empty)_ | From Google Cloud Console OAuth 2.0 Client ID |
+| `GOOGLE_CLIENT_SECRET` | _(empty)_ | From Google Cloud Console |
+
+### Google OAuth2 login (optional)
+
+Local email/password login always works. To also enable "Continuar com Google":
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create (or select) a project,
+   then go to **APIs & Services → OAuth consent screen** and configure it (External user type is
+   fine for a personal deployment; add your own Google account as a test user if the app stays in
+   "Testing" publishing status).
+2. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**, application
+   type **Web application**.
+3. Under **Authorized redirect URIs**, add `http(s)://<your-host>/private/login/oauth2/code/google`
+   (for a local run against the defaults in this README, that's
+   `http://localhost:8081/private/login/oauth2/code/google`).
+4. Copy the generated **Client ID** and **Client secret** into your `.env`:
+   ```
+   GOOGLE_AUTH_ENABLED=true
+   GOOGLE_CLIENT_ID=<your client id>
+   GOOGLE_CLIENT_SECRET=<your client secret>
+   ```
+5. Rebuild/restart the server so it picks up the new environment variables.
+
+A user's first Google login creates a `PENDING` account, exactly like self-registration — an
+admin still has to approve it in "Usuários locais" before that person can use anything else.
 
 ## Stop / reset
 
