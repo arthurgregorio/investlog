@@ -2175,6 +2175,38 @@ a {
   padding: 0;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+  color: var(--text-2);
+  font-size: 12px;
+  text-align: center;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
 @media (max-width: 860px) {
   .auth-aside {
     display: none;

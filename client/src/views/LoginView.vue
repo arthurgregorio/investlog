@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import LogoMark from '@/components/icons/LogoMark.vue'
 import { useAuthStore } from '@/stores/auth'
+import { authApi } from '@/api/auth'
 
 const router = useRouter()
 const auth = useAuthStore()
+const route = useRoute()
+const googleAuthEnabled = ref(false)
 
 type Step = 'credentials' | 'register' | 'enroll' | 'totp'
 
@@ -17,6 +20,16 @@ const totpCode = ref('')
 const qrCodeDataUri = ref('')
 const error = ref('')
 const submitting = ref(false)
+
+onMounted(async () => {
+  if (route.query.error === 'email_in_use') {
+    error.value = 'Já existe uma conta com este e-mail. Entre com e-mail e senha.'
+  } else if (route.query.error === 'oauth_failed') {
+    error.value = 'Não foi possível entrar com o Google. Tente novamente.'
+  }
+  const config = await authApi.fetchConfig()
+  googleAuthEnabled.value = config.googleAuthEnabled
+})
 
 const title = computed(() => {
   if (step.value === 'register') return 'Criar conta'
@@ -179,6 +192,10 @@ async function submitTotpCode() {
           >
             Não tem uma conta? Criar conta
           </button>
+          <div v-if="googleAuthEnabled" class="auth-divider">ou</div>
+          <a v-if="googleAuthEnabled" href="/private/oauth2/authorization/google" class="auth-google-button">
+            Continuar com Google
+          </a>
         </form>
 
         <form
