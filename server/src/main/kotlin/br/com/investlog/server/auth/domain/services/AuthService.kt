@@ -44,10 +44,10 @@ class AuthService(
             ?: throw TotpRequiredException("A TOTP code is required to complete login")
 
         val secret = userRepository.findTotpSecretByEmail(request.email)
-            ?: throw InvalidTotpCodeException("Invalid TOTP code")
+            ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
 
         if (!totpService.isCodeValid(secret, code)) {
-            throw InvalidTotpCodeException("Invalid TOTP code")
+            throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
         }
 
         return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
@@ -75,10 +75,10 @@ class AuthService(
         val user = verifyCredentials(request.email, request.password)
 
         val secret = userRepository.findTotpSecretByEmail(request.email)
-            ?: throw InvalidTotpCodeException("Invalid TOTP code")
+            ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
 
         if (!totpService.isCodeValid(secret, request.code)) {
-            throw InvalidTotpCodeException("Invalid TOTP code")
+            throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
         }
 
         userRepository.enableTotp(user.id, secret)
@@ -124,13 +124,13 @@ class AuthService(
 
     private fun verifyCredentials(email: String, password: String): CurrentUser {
         val user = userRepository.findByEmail(email)
-            ?: throw InvalidCredentialsException("Invalid email or password")
+            ?: throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
 
         val passwordHash = userRepository.findPasswordHashByEmail(email)
-            ?: throw InvalidCredentialsException("Invalid email or password")
+            ?: throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
 
         if (!passwordEncoder.matches(password, passwordHash)) {
-            throw InvalidCredentialsException("Invalid email or password")
+            throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
         }
 
         return user
@@ -154,5 +154,10 @@ class AuthService(
         HttpSessionSecurityContextRepository().saveContext(context, servletRequest, servletResponse)
 
         return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
+    }
+
+    companion object {
+        private const val INVALID_TOTP_CODE_MESSAGE = "Invalid TOTP code"
+        private const val INVALID_CREDENTIALS_MESSAGE = "Invalid email or password"
     }
 }
