@@ -54,6 +54,7 @@ class SecurityConfig {
             csrf { disable() }
             anonymous { disable() }
             authorizeHttpRequests {
+                authorize("/actuator/**", permitAll)
                 authorize("/private/v1/auth/login", permitAll)
                 authorize("/private/v1/auth/register", permitAll)
                 authorize("/private/v1/auth/config", permitAll)

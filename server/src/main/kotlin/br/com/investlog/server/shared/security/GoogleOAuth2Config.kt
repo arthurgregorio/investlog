@@ -29,6 +29,11 @@ class GoogleOAuth2Config {
             .clientId(googleClientId)
             .clientSecret(googleClientSecret)
             .scope("openid", "profile", "email")
+            // Must match SecurityConfig's redirectionEndpoint.baseUri ("/private/login/oauth2/code/*") —
+            // fromIssuerLocation's default redirectUri template ("{baseUrl}/login/oauth2/code/{registrationId}")
+            // omits the "/private" prefix, so Spring computes a redirect_uri the app's own filter chain
+            // never listens on, and Google rejects it as unregistered besides.
+            .redirectUri("{baseUrl}/private/login/oauth2/code/{registrationId}")
             .build()
 
         return InMemoryClientRegistrationRepository(googleRegistration)
