@@ -121,6 +121,16 @@ Local email/password login always works. To also enable "Continuar com Google":
 A user's first Google login creates a `PENDING` account, exactly like self-registration — an
 admin still has to approve it in "Usuários locais" before that person can use anything else.
 
+**Testing against `client/`'s dev server (`npm run dev`) instead of the docker-compose stack:**
+the client and server run on separate origins in that setup (`localhost:5173` and `localhost:8080`),
+so after the Google redirect the server can't just send the browser to a relative `/` — that would
+land on the *server's* own port, not the client. `./gradlew bootRun` (no active Spring profile)
+already defaults `CLIENT_BASE_URL` to `http://localhost:5173`, so no extra env var is needed —
+just register `http://localhost:8080/private/login/oauth2/code/google` as the redirect URI in
+Google Cloud Console for this case. The docker-compose stack runs with `SPRING_PROFILES_ACTIVE=prod`,
+which overrides `CLIENT_BASE_URL` back to empty (client and server share one origin there, so a
+relative redirect is already correct).
+
 ## Stop / reset
 
 ```bash
