@@ -5,6 +5,7 @@ import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseExceptio
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
@@ -14,7 +15,10 @@ import org.springframework.stereotype.Component
 private val log = KotlinLogging.logger {}
 
 @Component
-class GoogleLoginSuccessHandler(private val authService: AuthService) : AuthenticationSuccessHandler {
+class GoogleLoginSuccessHandler(
+    private val authService: AuthService,
+    @Value("\${investlog.client-base-url}") private val clientBaseUrl: String,
+) : AuthenticationSuccessHandler {
 
     override fun onAuthenticationSuccess(
         request: HttpServletRequest,
@@ -33,15 +37,15 @@ class GoogleLoginSuccessHandler(private val authService: AuthService) : Authenti
                 servletRequest = request,
                 servletResponse = response,
             )
-            response.sendRedirect("/")
+            response.sendRedirect("$clientBaseUrl/")
         } catch (exception: GoogleAccountEmailInUseException) {
             log.warn(exception) { "Google login rejected: email already in use by another account" }
             clearStraySessionState(request)
-            response.sendRedirect("/login?error=email_in_use")
+            response.sendRedirect("$clientBaseUrl/login?error=email_in_use")
         } catch (exception: Exception) {
             log.warn(exception) { "Google login failed while processing the OAuth2 callback" }
             clearStraySessionState(request)
-            response.sendRedirect("/login?error=oauth_failed")
+            response.sendRedirect("$clientBaseUrl/login?error=oauth_failed")
         }
     }
 
