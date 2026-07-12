@@ -1,0 +1,39 @@
+name: SonarQube
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  sonar:
+    name: SonarQube scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "liberica"
+          java-version: "25"
+
+      - name: Build and test server
+        working-directory: server
+        run: ./gradlew test --no-daemon
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Install and test client
+        working-directory: client
+        run: |
+          npm ci
+          npm run test -- --run
+
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
