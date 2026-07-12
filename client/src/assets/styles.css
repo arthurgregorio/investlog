@@ -750,51 +750,42 @@ a {
   opacity: .5;
 }
 
-/* ===== Wallet cards ===== */
-.wallet-grid {
+/* ===== Entity card grid (reusable across wallets, users, and similar list pages) ===== */
+.entity-grid {
   display: grid;
   grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
 }
 
-.wallet-card {
+.entity-card {
   position: relative;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   margin-bottom: 0 !important;
 }
 
-.wallet-card .card-body {
+.entity-card .card-body {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.wallet-card .wallet-foot .button {
+.entity-card .entity-foot .button {
   padding-right: 0;
 }
 
-.wallet-stripe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-}
-
-.wallet-head {
+.entity-head {
   display: flex;
   align-items: center;
   gap: 11px;
   margin-bottom: 14px;
 }
 
-.wallet-titles {
+.entity-titles {
   min-width: 0;
 }
 
-.wallet-name {
+.entity-name {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -.01em;
@@ -803,11 +794,42 @@ a {
   text-overflow: ellipsis;
 }
 
-.wallet-tags {
+.entity-tags {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-top: 4px;
+}
+
+.entity-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.action-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.action-trigger:hover {
+  color: var(--primary-d);
+}
+
+/* ===== Wallet cards (wallet-specific pieces built on the entity-card grid) ===== */
+.wallet-stripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .cur-chip {
@@ -907,13 +929,6 @@ a {
   padding: 12px 0;
   border-top: 1px solid var(--border-2);
   margin-bottom: 14px;
-}
-
-.wallet-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
 }
 
 .wallet-count {

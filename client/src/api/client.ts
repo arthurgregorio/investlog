@@ -11,11 +11,22 @@ export const apiClient = axios.create({
 
 const SILENT_ERROR_CODES = ['totp_required', 'invalid_totp_code']
 
+// 401s from these endpoints are user-facing form outcomes (wrong password/code) that the
+// calling view already reports inline — not a dead/expired session, so they're never silenced
+// by URL alone here and fall through to SILENT_ERROR_CODES / the toast below as before.
+const AUTH_FORM_ENDPOINTS = ['/auth/login', '/auth/totp/enroll', '/auth/totp/verify']
+
+function isAuthFormRequest(url: string | undefined): boolean {
+  return url !== undefined && AUTH_FORM_ENDPOINTS.some((endpoint) => url.startsWith(endpoint))
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && router.currentRoute.value.name !== 'login') {
-      router.push({ name: 'login' })
+    if (error.response?.status === 401 && !isAuthFormRequest(error.config?.url)) {
+      if (router.currentRoute.value.name !== 'login') {
+        router.push({ name: 'login' })
+      }
       return Promise.reject(error)
     }
     if (SILENT_ERROR_CODES.includes(error.response?.data?.error)) {

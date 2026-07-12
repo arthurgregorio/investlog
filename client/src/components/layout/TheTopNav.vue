@@ -21,6 +21,7 @@ const nav = computed(() => {
     { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
   ]
   if (auth.isAdmin) {
+    items.push({ name: 'users', label: 'Usuários', icon: 'account-group-outline' })
     items.push({ name: 'settings', label: 'Configurações', icon: 'cog-outline' })
   }
   return items

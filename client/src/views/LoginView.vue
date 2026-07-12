@@ -180,7 +180,7 @@ async function submitTotpCode() {
             expanded
             native-type="submit"
             :loading="submitting"
-            class="auth-submit"
+            class="auth-submit has-text-light"
           >
             Entrar
           </b-button>
@@ -193,7 +193,11 @@ async function submitTotpCode() {
             Não tem uma conta? Criar conta
           </button>
           <div v-if="googleAuthEnabled" class="auth-divider">ou</div>
-          <a v-if="googleAuthEnabled" href="/private/oauth2/authorization/google" class="auth-google-button">
+          <a
+            v-if="googleAuthEnabled"
+            href="/private/oauth2/authorization/google"
+            class="auth-google-button"
+          >
             Continuar com Google
           </a>
         </form>
@@ -245,7 +249,7 @@ async function submitTotpCode() {
             expanded
             native-type="submit"
             :loading="submitting"
-            class="auth-submit"
+            class="auth-submit has-text-light"
           >
             Confirmar
           </b-button>
@@ -260,7 +264,7 @@ async function submitTotpCode() {
             expanded
             native-type="submit"
             :loading="submitting"
-            class="auth-submit"
+            class="auth-submit has-text-light"
           >
             Entrar
           </b-button>

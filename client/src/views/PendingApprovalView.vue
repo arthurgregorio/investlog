@@ -33,7 +33,7 @@ async function logout() {
           <span class="brand-mark"><LogoMark :size="20" /></span>
           <span class="brand-name">Invest<b>Log</b></span>
         </div>
-        <div class="auth-head">
+        <div class="auth-head has-text-centered">
           <h1 class="auth-title">Aguardando aprovação</h1>
           <p class="auth-sub">{{ message }}</p>
         </div>

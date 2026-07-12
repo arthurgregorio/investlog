@@ -105,17 +105,17 @@ function renameWallet(walletId: string, currentName: string) {
       </template>
     </EmptyState>
 
-    <div v-else class="wallet-grid">
-      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="wallet-card">
+    <div v-else class="entity-grid">
+      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="entity-card">
         <div class="wallet-stripe" :style="{ background: WALLET_TYPES[wallet.kind].accent }" />
         <CardBody>
-          <div class="wallet-head">
+          <div class="entity-head">
             <span class="type-ic sm" :style="{ background: WALLET_TYPES[wallet.kind].accent }">
               <b-icon :icon="iconFor(wallet.kind)" size="is-small" />
             </span>
-            <div class="wallet-titles">
-              <div class="wallet-name">{{ wallet.name }}</div>
-              <div class="wallet-tags">
+            <div class="entity-titles">
+              <div class="entity-name">{{ wallet.name }}</div>
+              <div class="entity-tags">
                 <b-tag :type="tagTypeFor[wallet.kind]">{{ WALLET_TYPES[wallet.kind].label }}</b-tag>
                 <span class="cur-chip">{{ wallet.currency }}</span>
               </div>
@@ -174,7 +174,7 @@ function renameWallet(walletId: string, currentName: string) {
               <div class="wallet-result-label">Resultado</div>
             </div>
           </div>
-          <div class="wallet-foot">
+          <div class="entity-foot">
             <span class="wallet-count">
               {{ wallet.holdingCount }} {{ wallet.holdingCount === 1 ? 'ativo' : 'ativos' }}
             </span>
@@ -185,7 +185,7 @@ function renameWallet(walletId: string, currentName: string) {
         </CardBody>
       </Card>
 
-      <button class="wallet-card wallet-add" @click="modals.openCreateWallet()">
+      <button class="entity-card wallet-add" @click="modals.openCreateWallet()">
         <b-icon icon="plus-circle-outline" size="is-medium" /><span>Nova carteira</span>
       </button>
     </div>
