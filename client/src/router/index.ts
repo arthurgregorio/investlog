@@ -4,6 +4,7 @@ import OverviewView from '@/views/OverviewView.vue'
 import WalletsView from '@/views/WalletsView.vue'
 import InvestmentsView from '@/views/InvestmentsView.vue'
 import SettingsView from '@/views/SettingsView.vue'
+import UsersView from '@/views/UsersView.vue'
 import LoginView from '@/views/LoginView.vue'
 import PendingApprovalView from '@/views/PendingApprovalView.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -18,6 +19,7 @@ export const router = createRouter({
     { path: '/wallets', name: 'wallets', component: WalletsView },
     { path: '/investments', name: 'investments', component: InvestmentsView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    { path: '/users', name: 'users', component: UsersView },
   ],
   scrollBehavior() {
     return { top: 0 }
@@ -49,7 +51,11 @@ router.beforeEach((to) => {
     return { name: 'overview' }
   }
 
-  if (to.name === 'settings' && auth.session && auth.session.role !== 'ADMIN') {
+  if (
+    (to.name === 'settings' || to.name === 'users') &&
+    auth.session &&
+    auth.session.role !== 'ADMIN'
+  ) {
     return { name: 'overview' }
   }
 

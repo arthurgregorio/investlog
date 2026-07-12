@@ -141,10 +141,11 @@ session exists — a `REJECTED` user must see different copy than a `PENDING` on
 screen update until their next real API call 403s or they refresh — the server-side revocation
 (next action, not next login) is the actual security guarantee; this view is UX, not enforcement.
 
-In `SettingsView.vue`'s "Usuários locais" section, the acting admin's own row hides
-role-change/reject/delete (`isSelf(user.email)`) but leaves approve and TOTP-reset visible — those
-two are safe no-ops on your own account, not lockout risks, so hiding them would remove a valid
-self-recovery path for no benefit.
+`UsersView.vue` (route `/users`, admin-only like `/settings`) is the local-user management screen,
+laid out with the same `.wallet-grid`/`.wallet-card` pattern as `WalletsView.vue`. The acting
+admin's own row hides role-change/reject/delete (`isSelf(user.email)`) but leaves approve and
+TOTP-reset visible — those two are safe no-ops on your own account, not lockout risks, so hiding
+them would remove a valid self-recovery path for no benefit.
 
 ### Buefy/Bulma gotchas
 

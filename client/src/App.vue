@@ -6,12 +6,15 @@ import TheTopNav from '@/components/layout/TheTopNav.vue'
 import CreateWalletModal from '@/components/forms/CreateWalletModal.vue'
 import AddInvestmentModal from '@/components/forms/AddInvestmentModal.vue'
 import { useAppearanceStore } from '@/stores/appearance'
+import { useAuthStore } from '@/stores/auth'
 import { ModalKey } from '@/composables/useModals'
 import type { WalletKind } from '@/types'
 
 const appearance = useAppearanceStore()
+const auth = useAuthStore()
 const { dark, accent } = storeToRefs(appearance)
 const theme = computed(() => (dark.value ? 'dark' : 'light'))
+const showAppShell = computed(() => auth.session?.status === 'APPROVED')
 
 watchEffect(() => {
   document.documentElement.setAttribute('data-theme', theme.value)
@@ -32,13 +35,14 @@ provide(ModalKey, { openAddInvestment, openCreateWallet })
 
 <template>
   <div class="app-root" :data-theme="theme" :data-accent="accent" data-density="comfortable">
-    <div class="main">
+    <div v-if="showAppShell" class="main">
       <TheNavbar />
       <TheTopNav />
       <div class="content">
         <RouterView />
       </div>
     </div>
+    <RouterView v-else />
 
     <CreateWalletModal
       v-if="walletModal"

@@ -94,4 +94,21 @@ describe('router auth guard', () => {
 
     expect(router.currentRoute.value.name).toBe('overview')
   })
+
+  it('redirects a non-admin away from /users', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Usuário Comum',
+      email: 'user@example.com',
+      role: 'USER',
+      status: 'APPROVED',
+    }
+
+    const { router } = await import('./index')
+    router.push('/users')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
 })
