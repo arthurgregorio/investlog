@@ -26,12 +26,12 @@ export const router = createRouter({
   },
 })
 
-const PUBLIC_ROUTE_NAMES = ['login', 'pending-approval']
+const PUBLIC_ROUTE_NAMES = new Set(['login', 'pending-approval'])
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
-  if (!PUBLIC_ROUTE_NAMES.includes(to.name as string) && !auth.session) {
+  if (!PUBLIC_ROUTE_NAMES.has(to.name as string) && !auth.session) {
     return { name: 'login' }
   }
 
@@ -42,7 +42,7 @@ router.beforeEach((to) => {
   if (
     auth.session &&
     auth.session.status !== 'APPROVED' &&
-    !PUBLIC_ROUTE_NAMES.includes(to.name as string)
+    !PUBLIC_ROUTE_NAMES.has(to.name as string)
   ) {
     return { name: 'pending-approval' }
   }
