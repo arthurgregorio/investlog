@@ -9,7 +9,7 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-const SILENT_ERROR_CODES = ['totp_required', 'invalid_totp_code']
+const SILENT_ERROR_CODES = new Set(['totp_required', 'invalid_totp_code'])
 
 // 401s from these endpoints are user-facing form outcomes (wrong password/code) that the
 // calling view already reports inline — not a dead/expired session, so they're never silenced
@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
       }
       return Promise.reject(error)
     }
-    if (SILENT_ERROR_CODES.includes(error.response?.data?.error)) {
+    if (SILENT_ERROR_CODES.has(error.response?.data?.error)) {
       return Promise.reject(error)
     }
     const message: string =
