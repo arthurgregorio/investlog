@@ -5,15 +5,20 @@
 # migrations (which seed the 'dev-user'). This script is NOT idempotent — running it
 # again duplicates the sample wallets/holdings.
 #
-# Usage: ./load-sample-data.sh
+# Usage: ./load-sample-data.sh [path/to/compose.yaml]
+#   Defaults to the root compose.yaml (quick-start stack). Pass
+#   build-from-source/compose.yaml to target that stack instead.
 set -euo pipefail
 
 cd "$(dirname "$0")"
 
-if [ -f .env ]; then
+COMPOSE_FILE="${1:-compose.yaml}"
+COMPOSE_DIR="$(dirname "${COMPOSE_FILE}")"
+
+if [ -f "${COMPOSE_DIR}/.env" ]; then
     set -a
     # shellcheck disable=SC1091
-    . ./.env
+    . "${COMPOSE_DIR}/.env"
     set +a
 fi
 
@@ -28,7 +33,7 @@ fi
 
 # Guard: the dev-user must exist (created by Liquibase once the server has migrated).
 echo "==> Checking that the server has migrated (dev-user present)..."
-has_user="$(docker compose exec -T postgres \
+has_user="$(docker compose -f "${COMPOSE_FILE}" exec -T postgres \
     psql -U "${DB_USER}" -d "${DB_NAME}" -tAc \
     "SELECT 1 FROM system.users WHERE google_sub = 'dev-user'" 2>/dev/null || true)"
 
@@ -39,7 +44,7 @@ if [ "${has_user}" != "1" ]; then
 fi
 
 echo "==> Loading sample data (this is NOT idempotent)..."
-docker compose exec -T postgres psql -U "${DB_USER}" -d "${DB_NAME}" < "${SQL_FILE}"
+docker compose -f "${COMPOSE_FILE}" exec -T postgres psql -U "${DB_USER}" -d "${DB_NAME}" < "${SQL_FILE}"
 
 echo
 echo "Sample data loaded."
