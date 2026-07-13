@@ -11,7 +11,7 @@ import org.springframework.test.context.ActiveProfiles
 
 @AutoConfigureRestTestClient
 @ActiveProfiles(ACTIVE_PROFILE)
-@Import(value = [TestcontainersConfiguration::class])
+@Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)

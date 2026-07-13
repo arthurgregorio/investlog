@@ -1,8 +1,3 @@
-/* Shared helpers for the Chart.js-based charts. Colors throughout the app are CSS
-   custom properties that differ per theme/accent and are toggled live by setting
-   data-theme/data-accent on <html> (see App.vue). SVG re-resolves var(...) live;
-   canvas cannot, so colors must be resolved once via getComputedStyle and the chart
-   explicitly redrawn whenever theme/accent changes. */
 import { watch } from 'vue'
 import { useAppearanceStore } from '@/stores/appearance'
 

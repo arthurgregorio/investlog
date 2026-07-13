@@ -11,4 +11,10 @@ data class CurrentUser(
     val avatarUrl: String?,
     val accentColor: AccentColor,
     val preferredCurrency: String,
-)
+    val role: UserRole,
+    val status: Status,
+    val authProvider: AuthProvider,
+    val totpEnabled: Boolean,
+) {
+    enum class Status { PENDING, APPROVED, REJECTED }
+}

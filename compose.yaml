@@ -14,8 +14,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-sa_investlog}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sa_investlog}
     volumes:
-      # postgres:18 sets PGDATA=/var/lib/postgresql/18/docker — mount the volume there
-      # so data actually persists across `docker compose down`.
       - postgres-data:/var/lib/postgresql/18/docker
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sa_investlog} -d ${POSTGRES_DB:-investlog}"]

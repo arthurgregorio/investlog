@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import {BButton, useDialog, useToast} from 'buefy'
+import { BButton, useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -10,6 +10,7 @@ import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
+import { useAuthStore } from '@/stores/auth'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES } from '@/utils/walletTypes'
@@ -22,6 +23,7 @@ const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
 const router = useRouter()
 const modals = useModals()
+const auth = useAuthStore()
 
 onMounted(() => {
   walletsStore.load()
@@ -93,36 +95,43 @@ function renameWallet(walletId: string, currentName: string) {
       text="Crie sua primeira carteira para começar a registrar investimentos."
     >
       <template #action>
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="modals.openCreateWallet()">Nova carteira</b-button>
+        <b-button
+          type="is-primary"
+          class="has-text-light"
+          icon-left="plus"
+          @click="modals.openCreateWallet()"
+          >Nova carteira</b-button
+        >
       </template>
     </EmptyState>
 
-    <div v-else class="wallet-grid">
-      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="wallet-card">
+    <div v-else class="entity-grid">
+      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="entity-card">
         <div class="wallet-stripe" :style="{ background: WALLET_TYPES[wallet.kind].accent }" />
         <CardBody>
-          <div class="wallet-head">
+          <div class="entity-head">
             <span class="type-ic sm" :style="{ background: WALLET_TYPES[wallet.kind].accent }">
               <b-icon :icon="iconFor(wallet.kind)" size="is-small" />
             </span>
-            <div class="wallet-titles">
-              <div class="wallet-name">{{ wallet.name }}</div>
-              <div class="wallet-tags">
+            <div class="entity-titles">
+              <div class="entity-name">{{ wallet.name }}</div>
+              <div class="entity-tags">
                 <b-tag :type="tagTypeFor[wallet.kind]">{{ WALLET_TYPES[wallet.kind].label }}</b-tag>
                 <span class="cur-chip">{{ wallet.currency }}</span>
               </div>
             </div>
             <div style="display: flex; gap: 6px; margin-left: auto">
               <b-button
-                  outlined
-                  type="is-primary"
+                outlined
+                type="is-primary"
                 size="is-small"
                 icon-left="pencil"
                 @click.stop="renameWallet(wallet.id, wallet.name)"
               />
               <b-button
-                  outlined
-                  type="is-danger"
+                v-if="auth.isAdmin"
+                outlined
+                type="is-danger"
                 size="is-small"
                 icon-left="delete"
                 @click.stop="confirmDeleteWallet(wallet.id, wallet.name)"
@@ -131,7 +140,12 @@ function renameWallet(walletId: string, currentName: string) {
           </div>
           <div class="wallet-invested">
             <div class="wi-value">
-              {{ fmt.money(currencyStore.convert(wallet.totalInvested, wallet.currency), currencyStore.displayCurrency) }}
+              {{
+                fmt.money(
+                  currencyStore.convert(wallet.totalInvested, wallet.currency),
+                  currencyStore.displayCurrency,
+                )
+              }}
             </div>
             <div class="wi-base">Investido</div>
           </div>
@@ -141,21 +155,26 @@ function renameWallet(walletId: string, currentName: string) {
                 {{
                   wallet.currentValue == null
                     ? '—'
-                    : fmt.money(currencyStore.convert(wallet.currentValue, wallet.currency), currencyStore.displayCurrency)
+                    : fmt.money(
+                        currencyStore.convert(wallet.currentValue, wallet.currency),
+                        currencyStore.displayCurrency,
+                      )
                 }}
               </div>
               <div class="wallet-result-label">Valor atual</div>
             </div>
             <div class="wallet-result-item">
               <GainChip
-                :value="wallet.gain == null ? null : currencyStore.convert(wallet.gain, wallet.currency)"
+                :value="
+                  wallet.gain == null ? null : currencyStore.convert(wallet.gain, wallet.currency)
+                "
                 :pct="wallet.gainPct"
                 :cur="currencyStore.displayCurrency"
               />
               <div class="wallet-result-label">Resultado</div>
             </div>
           </div>
-          <div class="wallet-foot">
+          <div class="entity-foot">
             <span class="wallet-count">
               {{ wallet.holdingCount }} {{ wallet.holdingCount === 1 ? 'ativo' : 'ativos' }}
             </span>
@@ -166,7 +185,7 @@ function renameWallet(walletId: string, currentName: string) {
         </CardBody>
       </Card>
 
-      <button class="wallet-card wallet-add" @click="modals.openCreateWallet()">
+      <button class="entity-card wallet-add" @click="modals.openCreateWallet()">
         <b-icon icon="plus-circle-outline" size="is-medium" /><span>Nova carteira</span>
       </button>
     </div>

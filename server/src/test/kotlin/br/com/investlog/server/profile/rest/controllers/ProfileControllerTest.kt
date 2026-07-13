@@ -26,8 +26,8 @@ class ProfileControllerTest : BaseIntegrationTest() {
             .returnResult<ProfileResponse>()
             .responseBody
 
-        assertEquals("Arthur Gregorio", response?.name)
-        assertEquals("arthurshakal@gmail.com", response?.email)
+        assertEquals("Administrador", response?.name)
+        assertEquals("admin@admin.com", response?.email)
         assertEquals("teal", response?.accentColor?.text)
         assertEquals("BRL", response?.preferredCurrency)
     }

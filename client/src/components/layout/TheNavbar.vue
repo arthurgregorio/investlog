@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import Avatar from '@/components/ui/Avatar.vue'
+import LogoMark from '@/components/icons/LogoMark.vue'
 import { useRatesStore } from '@/stores/rates'
 import { useCurrencyStore } from '@/stores/currency'
 import { useOverviewStore } from '@/stores/overview'
 import { useAppearanceStore } from '@/stores/appearance'
+import { useAuthStore } from '@/stores/auth'
 import { profileApi } from '@/api/profile'
 import type { ProfileResponse } from '@/types'
 
@@ -13,6 +16,8 @@ const ratesStore = useRatesStore()
 const currencyStore = useCurrencyStore()
 const overviewStore = useOverviewStore()
 const appearance = useAppearanceStore()
+const auth = useAuthStore()
+const router = useRouter()
 const { dark } = storeToRefs(appearance)
 
 const profile = ref<ProfileResponse | null>(null)
@@ -47,13 +52,18 @@ function initials(name: string): string {
     .map((word) => word[0].toUpperCase())
     .join('')
 }
+
+async function logout() {
+  await auth.logout()
+  router.push({ name: 'login' })
+}
 </script>
 
 <template>
   <header class="navbar">
     <div class="navbar-inner">
       <RouterLink to="/" class="brand">
-        <span class="brand-mark"><b-icon icon="trending-up" /></span>
+        <span class="brand-mark"><LogoMark :size="19" /></span>
         <span class="brand-name">Invest<b>Log</b></span>
       </RouterLink>
       <div class="navbar-spacer" />
@@ -77,6 +87,7 @@ function initials(name: string): string {
           <div class="nu-name">{{ profile?.name ?? '...' }}</div>
           <div class="nu-sub">{{ profile?.email ?? '' }}</div>
         </div>
+        <b-button icon-left="logout" aria-label="Sair" title="Sair" @click="logout" />
       </div>
     </div>
   </header>

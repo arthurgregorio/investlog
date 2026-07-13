@@ -7,11 +7,11 @@
 
     <changeSet id="14-1050-1" author="${claude}">
         <sql>
-            INSERT INTO system.users (google_sub, email, name)
-            VALUES ('dev-user', 'arthurshakal@gmail.com', 'Arthur Gregorio');
+            INSERT INTO system.users (google_sub, email, name, auth_provider, role, status)
+            VALUES (NULL, 'admin@admin.com', 'Administrador', 'LOCAL', 'ADMIN', 'APPROVED');
         </sql>
         <rollback>
-            <sql>DELETE FROM system.users WHERE google_sub = 'dev-user';</sql>
+            <sql>DELETE FROM system.users WHERE email = 'admin@admin.com';</sql>
         </rollback>
     </changeSet>
 
@@ -24,12 +24,12 @@
                 ('BRL', 1::numeric, true),
                 ('USD', 5.42::numeric, false)
             ) AS v(currency_code, rate, is_base)
-            WHERE u.google_sub = 'dev-user';
+            WHERE u.email = 'admin@admin.com';
         </sql>
         <rollback>
             <sql>
                 DELETE FROM finances.currency_rates
-                WHERE user_id = (SELECT id FROM system.users WHERE google_sub = 'dev-user');
+                WHERE user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
             </sql>
         </rollback>
     </changeSet>

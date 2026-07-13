@@ -1,9 +1,9 @@
-/* Formatting helpers — multi-currency money, percentages, quantities, dates.
-   Pure functions; exposed as a composable for ergonomic use in <script setup>. */
-
 const SYM: Record<string, string> = { BRL: 'R$', USD: 'US$', EUR: '€' }
-const num2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const numQ = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 })
+const twoDecimalFormatter = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+const quantityFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 })
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 export const fmt = {
@@ -16,13 +16,13 @@ export const fmt = {
         return s + ' ' + (v / 1_000_000).toFixed(1).replace('.', ',') + 'M'
       if (absoluteValue >= 100_000) return s + ' ' + Math.round(v / 1_000) + 'k'
     }
-    return s + ' ' + num2.format(v)
+    return s + ' ' + twoDecimalFormatter.format(v)
   },
   moneySigned: (v: number, cur = 'BRL', opts: { compact?: boolean } = {}) =>
     (v >= 0 ? '+' : '−') + fmt.money(Math.abs(v), cur, opts),
-  pct: (v: number) => num2.format(Math.abs(v)) + '%',
-  pctSigned: (v: number) => (v >= 0 ? '+' : '−') + num2.format(Math.abs(v)) + '%',
-  qty: (v: number) => (Number.isInteger(v) ? String(v) : numQ.format(v)),
+  pct: (v: number) => twoDecimalFormatter.format(Math.abs(v)) + '%',
+  pctSigned: (v: number) => (v >= 0 ? '+' : '−') + twoDecimalFormatter.format(Math.abs(v)) + '%',
+  qty: (v: number) => (Number.isInteger(v) ? String(v) : quantityFormatter.format(v)),
   date: (iso: string) => {
     const d = new Date(iso + 'T00:00:00')
     return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`

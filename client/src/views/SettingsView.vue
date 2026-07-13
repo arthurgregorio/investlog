@@ -7,6 +7,7 @@ import NumberInput from '@/components/ui/NumberInput.vue'
 import { useTypesListStore } from '@/stores/typesList'
 import { useRatesStore } from '@/stores/rates'
 import { useAppearanceStore } from '@/stores/appearance'
+import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
 import type { AccentKey } from '@/types'
 
@@ -14,6 +15,7 @@ const toast = useToast()
 const typesListStore = useTypesListStore()
 const ratesStore = useRatesStore()
 const appearance = useAppearanceStore()
+const auth = useAuthStore()
 
 const newStockType = ref('')
 const newFundType = ref('')
@@ -128,6 +130,7 @@ async function commitRate(currencyCode: string) {
           >
             {{ stockType.name }}
             <button
+              v-if="auth.isAdmin"
               :aria-label="`Remover ${stockType.name}`"
               @click="removeStockType(stockType.id)"
             >
@@ -153,7 +156,11 @@ async function commitRate(currencyCode: string) {
         <div class="chip-edit">
           <span v-for="fundType in typesListStore.fundTypes" :key="fundType.id" class="edit-chip">
             {{ fundType.name }}
-            <button :aria-label="`Remover ${fundType.name}`" @click="removeFundType(fundType.id)">
+            <button
+              v-if="auth.isAdmin"
+              :aria-label="`Remover ${fundType.name}`"
+              @click="removeFundType(fundType.id)"
+            >
               <b-icon icon="close" size="is-small" />
             </button>
           </span>

@@ -4,7 +4,7 @@ import { useAddInvestmentForm } from './useAddInvestmentForm'
 import { useWalletsStore } from '@/stores/wallets'
 import { useTypesListStore } from '@/stores/typesList'
 import * as holdingsApiModule from '@/api/holdings'
-import type { WalletResponse, AssetType } from '@/types'
+import type { AssetType, WalletResponse } from '@/types'
 
 vi.mock('@/api/holdings')
 vi.mock('buefy', () => ({
