@@ -11,6 +11,8 @@ export default defineConfig({
     },
   },
   server: {
+    port: 8081,
+    strictPort: true,
     proxy: {
       '/private': {
         target: 'http://localhost:8080',
