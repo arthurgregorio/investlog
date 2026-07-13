@@ -1,8 +1,8 @@
-# Build both Docker images for InvestLog:
+# Build both Docker images for InvestLog from source:
 #   - server: Spring Boot Cloud Native Buildpacks image (via Gradle)
 #   - client: Vue SPA served by nginx (via docker build)
 #
-# Usage: ./build.ps1
+# Usage: ./build-from-source/build.ps1 (or: cd build-from-source; ./build.ps1)
 $ErrorActionPreference = 'Stop'
 Set-Location -Path $PSScriptRoot
 
@@ -21,7 +21,7 @@ $clientTag = if ($envVars.ContainsKey('CLIENT_IMAGE_TAG')) { $envVars['CLIENT_IM
 $webPort   = if ($envVars.ContainsKey('WEB_PORT'))         { $envVars['WEB_PORT'] }         else { '8081' }
 
 Write-Host "==> Building server image (Gradle bootBuildImage) -> investlog/server:$serverTag"
-Push-Location server
+Push-Location ..\server
 try {
     & .\gradlew.bat bootBuildImage "--imageName=investlog/server:$serverTag"
     if ($LASTEXITCODE -ne 0) { throw "gradle bootBuildImage failed" }
@@ -29,7 +29,7 @@ try {
 finally { Pop-Location }
 
 Write-Host "==> Building client image (docker build) -> investlog/client:$clientTag"
-docker build -t "investlog/client:$clientTag" ./client
+docker build -t "investlog/client:$clientTag" ..\client
 if ($LASTEXITCODE -ne 0) { throw "docker build failed" }
 
 Write-Host ""
@@ -37,4 +37,4 @@ Write-Host "Done. Images:"
 Write-Host "  investlog/server:$serverTag"
 Write-Host "  investlog/client:$clientTag"
 Write-Host ""
-Write-Host "Next: docker compose up -d   (then open http://localhost:$webPort)"
+Write-Host "Next: docker compose up -d   (run from this build-from-source/ folder, then open http://localhost:$webPort)"
