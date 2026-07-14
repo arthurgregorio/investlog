@@ -17,7 +17,7 @@ visual language pixel-for-pixel.
 
 ```bash
 npm install
-npm run dev        # start the dev server (http://localhost:5173)
+npm run dev        # start the dev server (http://localhost:8081)
 npm run build      # type-check (vue-tsc) + production build
 npm run type-check # type-check only
 ```

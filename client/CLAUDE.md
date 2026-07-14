@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm install
-npm run dev        # dev server at http://localhost:5173
+npm run dev        # dev server at http://localhost:8081
 npm run build      # vue-tsc --noEmit -p tsconfig.app.json, then vite build (fails on type errors)
 npm run preview    # preview the production build
 npm run type-check # vue-tsc --noEmit -p tsconfig.app.json only
