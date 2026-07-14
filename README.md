@@ -3,7 +3,7 @@
 A simple logbook for investments — track wallets, stocks, funds and crypto holdings,
 and see a consolidated overview across currencies.
 
-InvestLog ships as three Docker containers orchestrated by a single Compose file:
+InvestLog ships as three Docker containers orchestrated by Compose:
 
 - **client** — Vue 3 SPA, served by nginx (also reverse-proxies the API).
 - **server** — Spring Boot 4 REST API (Kotlin / Java 25), built as a Cloud Native image.
@@ -28,12 +28,37 @@ every `/private/*` request to the server container, so there are no cross-origin
 ## Prerequisites
 
 - **Docker** with **Docker Compose v2** (`docker compose ...`).
-- A **JDK 25** is *not* required on the host — the Gradle wrapper downloads its own
-  toolchain. You only need Docker to build the server image (Buildpacks run in Docker).
+- That's it for the quick start below — no JDK, no Node, nothing else to install.
+  Building from source (see below) additionally uses Docker to run the
+  Buildpacks-based server build; a JDK is still *not* required on the host, since the
+  Gradle wrapper downloads its own toolchain.
 
 ## Run locally
 
+InvestLog has two ways to run: **quick start**, using published images from Docker Hub
+(fastest, always the latest tagged release), and **build from source**, for running
+whatever is currently on `main` before it's released.
+
+### Quick start (recommended)
+
 ```bash
+# 1. (optional) create your .env — the committed defaults already work
+cp .env.example .env
+
+# 2. start the whole stack — pulls arthurgregorio/investlog-server:latest and
+#    arthurgregorio/investlog-client:latest from Docker Hub, no build needed
+docker compose up -d
+```
+
+Open **http://localhost:8081**.
+
+### Build from source
+
+Use this to run changes from `main` that haven't been released yet.
+
+```bash
+cd build-from-source
+
 # 1. (optional) create your .env — the committed defaults already work
 cp .env.example .env
 
@@ -45,6 +70,8 @@ docker compose up -d
 ```
 
 Open **http://localhost:8081**.
+
+---
 
 Log in with the seeded admin account: `admin@admin.com` / `admin` (from
 `ADMIN_DEFAULT_PASSWORD`, see below) — **change this password immediately** in a real
@@ -65,6 +92,13 @@ Run this **after** the stack is up and the server has finished migrating. The sc
 checks for the seeded user first and refuses to run otherwise. It is **not idempotent**
 — running it twice duplicates the sample data.
 
+Targets the quick-start stack (root `compose.yaml`) by default. If you're running the
+build-from-source stack instead, pass its compose file explicitly:
+
+```bash
+./load-sample-data.sh build-from-source/compose.yaml
+```
+
 ## Back up the database
 
 Dump the database to a timestamped `.sql` file on the host:
@@ -75,6 +109,9 @@ Dump the database to a timestamped `.sql` file on the host:
 
 `pg_dump` runs inside the postgres container; the resulting file is then copied out to
 `backups/investlog-backup-YYYYMMDD-HHMMSS.sql` (the `backups/` folder is git-ignored).
+
+Like `load-sample-data.sh`, this targets the quick-start stack by default — pass
+`build-from-source/compose.yaml` as the first argument to target that stack instead.
 
 ## Configuration
 
@@ -89,13 +126,19 @@ the box for a local run.
 | `DB_NAME` | `investlog` | DB name the server connects to (mirror of `POSTGRES_DB`) |
 | `DB_USER` | `sa_investlog` | DB user the server connects with |
 | `DB_PASSWORD` | `sa_investlog` | DB password the server connects with |
-| `SERVER_IMAGE_TAG` | `v0.1.0` | Tag for the `investlog/server` image |
-| `CLIENT_IMAGE_TAG` | `v0.1.0` | Tag for the `investlog/client` image |
 | `WEB_PORT` | `8081` | Host port the web app is published on |
 | `ADMIN_DEFAULT_PASSWORD` | `admin` | Password set on the seeded admin account on first boot |
 | `GOOGLE_AUTH_ENABLED` | `false` | Enables Google OAuth2 login and shows the button client-side |
 | `GOOGLE_CLIENT_ID` | _(empty)_ | From Google Cloud Console OAuth 2.0 Client ID |
 | `GOOGLE_CLIENT_SECRET` | _(empty)_ | From Google Cloud Console |
+| `CLIENT_BASE_URL` | _(empty)_ | Redirect target after Google login. Leave empty for a same-origin deployment (the default stack serves client and server behind one nginx origin, so a relative redirect is already correct) — only set this if client and server are served from different origins |
+
+Building from source adds two more variables, read from `build-from-source/.env`:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SERVER_IMAGE_TAG` | `v0.1.0` | Tag for the locally-built `investlog/server` image |
+| `CLIENT_IMAGE_TAG` | `v0.1.0` | Tag for the locally-built `investlog/client` image |
 
 ### Google OAuth2 login (optional)
 
@@ -138,6 +181,8 @@ docker compose down        # stop and remove containers (keeps the database volu
 docker compose down -v     # also delete the database volume (wipes all data)
 ```
 
+Run from `build-from-source/` instead if that's the stack you started.
+
 ## Health & logs
 
 ```bash
@@ -150,21 +195,27 @@ reachable inside the network at `http://server:8080/actuator/health`.
 
 ## Local development (without Docker images)
 
-The Compose setup above is for running the packaged app. For day-to-day development:
+The Compose setups above are for running the packaged app. For day-to-day development:
 
 - **Database:** the dev-only `server/compose.yaml` is started automatically by Spring
   Boot's Docker Compose support when you run the server from your IDE / Gradle.
 - **Server:** `cd server && ./gradlew bootRun`.
-- **Client:** `cd client && npm install && npm run dev` — Vite serves on its own port
-  and proxies `/private` to `http://localhost:8080`.
+- **Client:** `cd client && npm install && npm run dev` — Vite serves on
+  **http://localhost:8081** and proxies `/private` to `http://localhost:8080`.
 
 ## Troubleshooting
 
 - **Port 8081 already in use** — set a different `WEB_PORT` in `.env` and re-run
-  `docker compose up -d`.
+  `docker compose up -d`. Note the Vite dev server (`npm run dev`) also defaults to
+  `8081`, so don't run it and the Docker stack at the same time without changing one of
+  them.
 - **`load-sample-data` says the dev-user is missing** — the server hasn't finished
   migrating yet. Wait a few seconds (`docker compose logs -f server`) and retry.
-- **Changed the project version** — bump `SERVER_IMAGE_TAG` / `CLIENT_IMAGE_TAG` in
-  `.env`, re-run `./build.sh`, then `docker compose up -d`.
+- **Want the latest unreleased changes** — the quick-start stack always runs the last
+  published release. Use `build-from-source/` instead (see "Build from source" above)
+  to run whatever is currently on `main`.
+- **Changed the project version (build from source)** — bump `SERVER_IMAGE_TAG` /
+  `CLIENT_IMAGE_TAG` in `build-from-source/.env`, re-run `./build-from-source/build.sh`,
+  then `docker compose up -d` from `build-from-source/`.
 - **Data disappeared after `down`** — make sure you didn't run `down -v`; that flag
   deletes the `postgres-data` volume.

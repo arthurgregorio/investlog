@@ -4,13 +4,22 @@
 # migrations (which seed the 'dev-user'). This script is NOT idempotent — running it
 # again duplicates the sample wallets/holdings.
 #
-# Usage: ./load-sample-data.ps1
+# Usage: ./load-sample-data.ps1 [path/to/compose.yaml]
+#   Defaults to the root compose.yaml (quick-start stack). Pass
+#   build-from-source/compose.yaml to target that stack instead.
+param(
+    [string]$ComposeFile = "compose.yaml"
+)
 $ErrorActionPreference = 'Stop'
 Set-Location -Path $PSScriptRoot
 
+$composeDir = Split-Path -Parent $ComposeFile
+if ([string]::IsNullOrEmpty($composeDir)) { $composeDir = '.' }
+
 $envVars = @{}
-if (Test-Path .env) {
-    Get-Content .env | ForEach-Object {
+$envFile = Join-Path $composeDir '.env'
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
         if ($_ -match '^\s*([^#][^=]*)\s*=\s*(.*)\s*$') {
             $envVars[$Matches[1].Trim()] = $Matches[2].Trim()
         }
@@ -34,7 +43,7 @@ if (-not (Test-Path $sqlFile)) {
 
 # Guard: the dev-user must exist (created by Liquibase once the server has migrated).
 Write-Host "==> Checking that the server has migrated (dev-user present)..."
-$hasUser = (docker compose exec -T postgres `
+$hasUser = (docker compose -f $ComposeFile exec -T postgres `
     psql -U $dbUser -d $dbName -tAc `
     "SELECT 1 FROM system.users WHERE google_sub = 'dev-user'" 2>$null | Out-String).Trim()
 
@@ -44,7 +53,7 @@ if ($hasUser -ne '1') {
 }
 
 Write-Host "==> Loading sample data (this is NOT idempotent)..."
-Get-Content $sqlFile -Raw | docker compose exec -T postgres psql -U $dbUser -d $dbName
+Get-Content $sqlFile -Raw | docker compose -f $ComposeFile exec -T postgres psql -U $dbUser -d $dbName
 if ($LASTEXITCODE -ne 0) { throw "psql load failed" }
 
 Write-Host ""

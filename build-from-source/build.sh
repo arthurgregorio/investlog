@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Build both Docker images for InvestLog:
+# Build both Docker images for InvestLog from source:
 #   - server: Spring Boot Cloud Native Buildpacks image (via Gradle)
 #   - client: Vue SPA served by nginx (via docker build)
 #
-# Usage: ./build.sh
+# Usage: ./build-from-source/build.sh (or: cd build-from-source && ./build.sh)
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -20,14 +20,14 @@ SERVER_IMAGE_TAG="${SERVER_IMAGE_TAG:-v0.1.0}"
 CLIENT_IMAGE_TAG="${CLIENT_IMAGE_TAG:-v0.1.0}"
 
 echo "==> Building server image (Gradle bootBuildImage) -> investlog/server:${SERVER_IMAGE_TAG}"
-( cd server && ./gradlew bootBuildImage --imageName="investlog/server:${SERVER_IMAGE_TAG}" )
+( cd ../server && ./gradlew bootBuildImage --imageName="investlog/server:${SERVER_IMAGE_TAG}" )
 
 echo "==> Building client image (docker build) -> investlog/client:${CLIENT_IMAGE_TAG}"
-docker build -t "investlog/client:${CLIENT_IMAGE_TAG}" ./client
+docker build -t "investlog/client:${CLIENT_IMAGE_TAG}" ../client
 
 echo
 echo "Done. Images:"
 echo "  investlog/server:${SERVER_IMAGE_TAG}"
 echo "  investlog/client:${CLIENT_IMAGE_TAG}"
 echo
-echo "Next: docker compose up -d   (then open http://localhost:${WEB_PORT:-8081})"
+echo "Next: docker compose up -d   (run from this build-from-source/ folder)"
