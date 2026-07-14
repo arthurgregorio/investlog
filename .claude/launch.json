@@ -11,7 +11,7 @@
       "name": "client",
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "cd /d D:\\desenvolvimento\\investlog\\client && npm run dev"],
-      "port": 5173
+      "port": 8081
     }
   ]
 }
