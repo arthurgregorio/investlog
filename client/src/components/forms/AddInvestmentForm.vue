@@ -27,7 +27,7 @@ const sym = computed(() => fmt.sym(walletCurrency.value))
 const ticker = computed({
   get: () => props.form.ticker,
   set: (value: string) => {
-    props.form.ticker = value.toUpperCase()
+    props.form.ticker = value.toUpperCase().replace(/[^A-Z0-9]/g, '')
   },
 })
 
