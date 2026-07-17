@@ -172,4 +172,34 @@ class CryptoHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isNotFound()
     }
+
+    @Test
+    @Order(10)
+    fun `rejects a ticker with symbols or spaces on create`() {
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "ticker":"BTC/USD",
+                  "lot":{"lotDate":"2024-01-01","quantity":0.5,"price":42000.00}
+                }
+            """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(11)
+    fun `rejects a ticker with symbols or spaces on update`() {
+        val h = createHolding("AVAX")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${h.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"ticker":"AV AX"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
 }
