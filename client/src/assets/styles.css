@@ -878,6 +878,11 @@ a {
   gap: 2px;
 }
 
+.wallet-result-item:last-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
 .wallet-result-label {
   font-size: 11px;
   color: var(--text-muted);
