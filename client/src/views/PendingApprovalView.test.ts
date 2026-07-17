@@ -54,7 +54,7 @@ describe('PendingApprovalView', () => {
     expect(wrapper.text()).not.toContain('aguardando aprovação')
   })
 
-  it('redirects to login after logging out', async () => {
+  it('calls auth.logout when the sign-out button is clicked', async () => {
     const auth = useAuthStore()
     auth.session = { name: 'Nova Usuária', email: 'nova@example.com', role: 'USER', status: 'PENDING' }
     const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue()
@@ -67,7 +67,6 @@ describe('PendingApprovalView', () => {
     await flushPromises()
 
     expect(logoutSpy).toHaveBeenCalled()
-    expect(router.currentRoute.value.name).toBe('login')
   })
 })
 

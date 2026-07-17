@@ -26,17 +26,20 @@ export const useAuthStore = defineStore('auth', () => {
     const outcome = await authApi.login(email, password, totpCode)
     if (outcome.status === 'authenticated') {
       session.value = outcome.session
+      window.location.href = '/overview'
     }
     return outcome.status
   }
 
   async function verifyTotp(email: string, password: string, code: string): Promise<void> {
     session.value = await authApi.verify(email, password, code)
+    window.location.href = '/overview'
   }
 
   async function logout() {
     await authApi.logout()
     session.value = null
+    window.location.href = '/login'
   }
 
   async function restoreSession() {

@@ -58,7 +58,6 @@ async function submitCredentials() {
   try {
     const status = await auth.login(email.value, password.value)
     if (status === 'authenticated') {
-      await router.push({ name: 'overview' })
       return
     }
     if (status === 'needs_enrollment') {
@@ -97,7 +96,6 @@ async function submitEnrollment() {
   submitting.value = true
   try {
     await auth.verifyTotp(email.value, password.value, totpCode.value)
-    await router.push({ name: 'overview' })
   } catch {
     error.value = 'Código inválido. Tente novamente.'
   } finally {
@@ -111,7 +109,6 @@ async function submitTotpCode() {
   try {
     const status = await auth.login(email.value, password.value, totpCode.value)
     if (status === 'authenticated') {
-      await router.push({ name: 'overview' })
       return
     }
     error.value = 'Código inválido. Tente novamente.'

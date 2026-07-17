@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LogoMark from '@/components/icons/LogoMark.vue'
 
 const auth = useAuthStore()
-const router = useRouter()
 
 const message = computed(() => {
   if (!auth.session) {
@@ -21,7 +19,6 @@ const message = computed(() => {
 
 async function logout() {
   await auth.logout()
-  router.push({ name: 'login' })
 }
 </script>
 
