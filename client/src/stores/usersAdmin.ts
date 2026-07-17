@@ -32,8 +32,12 @@ export const useUsersAdminStore = defineStore('usersAdmin', () => {
     replaceUser(await usersAdminApi.approve(id))
   }
 
-  async function reject(id: string): Promise<void> {
-    replaceUser(await usersAdminApi.reject(id))
+  async function block(id: string): Promise<void> {
+    replaceUser(await usersAdminApi.block(id))
+  }
+
+  async function unblock(id: string): Promise<void> {
+    replaceUser(await usersAdminApi.unblock(id))
   }
 
   async function changeRole(id: string, role: UserRole): Promise<void> {
@@ -49,5 +53,5 @@ export const useUsersAdminStore = defineStore('usersAdmin', () => {
     users.value = users.value.filter((user) => user.id !== id)
   }
 
-  return { users, loaded, loading, load, refresh, approve, reject, changeRole, resetTotp, remove }
+  return { users, loaded, loading, load, refresh, approve, block, unblock, changeRole, resetTotp, remove }
 })

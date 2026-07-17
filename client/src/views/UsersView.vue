@@ -29,9 +29,14 @@ async function approveUser(id: string) {
   toast.open({ message: 'Usuário aprovado.', type: 'is-success' })
 }
 
-async function rejectUser(id: string) {
-  await usersAdminStore.reject(id)
-  toast.open({ message: 'Usuário rejeitado.', type: 'is-success' })
+async function blockUser(id: string) {
+  await usersAdminStore.block(id)
+  toast.open({ message: 'Usuário bloqueado.', type: 'is-success' })
+}
+
+async function unblockUser(id: string) {
+  await usersAdminStore.unblock(id)
+  toast.open({ message: 'Usuário desbloqueado.', type: 'is-success' })
 }
 
 function confirmRoleChange(id: string, name: string, currentRole: UserRole) {
@@ -87,7 +92,7 @@ function confirmDeleteUser(id: string, name: string) {
     <div class="page-head page-head-row">
       <div>
         <h1 class="page-title">Usuários</h1>
-        <p class="page-desc">Aprove, rejeite ou gerencie o acesso de usuários locais.</p>
+        <p class="page-desc">Aprove, bloqueie ou gerencie o acesso de usuários locais.</p>
       </div>
     </div>
 
@@ -105,7 +110,7 @@ function confirmDeleteUser(id: string, name: string) {
                   :type="
                     user.status === 'APPROVED'
                       ? 'is-success'
-                      : user.status === 'REJECTED'
+                      : user.status === 'BLOCKED'
                         ? 'is-danger'
                         : 'is-warning'
                   "
@@ -140,11 +145,18 @@ function confirmDeleteUser(id: string, name: string) {
 
               <template v-if="!isSelf(user.email)">
                 <b-dropdown-item
-                  v-if="user.status !== 'REJECTED'"
+                  v-if="user.status === 'APPROVED'"
                   aria-role="listitem"
-                  @click="rejectUser(user.id)"
+                  @click="blockUser(user.id)"
                 >
-                  <b-icon icon="close" size="is-small" /> Rejeitar
+                  <b-icon icon="lock-outline" size="is-small" /> Bloquear
+                </b-dropdown-item>
+                <b-dropdown-item
+                  v-if="user.status === 'BLOCKED'"
+                  aria-role="listitem"
+                  @click="unblockUser(user.id)"
+                >
+                  <b-icon icon="lock-open-outline" size="is-small" /> Desbloquear
                 </b-dropdown-item>
                 <b-dropdown-item
                   aria-role="listitem"

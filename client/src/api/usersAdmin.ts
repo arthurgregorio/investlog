@@ -12,8 +12,12 @@ export const usersAdminApi = {
     return apiClient.patch<UserAdminResponse>(`/users/${id}/approve`).then((response) => response.data)
   },
 
-  reject(id: string): Promise<UserAdminResponse> {
-    return apiClient.patch<UserAdminResponse>(`/users/${id}/reject`).then((response) => response.data)
+  block(id: string): Promise<UserAdminResponse> {
+    return apiClient.patch<UserAdminResponse>(`/users/${id}/block`).then((response) => response.data)
+  },
+
+  unblock(id: string): Promise<UserAdminResponse> {
+    return apiClient.patch<UserAdminResponse>(`/users/${id}/unblock`).then((response) => response.data)
   },
 
   changeRole(id: string, role: UserRole): Promise<UserAdminResponse> {

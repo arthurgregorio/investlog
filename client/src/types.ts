@@ -133,7 +133,7 @@ export interface PagedResponse<T> {
 
 export type UserRole = 'ADMIN' | 'USER'
 
-export type UserStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type UserStatus = 'PENDING' | 'APPROVED' | 'BLOCKED'
 
 export interface SessionResponse {
   name: string
