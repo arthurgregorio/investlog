@@ -6,26 +6,16 @@ import CardBody from '@/components/ui/CardBody.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import { useTypesListStore } from '@/stores/typesList'
 import { useRatesStore } from '@/stores/rates'
-import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
-import type { AccentKey } from '@/types'
 
 const toast = useToast()
 const typesListStore = useTypesListStore()
 const ratesStore = useRatesStore()
-const appearance = useAppearanceStore()
 const auth = useAuthStore()
 
 const newStockType = ref('')
 const newFundType = ref('')
-
-const accents: { key: AccentKey; hex: string }[] = [
-  { key: 'blue', hex: '#206bc4' },
-  { key: 'indigo', hex: '#4263eb' },
-  { key: 'teal', hex: '#0ca678' },
-  { key: 'green', hex: '#15915b' },
-]
 
 onMounted(() => {
   Promise.all([typesListStore.load(), ratesStore.load()])
@@ -172,31 +162,6 @@ async function commitRate(currencyCode: string) {
             @keyup.enter="addFundType"
           />
           <b-button icon-left="plus" @click="addFundType">Adicionar tipo</b-button>
-        </div>
-      </CardBody>
-    </Card>
-
-    <Card>
-      <CardBody>
-        <div class="set-head"><h2 class="set-title">Aparência</h2></div>
-        <p class="set-desc">Escolha a cor de destaque da interface.</p>
-        <div class="accent-row">
-          <button
-            v-for="accentOption in accents"
-            :key="accentOption.key"
-            class="accent-swatch"
-            :class="{ active: appearance.accent === accentOption.key }"
-            :style="{ background: accentOption.hex }"
-            :aria-label="`Cor ${accentOption.key}`"
-            @click="appearance.setAccent(accentOption.key)"
-          >
-            <b-icon
-              v-if="appearance.accent === accentOption.key"
-              icon="check"
-              size="is-small"
-              class="sw-check"
-            />
-          </button>
         </div>
       </CardBody>
     </Card>
