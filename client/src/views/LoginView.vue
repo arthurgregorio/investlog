@@ -218,7 +218,7 @@ async function submitTotpCode() {
             expanded
             native-type="submit"
             :loading="submitting"
-            class="auth-submit"
+            class="auth-submit has-text-light"
           >
             Criar conta
           </b-button>
