@@ -18,6 +18,8 @@ describe('auth store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    delete (window as unknown as { location?: unknown }).location
+    window.location = { href: '' } as Location
   })
 
   it('sets the session after a successful login', async () => {
@@ -41,9 +43,10 @@ describe('auth store', () => {
       role: 'ADMIN',
       status: 'APPROVED',
     })
+    expect(window.location.href).toBe('/overview')
   })
 
-  it('does not set a session when enrollment is required', async () => {
+  it('does not set a session or navigate when enrollment is required', async () => {
     vi.mocked(authApi.login).mockResolvedValue({ status: 'needs_enrollment' })
 
     const store = useAuthStore()
@@ -51,6 +54,7 @@ describe('auth store', () => {
 
     expect(status).toBe('needs_enrollment')
     expect(store.session).toBeNull()
+    expect(window.location.href).toBe('')
   })
 
   it('clears the session on logout', async () => {
@@ -70,6 +74,7 @@ describe('auth store', () => {
     await store.logout()
 
     expect(store.session).toBeNull()
+    expect(window.location.href).toBe('/login')
   })
 
   it('restoreSession leaves the session null when unauthenticated', async () => {
@@ -121,6 +126,7 @@ describe('auth store', () => {
 
     expect(authApi.verify).toHaveBeenCalledWith('admin@admin.com', 'admin', '123456')
     expect(store.session?.email).toBe('admin@admin.com')
+    expect(window.location.href).toBe('/overview')
   })
 
   it('register delegates to the API', async () => {

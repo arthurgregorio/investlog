@@ -34,7 +34,7 @@ describe('LoginView', () => {
     })
   })
 
-  it('logs in and navigates to overview on submit when already enrolled', async () => {
+  it('logs in on submit when already enrolled', async () => {
     const store = useAuthStore()
     const loginSpy = vi.spyOn(store, 'login').mockResolvedValue('authenticated')
     router.push('/login')
@@ -47,7 +47,6 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(loginSpy).toHaveBeenCalledWith('admin@admin.com', 'admin')
-    expect(router.currentRoute.value.name).toBe('overview')
   })
 
   it('shows the QR enrollment step when login needs enrollment, then verifies to log in', async () => {
@@ -77,7 +76,6 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(verifySpy).toHaveBeenCalledWith('admin@admin.com', 'admin', '123456')
-    expect(router.currentRoute.value.name).toBe('overview')
   })
 
   it('shows the code step when login requires a totp code, then logs in with it', async () => {
@@ -103,7 +101,6 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(loginSpy).toHaveBeenLastCalledWith('admin@admin.com', 'admin', '654321')
-    expect(router.currentRoute.value.name).toBe('overview')
   })
 
   it('registers a new account and navigates to the pending-approval screen', async () => {

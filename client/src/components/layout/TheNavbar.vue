@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
 import Avatar from '@/components/ui/Avatar.vue'
 import LogoMark from '@/components/icons/LogoMark.vue'
 import { useRatesStore } from '@/stores/rates'
@@ -17,7 +16,6 @@ const currencyStore = useCurrencyStore()
 const overviewStore = useOverviewStore()
 const appearance = useAppearanceStore()
 const auth = useAuthStore()
-const router = useRouter()
 const { dark } = storeToRefs(appearance)
 
 const profile = ref<ProfileResponse | null>(null)
@@ -55,7 +53,6 @@ function initials(name: string): string {
 
 async function logout() {
   await auth.logout()
-  router.push({ name: 'login' })
 }
 </script>
 
