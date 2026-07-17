@@ -34,6 +34,10 @@ class AuthService(
 
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
 
+        if (userRepository.findByEmail(request.email)?.status == CurrentUser.Status.BLOCKED) {
+            throw InvalidCredentialsException(BLOCKED_MESSAGE)
+        }
+
         val user = verifyCredentials(request.email, request.password)
 
         if (!user.totpEnabled) {
@@ -106,6 +110,10 @@ class AuthService(
             userRepository.createGoogleUser(googleSub, email, name, avatarUrl)
         }
 
+        if (user.status == CurrentUser.Status.BLOCKED) {
+            throw InvalidCredentialsException(BLOCKED_MESSAGE)
+        }
+
         return establishSession(user, servletRequest, servletResponse)
     }
 
@@ -159,5 +167,6 @@ class AuthService(
     companion object {
         private const val INVALID_TOTP_CODE_MESSAGE = "Invalid TOTP code"
         private const val INVALID_CREDENTIALS_MESSAGE = "Invalid email or password"
+        private const val BLOCKED_MESSAGE = "Login failed. Contact an administrator."
     }
 }

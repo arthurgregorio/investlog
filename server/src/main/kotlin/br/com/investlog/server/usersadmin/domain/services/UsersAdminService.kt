@@ -1,6 +1,7 @@
 package br.com.investlog.server.usersadmin.domain.services
 
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
+import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.security.CurrentUser.Status
@@ -23,10 +24,17 @@ class UsersAdminService(
 
     fun approve(externalId: UUID): UserAdminResponse = updateStatus(externalId, Status.APPROVED)
 
-    fun reject(externalId: UUID): UserAdminResponse {
+    fun block(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
-        return updateStatus(externalId, Status.REJECTED)
+        requireCurrentStatus(user, Status.APPROVED, "block")
+        return updateStatus(externalId, Status.BLOCKED)
+    }
+
+    fun unblock(externalId: UUID): UserAdminResponse {
+        val user = requireUser(externalId)
+        requireCurrentStatus(user, Status.BLOCKED, "unblock")
+        return updateStatus(externalId, Status.APPROVED)
     }
 
     fun changeRole(externalId: UUID, request: RoleUpdateRequest): UserAdminResponse {
@@ -58,6 +66,12 @@ class UsersAdminService(
     private fun requireNotSelf(user: UsersRecord) {
         if (user.id == currentUserProvider.getCurrentUser().id) {
             throw SelfActionNotAllowedException("This action cannot target your own account")
+        }
+    }
+
+    private fun requireCurrentStatus(user: UsersRecord, expected: Status, action: String) {
+        if (Status.valueOf(user.status!!) != expected) {
+            throw InvalidUserStatusTransitionException("Cannot $action a user whose current status is not ${expected.name}")
         }
     }
 }
