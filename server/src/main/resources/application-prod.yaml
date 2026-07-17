@@ -1,6 +1,4 @@
 spring:
-  application:
-    name: server
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
     username: ${DB_USER}
@@ -8,9 +6,3 @@ spring:
 
 server:
   forward-headers-strategy: framework
-
-investlog:
-  # Unlike the default (application.yaml, which targets the Vite dev server at localhost:8081),
-  # the docker-compose stack serves client and server behind one origin — relative redirects
-  # from GoogleLoginSuccessHandler/GoogleLoginFailureHandler are already correct as-is.
-  client-base-url: ${CLIENT_BASE_URL:}
