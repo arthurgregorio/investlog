@@ -196,4 +196,35 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isNotFound()
     }
+
+    @Test
+    @Order(10)
+    fun `rejects a ticker with symbols or spaces on create`() {
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "stockTypeId":"$stockTypeId",
+                  "ticker":"PETR-4",
+                  "lot":{"lotDate":"2024-01-15","quantity":100,"price":35.00}
+                }
+            """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(11)
+    fun `rejects a ticker with symbols or spaces on update`() {
+        val h = createHolding("WEGE3")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${h.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"ticker":"WEGE 3"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
 }
