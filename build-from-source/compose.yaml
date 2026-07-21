@@ -26,7 +26,7 @@ services:
 
   server:
     container_name: investlog-server
-    image: investlog/server:${SERVER_IMAGE_TAG:-v0.1.0}
+    image: investlog/server:${SERVER_IMAGE_TAG:-latest}
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_HOST: postgres
@@ -47,7 +47,7 @@ services:
 
   client:
     container_name: investlog-client
-    image: investlog/client:${CLIENT_IMAGE_TAG:-v0.1.0}
+    image: investlog/client:${CLIENT_IMAGE_TAG:-latest}
     ports:
       - "${WEB_PORT:-8081}:80"
     depends_on:
