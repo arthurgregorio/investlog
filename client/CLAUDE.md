@@ -113,7 +113,7 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 
 ### Theming
 
-`App.vue` sets `data-theme` (`light`/`dark`), `data-accent` (`blue`/`indigo`/`teal`/`green`)
+`App.vue` sets `data-theme` (`light`/`dark`), `data-accent` (`blue`/`indigo`/`teal`/`yellow`)
 and a fixed `data-density="comfortable"` on `.app-root`. Accent color is the only
 user-configurable appearance setting.
 
