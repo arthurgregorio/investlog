@@ -372,6 +372,7 @@ function openAddInvestment() {
                       "
                       :pct="row.gainPct"
                       :cur="currencyStore.displayCurrency"
+                      stacked
                     />
                   </td>
                   <td class="c-act">

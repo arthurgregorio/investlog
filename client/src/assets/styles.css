@@ -1025,9 +1025,19 @@ a {
   color: var(--text-muted);
 }
 
+.gl-stacked {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
 .gl-pct {
   font-weight: 600;
   opacity: .85;
+}
+
+.gl-stacked .gl-pct {
+  font-size: 11px;
 }
 
 .gl-empty {
