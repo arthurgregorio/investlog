@@ -122,9 +122,15 @@ dump instead, for disaster-recovery-style backups:
 There's no restore script today — a data-only dump restores into an already-migrated
 (schema-present) database.
 
-Like `load-sample-data.sh`, this targets the quick-start stack by default — pass
-`build-from-source/compose.yaml` as an argument (alongside the mode flag, in either order)
-to target that stack instead.
+This only needs the postgres container to be running — it doesn't read or care about a
+`compose.yaml` file. It targets the `investlog-postgres` container name by default (what both
+`compose.yaml` and `build-from-source/compose.yaml` name it), so it works out of the box for
+either stack. Pass a different container name (alongside the mode flag, in either order) if
+you're running Postgres under another name:
+
+```bash
+./backup.sh --full some-other-container-name
+```
 
 ## Configuration
 
