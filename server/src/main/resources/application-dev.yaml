@@ -1,3 +1,6 @@
 logging:
   level:
     br.com.investlog: debug
+
+investlog:
+  totp-required: false
