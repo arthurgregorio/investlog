@@ -135,6 +135,16 @@ you're running Postgres under another name:
 ./backup.sh --full some-other-container-name
 ```
 
+## Docker-only scripts
+
+`backup.sh`/`backup.ps1` and `sample-data/load-sample-data.sh`/`.ps1` only work against a
+Postgres running as a **Docker container reachable from this host's `docker` CLI** — they call
+`docker exec`/`docker cp` directly against a container name, with no fallback to a plain
+network connection (`psql -h ... -p ...`). If you're pointing InvestLog at a conventional
+Postgres instance instead — a managed service (RDS, Cloud SQL, ...), a bare-metal install, or
+any Postgres your Docker daemon can't `exec` into — these scripts won't work as-is; use `pg_dump`/
+`psql` directly against that instance's connection details instead.
+
 ## Configuration
 
 All settings are read from `.env` (copy from `.env.example`). The defaults work out of
