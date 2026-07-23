@@ -110,8 +110,27 @@ Dump the database to a timestamped `.sql` file on the host:
 `pg_dump` runs inside the postgres container; the resulting file is then copied out to
 `backups/investlog-backup-YYYYMMDD-HHMMSS.sql` (the `backups/` folder is git-ignored).
 
-Like `load-sample-data.sh`, this targets the quick-start stack by default — pass
-`build-from-source/compose.yaml` as the first argument to target that stack instead.
+Defaults to a data-only dump — the common case for routine backups, since Liquibase already
+owns schema creation/migration on next boot. Pass `--full` for a complete schema + data
+dump instead, for disaster-recovery-style backups:
+
+```bash
+./backup.sh --full                  # Windows PowerShell: ./backup.ps1 --full
+./backup.sh --data-only              # explicit, same as the default
+```
+
+There's no restore script today — a data-only dump restores into an already-migrated
+(schema-present) database.
+
+This only needs the postgres container to be running — it doesn't read or care about a
+`compose.yaml` file. It targets the `investlog-postgres` container name by default (what both
+`compose.yaml` and `build-from-source/compose.yaml` name it), so it works out of the box for
+either stack. Pass a different container name (alongside the mode flag, in either order) if
+you're running Postgres under another name:
+
+```bash
+./backup.sh --full some-other-container-name
+```
 
 ## Configuration
 
