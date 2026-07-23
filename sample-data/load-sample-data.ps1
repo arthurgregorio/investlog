@@ -1,0 +1,56 @@
+# Load the demo dataset into the running InvestLog database.
+#
+# Prerequisites: the stack must be up and the server must have finished its Liquibase
+# migrations (which seed the 'dev-user'). This script is NOT idempotent — running it
+# again duplicates the sample wallets/holdings.
+#
+# Usage: ./load-sample-data.ps1 [--container NAME] [--db NAME] [--user NAME]
+#   --container (default investlog-postgres): the running Postgres container name —
+#     matches what both compose.yaml and build-from-source/compose.yaml already name it.
+#   --db (default investlog): the database to load the sample data into.
+#   --user (default sa_investlog): the Postgres user to connect as.
+#   All flags are optional and order-independent; override just what you need.
+param(
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$Arguments = @()
+)
+$ErrorActionPreference = 'Stop'
+Set-Location -Path $PSScriptRoot
+
+$container = 'investlog-postgres'
+$dbName = 'investlog'
+$dbUser = 'sa_investlog'
+
+for ($i = 0; $i -lt $Arguments.Count; $i++) {
+    switch ($Arguments[$i]) {
+        '--container' { $i++; $container = $Arguments[$i] }
+        '--db'        { $i++; $dbName = $Arguments[$i] }
+        '--user'      { $i++; $dbUser = $Arguments[$i] }
+        default       { throw "Unknown argument: $($Arguments[$i])" }
+    }
+}
+
+$sqlFile = 'sample-data.sql'
+
+if (-not (Test-Path $sqlFile)) {
+    Write-Error "$sqlFile not found."
+    exit 1
+}
+
+# Guard: the dev-user must exist (created by Liquibase once the server has migrated).
+Write-Host "==> Checking that the server has migrated (dev-user present)..."
+$hasUser = (docker exec $container `
+    psql -U $dbUser -d $dbName -tAc `
+    "SELECT 1 FROM system.users WHERE google_sub = 'dev-user'" 2>$null | Out-String).Trim()
+
+if ($hasUser -ne '1') {
+    Write-Error "dev-user not found. Start the stack and let the server finish migrating before seeding (docker compose up -d, then wait a bit)."
+    exit 1
+}
+
+Write-Host "==> Loading sample data (this is NOT idempotent)..."
+Get-Content $sqlFile -Raw | docker exec -i $container psql -U $dbUser -d $dbName
+if ($LASTEXITCODE -ne 0) { throw "psql load failed" }
+
+Write-Host ""
+Write-Host "Sample data loaded."

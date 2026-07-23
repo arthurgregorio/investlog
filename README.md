@@ -85,18 +85,21 @@ the app is immediately usable (with no data yet). Use the script below to add de
 Populate the database with demo wallets, stocks, funds and crypto holdings:
 
 ```bash
-./load-sample-data.sh        # Windows PowerShell: ./load-sample-data.ps1
+./sample-data/load-sample-data.sh        # Windows PowerShell: ./sample-data/load-sample-data.ps1
 ```
 
 Run this **after** the stack is up and the server has finished migrating. The script
 checks for the seeded user first and refuses to run otherwise. It is **not idempotent**
 — running it twice duplicates the sample data.
 
-Targets the quick-start stack (root `compose.yaml`) by default. If you're running the
-build-from-source stack instead, pass its compose file explicitly:
+This only needs the postgres container to be running — it doesn't read or care about a
+`compose.yaml` file. It targets the `investlog-postgres` container name by default (what both
+`compose.yaml` and `build-from-source/compose.yaml` name it), so it works out of the box for
+either stack. Pass `--container`, `--db`, or `--user` (any order, override just what you need)
+if you're running Postgres under another name or with non-default credentials:
 
 ```bash
-./load-sample-data.sh build-from-source/compose.yaml
+./sample-data/load-sample-data.sh --container some-other-container-name
 ```
 
 ## Back up the database
