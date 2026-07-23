@@ -26,8 +26,11 @@ class UsersAdminController(private val usersAdminService: UsersAdminService) {
     @PatchMapping("/{id}/approve")
     fun approve(@PathVariable id: UUID): UserAdminResponse = usersAdminService.approve(id)
 
-    @PatchMapping("/{id}/reject")
-    fun reject(@PathVariable id: UUID): UserAdminResponse = usersAdminService.reject(id)
+    @PatchMapping("/{id}/block")
+    fun block(@PathVariable id: UUID): UserAdminResponse = usersAdminService.block(id)
+
+    @PatchMapping("/{id}/unblock")
+    fun unblock(@PathVariable id: UUID): UserAdminResponse = usersAdminService.unblock(id)
 
     @PatchMapping("/{id}/role")
     fun changeRole(@PathVariable id: UUID, @RequestBody request: RoleUpdateRequest): UserAdminResponse =

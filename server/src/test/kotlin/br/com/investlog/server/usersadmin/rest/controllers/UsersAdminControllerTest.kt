@@ -36,7 +36,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(2)
-    fun `registers two users to approve and reject`() {
+    fun `registers two users to approve and block`() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
@@ -47,7 +47,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Para Rejeitar","email":"rejeitar@example.com","password":"senha123"}""")
+            .body("""{"name":"Para Bloquear","email":"bloquear@example.com","password":"senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -61,7 +61,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         @Suppress("UNCHECKED_CAST")
         val content = response?.get("content") as List<Map<String, Any?>>
         approveTargetId = content.single { it["email"] == "aprovar@example.com" }["id"] as String
-        rejectTargetId = content.single { it["email"] == "rejeitar@example.com" }["id"] as String
+        blockTargetId = content.single { it["email"] == "bloquear@example.com" }["id"] as String
     }
 
     @Test
@@ -79,19 +79,99 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(4)
-    fun `reject sets the user's status to REJECTED`() {
+    fun `block is rejected when the target isn't currently APPROVED`() {
+        restTestClient.patch()
+            .uri("/private/v1/users/$blockTargetId/block")
+            .exchange()
+            .expectStatus().isEqualTo(409)
+    }
+
+    @Test
+    @Order(5)
+    fun `block sets the user's status to BLOCKED once approved`() {
+        restTestClient.patch()
+            .uri("/private/v1/users/$blockTargetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
         val response = restTestClient.patch()
-            .uri("/private/v1/users/$rejectTargetId/reject")
+            .uri("/private/v1/users/$blockTargetId/block")
             .exchange()
             .expectStatus().isOk()
             .returnResult<UserAdminResponse>()
             .responseBody
 
-        assertEquals("REJECTED", response?.status?.name)
+        assertEquals("BLOCKED", response?.status?.name)
     }
 
     @Test
-    @Order(5)
+    @Order(6)
+    fun `unblock is rejected when the target isn't currently BLOCKED`() {
+        restTestClient.patch()
+            .uri("/private/v1/users/$approveTargetId/unblock")
+            .exchange()
+            .expectStatus().isEqualTo(409)
+    }
+
+    @Test
+    @Order(7)
+    fun `unblock sets the user's status back to APPROVED`() {
+        val response = restTestClient.patch()
+            .uri("/private/v1/users/$blockTargetId/unblock")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<UserAdminResponse>()
+            .responseBody
+
+        assertEquals("APPROVED", response?.status?.name)
+    }
+
+    @Test
+    @Order(8)
+    fun `a blocked user's login fails with a generic error and no session cookie`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Bloqueada","email":"bloqueada@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val targetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "bloqueada@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/block")
+            .exchange()
+            .expectStatus().isOk()
+
+        val responseHeaders = restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"bloqueada@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isUnauthorized()
+            .returnResult<Unit>()
+            .responseHeaders
+
+        assertTrue(responseHeaders.getFirst("Set-Cookie").isNullOrEmpty())
+    }
+
+    @Test
+    @Order(9)
     fun `approve on an unknown id returns 404`() {
         restTestClient.patch()
             .uri("/private/v1/users/00000000-0000-0000-0000-000000000000/approve")
@@ -100,7 +180,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(6)
+    @Order(10)
     fun `registers a third user to manage role, totp, and deletion`() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
@@ -122,7 +202,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(7)
+    @Order(11)
     fun `role change promotes the target user to admin`() {
         val response = restTestClient.patch()
             .uri("/private/v1/users/$manageTargetId/role")
@@ -137,7 +217,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(8)
+    @Order(12)
     fun `role change rejects targeting your own account`() {
         val adminId = (
             restTestClient.get()
@@ -160,7 +240,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(9)
+    @Order(13)
     fun `totp reset clears the enabled flag`() {
         val response = restTestClient.patch()
             .uri("/private/v1/users/$manageTargetId/totp-reset")
@@ -173,7 +253,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(10)
+    @Order(14)
     fun `delete rejects targeting your own account`() {
         val adminId = (
             restTestClient.get()
@@ -194,7 +274,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(11)
+    @Order(15)
     fun `delete removes the target user`() {
         restTestClient.delete()
             .uri("/private/v1/users/$manageTargetId")
@@ -214,8 +294,8 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(12)
-    fun `rejecting a user revokes their already-open session on the next request, without a new login`() {
+    @Order(16)
+    fun `blocking a user revokes their already-open session on the next request, without a new login`() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
@@ -265,10 +345,10 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             ?.substringBefore(";")
             ?: error("Verify did not set a session cookie")
 
-        // The session's cached authorities now say STATUS_APPROVED. Rejecting the user changes
+        // The session's cached authorities now say STATUS_APPROVED. Blocking the user changes
         // the database but cannot reach into that already-issued session.
         restTestClient.patch()
-            .uri("/private/v1/users/$targetId/reject")
+            .uri("/private/v1/users/$targetId/block")
             .exchange()
             .expectStatus().isOk()
 
@@ -286,8 +366,8 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(13)
-    fun `reject rejects targeting your own account`() {
+    @Order(17)
+    fun `block rejects targeting your own account`() {
         val adminId = (
             restTestClient.get()
                 .uri("/private/v1/users?size=200")
@@ -301,13 +381,13 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             .single { it["email"] == "admin@admin.com" }["id"] as String
 
         restTestClient.patch()
-            .uri("/private/v1/users/$adminId/reject")
+            .uri("/private/v1/users/$adminId/block")
             .exchange()
             .expectStatus().isBadRequest()
     }
 
     @Test
-    @Order(14)
+    @Order(18)
     fun `a non-admin user is forbidden from the users-admin endpoints`() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
@@ -367,7 +447,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
 
     companion object {
         private lateinit var approveTargetId: String
-        private lateinit var rejectTargetId: String
+        private lateinit var blockTargetId: String
         private lateinit var manageTargetId: String
     }
 }
