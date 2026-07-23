@@ -1,12 +1,22 @@
 package br.com.investlog.server.auth.rest.controllers
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.RestClientTestConfiguration
+import br.com.investlog.server.TestcontainersConfiguration
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import dev.samstevens.totp.code.DefaultCodeGenerator
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Order
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.NestedTestConfiguration
+import org.springframework.test.context.NestedTestConfiguration.EnclosingConfiguration
 import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
 import kotlin.test.Test
@@ -201,6 +211,36 @@ class AuthControllerTest : BaseIntegrationTest() {
             .header("Cookie", cookie)
             .exchange()
             .expectStatus().isUnauthorized()
+    }
+
+    @Nested
+    @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
+    @AutoConfigureRestTestClient
+    @ActiveProfiles("test")
+    @Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
+    @SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = ["investlog.totp-required=false"],
+    )
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+    inner class WhenTotpIsNotRequired {
+
+        @Autowired
+        lateinit var restTestClient: RestTestClient
+
+        @Test
+        fun `login authenticates immediately without enrollment or a totp code`() {
+            val response = restTestClient.post()
+                .uri("/private/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"admin@admin.com","password":"admin"}""")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<SessionResponse>()
+                .responseBody
+
+            assertEquals("admin@admin.com", response?.email)
+        }
     }
 
     companion object {
