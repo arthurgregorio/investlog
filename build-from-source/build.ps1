@@ -16,8 +16,8 @@ if (Test-Path .env) {
     }
 }
 
-$serverTag = if ($envVars.ContainsKey('SERVER_IMAGE_TAG')) { $envVars['SERVER_IMAGE_TAG'] } else { 'v0.1.0' }
-$clientTag = if ($envVars.ContainsKey('CLIENT_IMAGE_TAG')) { $envVars['CLIENT_IMAGE_TAG'] } else { 'v0.1.0' }
+$serverTag = if ($envVars.ContainsKey('SERVER_IMAGE_TAG')) { $envVars['SERVER_IMAGE_TAG'] } else { 'latest' }
+$clientTag = if ($envVars.ContainsKey('CLIENT_IMAGE_TAG')) { $envVars['CLIENT_IMAGE_TAG'] } else { 'latest' }
 $webPort   = if ($envVars.ContainsKey('WEB_PORT'))         { $envVars['WEB_PORT'] }         else { '8081' }
 
 Write-Host "==> Building server image (Gradle bootBuildImage) -> investlog/server:$serverTag"
