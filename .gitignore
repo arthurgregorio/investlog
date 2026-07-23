@@ -10,3 +10,46 @@ backups/
 # SonarQube CLI scratch cache (leaked by a known sonarqube-cli bug, see
 # https://community.sonarsource.com/t/sonarqube-cli-leaves-behind-empty-sonar-scratch-directories-in-project-folder/184368)
 .sonar/
+
+# dev stuff
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# claude local settings
+.junie
+.kotlin
