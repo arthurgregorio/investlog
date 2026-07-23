@@ -10,3 +10,6 @@ backups/
 # SonarQube CLI scratch cache (leaked by a known sonarqube-cli bug, see
 # https://community.sonarsource.com/t/sonarqube-cli-leaves-behind-empty-sonar-scratch-directories-in-project-folder/184368)
 .sonar/
+
+# remove idea folder
+.idea

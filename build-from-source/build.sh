@@ -16,8 +16,8 @@ if [ -f .env ]; then
     set +a
 fi
 
-SERVER_IMAGE_TAG="${SERVER_IMAGE_TAG:-v0.1.0}"
-CLIENT_IMAGE_TAG="${CLIENT_IMAGE_TAG:-v0.1.0}"
+SERVER_IMAGE_TAG="${SERVER_IMAGE_TAG:-latest}"
+CLIENT_IMAGE_TAG="${CLIENT_IMAGE_TAG:-latest}"
 
 echo "==> Building server image (Gradle bootBuildImage) -> investlog/server:${SERVER_IMAGE_TAG}"
 ( cd ../server && ./gradlew bootBuildImage --imageName="investlog/server:${SERVER_IMAGE_TAG}" )
