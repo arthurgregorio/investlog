@@ -85,18 +85,21 @@ the app is immediately usable (with no data yet). Use the script below to add de
 Populate the database with demo wallets, stocks, funds and crypto holdings:
 
 ```bash
-./load-sample-data.sh        # Windows PowerShell: ./load-sample-data.ps1
+./sample-data/load-sample-data.sh        # Windows PowerShell: ./sample-data/load-sample-data.ps1
 ```
 
 Run this **after** the stack is up and the server has finished migrating. The script
 checks for the seeded user first and refuses to run otherwise. It is **not idempotent**
 — running it twice duplicates the sample data.
 
-Targets the quick-start stack (root `compose.yaml`) by default. If you're running the
-build-from-source stack instead, pass its compose file explicitly:
+This only needs the postgres container to be running — it doesn't read or care about a
+`compose.yaml` file. It targets the `investlog-postgres` container name by default (what both
+`compose.yaml` and `build-from-source/compose.yaml` name it), so it works out of the box for
+either stack. Pass `--container`, `--db`, or `--user` (any order, override just what you need)
+if you're running Postgres under another name or with non-default credentials:
 
 ```bash
-./load-sample-data.sh build-from-source/compose.yaml
+./sample-data/load-sample-data.sh --container some-other-container-name
 ```
 
 ## Back up the database
@@ -131,6 +134,16 @@ you're running Postgres under another name:
 ```bash
 ./backup.sh --full some-other-container-name
 ```
+
+## Docker-only scripts
+
+`backup.sh`/`backup.ps1` and `sample-data/load-sample-data.sh`/`.ps1` only work against a
+Postgres running as a **Docker container reachable from this host's `docker` CLI** — they call
+`docker exec`/`docker cp` directly against a container name, with no fallback to a plain
+network connection (`psql -h ... -p ...`). If you're pointing InvestLog at a conventional
+Postgres instance instead — a managed service (RDS, Cloud SQL, ...), a bare-metal install, or
+any Postgres your Docker daemon can't `exec` into — these scripts won't work as-is; use `pg_dump`/
+`psql` directly against that instance's connection details instead.
 
 ## Configuration
 
@@ -229,7 +242,7 @@ The Compose setups above are for running the packaged app. For day-to-day develo
   `docker compose up -d`. Note the Vite dev server (`npm run dev`) also defaults to
   `8081`, so don't run it and the Docker stack at the same time without changing one of
   them.
-- **`load-sample-data` says the dev-user is missing** — the server hasn't finished
+- **`load-sample-data` says `admin@admin.com` is missing** — the server hasn't finished
   migrating yet. Wait a few seconds (`docker compose logs -f server`) and retry.
 - **Want the latest unreleased changes** — the quick-start stack always runs the last
   published release. Use `build-from-source/` instead (see "Build from source" above)
