@@ -98,6 +98,29 @@ has:
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
   (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
+- `stockpricesync` — no REST controller. `StockPriceSyncScheduler` runs
+  `@Scheduled(cron = "0 0 10-18 * * MON-FRI", zone = "America/Sao_Paulo")` (B3 trading hours only)
+  and calls `StockPriceSyncService.syncPrices()`, which fetches every distinct `ticker` in
+  `finances.stock_holdings` and calls the `BrapiClient` HTTP service (`GET /quote/{ticker}` on
+  [brapi.dev](https://brapi.dev/), one call per ticker — the free tier has no multi-ticker batch
+  endpoint) to refresh `current_price`/`updated_at`. A ticker that 404s, times out, or otherwise
+  fails is logged as a warning and skipped — it keeps its last-known price and the loop moves on
+  to the next ticker, so one bad ticker never blocks the rest of a run. `BrapiClient` is
+  registered via `@ImportHttpServices(group = "brapi")` in `config/http/HttpServiceClientsConfig`;
+  **Spring Boot 4.1.0 has no `spring.http.serviceclient.*` auto-configuration** (verified against
+  the shipped jars — no such properties exist), so the base URL, a 10s connect/read timeout, and
+  the `Authorization: Bearer ${investlog.brapi.token}` header (from `BRAPI_TOKEN` — brapi requires
+  a token unlike CoinGecko's keyless `/simple/price`) are all set programmatically on the group's
+  `RestClient.Builder` via a `RestClientHttpServiceGroupConfigurer` bean, sourced from
+  `investlog.brapi.base-url`/`investlog.brapi.token`, not from Boot-managed YAML properties.
+  `config/SchedulingConfig` (`@EnableScheduling @Profile("!test")`) keeps the cron disabled during
+  tests; tests call `syncPrices()` directly and stub brapi with WireMock rather than a
+  hand-written fake (this codebase uses no object-mocking framework, but WireMock stubs HTTP, not
+  Kotlin objects, so it fits) — `org.wiremock:wiremock-standalone` (not the bare `wiremock`
+  artifact) is required, since the bare artifact's transitive Jetty version gets silently
+  mangled by Spring's dependency-management BOM. The manual `PATCH
+  /wallets/{walletId}/stock-holdings/{holdingId}` endpoint in `stockholdings` still works as an
+  override — a hand-edited price is simply overwritten again on the next scheduled run.
 
 ### Authentication & Authorization
 

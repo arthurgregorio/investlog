@@ -101,6 +101,8 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("org.testcontainers:testcontainers-postgresql")
 
+    testImplementation("org.wiremock:wiremock-standalone:3.13.1")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
