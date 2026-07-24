@@ -5,7 +5,8 @@
 -- Run this script manually in your database client against the local dev database.
 --
 -- The dev user has google_sub = 'dev-user' and is created by Liquibase.
--- Currency rates (BRL base, USD, EUR) are also seeded by Liquibase.
+-- Stock/fund types and currency rates are global configuration seeded by Liquibase
+-- (see 24-1200-make-settings-global.xml), not per-user data created by this script.
 
 DO $$
 DECLARE
@@ -42,19 +43,23 @@ BEGIN
     VALUES (v_user_id, 'Fundos e FIIs', 'FUNDS', 'BRL')
     RETURNING id INTO v_funds_wallet;
 
-    -- Stock types
-    INSERT INTO finances.stock_types (user_id, name)
-    VALUES (v_user_id, 'Ação Ordinária') RETURNING id INTO v_stock_type_acoes;
+    -- Stock types (global list; create if missing so re-runs against a seeded db don't fail)
+    INSERT INTO finances.stock_types (name) VALUES ('Ação Ordinária')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT id INTO v_stock_type_acoes FROM finances.stock_types WHERE name = 'Ação Ordinária';
 
-    INSERT INTO finances.stock_types (user_id, name)
-    VALUES (v_user_id, 'BDR Nível I') RETURNING id INTO v_stock_type_bdrs;
+    INSERT INTO finances.stock_types (name) VALUES ('BDR Nível I')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT id INTO v_stock_type_bdrs FROM finances.stock_types WHERE name = 'BDR Nível I';
 
-    -- Fund types
-    INSERT INTO finances.fund_types (user_id, name)
-    VALUES (v_user_id, 'Fundo Imobiliário') RETURNING id INTO v_fund_type_fii;
+    -- Fund types (global list; create if missing so re-runs against a seeded db don't fail)
+    INSERT INTO finances.fund_types (name) VALUES ('Fundo Imobiliário')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT id INTO v_fund_type_fii FROM finances.fund_types WHERE name = 'Fundo Imobiliário';
 
-    INSERT INTO finances.fund_types (user_id, name)
-    VALUES (v_user_id, 'Renda Fixa CDI') RETURNING id INTO v_fund_type_fi;
+    INSERT INTO finances.fund_types (name) VALUES ('Renda Fixa CDI')
+    ON CONFLICT (name) DO NOTHING;
+    SELECT id INTO v_fund_type_fi FROM finances.fund_types WHERE name = 'Renda Fixa CDI';
 
     -- Stock holdings
     INSERT INTO finances.stock_holdings (wallet_id, stock_type_id, ticker, name, current_price)

@@ -27,7 +27,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         val wallets = WALLETS.`as`("wallets")
         val currencyRates = CURRENCY_RATES.`as`("currency_rates")
 
-        val displayCurrencyRate = displayCurrencyRate(userId, displayCurrency)
+        val displayCurrencyRate = displayCurrencyRate(displayCurrency)
         val appliedRate = DSL.coalesce(currencyRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)
 
         val kindSummaries = dsl.select(
@@ -39,8 +39,7 @@ class OverviewRepository(private val dsl: DSLContext) {
             .from(overview)
             .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
             .leftJoin(currencyRates)
-                .on(currencyRates.USER_ID.eq(wallets.USER_ID))
-                .and(currencyRates.CURRENCY_CODE.eq(wallets.CURRENCY))
+                .on(currencyRates.CURRENCY_CODE.eq(wallets.CURRENCY))
             .where(wallets.USER_ID.eq(userId))
             .groupBy(overview.KIND)
             .fetch { record ->
@@ -80,7 +79,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         val cryptoWallets = WALLETS.`as`("crypto_wallets")
         val fundWallets = WALLETS.`as`("fund_wallets")
 
-        val displayCurrencyRate = displayCurrencyRate(userId, displayCurrency)
+        val displayCurrencyRate = displayCurrencyRate(displayCurrency)
 
         data class MonthAmount(val month: String, val amount: BigDecimal)
 
@@ -93,8 +92,7 @@ class OverviewRepository(private val dsl: DSLContext) {
             .join(STOCK_HOLDINGS).on(STOCK_HOLDINGS.ID.eq(STOCK_LOTS.STOCK_HOLDING_ID))
             .join(stockWallets).on(stockWallets.ID.eq(STOCK_HOLDINGS.WALLET_ID))
             .leftJoin(stockRates)
-                .on(stockRates.USER_ID.eq(stockWallets.USER_ID))
-                .and(stockRates.CURRENCY_CODE.eq(stockWallets.CURRENCY))
+                .on(stockRates.CURRENCY_CODE.eq(stockWallets.CURRENCY))
             .where(stockWallets.USER_ID.eq(userId))
             .fetch { MonthAmount(it.get("month", String::class.java)!!, it.get("amount", BigDecimal::class.java) ?: BigDecimal.ZERO) }
 
@@ -107,8 +105,7 @@ class OverviewRepository(private val dsl: DSLContext) {
             .join(CRYPTO_HOLDINGS).on(CRYPTO_HOLDINGS.ID.eq(CRYPTO_LOTS.CRYPTO_HOLDING_ID))
             .join(cryptoWallets).on(cryptoWallets.ID.eq(CRYPTO_HOLDINGS.WALLET_ID))
             .leftJoin(cryptoRates)
-                .on(cryptoRates.USER_ID.eq(cryptoWallets.USER_ID))
-                .and(cryptoRates.CURRENCY_CODE.eq(cryptoWallets.CURRENCY))
+                .on(cryptoRates.CURRENCY_CODE.eq(cryptoWallets.CURRENCY))
             .where(cryptoWallets.USER_ID.eq(userId))
             .fetch { MonthAmount(it.get("month", String::class.java)!!, it.get("amount", BigDecimal::class.java) ?: BigDecimal.ZERO) }
 
@@ -121,8 +118,7 @@ class OverviewRepository(private val dsl: DSLContext) {
             .join(FUND_HOLDINGS).on(FUND_HOLDINGS.ID.eq(FUND_CONTRIBUTIONS.FUND_HOLDING_ID))
             .join(fundWallets).on(fundWallets.ID.eq(FUND_HOLDINGS.WALLET_ID))
             .leftJoin(fundRates)
-                .on(fundRates.USER_ID.eq(fundWallets.USER_ID))
-                .and(fundRates.CURRENCY_CODE.eq(fundWallets.CURRENCY))
+                .on(fundRates.CURRENCY_CODE.eq(fundWallets.CURRENCY))
             .where(fundWallets.USER_ID.eq(userId))
             .fetch { MonthAmount(it.get("month", String::class.java)!!, it.get("amount", BigDecimal::class.java) ?: BigDecimal.ZERO) }
 
@@ -142,11 +138,10 @@ class OverviewRepository(private val dsl: DSLContext) {
      * Rate of [displayCurrency] relative to the rates-anchor currency (1 if it has no
      * configured row, e.g. it IS the anchor — the anchor's own row always stores rate=1).
      */
-    private fun displayCurrencyRate(userId: Long, displayCurrency: String): BigDecimal =
+    private fun displayCurrencyRate(displayCurrency: String): BigDecimal =
         dsl.select(CURRENCY_RATES.RATE)
             .from(CURRENCY_RATES)
-            .where(CURRENCY_RATES.USER_ID.eq(userId))
-            .and(CURRENCY_RATES.CURRENCY_CODE.eq(displayCurrency))
+            .where(CURRENCY_RATES.CURRENCY_CODE.eq(displayCurrency))
             .fetchOne(CURRENCY_RATES.RATE) ?: BigDecimal.ONE
 
     private fun gainPct(gain: BigDecimal, costBasis: BigDecimal): BigDecimal? =

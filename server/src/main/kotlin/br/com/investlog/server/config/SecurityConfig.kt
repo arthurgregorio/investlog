@@ -5,6 +5,7 @@ import br.com.investlog.server.auth.security.GoogleLoginSuccessHandler
 import br.com.investlog.server.shared.rest.payloads.AccessDeniedResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -65,6 +66,11 @@ class SecurityConfig {
                 authorize("/private/oauth2/**", permitAll)
                 authorize("/private/login/oauth2/**", permitAll)
                 authorize("/private/v1/users/**", hasAuthority("ROLE_ADMIN"))
+                authorize(HttpMethod.POST, "/private/v1/stock-types/**", hasAuthority("ROLE_ADMIN"))
+                authorize(HttpMethod.DELETE, "/private/v1/stock-types/**", hasAuthority("ROLE_ADMIN"))
+                authorize(HttpMethod.POST, "/private/v1/fund-types/**", hasAuthority("ROLE_ADMIN"))
+                authorize(HttpMethod.DELETE, "/private/v1/fund-types/**", hasAuthority("ROLE_ADMIN"))
+                authorize(HttpMethod.PUT, "/private/v1/currency-rates/**", hasAuthority("ROLE_ADMIN"))
                 authorize(anyRequest, hasAuthority("STATUS_APPROVED"))
             }
             exceptionHandling {
