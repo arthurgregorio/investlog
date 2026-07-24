@@ -19,13 +19,13 @@ class StockTypeControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(1)
-    fun `returns an empty page initially`() {
+    fun `returns the seeded default stock types initially`() {
         restTestClient.get()
             .uri("/private/v1/stock-types")
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.page.totalElements").isEqualTo(0)
+            .jsonPath("$.page.totalElements").isEqualTo(3)
             .jsonPath("$.page.size").isEqualTo(20)
             .jsonPath("$.content").isArray()
     }
@@ -54,7 +54,7 @@ class StockTypeControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.page.totalElements").isEqualTo(4)
             .jsonPath("$.content[0].name").isEqualTo("Acoes Brasil")
     }
 
