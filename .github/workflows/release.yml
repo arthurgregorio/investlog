@@ -28,14 +28,15 @@ jobs:
           ./gradlew bootBuildImage --no-daemon \
             --imageName=arthurgregorio/investlog-server:${{ github.event.release.tag_name }}
 
-      - name: Tag latest
+      - name: Push version tag
+        run: |
+          docker push arthurgregorio/investlog-server:${{ github.event.release.tag_name }}
+
+      - name: Tag and push latest
+        if: ${{ !github.event.release.prerelease }}
         run: |
           docker tag arthurgregorio/investlog-server:${{ github.event.release.tag_name }} \
             arthurgregorio/investlog-server:latest
-
-      - name: Push images
-        run: |
-          docker push arthurgregorio/investlog-server:${{ github.event.release.tag_name }}
           docker push arthurgregorio/investlog-server:latest
 
   publish-client:
@@ -52,11 +53,22 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Determine tags
+        id: tags
+        run: |
+          tags="arthurgregorio/investlog-client:${{ github.event.release.tag_name }}"
+          if [ "${{ github.event.release.prerelease }}" != "true" ]; then
+            tags="${tags}"$'\n'"arthurgregorio/investlog-client:latest"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           context: client
           push: true
-          tags: |
-            arthurgregorio/investlog-client:${{ github.event.release.tag_name }}
-            arthurgregorio/investlog-client:latest
+          tags: ${{ steps.tags.outputs.tags }}
