@@ -1,17 +1,20 @@
 package br.com.investlog.server.auth.domain.services
 
 import br.com.investlog.server.auth.rest.payloads.AuthConfigResponse
+import br.com.investlog.server.auth.rest.payloads.GoogleAccountLinkRequest
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
 import br.com.investlog.server.auth.rest.payloads.RegisterRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
+import br.com.investlog.server.auth.security.GoogleLinkTokenStore
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
+import br.com.investlog.server.shared.security.AuthProvider
 import br.com.investlog.server.shared.security.CurrentUser
 import br.com.investlog.server.shared.security.UserRepository
 import jakarta.servlet.http.HttpServletRequest
@@ -29,6 +32,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val totpService: TotpService,
+    private val googleLinkTokenStore: GoogleLinkTokenStore,
     @Value("\${investlog.google-auth-enabled:false}") private val googleAuthEnabled: Boolean,
 ) {
 
@@ -115,6 +119,25 @@ class AuthService(
         }
 
         return establishSession(user, servletRequest, servletResponse)
+    }
+
+    fun linkGoogleAccount(
+        request: GoogleAccountLinkRequest,
+        servletRequest: HttpServletRequest,
+        servletResponse: HttpServletResponse,
+    ): SessionResponse {
+
+        val pending = googleLinkTokenStore.consume(request.linkToken)
+            ?: throw InvalidCredentialsException("Link request expired or invalid — sign in with Google again")
+
+        if (userRepository.findByEmail(pending.email)?.status == CurrentUser.Status.BLOCKED) {
+            throw InvalidCredentialsException(BLOCKED_MESSAGE)
+        }
+
+        val user = verifyCredentials(pending.email, request.password)
+        userRepository.linkGoogleAccount(user.id, pending.googleSub)
+
+        return establishSession(user.copy(authProvider = AuthProvider.GOOGLE), servletRequest, servletResponse)
     }
 
     fun currentSession(): SessionResponse {

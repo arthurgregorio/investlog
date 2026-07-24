@@ -34,9 +34,9 @@ class RestClientTestConfiguration {
         ): ClientHttpResponse {
 
             val isAuthEndpoint = request.method == HttpMethod.POST &&
-                (request.uri.path.endsWith(LOGIN_PATH) || request.uri.path.endsWith(ENROLL_PATH) || request.uri.path.endsWith(
-                    VERIFY_PATH
-                ))
+                (request.uri.path.endsWith(LOGIN_PATH) || request.uri.path.endsWith(ENROLL_PATH) ||
+                    request.uri.path.endsWith(VERIFY_PATH) || request.uri.path.endsWith(REGISTER_PATH) ||
+                    request.uri.path.endsWith(GOOGLE_LINK_PATH))
 
             if (!isAuthEndpoint && request.headers.getFirst(HttpHeaders.COOKIE) == null) {
                 request.headers.set(HttpHeaders.COOKIE, adminSessionCookieFor(request.uri))
@@ -113,6 +113,8 @@ class RestClientTestConfiguration {
             private const val LOGIN_PATH = "/private/v1/auth/login"
             private const val ENROLL_PATH = "/private/v1/auth/totp/enroll"
             private const val VERIFY_PATH = "/private/v1/auth/totp/verify"
+            private const val REGISTER_PATH = "/private/v1/auth/register"
+            private const val GOOGLE_LINK_PATH = "/private/v1/auth/google/link"
             private const val ADMIN_CREDENTIALS_JSON = """{"email":"admin@admin.com","password":"admin"}"""
         }
     }
