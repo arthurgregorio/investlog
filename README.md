@@ -242,7 +242,7 @@ The Compose setups above are for running the packaged app. For day-to-day develo
   `docker compose up -d`. Note the Vite dev server (`npm run dev`) also defaults to
   `8081`, so don't run it and the Docker stack at the same time without changing one of
   them.
-- **`load-sample-data` says the dev-user is missing** — the server hasn't finished
+- **`load-sample-data` says `admin@admin.com` is missing** — the server hasn't finished
   migrating yet. Wait a few seconds (`docker compose logs -f server`) and retry.
 - **Want the latest unreleased changes** — the quick-start stack always runs the last
   published release. Use `build-from-source/` instead (see "Build from source" above)

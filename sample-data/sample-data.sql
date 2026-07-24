@@ -1,11 +1,12 @@
 -- Sample data for InvestLog development / demonstration
 --
--- Prerequisites: the app must have been started at least once so that Liquibase
--- runs all migrations (including the dev-user seed in 14-1050-seed-dev-data.xml).
+-- Prerequisites: the app must have been started at least once so that Liquibase runs
+-- all migrations, which seed the local admin account (admin@admin.com,
+-- 14-1050-seed-dev-data.xml) and its base currency rate.
 -- Run this script manually in your database client against the local dev database.
 --
--- The dev user has google_sub = 'dev-user' and is created by Liquibase.
--- Currency rates (BRL base, USD, EUR) are also seeded by Liquibase.
+-- Attaches all sample wallets/holdings to the seeded admin@admin.com account — the only
+-- account guaranteed to exist right after a fresh set of migrations.
 
 DO $$
 DECLARE
@@ -27,7 +28,11 @@ DECLARE
     v_fh_mxrf11       BIGINT;
     v_fh_cdi          BIGINT;
 BEGIN
-    SELECT id INTO v_user_id FROM system.users WHERE google_sub = 'dev-user';
+    SELECT id INTO v_user_id FROM system.users WHERE email = 'admin@admin.com';
+
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'admin@admin.com not found — start the stack and let the server finish migrating first';
+    END IF;
 
     -- Wallets
     INSERT INTO finances.wallets (user_id, name, kind, currency)
