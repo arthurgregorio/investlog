@@ -40,7 +40,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
         fundTypeId = restTestClient.post()
             .uri("/private/v1/fund-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Renda Fixa"}""")
+            .body("""{"name":"Fundos Imobiliários"}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
