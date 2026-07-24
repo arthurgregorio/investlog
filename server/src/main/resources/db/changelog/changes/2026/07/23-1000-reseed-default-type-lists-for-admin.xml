@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="23-1000-1" author="${claude}">
+        <sql>
+            INSERT INTO finances.stock_types (user_id, name)
+            SELECT u.id, v.name
+            FROM system.users u
+            CROSS JOIN (VALUES ('Ações'), ('FII'), ('ETF')) AS v(name)
+            WHERE u.email = 'admin@admin.com'
+            ON CONFLICT (user_id, name) DO NOTHING;
+        </sql>
+        <rollback>
+            <sql>
+                DELETE FROM finances.stock_types
+                WHERE user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+                AND name IN ('Ações', 'FII', 'ETF');
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="23-1000-2" author="${claude}">
+        <sql>
+            INSERT INTO finances.fund_types (user_id, name)
+            SELECT u.id, v.name
+            FROM system.users u
+            CROSS JOIN (VALUES ('Multimercado'), ('Renda Fixa'), ('Renda Variável')) AS v(name)
+            WHERE u.email = 'admin@admin.com'
+            ON CONFLICT (user_id, name) DO NOTHING;
+        </sql>
+        <rollback>
+            <sql>
+                DELETE FROM finances.fund_types
+                WHERE user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+                AND name IN ('Multimercado', 'Renda Fixa', 'Renda Variável');
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
