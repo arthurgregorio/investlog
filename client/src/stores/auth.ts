@@ -36,6 +36,11 @@ export const useAuthStore = defineStore('auth', () => {
     window.location.href = '/overview'
   }
 
+  async function linkGoogleAccount(linkToken: string, password: string): Promise<void> {
+    session.value = await authApi.linkGoogleAccount(linkToken, password)
+    window.location.href = '/overview'
+  }
+
   async function logout() {
     await authApi.logout()
     session.value = null
@@ -60,6 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     enrollTotp,
     verifyTotp,
+    linkGoogleAccount,
     register,
     logout,
     restoreSession,
