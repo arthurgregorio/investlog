@@ -1,13 +1,17 @@
 package br.com.investlog.server.usersadmin.rest.controllers
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.auth.domain.services.AuthService
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
+import br.com.investlog.server.shared.security.UserRepository
 import br.com.investlog.server.usersadmin.rest.payloads.UserAdminResponse
 import dev.samstevens.totp.code.DefaultCodeGenerator
 import org.junit.jupiter.api.Order
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockHttpServletRequest
+import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
 import kotlin.test.Test
@@ -18,6 +22,12 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var restTestClient: RestTestClient
+
+    @Autowired
+    lateinit var authService: AuthService
+
+    @Autowired
+    lateinit var userRepository: UserRepository
 
     @Test
     @Order(1)
@@ -443,6 +453,102 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             .header("Cookie", cookie)
             .exchange()
             .expectStatus().isEqualTo(403)
+    }
+
+    @Test
+    @Order(19)
+    fun `admin password reset updates a LOCAL user's password, allowing login with the new one`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Redefinir Senha","email":"redefinir-senha@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val targetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "redefinir-senha@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/password")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"newPassword":"senhaNova789"}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        // 202 (needs_enrollment) rather than 401 proves the new password was accepted.
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"redefinir-senha@example.com","password":"senhaNova789"}""")
+            .exchange()
+            .expectStatus().isEqualTo(202)
+    }
+
+    @Test
+    @Order(20)
+    fun `admin password reset rejects targeting your own account`() {
+        val adminId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "admin@admin.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$adminId/password")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"newPassword":"senhaNova789"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(21)
+    fun `admin password reset rejects a Google-linked account`() {
+        val servletRequest = MockHttpServletRequest()
+        val servletResponse = MockHttpServletResponse()
+
+        authService.handleGoogleLogin(
+            googleSub = "google-sub-admin-password-reset-test",
+            email = "googleuser-admin-reset@example.com",
+            name = "Google User",
+            avatarUrl = null,
+            servletRequest = servletRequest,
+            servletResponse = servletResponse,
+        )
+
+        val user = userRepository.findByEmail("googleuser-admin-reset@example.com")!!
+
+        restTestClient.patch()
+            .uri("/private/v1/users/${user.externalId}/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/${user.externalId}/password")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"newPassword":"senhaNova789"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
     }
 
     companion object {

@@ -1,16 +1,20 @@
 package br.com.investlog.server.usersadmin.domain.services
 
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
+import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
+import br.com.investlog.server.shared.security.AuthProvider
 import br.com.investlog.server.shared.security.CurrentUser.Status
 import br.com.investlog.server.shared.security.CurrentUserProvider
 import br.com.investlog.server.usersadmin.domain.repositories.UsersAdminRepository
+import br.com.investlog.server.usersadmin.rest.payloads.PasswordResetRequest
 import br.com.investlog.server.usersadmin.rest.payloads.RoleUpdateRequest
 import br.com.investlog.server.usersadmin.rest.payloads.UserAdminResponse
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -18,6 +22,7 @@ import java.util.UUID
 class UsersAdminService(
     private val currentUserProvider: CurrentUserProvider,
     private val usersAdminRepository: UsersAdminRepository,
+    private val passwordEncoder: PasswordEncoder,
 ) {
 
     fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminRepository.findAll(pageable)
@@ -52,6 +57,17 @@ class UsersAdminService(
         val user = requireUser(externalId)
         requireNotSelf(user)
         usersAdminRepository.deleteByExternalId(externalId)
+    }
+
+    fun resetPassword(externalId: UUID, request: PasswordResetRequest): UserAdminResponse {
+        val user = requireUser(externalId)
+        requireNotSelf(user)
+
+        if (AuthProvider.valueOf(user.authProvider!!) != AuthProvider.LOCAL) {
+            throw AccountNotLocalException("Password resets are only available for local accounts")
+        }
+
+        return usersAdminRepository.updatePasswordHash(user.id!!, passwordEncoder.encode(request.newPassword)!!)
     }
 
     private fun updateStatus(externalId: UUID, status: Status): UserAdminResponse {

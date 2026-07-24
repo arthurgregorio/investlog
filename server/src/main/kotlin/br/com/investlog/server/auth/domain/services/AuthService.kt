@@ -120,7 +120,13 @@ class AuthService(
     fun currentSession(): SessionResponse {
         val user = SecurityContextHolder.getContext().authentication?.principal as? CurrentUser
             ?: throw InvalidCredentialsException("Not authenticated")
-        return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
+        return SessionResponse(
+            name = user.name,
+            email = user.email,
+            role = user.role,
+            status = user.status,
+            authProvider = user.authProvider,
+        )
     }
 
     fun authConfig(): AuthConfigResponse = AuthConfigResponse(googleAuthEnabled = googleAuthEnabled)
@@ -161,7 +167,13 @@ class AuthService(
 
         HttpSessionSecurityContextRepository().saveContext(context, servletRequest, servletResponse)
 
-        return SessionResponse(name = user.name, email = user.email, role = user.role, status = user.status)
+        return SessionResponse(
+            name = user.name,
+            email = user.email,
+            role = user.role,
+            status = user.status,
+            authProvider = user.authProvider,
+        )
     }
 
     companion object {
