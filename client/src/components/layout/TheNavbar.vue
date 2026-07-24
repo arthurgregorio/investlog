@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import Avatar from '@/components/ui/Avatar.vue'
 import LogoMark from '@/components/icons/LogoMark.vue'
+import PasswordChangeModal from '@/components/forms/PasswordChangeModal.vue'
 import { useRatesStore } from '@/stores/rates'
 import { useCurrencyStore } from '@/stores/currency'
 import { useOverviewStore } from '@/stores/overview'
@@ -17,6 +18,8 @@ const overviewStore = useOverviewStore()
 const appearance = useAppearanceStore()
 const auth = useAuthStore()
 const { dark } = storeToRefs(appearance)
+
+const showPasswordChangeModal = ref(false)
 
 const accents: { key: AccentKey; hex: string }[] = [
   { key: 'blue', hex: '#206bc4' },
@@ -119,11 +122,13 @@ async function logout() {
           </div>
         </b-dropdown-item>
 
-        <hr class="dropdown-divider" />
+        <template v-if="auth.session?.authProvider === 'LOCAL'">
+          <hr class="dropdown-divider" />
 
-        <b-dropdown-item aria-role="menuitem">
-          <b-icon icon="lock-reset" size="is-small" /> Alterar senha
-        </b-dropdown-item>
+          <b-dropdown-item aria-role="menuitem" @click="showPasswordChangeModal = true">
+            <b-icon icon="lock-reset" size="is-small" /> Alterar senha
+          </b-dropdown-item>
+        </template>
 
         <hr class="dropdown-divider" />
 
@@ -132,5 +137,7 @@ async function logout() {
         </b-dropdown-item>
       </b-dropdown>
     </div>
+
+    <PasswordChangeModal v-if="showPasswordChangeModal" @close="showPasswordChangeModal = false" />
   </header>
 </template>
