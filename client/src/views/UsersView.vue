@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
+import PasswordResetModal from '@/components/forms/PasswordResetModal.vue'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 import { useAuthStore } from '@/stores/auth'
 import type { UserAdminResponse, UserRole } from '@/types'
@@ -11,6 +12,8 @@ const toast = useToast()
 const dialog = useDialog()
 const usersAdminStore = useUsersAdminStore()
 const auth = useAuthStore()
+
+const passwordResetTarget = ref<{ id: string; name: string } | null>(null)
 
 onMounted(() => {
   usersAdminStore.load()
@@ -168,6 +171,13 @@ function confirmDeleteUser(id: string, name: string) {
                 <b-dropdown-item aria-role="listitem" @click="confirmTotpReset(user.id, user.name)">
                   <b-icon icon="lock-reset" size="is-small" /> Redefinir 2FA
                 </b-dropdown-item>
+                <b-dropdown-item
+                  v-if="user.authProvider === 'LOCAL'"
+                  aria-role="listitem"
+                  @click="passwordResetTarget = { id: user.id, name: user.name }"
+                >
+                  <b-icon icon="key-outline" size="is-small" /> Redefinir senha
+                </b-dropdown-item>
                 <hr class="dropdown-divider" />
                 <b-dropdown-item
                   aria-role="listitem"
@@ -182,5 +192,12 @@ function confirmDeleteUser(id: string, name: string) {
         </CardBody>
       </Card>
     </div>
+
+    <PasswordResetModal
+      v-if="passwordResetTarget"
+      :user-id="passwordResetTarget.id"
+      :user-name="passwordResetTarget.name"
+      @close="passwordResetTarget = null"
+    />
   </div>
 </template>

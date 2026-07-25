@@ -140,6 +140,7 @@ export interface SessionResponse {
   email: string
   role: UserRole
   status: UserStatus
+  authProvider: 'LOCAL' | 'GOOGLE'
 }
 
 export interface AuthConfigResponse {

@@ -31,7 +31,13 @@ describe('PendingApprovalView', () => {
 
   it('shows a personalized message when a pending session exists', async () => {
     const auth = useAuthStore()
-    auth.session = { name: 'Nova Usuária', email: 'nova@example.com', role: 'USER', status: 'PENDING' }
+    auth.session = {
+      name: 'Nova Usuária',
+      email: 'nova@example.com',
+      role: 'USER',
+      status: 'PENDING',
+      authProvider: 'LOCAL',
+    }
     router.push('/pending-approval')
     await router.isReady()
 
@@ -43,7 +49,13 @@ describe('PendingApprovalView', () => {
 
   it('calls auth.logout when the sign-out button is clicked', async () => {
     const auth = useAuthStore()
-    auth.session = { name: 'Nova Usuária', email: 'nova@example.com', role: 'USER', status: 'PENDING' }
+    auth.session = {
+      name: 'Nova Usuária',
+      email: 'nova@example.com',
+      role: 'USER',
+      status: 'PENDING',
+      authProvider: 'LOCAL',
+    }
     const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue()
     router.push('/pending-approval')
     await router.isReady()

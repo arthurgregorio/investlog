@@ -48,10 +48,27 @@ export const useUsersAdminStore = defineStore('usersAdmin', () => {
     replaceUser(await usersAdminApi.resetTotp(id))
   }
 
+  async function resetPassword(id: string, newPassword: string): Promise<void> {
+    replaceUser(await usersAdminApi.resetPassword(id, newPassword))
+  }
+
   async function remove(id: string): Promise<void> {
     await usersAdminApi.remove(id)
     users.value = users.value.filter((user) => user.id !== id)
   }
 
-  return { users, loaded, loading, load, refresh, approve, block, unblock, changeRole, resetTotp, remove }
+  return {
+    users,
+    loaded,
+    loading,
+    load,
+    refresh,
+    approve,
+    block,
+    unblock,
+    changeRole,
+    resetTotp,
+    resetPassword,
+    remove,
+  }
 })

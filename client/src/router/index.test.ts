@@ -35,6 +35,7 @@ describe('router auth guard', () => {
       email: 'admin@admin.com',
       role: 'ADMIN',
       status: 'APPROVED',
+      authProvider: 'LOCAL',
     }
 
     const { router } = await import('./index')
@@ -52,6 +53,7 @@ describe('router auth guard', () => {
       email: 'nova@example.com',
       role: 'USER',
       status: 'PENDING',
+      authProvider: 'LOCAL',
     }
 
     const { router } = await import('./index')
@@ -69,6 +71,7 @@ describe('router auth guard', () => {
       email: 'admin@admin.com',
       role: 'ADMIN',
       status: 'APPROVED',
+      authProvider: 'LOCAL',
     }
 
     const { router } = await import('./index')
@@ -86,6 +89,7 @@ describe('router auth guard', () => {
       email: 'user@example.com',
       role: 'USER',
       status: 'APPROVED',
+      authProvider: 'LOCAL',
     }
 
     const { router } = await import('./index')
@@ -103,6 +107,7 @@ describe('router auth guard', () => {
       email: 'user@example.com',
       role: 'USER',
       status: 'APPROVED',
+      authProvider: 'LOCAL',
     }
 
     const { router } = await import('./index')
