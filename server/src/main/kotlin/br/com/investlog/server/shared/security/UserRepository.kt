@@ -51,6 +51,16 @@ class UserRepository(private val dsl: DSLContext) {
             .fetchSingle()
             .toCurrentUser()
 
+    fun linkGoogleAccount(userId: Long, googleSub: String) {
+        dsl.update(USERS)
+            .set(USERS.GOOGLE_SUB, googleSub)
+            .set(USERS.AUTH_PROVIDER, AuthProvider.GOOGLE.name)
+            .set(USERS.PASSWORD_HASH, null as String?)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .execute()
+    }
+
     fun createGoogleUser(googleSub: String, email: String, name: String, avatarUrl: String?): CurrentUser =
         dsl.insertInto(USERS)
             .set(USERS.NAME, name)

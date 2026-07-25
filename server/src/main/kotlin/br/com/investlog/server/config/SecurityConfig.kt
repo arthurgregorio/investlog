@@ -61,6 +61,7 @@ class SecurityConfig {
                 authorize("/private/v1/auth/config", permitAll)
                 authorize("/private/v1/auth/totp/enroll", permitAll)
                 authorize("/private/v1/auth/totp/verify", permitAll)
+                authorize("/private/v1/auth/google/link", permitAll)
                 authorize("/private/v1/auth/session", authenticated)
                 authorize("/private/v1/auth/logout", authenticated)
                 authorize("/private/oauth2/**", permitAll)

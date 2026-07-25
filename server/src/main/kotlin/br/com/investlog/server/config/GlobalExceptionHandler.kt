@@ -1,5 +1,6 @@
 package br.com.investlog.server.config
 
+import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
@@ -123,6 +124,15 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidUserStatusTransition(ex: InvalidUserStatusTransitionException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "Invalid user status transition")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(AccountNotLocalException::class)
+    fun handleAccountNotLocal(ex: AccountNotLocalException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message ?: "This action is only available for local accounts")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
