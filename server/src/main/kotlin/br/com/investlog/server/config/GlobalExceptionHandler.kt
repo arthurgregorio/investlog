@@ -6,6 +6,7 @@ import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
+import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.exceptions.UserNotApprovedException
@@ -19,6 +20,7 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.http.HttpStatus.TOO_MANY_REQUESTS
 import org.springframework.http.HttpStatus.UNAUTHORIZED
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
@@ -106,6 +108,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid TOTP code")
         problemDetail.setProperty("error", "invalid_totp_code")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(TooManyTotpAttemptsException::class)
+    fun handleTooManyTotpAttempts(ex: TooManyTotpAttemptsException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, ex.message ?: "Too many invalid TOTP attempts")
+        problemDetail.setProperty("error", "too_many_totp_attempts")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
