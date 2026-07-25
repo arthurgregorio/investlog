@@ -2,7 +2,8 @@
 
 A manual investment logbook (PT-BR). Track wallets of **stocks, crypto and funds**,
 record dated acquisitions/contributions, and see a consolidated, multi-currency view —
-all entered by hand (no live market feed). State is in-session and resets on refresh.
+all entered by hand (no live market feed). Backed by a Spring Boot + Postgres API, so
+everything is persisted server-side.
 
 Recreated in **Vue 3** from the Claude Design handoff prototype, matching the Tabler
 visual language pixel-for-pixel.
