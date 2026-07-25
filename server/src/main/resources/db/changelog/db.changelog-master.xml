@@ -23,4 +23,6 @@
 
     <include file="db/changelog/changes/2026/07/17-0100-migrate-rejected-to-blocked.xml" relativeToChangelogFile="false"/>
 
+    <include file="db/changelog/changes/2026/07/24-1200-make-settings-global.xml" relativeToChangelogFile="false"/>
+
 </databaseChangeLog>
