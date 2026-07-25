@@ -52,6 +52,18 @@ docker compose up -d
 
 Open **http://localhost:8081**.
 
+### Testing a pre-release (RC)
+
+Release candidates (tags like `v0.2.0-rc1`, published on GitHub as a pre-release) are
+also published to Docker Hub under their own version tag, but never touch `latest`.
+To try one before it's promoted to a stable release, pin the tag explicitly instead of
+using `docker compose up -d`:
+
+```bash
+docker pull arthurgregorio/investlog-server:v0.2.0-rc1
+docker pull arthurgregorio/investlog-client:v0.2.0-rc1
+```
+
 ### Build from source
 
 Use this to run changes from `main` that haven't been released yet.
