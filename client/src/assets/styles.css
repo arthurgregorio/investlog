@@ -1647,13 +1647,6 @@ a {
 }
 
 /* ===== User menu (navbar dropdown) ===== */
-.user-menu-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 220px;
-}
-
 .user-menu-label {
   font-size: 11px;
   font-weight: 700;
@@ -1662,41 +1655,31 @@ a {
   color: var(--text-muted);
 }
 
-.user-menu-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: 13.5px;
-  color: var(--text);
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.user-menu-row:hover {
-  color: var(--primary-d);
-}
-
 /* ===== Appearance (accent swatches) ===== */
+.accent-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
 .accent-row {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .accent-swatch {
   position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: 2px solid var(--border);
   cursor: pointer;
   display: grid;
   place-items: center;
   transition: .13s;
   padding: 0;
+  flex: none;
 }
 
 .accent-swatch:hover {
@@ -1705,12 +1688,6 @@ a {
 
 .accent-swatch.active {
   border-color: var(--text);
-}
-
-.accent-swatch .sw-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
 }
 
 .accent-swatch .sw-check {

@@ -3,12 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import Avatar from '@/components/ui/Avatar.vue'
 import LogoMark from '@/components/icons/LogoMark.vue'
-import PasswordChangeModal from '@/components/forms/PasswordChangeModal.vue'
 import { useRatesStore } from '@/stores/rates'
 import { useCurrencyStore } from '@/stores/currency'
 import { useOverviewStore } from '@/stores/overview'
 import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
+import { useModals } from '@/composables/useModals'
 import { profileApi } from '@/api/profile'
 import type { AccentKey, ProfileResponse } from '@/types'
 
@@ -17,9 +17,8 @@ const currencyStore = useCurrencyStore()
 const overviewStore = useOverviewStore()
 const appearance = useAppearanceStore()
 const auth = useAuthStore()
+const { openPasswordChange } = useModals()
 const { dark } = storeToRefs(appearance)
-
-const showPasswordChangeModal = ref(false)
 
 const accents: { key: AccentKey; hex: string }[] = [
   { key: 'blue', hex: '#206bc4' },
@@ -95,12 +94,8 @@ async function logout() {
           </div>
         </template>
 
-        <b-dropdown-item custom aria-role="menuitem" class="user-menu-section">
-          <div class="user-menu-label">Aparência</div>
-          <button type="button" class="user-menu-row" @click="appearance.toggleDark()">
-            <b-icon :icon="dark ? 'weather-sunny' : 'weather-night'" size="is-small" />
-            {{ dark ? 'Modo claro' : 'Modo escuro' }}
-          </button>
+        <b-dropdown-item custom aria-role="menuitem" class="accent-item">
+          <div class="user-menu-label">Cor de destaque</div>
           <div class="accent-row">
             <button
               v-for="accentOption in accents"
@@ -122,22 +117,27 @@ async function logout() {
           </div>
         </b-dropdown-item>
 
-        <template v-if="auth.session?.authProvider === 'LOCAL'">
-          <hr class="dropdown-divider" />
+        <hr class="dropdown-divider" />
 
-          <b-dropdown-item aria-role="menuitem" @click="showPasswordChangeModal = true">
-            <b-icon icon="lock-reset" size="is-small" /> Alterar senha
-          </b-dropdown-item>
-        </template>
+        <b-dropdown-item aria-role="menuitem" @click="appearance.toggleDark()">
+          <b-icon :icon="dark ? 'weather-sunny' : 'weather-night'" size="is-small" />
+          {{ dark ? 'Modo claro' : 'Modo escuro' }}
+        </b-dropdown-item>
 
         <hr class="dropdown-divider" />
+
+        <template v-if="auth.session?.authProvider === 'LOCAL'">
+          <b-dropdown-item aria-role="menuitem" @click="openPasswordChange()">
+            <b-icon icon="lock-reset" size="is-small" /> Alterar senha
+          </b-dropdown-item>
+
+          <hr class="dropdown-divider" />
+        </template>
 
         <b-dropdown-item aria-role="menuitem" @click="logout">
           <b-icon icon="logout" size="is-small" /> Sair
         </b-dropdown-item>
       </b-dropdown>
     </div>
-
-    <PasswordChangeModal v-if="showPasswordChangeModal" @close="showPasswordChangeModal = false" />
   </header>
 </template>

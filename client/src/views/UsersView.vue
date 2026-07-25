@@ -139,7 +139,7 @@ function confirmDeleteUser(id: string, name: string) {
               </template>
 
               <b-dropdown-item
-                v-if="user.status !== 'APPROVED'"
+                v-if="user.status === 'PENDING'"
                 aria-role="listitem"
                 @click="approveUser(user.id)"
               >

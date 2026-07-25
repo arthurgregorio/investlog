@@ -69,6 +69,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
+        problemDetail.setProperty("error", "invalid_credentials")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
