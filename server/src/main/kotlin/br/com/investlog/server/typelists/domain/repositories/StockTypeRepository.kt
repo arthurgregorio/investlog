@@ -13,34 +13,29 @@ import java.util.UUID
 @Repository
 class StockTypeRepository(private val dsl: DSLContext) {
 
-    fun findAll(userId: Long, pageable: Pageable): PagedModel<TypeResponse> {
+    fun findAll(pageable: Pageable): PagedModel<TypeResponse> {
         val content = dsl.selectFrom(STOCK_TYPES)
-            .where(STOCK_TYPES.USER_ID.eq(userId))
             .orderBy(STOCK_TYPES.NAME)
             .limit(pageable.pageSize)
             .offset(pageable.offset.toInt())
             .fetch()
             .map { it.toResponse() }
 
-        val total = dsl.fetchCount(
-            dsl.selectFrom(STOCK_TYPES).where(STOCK_TYPES.USER_ID.eq(userId))
-        )
+        val total = dsl.fetchCount(STOCK_TYPES)
 
         return pagedModelOf(content, pageable, total.toLong())
     }
 
-    fun create(userId: Long, name: String): TypeResponse =
+    fun create(name: String): TypeResponse =
         dsl.insertInto(STOCK_TYPES)
-            .set(STOCK_TYPES.USER_ID, userId)
             .set(STOCK_TYPES.NAME, name)
             .returning()
             .fetchSingle()
             .toResponse()
 
-    fun deleteByExternalId(userId: Long, externalId: UUID): Int =
+    fun deleteByExternalId(externalId: UUID): Int =
         dsl.deleteFrom(STOCK_TYPES)
-            .where(STOCK_TYPES.USER_ID.eq(userId))
-            .and(STOCK_TYPES.EXTERNAL_ID.eq(externalId))
+            .where(STOCK_TYPES.EXTERNAL_ID.eq(externalId))
             .execute()
 
     private fun StockTypesRecord.toResponse() = TypeResponse(

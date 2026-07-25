@@ -59,7 +59,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `assetTypes.ts` | `GET/POST/DELETE /stock-types`, `/fund-types` |
 | `rates.ts` | `GET /currency-rates`, `PUT /currency-rates/{code}` |
 | `auth.ts` | `POST /auth/login`, `/register`, `/totp/enroll`, `/totp/verify`, `GET /auth/session`, `POST /auth/logout` |
-| `usersAdmin.ts` | `GET /users`, `PATCH /users/{id}/approve`\|`reject`\|`role`\|`totp-reset`, `DELETE /users/{id}` (admin-only) |
+| `usersAdmin.ts` | `GET /users`, `PATCH /users/{id}/approve`\|`block`\|`unblock`\|`role`\|`totp-reset`, `DELETE /users/{id}` (admin-only) |
 
 ### Domain types (`src/types.ts`)
 
@@ -71,7 +71,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 - `PortfolioSummary`, `KindSummary`, `SeriesPoint` — overview endpoint shapes.
 - `AssetType`, `CurrencyRate` — settings endpoint shapes.
 - `PagedResponse<T>` — Spring `PagedModel` envelope: `{ content, page: { size, number, totalElements, totalPages } }`.
-- `UserStatus` = `'PENDING' | 'APPROVED' | 'REJECTED'`; `SessionResponse` (`name`, `email`, `role`,
+- `UserStatus` = `'PENDING' | 'APPROVED' | 'BLOCKED'`; `SessionResponse` (`name`, `email`, `role`,
   `status`) and `UserAdminResponse` (adds `id`, `authProvider`, `totpEnabled`) are the auth-facing
   shapes — see **Authentication & Authorization** below.
 
@@ -88,7 +88,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
 | `appearance` | `localStorage` | `dark`, `accent` — persisted across sessions |
 | `auth` | `GET/POST /auth/*` | `session`, `isAdmin`, `login/register/enrollTotp/verifyTotp/logout/restoreSession` |
-| `usersAdmin` | `GET/PATCH/DELETE /users/*` | `users[]`, `approve/reject/changeRole/resetTotp/remove` |
+| `usersAdmin` | `GET/PATCH/DELETE /users/*` | `users[]`, `approve/block/unblock/changeRole/resetTotp/remove` |
 
 **Pessimistic updates**: every mutation awaits the API response before updating store state.
 **Lazy loading**: each store is loaded by the view/component that needs it, in `onMounted`.
@@ -113,7 +113,7 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 
 ### Theming
 
-`App.vue` sets `data-theme` (`light`/`dark`), `data-accent` (`blue`/`indigo`/`teal`/`green`)
+`App.vue` sets `data-theme` (`light`/`dark`), `data-accent` (`blue`/`indigo`/`teal`/`yellow`)
 and a fixed `data-density="comfortable"` on `.app-root`. Accent color is the only
 user-configurable appearance setting.
 
@@ -134,18 +134,21 @@ not the security boundary.** The server enforces every gate independently (`ROLE
 it does nothing against a client that calls the API directly. Don't reason about client-side gating
 as if it were access control.
 
-`PendingApprovalView.vue` branches its message on `auth.session?.status`, not just on whether a
-session exists — a `REJECTED` user must see different copy than a `PENDING` one, or the distinct
-`REJECTED` status (introduced specifically to avoid this) is pointless. Known, accepted gap: `GET
-/auth/session` echoes the status cached at login, so a user rejected mid-session won't see this
-screen update until their next real API call 403s or they refresh — the server-side revocation
-(next action, not next login) is the actual security guarantee; this view is UX, not enforcement.
+`PendingApprovalView.vue` only branches its message on whether a session exists at all
+(unauthenticated vs. pending) — a `BLOCKED` user never reaches this screen, since `AuthService.login`
+rejects the login attempt outright with a generic error before any session is established. Known,
+accepted gap for a session that goes stale mid-use: `GET /auth/session` echoes the status cached at
+login, so a user blocked mid-session won't see any UI change until their next real API call 403s or
+they refresh — the server-side revocation (next action, not next login) is the actual security
+guarantee; this view is UX, not enforcement.
 
 `UsersView.vue` (route `/users`, admin-only like `/settings`) is the local-user management screen,
 laid out with the same `.wallet-grid`/`.wallet-card` pattern as `WalletsView.vue`. The acting
-admin's own row hides role-change/reject/delete (`isSelf(user.email)`) but leaves approve and
+admin's own row hides role-change/block/delete (`isSelf(user.email)`) but leaves approve and
 TOTP-reset visible — those two are safe no-ops on your own account, not lockout risks, so hiding
-them would remove a valid self-recovery path for no benefit.
+them would remove a valid self-recovery path for no benefit. `Block` is only offered on
+currently-`APPROVED` rows and `Unblock` only on currently-`BLOCKED` rows — blocking is for revoking
+existing access, not for handling new signups (those stay on approve/delete).
 
 ### Buefy/Bulma gotchas
 

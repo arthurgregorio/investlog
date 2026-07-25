@@ -5,6 +5,7 @@ import { ref, watch } from 'vue'
 import type { AccentKey } from '@/types'
 
 const STORAGE_KEY = 'investlog.appearance'
+const VALID_ACCENTS: AccentKey[] = ['blue', 'indigo', 'teal', 'yellow']
 
 interface Persisted {
   dark: boolean
@@ -16,7 +17,11 @@ function load(): Persisted {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return fallback
-    return { ...fallback, ...(JSON.parse(raw) as Partial<Persisted>) }
+    const merged = { ...fallback, ...(JSON.parse(raw) as Partial<Persisted>) }
+    if (!VALID_ACCENTS.includes(merged.accent)) {
+      merged.accent = fallback.accent
+    }
+    return merged
   } catch {
     return fallback
   }

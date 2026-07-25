@@ -1,7 +1,9 @@
 package br.com.investlog.server.config
 
+import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
+import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
@@ -125,6 +127,24 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleTotpAlreadyEnabled(ex: TotpAlreadyEnabledException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "TOTP is already enabled")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidUserStatusTransitionException::class)
+    fun handleInvalidUserStatusTransition(ex: InvalidUserStatusTransitionException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "Invalid user status transition")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(AccountNotLocalException::class)
+    fun handleAccountNotLocal(ex: AccountNotLocalException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message ?: "This action is only available for local accounts")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

@@ -14,13 +14,13 @@
     <include file="db/changelog/changes/2026/06/12-1030-create-finances-core.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/06/12-1040-create-finances-holdings.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/06/12-1050-create-holdings-overview-view.xml" relativeToChangelogFile="false"/>
-
     <include file="db/changelog/changes/2026/06/14-1000-add-user-preferences.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/06/28-1000-add-auth-columns-to-users.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/06/14-1050-seed-dev-data.xml" relativeToChangelogFile="false"/>
-
     <include file="db/changelog/changes/2026/06/27-1000-seed-default-type-lists.xml" relativeToChangelogFile="false"/>
 
     <include file="db/changelog/changes/2026/07/23-1000-reseed-default-type-lists-for-admin.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/07/17-0100-migrate-rejected-to-blocked.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/07/24-1200-make-settings-global.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

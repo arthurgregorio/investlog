@@ -16,6 +16,7 @@ vi.mock('@/api/auth', () => ({
     verify: vi.fn(),
     register: vi.fn(),
     fetchConfig: vi.fn().mockResolvedValue({ googleAuthEnabled: false }),
+    linkGoogleAccount: vi.fn(),
   },
 }))
 
@@ -155,6 +156,50 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Já existe uma conta com este e-mail')
+  })
+
+  it('shows the link-account step with the colliding email when redirected with a link token', async () => {
+    router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('nova@example.com')
+    expect(wrapper.find('input[type="password"]').exists()).toBe(true)
+    expect(wrapper.find('input[type="email"]').exists()).toBe(false)
+  })
+
+  it('submits the link token and password to link the Google account', async () => {
+    const store = useAuthStore()
+    const linkSpy = vi.spyOn(store, 'linkGoogleAccount').mockResolvedValue()
+    router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await flushPromises()
+
+    await wrapper.find('input[type="password"]').setValue('senha123')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(linkSpy).toHaveBeenCalledWith('abc123', 'senha123')
+  })
+
+  it('shows an error when linking fails', async () => {
+    const store = useAuthStore()
+    vi.spyOn(store, 'linkGoogleAccount').mockRejectedValue(new Error('unauthorized'))
+    router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await flushPromises()
+
+    await wrapper.find('input[type="password"]').setValue('wrong')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Senha incorreta ou link expirado')
   })
 })
 

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
+import PasswordResetModal from '@/components/forms/PasswordResetModal.vue'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 import { useAuthStore } from '@/stores/auth'
 import type { UserAdminResponse, UserRole } from '@/types'
@@ -11,6 +12,8 @@ const toast = useToast()
 const dialog = useDialog()
 const usersAdminStore = useUsersAdminStore()
 const auth = useAuthStore()
+
+const passwordResetTarget = ref<{ id: string; name: string } | null>(null)
 
 onMounted(() => {
   usersAdminStore.load()
@@ -29,9 +32,14 @@ async function approveUser(id: string) {
   toast.open({ message: 'Usuário aprovado.', type: 'is-success' })
 }
 
-async function rejectUser(id: string) {
-  await usersAdminStore.reject(id)
-  toast.open({ message: 'Usuário rejeitado.', type: 'is-success' })
+async function blockUser(id: string) {
+  await usersAdminStore.block(id)
+  toast.open({ message: 'Usuário bloqueado.', type: 'is-success' })
+}
+
+async function unblockUser(id: string) {
+  await usersAdminStore.unblock(id)
+  toast.open({ message: 'Usuário desbloqueado.', type: 'is-success' })
 }
 
 function confirmRoleChange(id: string, name: string, currentRole: UserRole) {
@@ -87,7 +95,7 @@ function confirmDeleteUser(id: string, name: string) {
     <div class="page-head page-head-row">
       <div>
         <h1 class="page-title">Usuários</h1>
-        <p class="page-desc">Aprove, rejeite ou gerencie o acesso de usuários locais.</p>
+        <p class="page-desc">Aprove, bloqueie ou gerencie o acesso de usuários locais.</p>
       </div>
     </div>
 
@@ -105,7 +113,7 @@ function confirmDeleteUser(id: string, name: string) {
                   :type="
                     user.status === 'APPROVED'
                       ? 'is-success'
-                      : user.status === 'REJECTED'
+                      : user.status === 'BLOCKED'
                         ? 'is-danger'
                         : 'is-warning'
                   "
@@ -140,11 +148,18 @@ function confirmDeleteUser(id: string, name: string) {
 
               <template v-if="!isSelf(user.email)">
                 <b-dropdown-item
-                  v-if="user.status !== 'REJECTED'"
+                  v-if="user.status === 'APPROVED'"
                   aria-role="listitem"
-                  @click="rejectUser(user.id)"
+                  @click="blockUser(user.id)"
                 >
-                  <b-icon icon="close" size="is-small" /> Rejeitar
+                  <b-icon icon="lock-outline" size="is-small" /> Bloquear
+                </b-dropdown-item>
+                <b-dropdown-item
+                  v-if="user.status === 'BLOCKED'"
+                  aria-role="listitem"
+                  @click="unblockUser(user.id)"
+                >
+                  <b-icon icon="lock-open-outline" size="is-small" /> Desbloquear
                 </b-dropdown-item>
                 <b-dropdown-item
                   aria-role="listitem"
@@ -155,6 +170,13 @@ function confirmDeleteUser(id: string, name: string) {
                 </b-dropdown-item>
                 <b-dropdown-item aria-role="listitem" @click="confirmTotpReset(user.id, user.name)">
                   <b-icon icon="lock-reset" size="is-small" /> Redefinir 2FA
+                </b-dropdown-item>
+                <b-dropdown-item
+                  v-if="user.authProvider === 'LOCAL'"
+                  aria-role="listitem"
+                  @click="passwordResetTarget = { id: user.id, name: user.name }"
+                >
+                  <b-icon icon="key-outline" size="is-small" /> Redefinir senha
                 </b-dropdown-item>
                 <hr class="dropdown-divider" />
                 <b-dropdown-item
@@ -170,5 +192,12 @@ function confirmDeleteUser(id: string, name: string) {
         </CardBody>
       </Card>
     </div>
+
+    <PasswordResetModal
+      v-if="passwordResetTarget"
+      :user-id="passwordResetTarget.id"
+      :user-name="passwordResetTarget.name"
+      @close="passwordResetTarget = null"
+    />
   </div>
 </template>

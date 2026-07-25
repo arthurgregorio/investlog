@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="17-0100-1" author="${claude}">
+        <sql>
+            UPDATE system.users SET status = 'BLOCKED' WHERE status = 'REJECTED';
+        </sql>
+        <rollback>
+            <sql>
+                UPDATE system.users SET status = 'REJECTED' WHERE status = 'BLOCKED';
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

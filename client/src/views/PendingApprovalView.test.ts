@@ -31,7 +31,13 @@ describe('PendingApprovalView', () => {
 
   it('shows a personalized message when a pending session exists', async () => {
     const auth = useAuthStore()
-    auth.session = { name: 'Nova Usuária', email: 'nova@example.com', role: 'USER', status: 'PENDING' }
+    auth.session = {
+      name: 'Nova Usuária',
+      email: 'nova@example.com',
+      role: 'USER',
+      status: 'PENDING',
+      authProvider: 'LOCAL',
+    }
     router.push('/pending-approval')
     await router.isReady()
 
@@ -41,22 +47,15 @@ describe('PendingApprovalView', () => {
     expect(wrapper.text()).toContain('aguardando aprovação')
   })
 
-  it('shows a distinct declined message when the session was rejected', async () => {
-    const auth = useAuthStore()
-    auth.session = { name: 'Usuária Rejeitada', email: 'rejeitada@example.com', role: 'USER', status: 'REJECTED' }
-    router.push('/pending-approval')
-    await router.isReady()
-
-    const wrapper = mount(PendingApprovalView, { global: { plugins: [router, Buefy] } })
-
-    expect(wrapper.text()).toContain('Usuária Rejeitada')
-    expect(wrapper.text()).toContain('não foi aprovado')
-    expect(wrapper.text()).not.toContain('aguardando aprovação')
-  })
-
   it('calls auth.logout when the sign-out button is clicked', async () => {
     const auth = useAuthStore()
-    auth.session = { name: 'Nova Usuária', email: 'nova@example.com', role: 'USER', status: 'PENDING' }
+    auth.session = {
+      name: 'Nova Usuária',
+      email: 'nova@example.com',
+      role: 'USER',
+      status: 'PENDING',
+      authProvider: 'LOCAL',
+    }
     const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue()
     router.push('/pending-approval')
     await router.isReady()

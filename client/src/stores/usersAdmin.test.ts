@@ -7,7 +7,8 @@ vi.mock('@/api/usersAdmin', () => ({
   usersAdminApi: {
     findAll: vi.fn(),
     approve: vi.fn(),
-    reject: vi.fn(),
+    block: vi.fn(),
+    unblock: vi.fn(),
     changeRole: vi.fn(),
     resetTotp: vi.fn(),
     remove: vi.fn(),
@@ -59,6 +60,33 @@ describe('usersAdmin store', () => {
     await store.approve(pendingUser.id)
 
     expect(usersAdminApi.approve).toHaveBeenCalledWith(pendingUser.id)
+    expect(store.users[0].status).toBe('APPROVED')
+  })
+
+  it('block replaces the user in place', async () => {
+    vi.mocked(usersAdminApi.findAll).mockResolvedValue([adminUser])
+    const blocked = { ...adminUser, status: 'BLOCKED' as const }
+    vi.mocked(usersAdminApi.block).mockResolvedValue(blocked)
+
+    const store = useUsersAdminStore()
+    await store.load()
+    await store.block(adminUser.id)
+
+    expect(usersAdminApi.block).toHaveBeenCalledWith(adminUser.id)
+    expect(store.users[0].status).toBe('BLOCKED')
+  })
+
+  it('unblock replaces the user in place', async () => {
+    const blockedUser = { ...adminUser, status: 'BLOCKED' as const }
+    vi.mocked(usersAdminApi.findAll).mockResolvedValue([blockedUser])
+    const unblocked = { ...blockedUser, status: 'APPROVED' as const }
+    vi.mocked(usersAdminApi.unblock).mockResolvedValue(unblocked)
+
+    const store = useUsersAdminStore()
+    await store.load()
+    await store.unblock(blockedUser.id)
+
+    expect(usersAdminApi.unblock).toHaveBeenCalledWith(blockedUser.id)
     expect(store.users[0].status).toBe('APPROVED')
   })
 

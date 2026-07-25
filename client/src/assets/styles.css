@@ -16,10 +16,10 @@
   --bulma-modal-content-width: 460px;
 }
 
-[data-accent="green"] {
-  --primary: #15915b;
-  --primary-d: #127a4d;
-  --primary-soft: rgba(21, 145, 91, .12);
+[data-accent="yellow"] {
+  --primary: #b8860b;
+  --primary-d: #9c7209;
+  --primary-soft: rgba(184, 134, 11, .12);
 }
 
 [data-accent="teal"] {
@@ -61,10 +61,10 @@
   --bulma-primary-l: 35%;
 }
 
-[data-accent="green"] {
-  --bulma-primary-h: 154deg;
-  --bulma-primary-s: 75%;
-  --bulma-primary-l: 33%;
+[data-accent="yellow"] {
+  --bulma-primary-h: 43deg;
+  --bulma-primary-s: 89%;
+  --bulma-primary-l: 38%;
 }
 
 /* Bulma's [data-theme=dark] selector matches any element, including .app-root[data-theme=dark],
@@ -377,6 +377,14 @@ a {
   padding-left: 12px;
   margin-left: 4px;
   border-left: 1px solid var(--border-2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding-right: 8px;
+  transition: background .13s;
+}
+
+.navbar-user:hover {
+  background: var(--surface-hover);
 }
 
 .avatar {
@@ -1636,6 +1644,39 @@ a {
   font-size: 12.5px;
   color: var(--text-muted);
   padding: 2px 2px;
+}
+
+/* ===== User menu (navbar dropdown) ===== */
+.user-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.user-menu-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.user-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13.5px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.user-menu-row:hover {
+  color: var(--primary-d);
 }
 
 /* ===== Appearance (accent swatches) ===== */
