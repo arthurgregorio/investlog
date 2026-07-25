@@ -34,6 +34,7 @@ class AuthService(
     private val totpService: TotpService,
     private val googleLinkTokenStore: GoogleLinkTokenStore,
     @Value("\${investlog.google-auth-enabled:false}") private val googleAuthEnabled: Boolean,
+    @Value("\${investlog.totp-required:true}") private val totpRequired: Boolean,
 ) {
 
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
@@ -43,6 +44,10 @@ class AuthService(
         }
 
         val user = verifyCredentials(request.email, request.password)
+
+        if (!totpRequired) {
+            return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
+        }
 
         if (!user.totpEnabled) {
             return LoginResult.EnrollmentRequired

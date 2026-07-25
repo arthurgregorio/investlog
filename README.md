@@ -52,6 +52,18 @@ docker compose up -d
 
 Open **http://localhost:8081**.
 
+### Testing a pre-release (RC)
+
+Release candidates (tags like `v0.2.0-rc1`, published on GitHub as a pre-release) are
+also published to Docker Hub under their own version tag, but never touch `latest`.
+To try one before it's promoted to a stable release, pin the tag explicitly instead of
+using `docker compose up -d`:
+
+```bash
+docker pull arthurgregorio/investlog-server:v0.2.0-rc1
+docker pull arthurgregorio/investlog-client:v0.2.0-rc1
+```
+
 ### Build from source
 
 Use this to run changes from `main` that haven't been released yet.
@@ -85,18 +97,21 @@ the app is immediately usable (with no data yet). Use the script below to add de
 Populate the database with demo wallets, stocks, funds and crypto holdings:
 
 ```bash
-./load-sample-data.sh        # Windows PowerShell: ./load-sample-data.ps1
+./sample-data/load-sample-data.sh        # Windows PowerShell: ./sample-data/load-sample-data.ps1
 ```
 
 Run this **after** the stack is up and the server has finished migrating. The script
 checks for the seeded user first and refuses to run otherwise. It is **not idempotent**
 — running it twice duplicates the sample data.
 
-Targets the quick-start stack (root `compose.yaml`) by default. If you're running the
-build-from-source stack instead, pass its compose file explicitly:
+This only needs the postgres container to be running — it doesn't read or care about a
+`compose.yaml` file. It targets the `investlog-postgres` container name by default (what both
+`compose.yaml` and `build-from-source/compose.yaml` name it), so it works out of the box for
+either stack. Pass `--container`, `--db`, or `--user` (any order, override just what you need)
+if you're running Postgres under another name or with non-default credentials:
 
 ```bash
-./load-sample-data.sh build-from-source/compose.yaml
+./sample-data/load-sample-data.sh --container some-other-container-name
 ```
 
 ## Back up the database
@@ -110,8 +125,37 @@ Dump the database to a timestamped `.sql` file on the host:
 `pg_dump` runs inside the postgres container; the resulting file is then copied out to
 `backups/investlog-backup-YYYYMMDD-HHMMSS.sql` (the `backups/` folder is git-ignored).
 
-Like `load-sample-data.sh`, this targets the quick-start stack by default — pass
-`build-from-source/compose.yaml` as the first argument to target that stack instead.
+Defaults to a data-only dump — the common case for routine backups, since Liquibase already
+owns schema creation/migration on next boot. Pass `--full` for a complete schema + data
+dump instead, for disaster-recovery-style backups:
+
+```bash
+./backup.sh --full                  # Windows PowerShell: ./backup.ps1 --full
+./backup.sh --data-only              # explicit, same as the default
+```
+
+There's no restore script today — a data-only dump restores into an already-migrated
+(schema-present) database.
+
+This only needs the postgres container to be running — it doesn't read or care about a
+`compose.yaml` file. It targets the `investlog-postgres` container name by default (what both
+`compose.yaml` and `build-from-source/compose.yaml` name it), so it works out of the box for
+either stack. Pass a different container name (alongside the mode flag, in either order) if
+you're running Postgres under another name:
+
+```bash
+./backup.sh --full some-other-container-name
+```
+
+## Docker-only scripts
+
+`backup.sh`/`backup.ps1` and `sample-data/load-sample-data.sh`/`.ps1` only work against a
+Postgres running as a **Docker container reachable from this host's `docker` CLI** — they call
+`docker exec`/`docker cp` directly against a container name, with no fallback to a plain
+network connection (`psql -h ... -p ...`). If you're pointing InvestLog at a conventional
+Postgres instance instead — a managed service (RDS, Cloud SQL, ...), a bare-metal install, or
+any Postgres your Docker daemon can't `exec` into — these scripts won't work as-is; use `pg_dump`/
+`psql` directly against that instance's connection details instead.
 
 ## Configuration
 
@@ -132,6 +176,9 @@ the box for a local run.
 | `GOOGLE_CLIENT_ID` | _(empty)_ | From Google Cloud Console OAuth 2.0 Client ID |
 | `GOOGLE_CLIENT_SECRET` | _(empty)_ | From Google Cloud Console |
 | `CLIENT_BASE_URL` | _(empty)_ | Redirect target after Google login. Leave empty for a same-origin deployment (the default stack serves client and server behind one nginx origin, so a relative redirect is already correct) — only set this if client and server are served from different origins |
+| `TOTP_REQUIRED` | `true` | Enforces TOTP two-factor authentication at login. Set to `false` to disable it entirely (local dev convenience, or for deployments that don't want it) |
+| `TOTP_LOCKOUT_MAX_ATTEMPTS` | `5` | Consecutive invalid TOTP codes allowed before an account is temporarily locked out |
+| `TOTP_LOCKOUT_BASE_DURATION` | `60s` | Lockout duration after the max attempts are reached; doubles on each repeated lockout |
 
 Building from source adds two more variables, read from `build-from-source/.env`:
 
@@ -209,7 +256,7 @@ The Compose setups above are for running the packaged app. For day-to-day develo
   `docker compose up -d`. Note the Vite dev server (`npm run dev`) also defaults to
   `8081`, so don't run it and the Docker stack at the same time without changing one of
   them.
-- **`load-sample-data` says the dev-user is missing** — the server hasn't finished
+- **`load-sample-data` says `admin@admin.com` is missing** — the server hasn't finished
   migrating yet. Wait a few seconds (`docker compose logs -f server`) and retry.
 - **Want the latest unreleased changes** — the quick-start stack always runs the last
   published release. Use `build-from-source/` instead (see "Build from source" above)

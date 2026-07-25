@@ -204,7 +204,7 @@ a {
 
 .topnav-inner {
   width: 100%;
-  max-width: 1300px;
+  max-width: 1920px;
   margin: 0 auto;
   height: 100%;
   padding: 0 30px;
@@ -322,7 +322,7 @@ a {
 
 .navbar-inner {
   width: 100%;
-  max-width: 1300px;
+  max-width: 1920px;
   margin: 0 auto;
   height: 100%;
   padding: 0 30px;
@@ -416,12 +416,12 @@ a {
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 26px 30px 70px;
 }
 
 .page {
-  max-width: 1240px;
+  max-width: 1920px;
   margin: 0 auto;
+  padding: 26px 30px 70px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -886,6 +886,11 @@ a {
   gap: 2px;
 }
 
+.wallet-result-item:last-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
 .wallet-result-label {
   font-size: 11px;
   color: var(--text-muted);
@@ -1028,9 +1033,19 @@ a {
   color: var(--text-muted);
 }
 
+.gl-stacked {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
 .gl-pct {
   font-weight: 600;
   opacity: .85;
+}
+
+.gl-stacked .gl-pct {
+  font-size: 11px;
 }
 
 .gl-empty {
@@ -1710,7 +1725,7 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .content {
+  .page {
     padding: 20px 16px 60px;
   }
 

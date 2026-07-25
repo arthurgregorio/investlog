@@ -1,12 +1,12 @@
 -- Sample data for InvestLog development / demonstration
 --
--- Prerequisites: the app must have been started at least once so that Liquibase
--- runs all migrations (including the dev-user seed in 14-1050-seed-dev-data.xml).
+-- Prerequisites: the app must have been started at least once so that Liquibase runs
+-- all migrations, which seed the local admin account (admin@admin.com,
+-- 14-1050-seed-dev-data.xml) and its base currency rate.
 -- Run this script manually in your database client against the local dev database.
 --
--- The dev user has google_sub = 'dev-user' and is created by Liquibase.
--- Stock/fund types and currency rates are global configuration seeded by Liquibase
--- (see 24-1200-make-settings-global.xml), not per-user data created by this script.
+-- Attaches all sample wallets/holdings to the seeded admin@admin.com account — the only
+-- account guaranteed to exist right after a fresh set of migrations.
 
 DO $$
 DECLARE
@@ -28,7 +28,11 @@ DECLARE
     v_fh_mxrf11       BIGINT;
     v_fh_cdi          BIGINT;
 BEGIN
-    SELECT id INTO v_user_id FROM system.users WHERE google_sub = 'dev-user';
+    SELECT id INTO v_user_id FROM system.users WHERE email = 'admin@admin.com';
+
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'admin@admin.com not found — start the stack and let the server finish migrating first';
+    END IF;
 
     -- Wallets
     INSERT INTO finances.wallets (user_id, name, kind, currency)
@@ -43,23 +47,19 @@ BEGIN
     VALUES (v_user_id, 'Fundos e FIIs', 'FUNDS', 'BRL')
     RETURNING id INTO v_funds_wallet;
 
-    -- Stock types (global list; create if missing so re-runs against a seeded db don't fail)
-    INSERT INTO finances.stock_types (name) VALUES ('Ação Ordinária')
-    ON CONFLICT (name) DO NOTHING;
-    SELECT id INTO v_stock_type_acoes FROM finances.stock_types WHERE name = 'Ação Ordinária';
+    -- Stock types
+    INSERT INTO finances.stock_types (user_id, name)
+    VALUES (v_user_id, 'Ação Ordinária') RETURNING id INTO v_stock_type_acoes;
 
-    INSERT INTO finances.stock_types (name) VALUES ('BDR Nível I')
-    ON CONFLICT (name) DO NOTHING;
-    SELECT id INTO v_stock_type_bdrs FROM finances.stock_types WHERE name = 'BDR Nível I';
+    INSERT INTO finances.stock_types (user_id, name)
+    VALUES (v_user_id, 'BDR Nível I') RETURNING id INTO v_stock_type_bdrs;
 
-    -- Fund types (global list; create if missing so re-runs against a seeded db don't fail)
-    INSERT INTO finances.fund_types (name) VALUES ('Fundo Imobiliário')
-    ON CONFLICT (name) DO NOTHING;
-    SELECT id INTO v_fund_type_fii FROM finances.fund_types WHERE name = 'Fundo Imobiliário';
+    -- Fund types
+    INSERT INTO finances.fund_types (user_id, name)
+    VALUES (v_user_id, 'Fundo Imobiliário') RETURNING id INTO v_fund_type_fii;
 
-    INSERT INTO finances.fund_types (name) VALUES ('Renda Fixa CDI')
-    ON CONFLICT (name) DO NOTHING;
-    SELECT id INTO v_fund_type_fi FROM finances.fund_types WHERE name = 'Renda Fixa CDI';
+    INSERT INTO finances.fund_types (user_id, name)
+    VALUES (v_user_id, 'Renda Fixa CDI') RETURNING id INTO v_fund_type_fi;
 
     -- Stock holdings
     INSERT INTO finances.stock_holdings (wallet_id, stock_type_id, ticker, name, current_price)

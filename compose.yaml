@@ -39,6 +39,9 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       CLIENT_BASE_URL: ${CLIENT_BASE_URL:-}
+      TOTP_REQUIRED: ${TOTP_REQUIRED:-true}
+      TOTP_LOCKOUT_MAX_ATTEMPTS: ${TOTP_LOCKOUT_MAX_ATTEMPTS:-5}
+      TOTP_LOCKOUT_BASE_DURATION: ${TOTP_LOCKOUT_BASE_DURATION:-60s}
     depends_on:
       postgres:
         condition: service_healthy

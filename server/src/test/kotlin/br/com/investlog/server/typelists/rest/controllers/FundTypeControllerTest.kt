@@ -23,13 +23,13 @@ class FundTypeControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(1)
-    fun `returns an empty page initially`() {
+    fun `returns the seeded default fund types initially`() {
         restTestClient.get()
             .uri("/private/v1/fund-types")
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.page.totalElements").isEqualTo(0)
+            .jsonPath("$.page.totalElements").isEqualTo(3)
             .jsonPath("$.content").isArray()
     }
 
@@ -39,13 +39,13 @@ class FundTypeControllerTest : BaseIntegrationTest() {
         val response = restTestClient.post()
             .uri("/private/v1/fund-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Renda Fixa"}""")
+            .body("""{"name":"Fundos Imobiliários"}""")
             .exchange()
             .expectStatus().isCreated()
             .returnResult<TypeResponse>()
             .responseBody
 
-        assertEquals("Renda Fixa", response?.name)
+        assertEquals("Fundos Imobiliários", response?.name)
         createdId = response?.id
     }
 
@@ -57,8 +57,8 @@ class FundTypeControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.page.totalElements").isEqualTo(1)
-            .jsonPath("$.content[0].name").isEqualTo("Renda Fixa")
+            .jsonPath("$.page.totalElements").isEqualTo(4)
+            .jsonPath("$.content[0].name").isEqualTo("Fundos Imobiliários")
     }
 
     @Test
@@ -67,7 +67,7 @@ class FundTypeControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/fund-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Renda Fixa"}""")
+            .body("""{"name":"Fundos Imobiliários"}""")
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.CONFLICT)
     }
