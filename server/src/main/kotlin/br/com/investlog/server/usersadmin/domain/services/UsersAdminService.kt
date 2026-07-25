@@ -1,5 +1,6 @@
 package br.com.investlog.server.usersadmin.domain.services
 
+import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
@@ -17,6 +18,7 @@ import java.util.UUID
 class UsersAdminService(
     private val currentUserProvider: CurrentUserProvider,
     private val usersAdminRepository: UsersAdminRepository,
+    private val totpAttemptLimiter: TotpAttemptLimiter,
 ) {
 
     fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminRepository.findAll(pageable)
@@ -37,6 +39,7 @@ class UsersAdminService(
 
     fun resetTotp(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
+        totpAttemptLimiter.recordSuccess(user.email!!)
         return usersAdminRepository.resetTotp(user.id!!)
     }
 

@@ -7,6 +7,7 @@ import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
+import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
@@ -29,6 +30,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val totpService: TotpService,
+    private val totpAttemptLimiter: TotpAttemptLimiter,
     @Value("\${investlog.google-auth-enabled:false}") private val googleAuthEnabled: Boolean,
     @Value("\${investlog.totp-required:true}") private val totpRequired: Boolean,
 ) {
@@ -48,12 +50,17 @@ class AuthService(
         val code = request.totpCode
             ?: throw TotpRequiredException("A TOTP code is required to complete login")
 
+        totpAttemptLimiter.checkNotLocked(request.email)
+
         val secret = userRepository.findTotpSecretByEmail(request.email)
             ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
 
         if (!totpService.isCodeValid(secret, code)) {
+            totpAttemptLimiter.recordFailure(request.email)
             throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
         }
+
+        totpAttemptLimiter.recordSuccess(request.email)
 
         return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
     }
@@ -79,12 +86,17 @@ class AuthService(
 
         val user = verifyCredentials(request.email, request.password)
 
+        totpAttemptLimiter.checkNotLocked(request.email)
+
         val secret = userRepository.findTotpSecretByEmail(request.email)
             ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
 
         if (!totpService.isCodeValid(secret, request.code)) {
+            totpAttemptLimiter.recordFailure(request.email)
             throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
         }
+
+        totpAttemptLimiter.recordSuccess(request.email)
 
         userRepository.enableTotp(user.id, secret)
 
