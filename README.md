@@ -177,6 +177,8 @@ the box for a local run.
 | `GOOGLE_CLIENT_SECRET` | _(empty)_ | From Google Cloud Console |
 | `CLIENT_BASE_URL` | _(empty)_ | Redirect target after Google login. Leave empty for a same-origin deployment (the default stack serves client and server behind one nginx origin, so a relative redirect is already correct) — only set this if client and server are served from different origins |
 | `TOTP_REQUIRED` | `true` | Enforces TOTP two-factor authentication at login. Set to `false` to disable it entirely (local dev convenience, or for deployments that don't want it) |
+| `TOTP_LOCKOUT_MAX_ATTEMPTS` | `5` | Consecutive invalid TOTP codes allowed before an account is temporarily locked out |
+| `TOTP_LOCKOUT_BASE_DURATION` | `60s` | Lockout duration after the max attempts are reached; doubles on each repeated lockout |
 
 Building from source adds two more variables, read from `build-from-source/.env`:
 
