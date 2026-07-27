@@ -16,10 +16,10 @@
   --bulma-modal-content-width: 460px;
 }
 
-[data-accent="green"] {
-  --primary: #15915b;
-  --primary-d: #127a4d;
-  --primary-soft: rgba(21, 145, 91, .12);
+[data-accent="yellow"] {
+  --primary: #b8860b;
+  --primary-d: #9c7209;
+  --primary-soft: rgba(184, 134, 11, .12);
 }
 
 [data-accent="teal"] {
@@ -61,10 +61,10 @@
   --bulma-primary-l: 35%;
 }
 
-[data-accent="green"] {
-  --bulma-primary-h: 154deg;
-  --bulma-primary-s: 75%;
-  --bulma-primary-l: 33%;
+[data-accent="yellow"] {
+  --bulma-primary-h: 43deg;
+  --bulma-primary-s: 89%;
+  --bulma-primary-l: 38%;
 }
 
 /* Bulma's [data-theme=dark] selector matches any element, including .app-root[data-theme=dark],
@@ -377,6 +377,14 @@ a {
   padding-left: 12px;
   margin-left: 4px;
   border-left: 1px solid var(--border-2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding-right: 8px;
+  transition: background .13s;
+}
+
+.navbar-user:hover {
+  background: var(--surface-hover);
 }
 
 .avatar {
@@ -1638,24 +1646,40 @@ a {
   padding: 2px 2px;
 }
 
+/* ===== User menu (navbar dropdown) ===== */
+.user-menu-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 /* ===== Appearance (accent swatches) ===== */
+.accent-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 200px;
+}
+
 .accent-row {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .accent-swatch {
   position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: 2px solid var(--border);
   cursor: pointer;
   display: grid;
   place-items: center;
   transition: .13s;
   padding: 0;
+  flex: none;
 }
 
 .accent-swatch:hover {
@@ -1664,12 +1688,6 @@ a {
 
 .accent-swatch.active {
   border-color: var(--text);
-}
-
-.accent-swatch .sw-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
 }
 
 .accent-swatch .sw-check {

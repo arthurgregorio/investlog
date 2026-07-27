@@ -1,9 +1,12 @@
 package br.com.investlog.server.config
 
+import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
+import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
+import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.exceptions.UserNotApprovedException
@@ -17,6 +20,7 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.http.HttpStatus.TOO_MANY_REQUESTS
 import org.springframework.http.HttpStatus.UNAUTHORIZED
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
@@ -65,6 +69,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
+        problemDetail.setProperty("error", "invalid_credentials")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -109,10 +114,38 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         return problemDetail
     }
 
+    @ExceptionHandler(TooManyTotpAttemptsException::class)
+    fun handleTooManyTotpAttempts(ex: TooManyTotpAttemptsException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, ex.message ?: "Too many invalid TOTP attempts")
+        problemDetail.setProperty("error", "too_many_totp_attempts")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
     @ExceptionHandler(TotpAlreadyEnabledException::class)
     fun handleTotpAlreadyEnabled(ex: TotpAlreadyEnabledException): ProblemDetail {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "TOTP is already enabled")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidUserStatusTransitionException::class)
+    fun handleInvalidUserStatusTransition(ex: InvalidUserStatusTransitionException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "Invalid user status transition")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(AccountNotLocalException::class)
+    fun handleAccountNotLocal(ex: AccountNotLocalException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message ?: "This action is only available for local accounts")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

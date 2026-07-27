@@ -1,15 +1,21 @@
 package br.com.investlog.server.usersadmin.domain.services
 
+import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
+import br.com.investlog.server.shared.exceptions.AccountNotLocalException
+import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
+import br.com.investlog.server.shared.security.AuthProvider
 import br.com.investlog.server.shared.security.CurrentUser.Status
 import br.com.investlog.server.shared.security.CurrentUserProvider
 import br.com.investlog.server.usersadmin.domain.repositories.UsersAdminRepository
+import br.com.investlog.server.usersadmin.rest.payloads.PasswordResetRequest
 import br.com.investlog.server.usersadmin.rest.payloads.RoleUpdateRequest
 import br.com.investlog.server.usersadmin.rest.payloads.UserAdminResponse
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -17,16 +23,25 @@ import java.util.UUID
 class UsersAdminService(
     private val currentUserProvider: CurrentUserProvider,
     private val usersAdminRepository: UsersAdminRepository,
+    private val passwordEncoder: PasswordEncoder,
+    private val totpAttemptLimiter: TotpAttemptLimiter,
 ) {
 
     fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminRepository.findAll(pageable)
 
     fun approve(externalId: UUID): UserAdminResponse = updateStatus(externalId, Status.APPROVED)
 
-    fun reject(externalId: UUID): UserAdminResponse {
+    fun block(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
-        return updateStatus(externalId, Status.REJECTED)
+        requireCurrentStatus(user, Status.APPROVED, "block")
+        return updateStatus(externalId, Status.BLOCKED)
+    }
+
+    fun unblock(externalId: UUID): UserAdminResponse {
+        val user = requireUser(externalId)
+        requireCurrentStatus(user, Status.BLOCKED, "unblock")
+        return updateStatus(externalId, Status.APPROVED)
     }
 
     fun changeRole(externalId: UUID, request: RoleUpdateRequest): UserAdminResponse {
@@ -37,6 +52,7 @@ class UsersAdminService(
 
     fun resetTotp(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
+        totpAttemptLimiter.recordSuccess(user.email!!)
         return usersAdminRepository.resetTotp(user.id!!)
     }
 
@@ -44,6 +60,17 @@ class UsersAdminService(
         val user = requireUser(externalId)
         requireNotSelf(user)
         usersAdminRepository.deleteByExternalId(externalId)
+    }
+
+    fun resetPassword(externalId: UUID, request: PasswordResetRequest): UserAdminResponse {
+        val user = requireUser(externalId)
+        requireNotSelf(user)
+
+        if (AuthProvider.valueOf(user.authProvider!!) != AuthProvider.LOCAL) {
+            throw AccountNotLocalException("Password resets are only available for local accounts")
+        }
+
+        return usersAdminRepository.updatePasswordHash(user.id!!, passwordEncoder.encode(request.newPassword)!!)
     }
 
     private fun updateStatus(externalId: UUID, status: Status): UserAdminResponse {
@@ -58,6 +85,12 @@ class UsersAdminService(
     private fun requireNotSelf(user: UsersRecord) {
         if (user.id == currentUserProvider.getCurrentUser().id) {
             throw SelfActionNotAllowedException("This action cannot target your own account")
+        }
+    }
+
+    private fun requireCurrentStatus(user: UsersRecord, expected: Status, action: String) {
+        if (Status.valueOf(user.status!!) != expected) {
+            throw InvalidUserStatusTransitionException("Cannot $action a user whose current status is not ${expected.name}")
         }
     }
 }

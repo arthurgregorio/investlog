@@ -63,6 +63,15 @@ class UsersAdminRepository(private val dsl: DSLContext) {
             .fetchSingle()
             .toAdminResponse()
 
+    fun updatePasswordHash(userId: Long, passwordHash: String): UserAdminResponse =
+        dsl.update(USERS)
+            .set(USERS.PASSWORD_HASH, passwordHash)
+            .set(USERS.UPDATED_AT, OffsetDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .returning()
+            .fetchSingle()
+            .toAdminResponse()
+
     fun deleteByExternalId(externalId: UUID): Int =
         dsl.deleteFrom(USERS)
             .where(USERS.EXTERNAL_ID.eq(externalId))

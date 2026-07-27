@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <!--
+        Currency rates and stock/fund types move from per-user data to one shared, global
+        configuration (admin-only to edit from here on — see SecurityConfig). Existing rows are
+        merged/deduped rather than dropped outright where holdings still reference them.
+    -->
+
+    <changeSet id="24-1200-1" author="${claude}">
+        <comment>Repoint stock_holdings at one canonical stock_types row per distinct name, ahead of dropping the per-user duplicates</comment>
+        <sql>
+            UPDATE finances.stock_holdings sh
+            SET stock_type_id = canonical.canonical_id
+            FROM finances.stock_types st
+            JOIN (
+                SELECT name, MIN(id) AS canonical_id
+                FROM finances.stock_types
+                GROUP BY name
+            ) canonical ON canonical.name = st.name
+            WHERE sh.stock_type_id = st.id
+              AND st.id &lt;&gt; canonical.canonical_id;
+        </sql>
+    </changeSet>
+
+    <changeSet id="24-1200-2" author="${claude}">
+        <comment>Drop the now-unreferenced per-user duplicate stock_types rows, keeping one row per name</comment>
+        <sql>
+            DELETE FROM finances.stock_types st
+            USING (
+                SELECT name, MIN(id) AS canonical_id
+                FROM finances.stock_types
+                GROUP BY name
+            ) canonical
+            WHERE st.name = canonical.name
+              AND st.id &lt;&gt; canonical.canonical_id;
+        </sql>
+    </changeSet>
+
+    <changeSet id="24-1200-3" author="${claude}">
+        <comment>stock_types becomes a global list: drop user_id, replace the per-user unique constraint with a global one on name</comment>
+        <sql>
+            ALTER TABLE finances.stock_types DROP CONSTRAINT stock_types_user_id_name_key;
+            ALTER TABLE finances.stock_types DROP CONSTRAINT stock_types_user_id_fkey;
+            ALTER TABLE finances.stock_types DROP COLUMN user_id;
+            ALTER TABLE finances.stock_types ADD CONSTRAINT stock_types_name_key UNIQUE (name);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.stock_types DROP CONSTRAINT stock_types_name_key;
+                ALTER TABLE finances.stock_types ADD COLUMN user_id BIGINT REFERENCES system.users(id);
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1200-4" author="${claude}">
+        <comment>Repoint fund_holdings at one canonical fund_types row per distinct name, ahead of dropping the per-user duplicates</comment>
+        <sql>
+            UPDATE finances.fund_holdings fh
+            SET fund_type_id = canonical.canonical_id
+            FROM finances.fund_types ft
+            JOIN (
+                SELECT name, MIN(id) AS canonical_id
+                FROM finances.fund_types
+                GROUP BY name
+            ) canonical ON canonical.name = ft.name
+            WHERE fh.fund_type_id = ft.id
+              AND ft.id &lt;&gt; canonical.canonical_id;
+        </sql>
+    </changeSet>
+
+    <changeSet id="24-1200-5" author="${claude}">
+        <comment>Drop the now-unreferenced per-user duplicate fund_types rows, keeping one row per name</comment>
+        <sql>
+            DELETE FROM finances.fund_types ft
+            USING (
+                SELECT name, MIN(id) AS canonical_id
+                FROM finances.fund_types
+                GROUP BY name
+            ) canonical
+            WHERE ft.name = canonical.name
+              AND ft.id &lt;&gt; canonical.canonical_id;
+        </sql>
+    </changeSet>
+
+    <changeSet id="24-1200-6" author="${claude}">
+        <comment>fund_types becomes a global list: drop user_id, replace the per-user unique constraint with a global one on name</comment>
+        <sql>
+            ALTER TABLE finances.fund_types DROP CONSTRAINT fund_types_user_id_name_key;
+            ALTER TABLE finances.fund_types DROP CONSTRAINT fund_types_user_id_fkey;
+            ALTER TABLE finances.fund_types DROP COLUMN user_id;
+            ALTER TABLE finances.fund_types ADD CONSTRAINT fund_types_name_key UNIQUE (name);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.fund_types DROP CONSTRAINT fund_types_name_key;
+                ALTER TABLE finances.fund_types ADD COLUMN user_id BIGINT REFERENCES system.users(id);
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1200-7" author="${claude}">
+        <comment>currency_rates becomes global config: wipe the per-user rows (wallets store currency as plain text, not a FK, so nothing references these rows)</comment>
+        <sql>
+            DELETE FROM finances.currency_rates;
+        </sql>
+    </changeSet>
+
+    <changeSet id="24-1200-8" author="${claude}">
+        <comment>Replace the per-user unique constraints on currency_rates with global ones</comment>
+        <sql>
+            DROP INDEX finances.uq_currency_rates_user_base;
+            ALTER TABLE finances.currency_rates DROP CONSTRAINT currency_rates_user_id_currency_code_key;
+            ALTER TABLE finances.currency_rates DROP CONSTRAINT currency_rates_user_id_fkey;
+            ALTER TABLE finances.currency_rates DROP COLUMN user_id;
+            ALTER TABLE finances.currency_rates ADD CONSTRAINT currency_rates_currency_code_key UNIQUE (currency_code);
+            CREATE UNIQUE INDEX uq_currency_rates_base ON finances.currency_rates (is_base) WHERE is_base;
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX finances.uq_currency_rates_base;
+                ALTER TABLE finances.currency_rates DROP CONSTRAINT currency_rates_currency_code_key;
+                ALTER TABLE finances.currency_rates ADD COLUMN user_id BIGINT REFERENCES system.users(id);
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1200-9" author="${claude}">
+        <comment>Reseed the global BRL/USD rates that every fresh install now needs (replaces the old per-admin seed in 14-1050-seed-dev-data.xml)</comment>
+        <sql>
+            INSERT INTO finances.currency_rates (currency_code, rate, is_base)
+            VALUES ('BRL', 1, true), ('USD', 5, false);
+        </sql>
+        <rollback>
+            <sql>
+                DELETE FROM finances.currency_rates WHERE currency_code IN ('BRL', 'USD');
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
