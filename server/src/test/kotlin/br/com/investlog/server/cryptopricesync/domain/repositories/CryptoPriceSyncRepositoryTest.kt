@@ -81,10 +81,11 @@ class CryptoPriceSyncRepositoryTest : BaseIntegrationTest() {
     fun `updates current price only for matching ticker and currency`() {
         val usdWalletId = createWallet("USD")
         val brlWalletId = createWallet("BRL")
-        createHolding(usdWalletId, "DOT")
-        createHolding(brlWalletId, "DOT")
+        val uniqueTicker = "DOT" + UUID.randomUUID().toString().take(6).uppercase()
+        createHolding(usdWalletId, uniqueTicker)
+        createHolding(brlWalletId, uniqueTicker)
 
-        val updatedRows = cryptoPriceSyncRepository.updatePrice("DOT", "USD", BigDecimal("7.25"))
+        val updatedRows = cryptoPriceSyncRepository.updatePrice(uniqueTicker, "USD", BigDecimal("7.25"))
 
         assertEquals(1, updatedRows)
 
