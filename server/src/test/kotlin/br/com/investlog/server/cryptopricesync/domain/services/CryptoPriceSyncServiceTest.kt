@@ -6,6 +6,7 @@ import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
@@ -91,6 +92,8 @@ class CryptoPriceSyncServiceTest : BaseIntegrationTest() {
 
         cryptoPriceSyncService.syncPrices()
 
+        coinGeckoServer.verify(getRequestedFor(urlPathEqualTo("/simple/price")))
+
         assertCurrentPrice(bitcoinWalletId, 68000.12)
         assertCurrentPrice(etherWalletId, 100.00)
     }
@@ -107,6 +110,8 @@ class CryptoPriceSyncServiceTest : BaseIntegrationTest() {
         )
 
         cryptoPriceSyncService.syncPrices()
+
+        coinGeckoServer.verify(getRequestedFor(urlPathEqualTo("/simple/price")))
 
         assertCurrentPrice(solanaWalletId, 50.00)
     }

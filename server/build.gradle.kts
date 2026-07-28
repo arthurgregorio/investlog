@@ -95,7 +95,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("tools.jackson.core:jackson-databind")
-    testImplementation("org.wiremock:wiremock-standalone:3.3.1")
+    testImplementation("org.wiremock:wiremock-standalone:3.13.1")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
