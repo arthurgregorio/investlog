@@ -77,9 +77,15 @@ has:
   `GlobalExceptionHandler` to a `ProblemDetail`.
 - `config` — `WebMvcConfig` (path-segment API versioning, prefixes `@RestController`s under
   `/private/{version}`; `@EnableSpringDataWebSupport` activates `Pageable` parameter resolution),
-  `SecurityConfig` (the filter chain — see below), and `GlobalExceptionHandler` (RFC 7807
+  `SecurityConfig` (the filter chain — see below), `GlobalExceptionHandler` (RFC 7807
   `ProblemDetail` error responses: 400 validation errors, 404 `NotFoundException`, 409
-  `DataIntegrityViolationException` from unique/FK-restrict violations, 500 catch-all).
+  `DataIntegrityViolationException` from unique/FK-restrict violations, 500 catch-all),
+  `SchedulingConfig` (`@EnableScheduling`, `@Profile("!test")` so scheduled jobs never fire during
+  tests), and `config/http/HttpServiceClientsConfig` (declarative HTTP Service Client registration
+  via `@ImportHttpServices`, plus an explicit `RestClientHttpServiceGroupConfigurer` bean — Spring
+  Boot 4.1.0 does not auto-bind `spring.http.serviceclient.<group>.*` properties to a group's
+  `RestClient` despite the framework docs, so the base-url/timeouts are wired in by hand — see
+  `cryptopricesync` below for its first consumer).
 - `shared/rest/payloads` — shared REST payload types: `CurrencyCode` (typed enum used as a path
   variable in the currency-rates controller) and `AccessDeniedResponse` (the JSON shape written
   by `SecurityConfig`'s `AccessDeniedHandler`).
@@ -98,6 +104,17 @@ has:
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
   (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
+- `cryptopricesync` — no REST endpoints; `CryptoPriceSyncScheduler` runs `CryptoPriceSyncService.syncPrices()`
+  hourly (`@Scheduled(cron = "0 0 * * * *")`, wired via `config/SchedulingConfig`, disabled under the `test`
+  profile) to auto-refresh `finances.crypto_holdings.current_price` from CoinGecko's free `/simple/price`
+  endpoint. `CoinGeckoClient` (`cryptopricesync/http`) is a declarative HTTP Service Client interface
+  registered via `@ImportHttpServices` in `config/http/HttpServiceClientsConfig`, configured through
+  `spring.http.serviceclient.coingecko.*`. `CryptoPriceSyncRepository` finds the distinct tickers/currencies
+  in use and batches them into one API call; every matching `crypto_holdings` row gets updated per
+  ticker/currency pair present in the response. A ticker missing from the response keeps its last-known
+  price (warning logged); a failed API call skips the whole run (error logged) rather than retrying. Stocks
+  and funds stay fully manual — the existing `PATCH .../crypto-holdings/{id}` endpoint still works as a
+  manual override that gets overwritten on the next hourly run.
 
 ### Authentication & Authorization
 
