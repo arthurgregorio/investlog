@@ -1052,6 +1052,14 @@ a {
   color: var(--text-muted);
 }
 
+/* ===== Investments controls row ===== */
+.inv-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 /* ===== Segmented tabs ===== */
 .seg-tabs {
   display: inline-flex;
@@ -1060,7 +1068,7 @@ a {
   border: 1px solid var(--border);
   border-radius: 9px;
   padding: 3px;
-  align-self: flex-start;
+  flex-shrink: 0;
 }
 
 .seg-tab {
@@ -1096,15 +1104,12 @@ a {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin: 14px 0 4px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .inv-toolbar .search-input {
   max-width: 280px;
-}
-
-.inv-toolbar .toolbar-add {
-  margin-left: auto;
 }
 
 /* ===== Tables ===== */
@@ -1704,6 +1709,24 @@ a {
 
   .page {
     padding: 20px 16px 60px;
+  }
+
+  .inv-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .seg-tabs {
+    justify-content: space-between;
+  }
+
+  .inv-toolbar {
+    margin-left: 0;
+  }
+
+  .inv-toolbar .search-input {
+    flex: 1 1 160px;
+    max-width: none;
   }
 
   .page-title {
