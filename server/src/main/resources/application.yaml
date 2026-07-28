@@ -7,6 +7,13 @@ spring:
     database-change-log-table: database_changelog
     database-change-log-lock-table: database_changelog_lock
 
+  http:
+    serviceclient:
+      coingecko:
+        base-url: https://api.coingecko.com/api/v3
+        connect-timeout: 10s
+        read-timeout: 10s
+
 server:
   servlet:
     session:
