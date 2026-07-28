@@ -171,54 +171,56 @@ function openAddInvestment() {
       <p class="page-desc">Aqui você gerencia seus investimentos</p>
     </div>
 
-    <div class="seg-tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="seg-tab"
-        :class="{ active: tab.key === activeFilter }"
-        @click="selectTab(tab.key)"
-      >
-        <b-icon :icon="tab.icon" size="is-small" />{{ tab.label }}
-      </button>
-    </div>
+    <div class="inv-controls">
+      <div class="seg-tabs">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="seg-tab"
+          :class="{ active: tab.key === activeFilter }"
+          @click="selectTab(tab.key)"
+        >
+          <b-icon :icon="tab.icon" size="is-small" />{{ tab.label }}
+        </button>
+      </div>
 
-    <div class="inv-toolbar">
-      <b-select
-        v-if="walletOptions.length > 0"
-        :model-value="walletIdFilter ?? ''"
-        @update:model-value="onWalletIdChange"
-      >
-        <option value="">Todas as carteiras</option>
-        <option v-for="wallet in walletOptions" :key="wallet.id" :value="wallet.id">
-          {{ wallet.name }}
-        </option>
-      </b-select>
-      <b-select
-        v-if="typeLabelOptions.length > 0"
-        :model-value="typeLabelFilter ?? ''"
-        @update:model-value="onTypeLabelChange"
-      >
-        <option value="">Todos os tipos</option>
-        <option v-for="assetType in typeLabelOptions" :key="assetType.id" :value="assetType.name">
-          {{ assetType.name }}
-        </option>
-      </b-select>
-      <b-input
-        class="search-input"
-        :model-value="searchQuery"
-        icon="magnify"
-        placeholder="Buscar por nome ou ticker"
-        @update:model-value="onSearchChange"
-      />
-      <b-button
-        type="is-primary"
-        class="has-text-light toolbar-add"
-        icon-left="plus"
-        @click="openAddInvestment"
-      >
-        Adicionar investimento
-      </b-button>
+      <div class="inv-toolbar">
+        <b-select
+          v-if="walletOptions.length > 0"
+          :model-value="walletIdFilter ?? ''"
+          @update:model-value="onWalletIdChange"
+        >
+          <option value="">Todas as carteiras</option>
+          <option v-for="wallet in walletOptions" :key="wallet.id" :value="wallet.id">
+            {{ wallet.name }}
+          </option>
+        </b-select>
+        <b-select
+          v-if="typeLabelOptions.length > 0"
+          :model-value="typeLabelFilter ?? ''"
+          @update:model-value="onTypeLabelChange"
+        >
+          <option value="">Todos os tipos</option>
+          <option v-for="assetType in typeLabelOptions" :key="assetType.id" :value="assetType.name">
+            {{ assetType.name }}
+          </option>
+        </b-select>
+        <b-input
+          class="search-input"
+          :model-value="searchQuery"
+          icon="magnify"
+          placeholder="Buscar por nome ou ticker"
+          @update:model-value="onSearchChange"
+        />
+        <b-button
+          type="is-primary"
+          class="has-text-light toolbar-add"
+          icon-left="plus"
+          @click="openAddInvestment"
+        >
+          Adicionar investimento
+        </b-button>
+      </div>
     </div>
 
     <EmptyState
