@@ -30,6 +30,7 @@ describe('auth store', () => {
         email: 'admin@admin.com',
         role: 'ADMIN',
         status: 'APPROVED',
+        authProvider: 'LOCAL',
       },
     })
 
@@ -42,6 +43,7 @@ describe('auth store', () => {
       email: 'admin@admin.com',
       role: 'ADMIN',
       status: 'APPROVED',
+      authProvider: 'LOCAL',
     })
     expect(window.location.href).toBe('/overview')
   })
@@ -65,6 +67,7 @@ describe('auth store', () => {
         email: 'admin@admin.com',
         role: 'ADMIN',
         status: 'APPROVED',
+        authProvider: 'LOCAL',
       },
     })
     vi.mocked(authApi.logout).mockResolvedValue(undefined)
@@ -92,6 +95,7 @@ describe('auth store', () => {
       email: 'admin@admin.com',
       role: 'ADMIN',
       status: 'APPROVED',
+      authProvider: 'LOCAL',
     })
 
     const store = useAuthStore()
@@ -119,6 +123,7 @@ describe('auth store', () => {
       email: 'admin@admin.com',
       role: 'ADMIN',
       status: 'APPROVED',
+      authProvider: 'LOCAL',
     })
 
     const store = useAuthStore()
@@ -146,6 +151,7 @@ describe('auth store', () => {
         email: 'admin@admin.com',
         role: 'ADMIN',
         status: 'APPROVED',
+        authProvider: 'LOCAL',
       },
     })
 

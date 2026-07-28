@@ -3,6 +3,7 @@ package br.com.investlog.server.auth.rest.controllers
 import br.com.investlog.server.auth.domain.services.AuthService
 import br.com.investlog.server.auth.domain.services.LoginResult
 import br.com.investlog.server.auth.rest.payloads.AuthConfigResponse
+import br.com.investlog.server.auth.rest.payloads.GoogleAccountLinkRequest
 import br.com.investlog.server.auth.rest.payloads.LoginRequest
 import br.com.investlog.server.auth.rest.payloads.RegisterRequest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
@@ -63,4 +64,12 @@ class AuthController(private val authService: AuthService) {
     fun register(@Valid @RequestBody request: RegisterRequest) {
         authService.register(request)
     }
+
+    @PostMapping("/google/link")
+    fun linkGoogleAccount(
+        @Valid @RequestBody request: GoogleAccountLinkRequest,
+        servletRequest: HttpServletRequest,
+        servletResponse: HttpServletResponse,
+    ): SessionResponse =
+        authService.linkGoogleAccount(request, servletRequest, servletResponse)
 }

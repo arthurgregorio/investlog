@@ -4,14 +4,20 @@
     {
       "name": "server",
       "runtimeExecutable": "cmd",
-      "runtimeArgs": ["/c", "cd /d D:\\desenvolvimento\\investlog\\server && gradlew.bat bootRun"],
-      "port": 8080
+      "runtimeArgs": ["/c", "D:\\desenvolvimento\\investlog\\server\\gradlew.bat -p D:\\desenvolvimento\\investlog\\server bootRun"],
+      "port": 8080,
+      "env": {
+        "TOTP_REQUIRED": "false"
+      }
     },
     {
       "name": "client",
       "runtimeExecutable": "cmd",
       "runtimeArgs": ["/c", "cd /d D:\\desenvolvimento\\investlog\\client && npm run dev"],
-      "port": 8081
+      "port": 8081,
+      "env": {
+        "PATH": "C:\\Users\\arthur\\AppData\\Roaming\\fnm\\node-versions\\v24.15.0\\installation;${env:PATH}"
+      }
     }
   ]
 }

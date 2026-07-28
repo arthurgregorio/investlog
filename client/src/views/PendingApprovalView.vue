@@ -10,10 +10,6 @@ const message = computed(() => {
     return 'Cadastro enviado! Aguarde a aprovação de um administrador para acessar sua conta.'
   }
 
-  if (auth.session.status === 'REJECTED') {
-    return `Olá, ${auth.session.name}. Seu cadastro não foi aprovado por um administrador.`
-  }
-
   return `Olá, ${auth.session.name}! Sua conta ainda está aguardando aprovação de um administrador.`
 })
 

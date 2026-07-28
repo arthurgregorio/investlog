@@ -5,6 +5,7 @@ import br.com.investlog.server.RestClientTestConfiguration
 import br.com.investlog.server.TestcontainersConfiguration
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
+import br.com.investlog.server.auth.security.GoogleLinkTokenStore
 import dev.samstevens.totp.code.DefaultCodeGenerator
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
@@ -29,6 +30,9 @@ class AuthControllerTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var restTestClient: RestTestClient
+
+    @Autowired
+    lateinit var googleLinkTokenStore: GoogleLinkTokenStore
 
     @Test
     @Order(1)
@@ -213,6 +217,36 @@ class AuthControllerTest : BaseIntegrationTest() {
             .header("Cookie", cookie)
             .exchange()
             .expectStatus().isUnauthorized()
+    }
+
+    @Test
+    @Order(13)
+    fun `linking a Google account via the HTTP endpoint establishes a session`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Vincular HTTP","email":"vincular-http@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val token = googleLinkTokenStore.issue(
+            googleSub = "google-sub-link-http",
+            email = "vincular-http@example.com",
+            name = "Vincular HTTP",
+            avatarUrl = null,
+        )
+
+        val response = restTestClient.post()
+            .uri("/private/v1/auth/google/link")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"linkToken":"$token","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseBody
+
+        assertEquals("vincular-http@example.com", response?.email)
+        assertEquals("GOOGLE", response?.authProvider?.name)
     }
 
     @Nested

@@ -17,7 +17,7 @@ interface CurrentUserProvider {
  *
  * This re-fetch also enforces approval status on every call: the security filter chain's
  * `STATUS_APPROVED` check only ever consults the session's authorities, which are fixed at login
- * time, so it alone would let a rejected or deleted user keep using every business endpoint for
+ * time, so it alone would let a blocked or deleted user keep using every business endpoint for
  * the rest of their already-open session. Throwing here — rather than only at login — is what
  * actually revokes that access, on the user's very next request rather than their next login.
  */
