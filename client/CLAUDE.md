@@ -37,10 +37,13 @@ and composable locals. Examples:
 
 ## Architecture
 
-InvestLog is a manual (PT-BR) investment logbook: stocks, crypto and funds, entered by hand —
-there is no live market feed. Stack: Vue 3 `<script setup>` + TypeScript, Pinia, Vue Router 4,
-Vite 6. Path alias `@` → `src/`. Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
-proxied via `/private` by Vite dev server.
+InvestLog is a manual (PT-BR) investment logbook: stocks, crypto and funds. Stock and fund prices
+are entered by hand; crypto `current_price` auto-refreshes hourly server-side from CoinGecko (see
+`server/CLAUDE.md`'s `cryptopricesync` module) — the manual price-edit flow still works everywhere
+as an override, since a hand-edited crypto price just gets overwritten on the next hourly run.
+Stack: Vue 3 `<script setup>` + TypeScript, Pinia, Vue Router 4, Vite 6. Path alias `@` → `src/`.
+Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`, proxied via `/private` by Vite dev
+server.
 
 The UI was ported pixel-for-pixel from a Claude Design React/Babel prototype handoff. `src/assets/styles.css`
 is that ported CSS spec (Tabler visual language) and is the single source of styling truth —
