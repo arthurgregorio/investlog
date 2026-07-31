@@ -12,7 +12,8 @@ private val log = KotlinLogging.logger {}
 
 @Component
 class GoogleLoginFailureHandler(
-    @Value("\${investlog.client-base-url}") private val clientBaseUrl: String,
+    @Value($$"${investlog.client-base-url}")
+    private val clientBaseUrl: String
 ) : AuthenticationFailureHandler {
 
     override fun onAuthenticationFailure(
