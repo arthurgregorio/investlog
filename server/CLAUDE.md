@@ -101,18 +101,20 @@ has:
 - `stockpricesync` — no REST controller. `StockPriceSyncScheduler` runs
   `@Scheduled(cron = "0 0 10-18 * * MON-FRI", zone = "America/Sao_Paulo")` (B3 trading hours only)
   and calls `StockPriceSyncService.syncPrices()`, which fetches every distinct `ticker` in
-  `finances.stock_holdings` and calls the `BrapiClient` HTTP service (`GET /quote/{ticker}` on
-  [brapi.dev](https://brapi.dev/), one call per ticker — the free tier has no multi-ticker batch
-  endpoint) to refresh `current_price`/`updated_at`. A ticker that 404s, times out, or otherwise
-  fails is logged as a warning and skipped — it keeps its last-known price and the loop moves on
-  to the next ticker, so one bad ticker never blocks the rest of a run. `BrapiClient` is
-  registered via `@ImportHttpServices(group = "brapi")` in `config/http/HttpServiceClientsConfig`;
-  **Spring Boot 4.1.0 has no `spring.http.serviceclient.*` auto-configuration** (verified against
-  the shipped jars — no such properties exist), so the base URL, a 10s connect/read timeout, and
-  the `Authorization: Bearer ${investlog.brapi.token}` header (from `BRAPI_TOKEN` — brapi requires
-  a token unlike CoinGecko's keyless `/simple/price`) are all set programmatically on the group's
-  `RestClient.Builder` via a `RestClientHttpServiceGroupConfigurer` bean, sourced from
-  `investlog.brapi.base-url`/`investlog.brapi.token`, not from Boot-managed YAML properties.
+  `finances.stock_holdings` and calls the `BrapiClient` HTTP service (`GET
+  /v2/stocks/quote?symbols={ticker}` on [brapi.dev](https://brapi.dev/) — the current documented
+  endpoint; the legacy `/api/quote/{ticker}` still works but is explicitly called out as legacy in
+  brapi's own docs — one call per ticker, price nested under `results[].data.regularMarketPrice`)
+  to refresh `current_price`/`updated_at`. A ticker that 404s, times out, or otherwise fails is
+  logged as a warning and skipped — it keeps its last-known price and the loop moves on to the
+  next ticker, so one bad ticker never blocks the rest of a run. `BrapiClient` is registered via
+  `@ImportHttpServices(group = "brapi")` in `config/http/BrApiHttpClientsConfig`; **Spring Boot
+  4.1.0 has no `spring.http.serviceclient.*` auto-configuration** (verified against the shipped
+  jars — no such properties exist), so the base URL and the `Authorization: Bearer
+  ${investlog.brapi.token}` header (from `BRAPI_TOKEN` — brapi requires a token unlike CoinGecko's
+  keyless `/simple/price`) are set programmatically on the group's `RestClient.Builder` via a
+  `RestClientHttpServiceGroupConfigurer` bean, sourced from `investlog.brapi.base-url`/
+  `investlog.brapi.token`, not from Boot-managed YAML properties.
   `config/SchedulingConfig` (`@EnableScheduling @Profile("!test")`) keeps the cron disabled during
   tests; tests call `syncPrices()` directly and stub brapi with WireMock rather than a
   hand-written fake (this codebase uses no object-mocking framework, but WireMock stubs HTTP, not

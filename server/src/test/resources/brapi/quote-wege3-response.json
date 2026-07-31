@@ -1,8 +1,14 @@
 {
   "results": [
     {
+      "requestedSymbol": "WEGE3",
       "symbol": "WEGE3",
-      "regularMarketPrice": 44.26
+      "changed": false,
+      "data": {
+        "regularMarketPrice": 44.26
+      }
     }
-  ]
+  ],
+  "requestedAt": "2026-07-31T02:44:45.920Z",
+  "took": 0
 }

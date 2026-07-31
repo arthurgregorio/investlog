@@ -19,7 +19,7 @@ class StockPriceSyncService(
 
         for (ticker in tickers) {
             val price = try {
-                brapiClient.getQuote(ticker).results.firstOrNull()?.regularMarketPrice
+                brapiClient.getQuote(ticker).results.firstOrNull()?.data?.regularMarketPrice
             } catch (exception: RestClientException) {
                 log.warn(exception) { "Failed to fetch brapi.dev quote for ticker $ticker, keeping last-known price" }
                 null

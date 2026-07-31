@@ -9,8 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -60,12 +59,13 @@ class StockPriceSyncWrongTokenTest : BaseIntegrationTest() {
             .id
 
         wireMockServer.stubFor(
-            get(urlEqualTo("/quote/WEGE3"))
+            get(urlPathEqualTo("/v2/stocks/quote"))
+                .withQueryParam("symbols", equalTo("WEGE3"))
                 .withHeader("Authorization", equalTo("Bearer correct-token"))
                 .willReturn(okJson(classpathResource("brapi/quote-wege3-response.json")))
         )
         wireMockServer.stubFor(
-            get(urlPathMatching("/quote/.*"))
+            get(urlPathEqualTo("/v2/stocks/quote"))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(401))
         )

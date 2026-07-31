@@ -9,8 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -59,12 +58,14 @@ class StockPriceSyncServiceTest : BaseIntegrationTest() {
             .id
 
         wireMockServer.stubFor(
-            get(urlEqualTo("/quote/WEGE3"))
+            get(urlPathEqualTo("/v2/stocks/quote"))
+                .withQueryParam("symbols", equalTo("WEGE3"))
                 .withHeader("Authorization", equalTo("Bearer $TEST_TOKEN"))
                 .willReturn(okJson(classpathResource("brapi/quote-wege3-response.json")))
         )
         wireMockServer.stubFor(
-            get(urlEqualTo("/quote/TUPY3"))
+            get(urlPathEqualTo("/v2/stocks/quote"))
+                .withQueryParam("symbols", equalTo("TUPY3"))
                 .withHeader("Authorization", equalTo("Bearer $TEST_TOKEN"))
                 .willReturn(
                     aResponse()
@@ -74,12 +75,13 @@ class StockPriceSyncServiceTest : BaseIntegrationTest() {
                 )
         )
         wireMockServer.stubFor(
-            get(urlEqualTo("/quote/VIVT3"))
+            get(urlPathEqualTo("/v2/stocks/quote"))
+                .withQueryParam("symbols", equalTo("VIVT3"))
                 .withHeader("Authorization", equalTo("Bearer $TEST_TOKEN"))
                 .willReturn(aResponse().withStatus(500))
         )
         wireMockServer.stubFor(
-            get(urlPathMatching("/quote/.*"))
+            get(urlPathEqualTo("/v2/stocks/quote"))
                 .atPriority(10)
                 .willReturn(aResponse().withStatus(401))
         )
