@@ -20,7 +20,8 @@ private val log = KotlinLogging.logger {}
 class GoogleLoginSuccessHandler(
     private val authService: AuthService,
     private val googleLinkTokenStore: GoogleLinkTokenStore,
-    @Value("\${investlog.client-base-url}") private val clientBaseUrl: String,
+    @Value($$"${investlog.client-base-url}")
+    private val clientBaseUrl: String
 ) : AuthenticationSuccessHandler {
 
     override fun onAuthenticationSuccess(

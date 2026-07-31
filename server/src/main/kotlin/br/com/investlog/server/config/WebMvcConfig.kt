@@ -8,8 +8,8 @@ import org.springframework.web.servlet.config.annotation.ApiVersionConfigurer
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
-@Configuration
 @EnableSpringDataWebSupport
+@Configuration(proxyBeanMethods = false)
 class WebMvcConfig : WebMvcConfigurer {
 
     override fun configurePathMatch(configurer: PathMatchConfigurer) {

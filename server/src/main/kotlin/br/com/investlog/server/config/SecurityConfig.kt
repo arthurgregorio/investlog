@@ -20,7 +20,7 @@ import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import tools.jackson.databind.json.JsonMapper
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class SecurityConfig {
 
     @Bean
