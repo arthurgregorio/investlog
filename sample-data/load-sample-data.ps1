@@ -49,11 +49,15 @@ if ($hasUser -ne '1') {
 }
 
 Write-Host "==> Loading sample data (this is NOT idempotent)..."
-# sample-data.sql is UTF-8. When PowerShell pipes a string to a native process it
-# re-encodes it using $OutputEncoding, which is not guaranteed to be UTF-8 on every
-# machine/locale — without this, accented characters (Ação, Itaú, ...) turn into "?".
+# sample-data.sql is UTF-8 with no BOM. Both ends of this pipeline need to be pinned to
+# UTF-8 explicitly, or accented characters (Ação, Itaú, ...) get corrupted:
+#   - Reading: without -Encoding UTF8, Get-Content falls back to the system's default
+#     codepage for BOM-less files, silently misreading multi-byte UTF-8 sequences as
+#     mojibake (e.g. "Ação" becomes "AÃ§Ã£o") before the pipe even happens.
+#   - Writing: PowerShell re-encodes a piped string using $OutputEncoding when handing
+#     it to a native process, which isn't guaranteed to be UTF-8 on every machine/locale.
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-Get-Content $sqlFile -Raw | docker exec -i $container psql -U $dbUser -d $dbName
+Get-Content $sqlFile -Raw -Encoding UTF8 | docker exec -i $container psql -U $dbUser -d $dbName
 if ($LASTEXITCODE -ne 0) { throw "psql load failed" }
 
 Write-Host ""
