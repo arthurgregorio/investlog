@@ -107,8 +107,10 @@ has:
   brapi's own docs — one call per ticker, price nested under `results[].data.regularMarketPrice`)
   to refresh `current_price`/`updated_at`. A ticker that 404s, times out, or otherwise fails is
   logged as a warning and skipped — it keeps its last-known price and the loop moves on to the
-  next ticker, so one bad ticker never blocks the rest of a run. `StocksClient` is registered via
-  `@ImportHttpServices(group = "brapi")` in `config/http/BrApiHttpClientsConfig`; **Spring Boot
+  next ticker, so one bad ticker never blocks the rest of a run. `StocksClient` lives in
+  `shared/http/brapi` rather than inside `stockpricesync` itself — it's a reusable brapi.dev
+  client, not owned by this one sync job — and is registered via `@ImportHttpServices(group =
+  "brapi")` in `config/http/BrApiHttpClientsConfig`; **Spring Boot
   4.1.0 has no `spring.http.serviceclient.*` auto-configuration** (verified against the shipped
   jars — no such properties exist), so the base URL and the `Authorization: Bearer
   ${investlog.brapi.token}` header (from `BRAPI_TOKEN` — brapi requires a token unlike CoinGecko's
