@@ -179,6 +179,7 @@ the box for a local run.
 | `TOTP_REQUIRED` | `true` | Enforces TOTP two-factor authentication at login. Set to `false` to disable it entirely (local dev convenience, or for deployments that don't want it) |
 | `TOTP_LOCKOUT_MAX_ATTEMPTS` | `5` | Consecutive invalid TOTP codes allowed before an account is temporarily locked out |
 | `TOTP_LOCKOUT_BASE_DURATION` | `60s` | Lockout duration after the max attempts are reached; doubles on each repeated lockout |
+| `BRAPI_TOKEN` | _(empty)_ | Free token from [brapi.dev/dashboard](https://brapi.dev/dashboard), used by the hourly stock/FII price sync. Without it, every sync run fails and holdings keep their last-known price |
 
 Building from source adds two more variables, read from `build-from-source/.env`:
 
