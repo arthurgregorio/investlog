@@ -101,13 +101,13 @@ has:
 - `stockpricesync` — no REST controller. `StockPriceSyncScheduler` runs
   `@Scheduled(cron = "0 0 10-18 * * MON-FRI", zone = "America/Sao_Paulo")` (B3 trading hours only)
   and calls `StockPriceSyncService.syncPrices()`, which fetches every distinct `ticker` in
-  `finances.stock_holdings` and calls the `BrapiClient` HTTP service (`GET
+  `finances.stock_holdings` and calls the `StocksClient` HTTP service (`GET
   /v2/stocks/quote?symbols={ticker}` on [brapi.dev](https://brapi.dev/) — the current documented
   endpoint; the legacy `/api/quote/{ticker}` still works but is explicitly called out as legacy in
   brapi's own docs — one call per ticker, price nested under `results[].data.regularMarketPrice`)
   to refresh `current_price`/`updated_at`. A ticker that 404s, times out, or otherwise fails is
   logged as a warning and skipped — it keeps its last-known price and the loop moves on to the
-  next ticker, so one bad ticker never blocks the rest of a run. `BrapiClient` is registered via
+  next ticker, so one bad ticker never blocks the rest of a run. `StocksClient` is registered via
   `@ImportHttpServices(group = "brapi")` in `config/http/BrApiHttpClientsConfig`; **Spring Boot
   4.1.0 has no `spring.http.serviceclient.*` auto-configuration** (verified against the shipped
   jars — no such properties exist), so the base URL and the `Authorization: Bearer

@@ -34,6 +34,6 @@ class BrApiHttpClientsConfig(
 
     companion object {
         private const val CLIENT_GROUP_NAME = "brapi"
-        private const val PACKAGE_TO_SEARCH = "br.com.investlog.server.stockpricesync.http"
+        private const val PACKAGE_TO_SEARCH = "br.com.investlog.server.shared.http.brapi"
     }
 }

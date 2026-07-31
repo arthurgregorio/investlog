@@ -1,12 +1,14 @@
-package br.com.investlog.server.stockpricesync.http
+package br.com.investlog.server.shared.http.brapi
 
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.service.annotation.GetExchange
+import org.springframework.web.service.annotation.HttpExchange
 import java.math.BigDecimal
 
-interface BrapiClient {
+@HttpExchange("/v2/stocks")
+interface StocksClient {
 
-    @GetExchange("/v2/stocks/quote")
+    @GetExchange("/quote")
     fun getQuote(@RequestParam("symbols") ticker: String): BrapiQuoteResponse
 }
 

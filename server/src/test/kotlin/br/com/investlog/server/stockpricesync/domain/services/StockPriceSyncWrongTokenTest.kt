@@ -25,7 +25,6 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// Separate context/token from StockPriceSyncServiceTest: proves the Authorization header is actually load-bearing.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StockPriceSyncWrongTokenTest : BaseIntegrationTest() {
 

@@ -1,7 +1,7 @@
 package br.com.investlog.server.stockpricesync.domain.services
 
+import br.com.investlog.server.shared.http.brapi.StocksClient
 import br.com.investlog.server.stockpricesync.domain.repositories.StockPriceSyncRepository
-import br.com.investlog.server.stockpricesync.http.BrapiClient
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClientException
@@ -10,7 +10,7 @@ private val log = KotlinLogging.logger {}
 
 @Service
 class StockPriceSyncService(
-    private val brapiClient: BrapiClient,
+    private val stocksClient: StocksClient,
     private val stockPriceSyncRepository: StockPriceSyncRepository,
 ) {
 
@@ -19,9 +19,9 @@ class StockPriceSyncService(
 
         for (ticker in tickers) {
             val price = try {
-                brapiClient.getQuote(ticker).results.firstOrNull()?.data?.regularMarketPrice
+                stocksClient.getQuote(ticker).results.firstOrNull()?.data?.regularMarketPrice
             } catch (exception: RestClientException) {
-                log.warn(exception) { "Failed to fetch brapi.dev quote for ticker $ticker, keeping last-known price" }
+                log.error(exception) { "Failed to fetch brapi.dev quote for ticker $ticker, keeping last-known price" }
                 null
             }
 
