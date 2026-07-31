@@ -47,19 +47,19 @@ BEGIN
     VALUES (v_user_id, 'Fundos e FIIs', 'FUNDS', 'BRL')
     RETURNING id INTO v_funds_wallet;
 
-    -- Stock types
-    INSERT INTO finances.stock_types (user_id, name)
-    VALUES (v_user_id, 'Ação Ordinária') RETURNING id INTO v_stock_type_acoes;
+    -- Stock types (global list since 24-1200-make-settings-global.xml — no user_id column)
+    INSERT INTO finances.stock_types (name)
+    VALUES ('Ação Ordinária') RETURNING id INTO v_stock_type_acoes;
 
-    INSERT INTO finances.stock_types (user_id, name)
-    VALUES (v_user_id, 'BDR Nível I') RETURNING id INTO v_stock_type_bdrs;
+    INSERT INTO finances.stock_types (name)
+    VALUES ('BDR Nível I') RETURNING id INTO v_stock_type_bdrs;
 
-    -- Fund types
-    INSERT INTO finances.fund_types (user_id, name)
-    VALUES (v_user_id, 'Fundo Imobiliário') RETURNING id INTO v_fund_type_fii;
+    -- Fund types (global list since 24-1200-make-settings-global.xml — no user_id column)
+    INSERT INTO finances.fund_types (name)
+    VALUES ('Fundo Imobiliário') RETURNING id INTO v_fund_type_fii;
 
-    INSERT INTO finances.fund_types (user_id, name)
-    VALUES (v_user_id, 'Renda Fixa CDI') RETURNING id INTO v_fund_type_fi;
+    INSERT INTO finances.fund_types (name)
+    VALUES ('Renda Fixa CDI') RETURNING id INTO v_fund_type_fi;
 
     -- Stock holdings
     INSERT INTO finances.stock_holdings (wallet_id, stock_type_id, ticker, name, current_price)
