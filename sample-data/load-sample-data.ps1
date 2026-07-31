@@ -49,11 +49,8 @@ if ($hasUser -ne '1') {
 }
 
 Write-Host "==> Loading sample data (this is NOT idempotent)..."
-# sample-data.sql is UTF-8. When PowerShell pipes a string to a native process it
-# re-encodes it using $OutputEncoding, which is not guaranteed to be UTF-8 on every
-# machine/locale — without this, accented characters (Ação, Itaú, ...) turn into "?".
 $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-Get-Content $sqlFile -Raw | docker exec -i $container psql -U $dbUser -d $dbName
+Get-Content $sqlFile -Raw -Encoding UTF8 | docker exec -i $container psql -U $dbUser -d $dbName
 if ($LASTEXITCODE -ne 0) { throw "psql load failed" }
 
 Write-Host ""
