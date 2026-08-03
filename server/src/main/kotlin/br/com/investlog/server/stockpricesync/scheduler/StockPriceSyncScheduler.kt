@@ -1,9 +1,11 @@
 package br.com.investlog.server.stockpricesync.scheduler
 
+import br.com.investlog.server.shared.utils.humanReadable
 import br.com.investlog.server.stockpricesync.domain.services.StockPriceSyncService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 private val log = KotlinLogging.logger {}
 
@@ -19,5 +21,6 @@ class StockPriceSyncScheduler(
         } catch (exception: Exception) {
             log.error(exception) { "Stock price sync run failed, next scheduled run will retry" }
         }
+        log.info { "Stock price sync run completed at ${LocalDateTime.now().humanReadable()}" }
     }
 }
