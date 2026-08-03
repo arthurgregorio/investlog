@@ -13,13 +13,6 @@ data class PendingGoogleLink(
     val expiresAt: Instant,
 )
 
-/**
- * Holds the pending Google profile for an account-linking offer between the OAuth2 redirect
- * (which can't carry arbitrary state itself) and the client's follow-up `POST /auth/google/link`
- * call. In-memory and single-instance is a deliberate, minimal choice — this app has no
- * multi-instance deployment story, so there's no need for a distributed cache just to survive a
- * short-lived, one-time token.
- */
 @Component
 class GoogleLinkTokenStore {
 
@@ -39,7 +32,6 @@ class GoogleLinkTokenStore {
         return token
     }
 
-    /** One-time use: the token is removed whether or not it's still valid. */
     fun consume(token: String): PendingGoogleLink? {
         val pending = pendingLinks.remove(token) ?: return null
         return pending.takeIf { it.expiresAt.isAfter(Instant.now()) }

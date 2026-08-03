@@ -59,7 +59,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFound(ex: NotFoundException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(NOT_FOUND, ex.message ?: "Resource not found")
+        val message = ex.message ?: "Resource not found"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(NOT_FOUND, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -68,7 +70,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(InvalidCredentialsException::class)
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
+        val message = ex.message ?: "Invalid credentials"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, message)
         problemDetail.setProperty("error", "invalid_credentials")
         problemDetail.setProperty("timestamp", Instant.now())
 
@@ -78,7 +82,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(SelfActionNotAllowedException::class)
     fun handleSelfActionNotAllowed(ex: SelfActionNotAllowedException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message ?: "This action cannot target your own account")
+        val message = ex.message ?: "This action cannot target your own account"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -87,7 +93,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(UserNotApprovedException::class)
     fun handleUserNotApproved(ex: UserNotApprovedException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, ex.message ?: "Your account is not approved")
+        val message = ex.message ?: "Your account is not approved"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, message)
         problemDetail.setProperty("error", "pending_approval")
         problemDetail.setProperty("timestamp", Instant.now())
 
@@ -97,7 +105,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(TotpRequiredException::class)
     fun handleTotpRequired(ex: TotpRequiredException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "TOTP code required")
+        val message = ex.message ?: "TOTP code required"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, message)
         problemDetail.setProperty("error", "totp_required")
         problemDetail.setProperty("timestamp", Instant.now())
 
@@ -107,7 +117,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(InvalidTotpCodeException::class)
     fun handleInvalidTotpCode(ex: InvalidTotpCodeException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid TOTP code")
+        val message = ex.message ?: "Invalid TOTP code"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, message)
         problemDetail.setProperty("error", "invalid_totp_code")
         problemDetail.setProperty("timestamp", Instant.now())
 
@@ -117,7 +129,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(TooManyTotpAttemptsException::class)
     fun handleTooManyTotpAttempts(ex: TooManyTotpAttemptsException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, ex.message ?: "Too many invalid TOTP attempts")
+        val message = ex.message ?: "Too many invalid TOTP attempts"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, message)
         problemDetail.setProperty("error", "too_many_totp_attempts")
         problemDetail.setProperty("timestamp", Instant.now())
 
@@ -127,7 +141,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(TotpAlreadyEnabledException::class)
     fun handleTotpAlreadyEnabled(ex: TotpAlreadyEnabledException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "TOTP is already enabled")
+        val message = ex.message ?: "TOTP is already enabled"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -136,7 +152,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(InvalidUserStatusTransitionException::class)
     fun handleInvalidUserStatusTransition(ex: InvalidUserStatusTransitionException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "Invalid user status transition")
+        val message = ex.message ?: "Invalid user status transition"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -145,7 +163,10 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(AccountNotLocalException::class)
     fun handleAccountNotLocal(ex: AccountNotLocalException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message ?: "This action is only available for local accounts")
+        val problemDetail = ProblemDetail.forStatusAndDetail(
+            BAD_REQUEST,
+            ex.message ?: "This action is only available for local accounts"
+        )
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

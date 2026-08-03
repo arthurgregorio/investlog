@@ -7,18 +7,12 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * In-memory, per-account lockout for repeated invalid TOTP codes (RFC 6238 §5.2). Shared between
- * [br.com.investlog.server.auth.domain.services.AuthService.login] and `.verifyTotp` so an
- * attacker can't dodge the counter by switching endpoints. Keyed by email rather than IP: this is
- * a self-hosted, single/few-user app, so the map stays bounded by account count and needs no
- * eviction sweep, and per-account keying avoids trusting a client-supplied/proxy `X-Forwarded-For`
- * header that nothing else in this app currently validates.
- */
 @Component
 class TotpAttemptLimiter(
-    @Value("\${investlog.totp-lockout.max-attempts:5}") private val maxAttemptsBeforeLockout: Int,
-    @Value("\${investlog.totp-lockout.base-duration:60s}") private val baseLockoutDuration: Duration,
+    @Value($$"${investlog.totp-lockout.max-attempts:5}")
+    private val maxAttemptsBeforeLockout: Int,
+    @Value($$"${investlog.totp-lockout.base-duration:60s}")
+    private val baseLockoutDuration: Duration,
 ) {
 
     private val attemptStateByEmail = ConcurrentHashMap<String, AttemptState>()

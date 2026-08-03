@@ -13,12 +13,14 @@ private val log = KotlinLogging.logger {}
 class AdminBootstrapRunner(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    @Value("\${investlog.admin-default-password:admin}") private val adminDefaultPassword: String,
+    @Value($$"${investlog.admin-default-password:admin}")
+    private val adminDefaultPassword: String,
 ) : ApplicationRunner {
 
     override fun run(args: ApplicationArguments) {
         val admin = userRepository.findByEmail(ADMIN_EMAIL) ?: return
         val existingHash = userRepository.findPasswordHashByEmail(ADMIN_EMAIL)
+
         if (existingHash != null) return
 
         log.warn { "Setting the seeded admin's password from investlog.admin-default-password — change it after first login." }

@@ -1,6 +1,6 @@
 package br.com.investlog.server.auth.security
 
-import br.com.investlog.server.auth.domain.services.AuthService
+import br.com.investlog.server.auth.services.AuthService
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest

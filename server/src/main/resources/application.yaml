@@ -17,17 +17,20 @@ logging:
   level:
     org.jooq.Constants: off
 
-# FIXME we should make this structure better
 investlog:
-  admin-default-password: ${ADMIN_DEFAULT_PASSWORD:admin}
-  totp-required: ${TOTP_REQUIRED:true}
-  totp-lockout:
-    max-attempts: ${TOTP_LOCKOUT_MAX_ATTEMPTS:5}
-    base-duration: ${TOTP_LOCKOUT_BASE_DURATION:60s}
-  google-auth-enabled: ${GOOGLE_AUTH_ENABLED:false}
-  google-client-id: ${GOOGLE_CLIENT_ID:}
-  google-client-secret: ${GOOGLE_CLIENT_SECRET:}
-  client-base-url: ${CLIENT_BASE_URL:http://localhost:8081}
+  security:
+    admin-default-password: ${ADMIN_DEFAULT_PASSWORD:admin}
+    totp:
+      enabled: ${TOTP_REQUIRED:true}
+      lockout:
+        max-attempts: ${TOTP_LOCKOUT_MAX_ATTEMPTS:5}
+        base-duration: ${TOTP_LOCKOUT_BASE_DURATION:60s}
+
+  google-auth:
+    enabled: ${GOOGLE_AUTH_ENABLED:false}
+    client-id: ${GOOGLE_CLIENT_ID:}
+    client-secret: ${GOOGLE_CLIENT_SECRET:}
+    client-base-url: ${CLIENT_BASE_URL:http://localhost:8081}
 
   brapi:
     base-url: https://brapi.dev/api

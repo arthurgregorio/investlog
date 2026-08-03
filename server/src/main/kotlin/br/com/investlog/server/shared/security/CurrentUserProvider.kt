@@ -9,18 +9,6 @@ interface CurrentUserProvider {
     fun getCurrentUser(): CurrentUser
 }
 
-/**
- * Resolves the current user's identity from the session's [Authentication] principal, then
- * re-fetches the row from the database so callers always see the latest persisted preferences
- * (the session principal is set once at login and is never refreshed in place, so reading it
- * directly would return stale `accentColor`/`preferredCurrency` values after a profile update).
- *
- * This re-fetch also enforces approval status on every call: the security filter chain's
- * `STATUS_APPROVED` check only ever consults the session's authorities, which are fixed at login
- * time, so it alone would let a blocked or deleted user keep using every business endpoint for
- * the rest of their already-open session. Throwing here — rather than only at login — is what
- * actually revokes that access, on the user's very next request rather than their next login.
- */
 @Component
 class SecurityContextCurrentUserProvider(private val userRepository: UserRepository) : CurrentUserProvider {
 

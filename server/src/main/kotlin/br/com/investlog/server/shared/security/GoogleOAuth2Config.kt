@@ -11,28 +11,17 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 @Configuration
 class GoogleOAuth2Config {
 
-    // NOTE: CommonOAuth2Provider (the brief's originally specified API) was removed in Spring
-    // Security 7.x (pulled in by Spring Boot 4.1.0 here), so this uses its OIDC-discovery-based
-    // replacement instead. ClientRegistrations.fromIssuerLocation performs a blocking HTTP call
-    // to Google's issuer metadata endpoint at bean-creation time (i.e. only when
-    // google-auth-enabled=true), pre-populating authorizationUri/tokenUri/jwkSetUri/userInfoUri,
-    // redirectUri, authorizationGrantType, and clientAuthenticationMethod the same way
-    // CommonOAuth2Provider.GOOGLE used to.
     @Bean
     @ConditionalOnProperty(prefix = "investlog", name = ["google-auth-enabled"], havingValue = "true")
     fun clientRegistrationRepository(
-        @Value("\${investlog.google-client-id}") googleClientId: String,
-        @Value("\${investlog.google-client-secret}") googleClientSecret: String,
+        @Value($$"${investlog.google-client-id}") googleClientId: String,
+        @Value($$"${investlog.google-client-secret}") googleClientSecret: String,
     ): ClientRegistrationRepository {
         val googleRegistration = ClientRegistrations.fromIssuerLocation("https://accounts.google.com")
             .registrationId("google")
             .clientId(googleClientId)
             .clientSecret(googleClientSecret)
             .scope("openid", "profile", "email")
-            // Must match SecurityConfig's redirectionEndpoint.baseUri ("/private/login/oauth2/code/*") —
-            // fromIssuerLocation's default redirectUri template ("{baseUrl}/login/oauth2/code/{registrationId}")
-            // omits the "/private" prefix, so Spring computes a redirect_uri the app's own filter chain
-            // never listens on, and Google rejects it as unregistered besides.
             .redirectUri("{baseUrl}/private/login/oauth2/code/{registrationId}")
             .build()
 

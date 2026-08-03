@@ -1,7 +1,7 @@
 package br.com.investlog.server.stockpricesync.scheduler
 
 import br.com.investlog.server.shared.utils.humanReadable
-import br.com.investlog.server.stockpricesync.domain.services.StockPriceSyncService
+import br.com.investlog.server.stockpricesync.services.StockPriceSyncService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
