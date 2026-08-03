@@ -257,7 +257,7 @@ class AuthControllerTest : BaseIntegrationTest() {
     @Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
     @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = ["investlog.totp-required=false"],
+        properties = ["investlog.security.totp.enabled=false"],
     )
     @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
     inner class WhenTotpIsNotRequired {
@@ -287,7 +287,7 @@ class AuthControllerTest : BaseIntegrationTest() {
     @Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
     @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = ["investlog.totp-lockout.max-attempts=2", "investlog.totp-lockout.base-duration=3s"],
+        properties = ["investlog.security.totp.lockout.max-attempts=2", "investlog.security.totp.lockout.base-duration=3s"],
     )
     @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)

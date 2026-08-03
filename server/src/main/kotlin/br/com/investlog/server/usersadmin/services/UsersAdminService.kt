@@ -17,9 +17,11 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
+@Transactional(readOnly = true)
 class UsersAdminService(
     private val currentUserProvider: CurrentUserProvider,
     private val usersAdminRepository: UsersAdminRepository,
@@ -29,8 +31,10 @@ class UsersAdminService(
 
     fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminRepository.findAll(pageable)
 
+    @Transactional
     fun approve(externalId: UUID): UserAdminResponse = updateStatus(externalId, Status.APPROVED)
 
+    @Transactional
     fun block(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
@@ -38,30 +42,35 @@ class UsersAdminService(
         return updateStatus(externalId, Status.BLOCKED)
     }
 
+    @Transactional
     fun unblock(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         requireCurrentStatus(user, Status.BLOCKED, "unblock")
         return updateStatus(externalId, Status.APPROVED)
     }
 
+    @Transactional
     fun changeRole(externalId: UUID, request: RoleUpdateRequest): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
         return usersAdminRepository.updateRole(user.id!!, request.role)
     }
 
+    @Transactional
     fun resetTotp(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         totpAttemptLimiter.recordSuccess(user.email!!)
         return usersAdminRepository.resetTotp(user.id!!)
     }
 
+    @Transactional
     fun delete(externalId: UUID) {
         val user = requireUser(externalId)
         requireNotSelf(user)
         usersAdminRepository.deleteByExternalId(externalId)
     }
 
+    @Transactional
     fun resetPassword(externalId: UUID, request: PasswordResetRequest): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)

@@ -2,7 +2,6 @@ package br.com.investlog.server.config.core
 
 import br.com.investlog.server.auth.security.GoogleLoginFailureHandler
 import br.com.investlog.server.auth.security.GoogleLoginSuccessHandler
-import br.com.investlog.server.shared.rest.payloads.AccessDeniedResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -94,4 +93,6 @@ class SecurityConfig {
         }
         return http.build()
     }
+
+    data class AccessDeniedResponse(val error: String, val detail: String)
 }

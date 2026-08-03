@@ -1,4 +1,4 @@
-package br.com.investlog.server.usersadmin
+package br.com.investlog.server.usersadmin.rest
 
 import br.com.investlog.server.usersadmin.rest.payloads.PasswordResetRequest
 import br.com.investlog.server.usersadmin.rest.payloads.RoleUpdateRequest
@@ -7,14 +7,13 @@ import br.com.investlog.server.usersadmin.services.UsersAdminService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
-import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
@@ -23,31 +22,36 @@ import java.util.UUID
 class UsersAdminController(private val usersAdminService: UsersAdminService) {
 
     @GetMapping
-    fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminService.findAll(pageable)
+    fun findAll(pageable: Pageable): ResponseEntity<PagedModel<UserAdminResponse>> =
+        ResponseEntity.ok(usersAdminService.findAll(pageable))
 
     @PatchMapping("/{id}/approve")
-    fun approve(@PathVariable id: UUID): UserAdminResponse = usersAdminService.approve(id)
+    fun approve(@PathVariable id: UUID): ResponseEntity<UserAdminResponse> =
+        ResponseEntity.ok(usersAdminService.approve(id))
 
     @PatchMapping("/{id}/block")
-    fun block(@PathVariable id: UUID): UserAdminResponse = usersAdminService.block(id)
+    fun block(@PathVariable id: UUID): ResponseEntity<UserAdminResponse> =
+        ResponseEntity.ok(usersAdminService.block(id))
 
     @PatchMapping("/{id}/unblock")
-    fun unblock(@PathVariable id: UUID): UserAdminResponse = usersAdminService.unblock(id)
+    fun unblock(@PathVariable id: UUID): ResponseEntity<UserAdminResponse> =
+        ResponseEntity.ok(usersAdminService.unblock(id))
 
     @PatchMapping("/{id}/role")
-    fun changeRole(@PathVariable id: UUID, @RequestBody request: RoleUpdateRequest): UserAdminResponse =
-        usersAdminService.changeRole(id, request)
+    fun changeRole(@PathVariable id: UUID, @RequestBody request: RoleUpdateRequest): ResponseEntity<UserAdminResponse> =
+        ResponseEntity.ok(usersAdminService.changeRole(id, request))
 
     @PatchMapping("/{id}/totp-reset")
-    fun resetTotp(@PathVariable id: UUID): UserAdminResponse = usersAdminService.resetTotp(id)
+    fun resetTotp(@PathVariable id: UUID): ResponseEntity<UserAdminResponse> =
+        ResponseEntity.ok(usersAdminService.resetTotp(id))
 
     @PatchMapping("/{id}/password")
-    fun resetPassword(@PathVariable id: UUID, @Valid @RequestBody request: PasswordResetRequest): UserAdminResponse =
-        usersAdminService.resetPassword(id, request)
+    fun resetPassword(@PathVariable id: UUID, @Valid @RequestBody request: PasswordResetRequest): ResponseEntity<UserAdminResponse> =
+        ResponseEntity.ok(usersAdminService.resetPassword(id, request))
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun delete(@PathVariable id: UUID) {
+    fun delete(@PathVariable id: UUID): ResponseEntity<Void> {
         usersAdminService.delete(id)
+        return ResponseEntity.noContent().build()
     }
 }

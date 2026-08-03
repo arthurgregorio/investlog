@@ -12,10 +12,10 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 class GoogleOAuth2Config {
 
     @Bean
-    @ConditionalOnProperty(prefix = "investlog", name = ["google-auth-enabled"], havingValue = "true")
+    @ConditionalOnProperty(prefix = "investlog.google-auth", name = ["enabled"], havingValue = "true")
     fun clientRegistrationRepository(
-        @Value($$"${investlog.google-client-id}") googleClientId: String,
-        @Value($$"${investlog.google-client-secret}") googleClientSecret: String,
+        @Value($$"${investlog.google-auth.client-id}") googleClientId: String,
+        @Value($$"${investlog.google-auth.client-secret}") googleClientSecret: String,
     ): ClientRegistrationRepository {
         val googleRegistration = ClientRegistrations.fromIssuerLocation("https://accounts.google.com")
             .registrationId("google")

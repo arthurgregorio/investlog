@@ -7,11 +7,13 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.util.UUID
 import br.com.investlog.server.jooq.finances.enums.WalletKind as JooqWalletKind
 
 @Service
+@Transactional(readOnly = true)
 class HoldingsOverviewService(
     private val currentUserProvider: CurrentUserProvider,
     private val holdingsOverviewRepository: HoldingsOverviewRepository,

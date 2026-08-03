@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
-private val log = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 @Component
 class StockPriceSyncScheduler(
@@ -19,8 +19,8 @@ class StockPriceSyncScheduler(
         try {
             stockPriceSyncService.syncPrices()
         } catch (exception: Exception) {
-            log.error(exception) { "Stock price sync run failed, next scheduled run will retry" }
+            logger.error(exception) { "Stock price sync run failed, next scheduled run will retry" }
         }
-        log.info { "Stock price sync run completed at ${LocalDateTime.now().humanReadable()}" }
+        logger.info { "Stock price sync run completed at ${LocalDateTime.now().humanReadable()}" }
     }
 }

@@ -27,16 +27,20 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
     private val totpService: TotpService,
     private val googleLinkTokenStore: GoogleLinkTokenStore,
     private val totpAttemptLimiter: TotpAttemptLimiter,
-    @Value("\${investlog.google-auth-enabled:false}") private val googleAuthEnabled: Boolean,
-    @Value("\${investlog.totp-required:true}") private val totpRequired: Boolean,
+    @Value($$"${investlog.google-auth.enabled:false}")
+    private val googleAuthEnabled: Boolean,
+    @Value($$"${investlog.security.totp.enabled:true}")
+    private val totpRequired: Boolean,
 ) {
 
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
@@ -73,6 +77,7 @@ class AuthService(
         return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
     }
 
+    @Transactional
     fun enrollTotp(request: TotpEnrollRequest): TotpEnrollResponse {
 
         val user = verifyCredentials(request.email, request.password)
@@ -90,6 +95,7 @@ class AuthService(
         )
     }
 
+    @Transactional
     fun verifyTotp(request: TotpVerifyRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): SessionResponse {
 
         val user = verifyCredentials(request.email, request.password)
@@ -111,10 +117,12 @@ class AuthService(
         return establishSession(user.copy(totpEnabled = true), servletRequest, servletResponse)
     }
 
+    @Transactional
     fun register(request: RegisterRequest) {
         userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
     }
 
+    @Transactional
     fun handleGoogleLogin(
         googleSub: String,
         email: String,
@@ -138,6 +146,7 @@ class AuthService(
         return establishSession(user, servletRequest, servletResponse)
     }
 
+    @Transactional
     fun linkGoogleAccount(
         request: GoogleAccountLinkRequest,
         servletRequest: HttpServletRequest,

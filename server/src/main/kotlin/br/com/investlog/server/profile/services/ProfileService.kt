@@ -11,8 +11,10 @@ import br.com.investlog.server.shared.security.CurrentUserProvider
 import br.com.investlog.server.shared.security.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class ProfileService(
     private val userRepository: UserRepository,
     private val currentUserProvider: CurrentUserProvider,
@@ -21,6 +23,7 @@ class ProfileService(
 
     fun getProfile(): ProfileResponse = currentUserProvider.getCurrentUser().toResponse()
 
+    @Transactional
     fun updateProfile(request: ProfileUpdateRequest): ProfileResponse {
 
         val user = currentUserProvider.getCurrentUser()
@@ -32,6 +35,7 @@ class ProfileService(
         ).toResponse()
     }
 
+    @Transactional
     fun changePassword(request: PasswordChangeRequest) {
 
         val user = currentUserProvider.getCurrentUser()

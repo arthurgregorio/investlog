@@ -32,7 +32,7 @@ import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 import java.time.Instant
 
-private val log = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 @RestControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
@@ -44,7 +44,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         request: WebRequest,
     ): ResponseEntity<Any>? {
 
-        log.debug(ex) { "Data validation failed" }
+        br.com.investlog.server.config.logger.debug(ex) { "Data validation failed" }
 
         val errors = ex.allErrors.map(DefaultMessageSourceResolvable::getDefaultMessage)
 
@@ -175,7 +175,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleConstraintViolation(ex: ConstraintViolationException): ProblemDetail {
 
-        log.error(ex) { "Constraint violation occurred" }
+        br.com.investlog.server.config.logger.error(ex) { "Constraint violation occurred" }
 
         val errors = ex.constraintViolations.map { it.message }
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, "Validation failed")
@@ -190,7 +190,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleDataIntegrityViolation(ex: DataIntegrityViolationException): ProblemDetail {
 
-        log.error(ex) { "Data integrity violation occurred" }
+        br.com.investlog.server.config.logger.error(ex) { "Data integrity violation occurred" }
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, "The request conflicts with existing data")
         problemDetail.setProperty("timestamp", Instant.now())
@@ -201,7 +201,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(Exception::class)
     fun handleUnexpected(ex: Exception): ProblemDetail {
 
-        log.error(ex) { "Unexpected exception occurred" }
+        br.com.investlog.server.config.logger.error(ex) { "Unexpected exception occurred" }
 
         val problemDetail = ProblemDetail.forStatusAndDetail(INTERNAL_SERVER_ERROR, "An unexpected error occurred")
         problemDetail.setProperty("timestamp", Instant.now())

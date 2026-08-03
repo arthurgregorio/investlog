@@ -12,8 +12,10 @@ import dev.samstevens.totp.secret.SecretGenerator
 import dev.samstevens.totp.time.SystemTimeProvider
 import dev.samstevens.totp.util.Utils.getDataUriForImage
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional(readOnly = true)
 class TotpService {
 
     private val secretGenerator: SecretGenerator = DefaultSecretGenerator()

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
+@Transactional(readOnly = true)
 class FundHoldingService(
     private val walletService: WalletService,
     private val holdingRepo: FundHoldingRepository,

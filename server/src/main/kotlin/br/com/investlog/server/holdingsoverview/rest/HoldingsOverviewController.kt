@@ -1,9 +1,10 @@
-package br.com.investlog.server.holdingsoverview
+package br.com.investlog.server.holdingsoverview.rest
 
 import br.com.investlog.server.holdingsoverview.services.HoldingsOverviewService
 import br.com.investlog.server.holdingsoverview.rest.payloads.HoldingRowResponse
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -21,5 +22,6 @@ class HoldingsOverviewController(private val holdingsOverviewService: HoldingsOv
         @RequestParam(required = false) walletId: UUID?,
         @RequestParam(required = false) search: String?,
         pageable: Pageable,
-    ): PagedModel<HoldingRowResponse> = holdingsOverviewService.findAll(kind, typeLabel, walletId, search, pageable)
+    ): ResponseEntity<PagedModel<HoldingRowResponse>> =
+        ResponseEntity.ok(holdingsOverviewService.findAll(kind, typeLabel, walletId, search, pageable))
 }

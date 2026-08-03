@@ -7,13 +7,13 @@ import org.springframework.boot.ApplicationRunner
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 
-private val log = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 @Component
 class AdminBootstrapRunner(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    @Value($$"${investlog.admin-default-password:admin}")
+    @Value($$"${investlog.security.admin-default-password:admin}")
     private val adminDefaultPassword: String,
 ) : ApplicationRunner {
 
@@ -23,7 +23,7 @@ class AdminBootstrapRunner(
 
         if (existingHash != null) return
 
-        log.warn { "Setting the seeded admin's password from investlog.admin-default-password — change it after first login." }
+        logger.warn { "Setting the seeded admin's password from investlog.security.admin-default-password — change it after first login." }
         userRepository.updatePasswordHash(admin.id, passwordEncoder.encode(adminDefaultPassword)!!)
     }
 

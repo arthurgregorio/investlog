@@ -2,7 +2,7 @@ package br.com.investlog.server.currencyrates.services
 
 import br.com.investlog.server.currencyrates.repositories.CurrencyRateRepository
 import br.com.investlog.server.currencyrates.rest.payloads.CurrencyRateResponse
-import br.com.investlog.server.shared.rest.payloads.CurrencyCode
+import br.com.investlog.server.currencyrates.rest.payloads.CurrencyCode
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Service
@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 
 @Service
+@Transactional(readOnly = true)
 class CurrencyRateService(
     private val currencyRateRepository: CurrencyRateRepository,
 ) {

@@ -4,7 +4,7 @@ import br.com.investlog.server.currencyrates.rest.payloads.CurrencyRateResponse
 import br.com.investlog.server.jooq.finances.tables.records.CurrencyRatesRecord
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.shared.utils.pagedModelOf
-import br.com.investlog.server.shared.rest.payloads.CurrencyCode
+import br.com.investlog.server.currencyrates.rest.payloads.CurrencyCode
 import java.math.BigDecimal
 import java.time.OffsetDateTime
 import org.jooq.DSLContext

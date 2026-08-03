@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -40,29 +39,33 @@ class AuthController(private val authService: AuthService) {
         }
 
     @PostMapping("/totp/enroll")
-    fun enrollTotp(@RequestBody request: TotpEnrollRequest): TotpEnrollResponse =
-        authService.enrollTotp(request)
+    fun enrollTotp(@RequestBody request: TotpEnrollRequest): ResponseEntity<TotpEnrollResponse> =
+        ResponseEntity.ok(authService.enrollTotp(request))
 
     @PostMapping("/totp/verify")
     fun verifyTotp(
         @RequestBody request: TotpVerifyRequest,
         servletRequest: HttpServletRequest,
         servletResponse: HttpServletResponse,
-    ): SessionResponse = authService.verifyTotp(request, servletRequest, servletResponse)
+    ): ResponseEntity<SessionResponse> =
+        ResponseEntity.ok(authService.verifyTotp(request, servletRequest, servletResponse))
 
     @GetMapping("/session")
-    fun session(): SessionResponse = authService.currentSession()
+    fun session(): ResponseEntity<SessionResponse> = ResponseEntity.ok(authService.currentSession())
 
     @PostMapping("/logout")
-    fun logout(servletRequest: HttpServletRequest) = authService.logout(servletRequest)
+    fun logout(servletRequest: HttpServletRequest): ResponseEntity<Void> {
+        authService.logout(servletRequest)
+        return ResponseEntity.ok().build()
+    }
 
     @GetMapping("/config")
-    fun config(): AuthConfigResponse = authService.authConfig()
+    fun config(): ResponseEntity<AuthConfigResponse> = ResponseEntity.ok(authService.authConfig())
 
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun register(@Valid @RequestBody request: RegisterRequest) {
+    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<Void> {
         authService.register(request)
+        return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 
     @PostMapping("/google/link")
@@ -70,5 +73,6 @@ class AuthController(private val authService: AuthService) {
         @Valid @RequestBody request: GoogleAccountLinkRequest,
         servletRequest: HttpServletRequest,
         servletResponse: HttpServletResponse,
-    ): SessionResponse = authService.linkGoogleAccount(request, servletRequest, servletResponse)
+    ): ResponseEntity<SessionResponse> =
+        ResponseEntity.ok(authService.linkGoogleAccount(request, servletRequest, servletResponse))
 }

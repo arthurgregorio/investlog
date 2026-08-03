@@ -8,9 +8,11 @@ import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
+@Transactional(readOnly = true)
 class WalletService(
     private val currentUserProvider: CurrentUserProvider,
     private val walletRepository: WalletRepository,
@@ -21,6 +23,7 @@ class WalletService(
         return walletRepository.findAll(userId, pageable)
     }
 
+    @Transactional
     fun create(name: String, kind: WalletKind, currency: String): WalletResponse {
         val userId = currentUserProvider.getCurrentUser().id
         return walletRepository.create(userId, name, kind, currency)
@@ -32,12 +35,14 @@ class WalletService(
             ?: throw NotFoundException("Wallet $externalId not found")
     }
 
+    @Transactional
     fun update(externalId: UUID, name: String): WalletResponse {
         val userId = currentUserProvider.getCurrentUser().id
         return walletRepository.update(userId, externalId, name)
             ?: throw NotFoundException("Wallet $externalId not found")
     }
 
+    @Transactional
     fun delete(externalId: UUID) {
         val userId = currentUserProvider.getCurrentUser().id
         if (walletRepository.deleteByExternalId(userId, externalId) == 0) {

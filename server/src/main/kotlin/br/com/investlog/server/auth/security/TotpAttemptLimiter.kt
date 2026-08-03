@@ -9,9 +9,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class TotpAttemptLimiter(
-    @Value($$"${investlog.totp-lockout.max-attempts:5}")
+    @Value($$"${investlog.security.totp.lockout.max-attempts:5}")
     private val maxAttemptsBeforeLockout: Int,
-    @Value($$"${investlog.totp-lockout.base-duration:60s}")
+    @Value($$"${investlog.security.totp.lockout.base-duration:60s}")
     private val baseLockoutDuration: Duration,
 ) {
 

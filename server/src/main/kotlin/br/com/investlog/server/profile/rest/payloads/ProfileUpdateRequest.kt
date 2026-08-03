@@ -1,6 +1,6 @@
 package br.com.investlog.server.profile.rest.payloads
 
-import br.com.investlog.server.shared.rest.payloads.CurrencyCode
+import br.com.investlog.server.currencyrates.rest.payloads.CurrencyCode
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 

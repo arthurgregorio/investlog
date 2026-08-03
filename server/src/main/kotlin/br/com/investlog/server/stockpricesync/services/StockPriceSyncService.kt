@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.RestClientException
 
-private val log = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 @Service
 @Transactional(readOnly = true)
@@ -20,18 +20,18 @@ class StockPriceSyncService(
     fun syncPrices() {
         val tickers = stockPriceSyncRepository.findDistinctTickers()
 
-        log.info { "Syncing prices for ${tickers.size} tickers" }
+        logger.info { "Syncing prices for ${tickers.size} tickers" }
 
         for (ticker in tickers) {
             val price = try {
                 stocksClient.getQuote(ticker).results.firstOrNull()?.data?.regularMarketPrice
             } catch (ex: RestClientException) {
-                log.error(ex) { "Failed to fetch brapi.dev quote for ticker $ticker, keeping last-known price" }
+                logger.error(ex) { "Failed to fetch brapi.dev quote for ticker $ticker, keeping last-known price" }
                 null
             }
 
             if (price == null) {
-                log.warn { "No price returned by brapi.dev for ticker $ticker, keeping last-known price" }
+                logger.warn { "No price returned by brapi.dev for ticker $ticker, keeping last-known price" }
                 continue
             }
 

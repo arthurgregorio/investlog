@@ -14,13 +14,13 @@ import org.springframework.stereotype.Component
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-private val log = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 @Component
 class GoogleLoginSuccessHandler(
     private val authService: AuthService,
     private val googleLinkTokenStore: GoogleLinkTokenStore,
-    @Value($$"${investlog.client-base-url}")
+    @Value($$"${investlog.google-auth.client-base-url}")
     private val clientBaseUrl: String
 ) : AuthenticationSuccessHandler {
 
@@ -48,13 +48,13 @@ class GoogleLoginSuccessHandler(
             )
             response.sendRedirect("$clientBaseUrl/")
         } catch (exception: GoogleAccountEmailInUseException) {
-            log.warn(exception) { "Google login collided with an existing local account; offering to link" }
+            logger.warn(exception) { "Google login collided with an existing local account; offering to link" }
             clearStraySessionState(request)
             val linkToken = googleLinkTokenStore.issue(googleSub, email, name, avatarUrl)
             val encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8)
             response.sendRedirect("$clientBaseUrl/login?error=email_in_use&linkToken=$linkToken&linkEmail=$encodedEmail")
         } catch (exception: Exception) {
-            log.warn(exception) { "Google login failed while processing the OAuth2 callback" }
+            logger.warn(exception) { "Google login failed while processing the OAuth2 callback" }
             clearStraySessionState(request)
             response.sendRedirect("$clientBaseUrl/login?error=oauth_failed")
         }
