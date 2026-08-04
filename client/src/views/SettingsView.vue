@@ -28,9 +28,14 @@ onMounted(() => {
 const stockPriceSyncEnabled = computed({
   get: () => configurationsStore.values['stock_price_sync_enabled'] === 'true',
   set: async (enabled: boolean) => {
-    await configurationsStore.updateConfiguration('stock_price_sync_enabled', enabled ? 'true' : 'false')
+    await configurationsStore.updateConfiguration(
+      'stock_price_sync_enabled',
+      enabled ? 'true' : 'false',
+    )
     toast.open({
-      message: enabled ? 'Sincronização automática ativada.' : 'Sincronização automática desativada.',
+      message: enabled
+        ? 'Sincronização automática ativada.'
+        : 'Sincronização automática desativada.',
       type: 'is-success',
     })
   },
@@ -206,13 +211,15 @@ async function commitRate(currencyCode: string) {
       <CardBody>
         <div class="set-head"><h2 class="set-title">Ações administrativas</h2></div>
         <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
-        <p class="set-action-sentence">
-          Clique para
-          <b-button type="is-primary" :loading="triggeringSync" @click="forceStockPriceSync">
-            atualizar as cotações
-          </b-button>
-          das ações agora
-        </p>
+        <ol class="set-action-list">
+          <li class="set-action-sentence">
+            Clique para
+            <b-button :loading="triggeringSync" @click="forceStockPriceSync">
+              atualizar as cotações
+            </b-button>
+            das ações agora
+          </li>
+        </ol>
       </CardBody>
     </Card>
   </div>

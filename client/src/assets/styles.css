@@ -1638,6 +1638,14 @@ a {
   align-items: center;
 }
 
+.set-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+}
+
 .set-action-sentence {
   display: flex;
   flex-wrap: wrap;
@@ -1645,7 +1653,6 @@ a {
   gap: 8px;
   font-size: 13px;
   color: var(--text-2);
-  margin: 0;
 }
 
 .chip-add .input {
