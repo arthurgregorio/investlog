@@ -1646,6 +1646,11 @@ a {
   padding-left: 20px;
 }
 
+.set-action-item::marker {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
 .set-action-sentence {
   display: flex;
   flex-wrap: wrap;

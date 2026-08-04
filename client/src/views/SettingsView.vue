@@ -212,12 +212,14 @@ async function commitRate(currencyCode: string) {
         <div class="set-head"><h2 class="set-title">Ações administrativas</h2></div>
         <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
         <ol class="set-action-list">
-          <li class="set-action-sentence">
-            Clique para
-            <b-button :loading="triggeringSync" @click="forceStockPriceSync">
-              atualizar as cotações
-            </b-button>
-            das ações agora
+          <li class="set-action-item">
+            <span class="set-action-sentence">
+              Clique para
+              <b-button :loading="triggeringSync" @click="forceStockPriceSync">
+                atualizar as cotações
+              </b-button>
+              das ações agora
+            </span>
           </li>
         </ol>
       </CardBody>
