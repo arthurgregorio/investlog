@@ -9,7 +9,9 @@ Add a global, admin-controlled on/off switch for the automatic stock price sync 
 surfaced as a toggle in the existing Settings screen. Back it with a reusable
 key/value settings table — not a one-off column or table — so the next global
 toggle (an already-planned "auto-update currencies" switch) is just another row,
-not another migration.
+not another migration. Alongside the toggle, add an admin-only button that forces
+an immediate sync run on demand, independent of the toggle's state or the cron
+schedule.
 
 ## Context (as-built)
 
@@ -38,6 +40,18 @@ not another migration.
 - Migration convention (`server/CLAUDE.md`): new file only, under
   `db/changelog/changes/<year>/<month>/<DD-HHMM>-<description>.xml`, registered via
   `<include>` in `db.changelog-master.xml`. Never edit an existing changelog file.
+- `stockpricesync` currently has **no REST controller at all** (`server/CLAUDE.md`
+  says so explicitly) — `StockPriceSyncService.syncPrices()` is only ever called by
+  the scheduler. It's synchronous and sequential (`server/.../StockPriceSyncService.kt:20-40`):
+  one `stocksClient.getQuote(ticker)` HTTP call per distinct ticker, in a loop, no
+  concurrency. A manual trigger endpoint calls the same method directly and returns
+  once the whole loop finishes — no background job/async infra exists in this
+  codebase to do otherwise, and none is needed at current ticker-count scale.
+- Admin-only route gating is enforced in `SecurityConfig.kt` per-HTTP-method, e.g.
+  `authorize(HttpMethod.POST, "/private/v1/stock-types/**",
+  hasAuthority("ROLE_ADMIN"))` (`server/src/main/kotlin/.../config/core/SecurityConfig.kt:69`)
+  — a new admin-only endpoint follows this exact pattern, one line added to the
+  `authorizeHttpRequests` block.
 
 ## Decision
 
@@ -53,6 +67,10 @@ not another migration.
 | Scheduler change | `StockPriceSyncScheduler.syncPrices()` checks `configurationService.isEnabled(STOCK_PRICE_SYNC_ENABLED)` first; if disabled, logs and returns before calling `StockPriceSyncService` at all. Cron still fires on schedule — it just no-ops |
 | Client placement | Fourth `Card` in the existing `SettingsView.vue`, no new route/tab |
 | Client control | Buefy `b-switch`, first one in the codebase — sets the pattern for the future currency-auto-update toggle |
+| Force-sync endpoint | `POST /private/v1/stock-price-sync`, `ROLE_ADMIN`-gated, new `StockPriceSyncController` calling `StockPriceSyncService.syncPrices()` directly |
+| Force-sync vs. toggle | The force action **ignores** `stock_price_sync_enabled` — it always runs when clicked, regardless of whether auto-sync is on or off. "Force" means force. |
+| Force-sync response | Synchronous — the request blocks until the full ticker loop completes, then returns `204 No Content`. No async job/queue; matches the service's existing synchronous, sequential design |
+| Client control (force) | Button in the same "Sincronização automática" `Card`, `b-button` with Buefy's `loading` prop bound to an in-flight ref, disabled while a request is outstanding |
 
 ## Architecture
 
@@ -107,10 +125,46 @@ if (!configurationService.isEnabled(ConfigurationKey.STOCK_PRICE_SYNC_ENABLED)) 
 }
 ```
 
+`stockpricesync/` gains its first controller, calling the existing service directly
+— no new logic in `StockPriceSyncService` itself, and deliberately **not** routed
+through the scheduler (so it bypasses the enabled-check above):
+
+```
+stockpricesync/
+  StockPriceSyncController.kt         # POST /stock-price-sync -> stockPriceSyncService.syncPrices()
+  scheduler/
+    StockPriceSyncScheduler.kt        # (existing, unchanged except for the guard above)
+  services/
+    StockPriceSyncService.kt          # (existing, unchanged)
+  repositories/
+    StockPriceSyncRepository.kt       # (existing, unchanged)
+```
+
+```kotlin
+@RestController
+@RequestMapping("/private/v1/stock-price-sync")
+class StockPriceSyncController(
+    private val stockPriceSyncService: StockPriceSyncService,
+) {
+    @PostMapping
+    fun forceSync(): ResponseEntity<Void> {
+        stockPriceSyncService.syncPrices()
+        return ResponseEntity.noContent().build()
+    }
+}
+```
+
+`SecurityConfig.kt` gains one line alongside the existing per-method admin rules:
+
+```kotlin
+authorize(HttpMethod.POST, "/private/v1/stock-price-sync/**", hasAuthority("ROLE_ADMIN"))
+```
+
 ### Client
 
 ```
 src/api/configurations.ts       # getConfigurations(), updateConfiguration(key, value)
+src/api/stockPriceSync.ts       # forceSync(): Promise<void>
 src/stores/configurations.ts    # Pinia store: configurations map, load(), updateConfiguration()
 src/types.ts                    # + ConfigurationResponse { key, value, updatedAt }
 src/views/SettingsView.vue      # + 4th Card: "Sincronização automática"
@@ -122,6 +176,15 @@ API, then update local state) used by every other store. The new `Card` in
 `stock_price_sync_enabled` entry, calling `configurationsStore.updateConfiguration(
 'stock_price_sync_enabled', value ? 'true' : 'false')` on change, with a success
 toast (matching the existing Settings toast pattern for other mutations).
+
+Below the switch, in the same `Card`, a "Atualizar preços agora" button calls
+`stockPriceSyncApi.forceSync()` directly from `SettingsView.vue` — no dedicated
+store, since there's no persisted state to hold beyond a transient `triggeringSync`
+loading ref. The button uses Buefy's `loading` prop while the request is in flight
+(the request can take a while — one sequential HTTP call per distinct ticker) and
+fires a success/error toast on completion, same pattern as the other Settings
+mutations. No client-side gate beyond the page-level admin-only router guard that
+already covers all of `/settings`.
 
 ## Files to create / change
 
@@ -136,10 +199,13 @@ toast (matching the existing Settings toast pattern for other mutations).
 | `server/src/main/kotlin/br/com/investlog/server/configurations/rest/payloads/ConfigurationResponse.kt` | **create** |
 | `server/src/main/kotlin/br/com/investlog/server/configurations/rest/payloads/ConfigurationUpdateRequest.kt` | **create** |
 | `server/src/main/kotlin/br/com/investlog/server/stockpricesync/scheduler/StockPriceSyncScheduler.kt` | **update** — add the disabled-check guard |
+| `server/src/main/kotlin/br/com/investlog/server/stockpricesync/StockPriceSyncController.kt` | **create** — `POST /stock-price-sync` force-trigger |
+| `server/src/main/kotlin/br/com/investlog/server/config/core/SecurityConfig.kt` | **update** — `ROLE_ADMIN` gate for `POST /stock-price-sync/**` |
 | `client/src/api/configurations.ts` | **create** |
+| `client/src/api/stockPriceSync.ts` | **create** — `forceSync()` |
 | `client/src/stores/configurations.ts` | **create** |
 | `client/src/types.ts` | **update** — add `ConfigurationResponse` |
-| `client/src/views/SettingsView.vue` | **update** — add the toggle `Card` |
+| `client/src/views/SettingsView.vue` | **update** — add the toggle + force-sync button `Card` |
 
 Per root `CLAUDE.md`, this splits into a **server PR** (migration + `configurations`
 package + scheduler guard) and a **client PR** (api/store/view), each `Refs #<issue>`
@@ -157,5 +223,12 @@ against the tracking issue for this feature.
   subsequent `isEnabled()` call, `PATCH` as a non-admin session 403s.
 - **Manual UI check**: as an admin, open Settings, toggle the switch off, refresh the
   page — the switch stays off (persisted, not just local state); confirm the next
-  scheduled sync run (or a manually triggered `syncPrices()` call) is skipped per the
-  server log line.
+  scheduled sync run is skipped per the server log line.
+- **Server integration test**: `StockPriceSyncControllerTest` — `POST
+  /stock-price-sync` as admin returns `204` and updates `stock_holdings.current_price`
+  (via WireMock stub, same style as the existing scheduler test); as a non-admin
+  session, `403`s. Also verify it succeeds even when `stock_price_sync_enabled` is
+  `false` in the database, proving the force path is independent of the toggle.
+- **Manual UI check**: with the toggle switched off, click "Atualizar preços agora" —
+  prices update anyway; button shows a loading state for the duration and a success
+  toast on completion.
