@@ -51,7 +51,9 @@ schedule.
   `authorize(HttpMethod.POST, "/private/v1/stock-types/**",
   hasAuthority("ROLE_ADMIN"))` (`server/src/main/kotlin/.../config/core/SecurityConfig.kt:69`)
   — a new admin-only endpoint follows this exact pattern, one line added to the
-  `authorizeHttpRequests` block.
+  `authorizeHttpRequests` block. **Ordering matters**: the catch-all
+  `authorize(anyRequest, hasAuthority("STATUS_APPROVED"))` (`SecurityConfig.kt:74`) is
+  last in the chain — new admin-only rules must be added above it, not after.
 
 ## Decision
 
@@ -64,6 +66,7 @@ schedule.
 | Server package | New `configurations` package, same flat layout as `typelists` (`Controller` + `services/` + `repositories/` + `rest/payloads/`) |
 | Server endpoints | `GET /private/v1/configurations`, `PATCH /private/v1/configurations/{key}` — both `ROLE_ADMIN`, same gate as currency rates/type lists |
 | Key typing | `ConfigurationKey` enum (e.g. `STOCK_PRICE_SYNC_ENABLED("stock_price_sync_enabled")`) gives call sites a typed handle over the raw string keys stored in the DB |
+| Unknown key on `PATCH` | `404` (mirrors `NotFoundException` → `ProblemDetail` convention used elsewhere) rather than silently upserting an untyped key |
 | Scheduler change | `StockPriceSyncScheduler.syncPrices()` checks `configurationService.isEnabled(STOCK_PRICE_SYNC_ENABLED)` first; if disabled, logs and returns before calling `StockPriceSyncService` at all. Cron still fires on schedule — it just no-ops |
 | Client placement | Fourth `Card` in the existing `SettingsView.vue`, no new route/tab |
 | Client control | Buefy `b-switch`, first one in the codebase — sets the pattern for the future currency-auto-update toggle |
@@ -109,7 +112,9 @@ configurations/
 `ConfigurationService` (`@Service @Transactional(readOnly = true)`, per the repo's
 service-layer convention):
 - `@PostConstruct` loads every row from `ConfigurationRepository.findAll()` into a
-  `ConcurrentHashMap<String, String>`.
+  `ConcurrentHashMap<String, String>`. Liquibase always finishes applying the
+  changelog before the Spring context builds services, so the seeded row is
+  guaranteed present by the time this runs.
 - `fun isEnabled(key: ConfigurationKey): Boolean` reads the cache, parses `"true"`/
   `"false"`.
 - `@Transactional fun update(key: ConfigurationKey, value: String)` upserts via the
@@ -154,11 +159,18 @@ class StockPriceSyncController(
 }
 ```
 
-`SecurityConfig.kt` gains one line alongside the existing per-method admin rules:
+`SecurityConfig.kt` gains two lines alongside the existing per-method admin rules,
+**above** the `anyRequest -> STATUS_APPROVED` catch-all:
 
 ```kotlin
+authorize(HttpMethod.PATCH, "/private/v1/configurations/**", hasAuthority("ROLE_ADMIN"))
 authorize(HttpMethod.POST, "/private/v1/stock-price-sync/**", hasAuthority("ROLE_ADMIN"))
 ```
+
+`GET /configurations` is left ungated by role (falls through to the
+`STATUS_APPROVED` catch-all) — reading the current flag state isn't sensitive, only
+changing it is, matching how currency rates are readable by any approved user but
+only admin-writable.
 
 ### Client
 
@@ -200,7 +212,7 @@ already covers all of `/settings`.
 | `server/src/main/kotlin/br/com/investlog/server/configurations/rest/payloads/ConfigurationUpdateRequest.kt` | **create** |
 | `server/src/main/kotlin/br/com/investlog/server/stockpricesync/scheduler/StockPriceSyncScheduler.kt` | **update** — add the disabled-check guard |
 | `server/src/main/kotlin/br/com/investlog/server/stockpricesync/StockPriceSyncController.kt` | **create** — `POST /stock-price-sync` force-trigger |
-| `server/src/main/kotlin/br/com/investlog/server/config/core/SecurityConfig.kt` | **update** — `ROLE_ADMIN` gate for `POST /stock-price-sync/**` |
+| `server/src/main/kotlin/br/com/investlog/server/config/core/SecurityConfig.kt` | **update** — `ROLE_ADMIN` gate for `PATCH /configurations/**` and `POST /stock-price-sync/**` |
 | `client/src/api/configurations.ts` | **create** |
 | `client/src/api/stockPriceSync.ts` | **create** — `forceSync()` |
 | `client/src/stores/configurations.ts` | **create** |
@@ -208,8 +220,8 @@ already covers all of `/settings`.
 | `client/src/views/SettingsView.vue` | **update** — add the toggle + force-sync button `Card` |
 
 Per root `CLAUDE.md`, this splits into a **server PR** (migration + `configurations`
-package + scheduler guard) and a **client PR** (api/store/view), each `Refs #108`
-against the tracking issue for this feature.
+package + scheduler guard + force-sync controller) and a **client PR** (api/store/
+view), each `Refs #108` against the tracking issue for this feature.
 
 ## Verification
 
@@ -220,7 +232,8 @@ against the tracking issue for this feature.
   scheduler test behavior is unchanged.
 - **Server integration test**: `ConfigurationControllerTest` — `GET` returns the
   seeded row, `PATCH` as admin updates it and the cache reflects the new value on a
-  subsequent `isEnabled()` call, `PATCH` as a non-admin session 403s.
+  subsequent `isEnabled()` call, `PATCH` as a non-admin session 403s, `PATCH` on an
+  unknown key 404s.
 - **Manual UI check**: as an admin, open Settings, toggle the switch off, refresh the
   page — the switch stays off (persisted, not just local state); confirm the next
   scheduled sync run is skipped per the server log line.
