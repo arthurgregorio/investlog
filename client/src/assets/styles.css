@@ -1638,6 +1638,16 @@ a {
   align-items: center;
 }
 
+.set-action-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0;
+}
+
 .chip-add .input {
   max-width: 240px;
 }

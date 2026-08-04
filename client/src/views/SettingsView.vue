@@ -194,16 +194,25 @@ async function commitRate(currencyCode: string) {
     <Card>
       <CardBody>
         <b-loading :is-full-page="false" :active="configurationsStore.loading" />
-        <div class="set-head"><h2 class="set-title">Sincronização automática</h2></div>
-        <p class="set-desc">
-          Controla a atualização automática dos preços de ações durante o pregão da B3.
-        </p>
-        <b-switch v-model="stockPriceSyncEnabled">Atualizar preços de ações automaticamente</b-switch>
-        <div class="chip-add">
-          <b-button icon-left="refresh" :loading="triggeringSync" @click="forceStockPriceSync">
-            Atualizar preços agora
+        <div class="set-head"><h2 class="set-title">Configurações</h2></div>
+        <p class="set-desc">Ative ou desative funções do sistema.</p>
+        <b-switch v-model="stockPriceSyncEnabled">
+          Atualizar preços das ações brasileiras automaticamente
+        </b-switch>
+      </CardBody>
+    </Card>
+
+    <Card>
+      <CardBody>
+        <div class="set-head"><h2 class="set-title">Ações administrativas</h2></div>
+        <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
+        <p class="set-action-sentence">
+          Clique para
+          <b-button type="is-primary" :loading="triggeringSync" @click="forceStockPriceSync">
+            atualizar as cotações
           </b-button>
-        </div>
+          das ações agora
+        </p>
       </CardBody>
     </Card>
   </div>
