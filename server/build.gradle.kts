@@ -243,6 +243,7 @@ tasks {
     }
 
     bootBuildImage {
+        builder = "bellsoft/buildpacks.builder:musl"
         environment.put("BP_JVM_VERSION", JVM_25.target)
         environment.put("BPE_DELIM_JAVA_TOOL_OPTIONS", " ")
         environment.put(
