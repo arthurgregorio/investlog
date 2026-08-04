@@ -180,3 +180,9 @@ export interface ProfileUpdateRequest {
   accentColor?: string
   preferredCurrency?: string
 }
+
+export interface ConfigurationResponse {
+  key: string
+  value: string
+  updatedAt: string
+}
