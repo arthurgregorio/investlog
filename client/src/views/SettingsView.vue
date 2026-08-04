@@ -1,25 +1,50 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import { useTypesListStore } from '@/stores/typesList'
 import { useRatesStore } from '@/stores/rates'
+import { useConfigurationsStore } from '@/stores/configurations'
 import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
+import { stockPriceSyncApi } from '@/api/stockPriceSync'
 
 const toast = useToast()
 const typesListStore = useTypesListStore()
 const ratesStore = useRatesStore()
+const configurationsStore = useConfigurationsStore()
 const auth = useAuthStore()
 
 const newStockType = ref('')
 const newFundType = ref('')
+const triggeringSync = ref(false)
 
 onMounted(() => {
-  Promise.all([typesListStore.load(), ratesStore.load()])
+  Promise.all([typesListStore.load(), ratesStore.load(), configurationsStore.load()])
 })
+
+const stockPriceSyncEnabled = computed({
+  get: () => configurationsStore.values['stock_price_sync_enabled'] === 'true',
+  set: async (enabled: boolean) => {
+    await configurationsStore.updateConfiguration('stock_price_sync_enabled', enabled ? 'true' : 'false')
+    toast.open({
+      message: enabled ? 'Sincronização automática ativada.' : 'Sincronização automática desativada.',
+      type: 'is-success',
+    })
+  },
+})
+
+async function forceStockPriceSync() {
+  triggeringSync.value = true
+  try {
+    await stockPriceSyncApi.forceSync()
+    toast.open({ message: 'Preços de ações atualizados.', type: 'is-success' })
+  } finally {
+    triggeringSync.value = false
+  }
+}
 
 async function addStockType() {
   const name = newStockType.value.trim()
@@ -162,6 +187,22 @@ async function commitRate(currencyCode: string) {
             @keyup.enter="addFundType"
           />
           <b-button icon-left="plus" @click="addFundType">Adicionar tipo</b-button>
+        </div>
+      </CardBody>
+    </Card>
+
+    <Card>
+      <CardBody>
+        <b-loading :is-full-page="false" :active="configurationsStore.loading" />
+        <div class="set-head"><h2 class="set-title">Sincronização automática</h2></div>
+        <p class="set-desc">
+          Controla a atualização automática dos preços de ações durante o pregão da B3.
+        </p>
+        <b-switch v-model="stockPriceSyncEnabled">Atualizar preços de ações automaticamente</b-switch>
+        <div class="chip-add">
+          <b-button icon-left="refresh" :loading="triggeringSync" @click="forceStockPriceSync">
+            Atualizar preços agora
+          </b-button>
         </div>
       </CardBody>
     </Card>
