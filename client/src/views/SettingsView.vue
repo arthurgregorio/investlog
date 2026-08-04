@@ -28,9 +28,14 @@ onMounted(() => {
 const stockPriceSyncEnabled = computed({
   get: () => configurationsStore.values['stock_price_sync_enabled'] === 'true',
   set: async (enabled: boolean) => {
-    await configurationsStore.updateConfiguration('stock_price_sync_enabled', enabled ? 'true' : 'false')
+    await configurationsStore.updateConfiguration(
+      'stock_price_sync_enabled',
+      enabled ? 'true' : 'false',
+    )
     toast.open({
-      message: enabled ? 'Sincronização automática ativada.' : 'Sincronização automática desativada.',
+      message: enabled
+        ? 'Sincronização automática ativada.'
+        : 'Sincronização automática desativada.',
       type: 'is-success',
     })
   },
@@ -194,16 +199,29 @@ async function commitRate(currencyCode: string) {
     <Card>
       <CardBody>
         <b-loading :is-full-page="false" :active="configurationsStore.loading" />
-        <div class="set-head"><h2 class="set-title">Sincronização automática</h2></div>
-        <p class="set-desc">
-          Controla a atualização automática dos preços de ações durante o pregão da B3.
-        </p>
-        <b-switch v-model="stockPriceSyncEnabled">Atualizar preços de ações automaticamente</b-switch>
-        <div class="chip-add">
-          <b-button icon-left="refresh" :loading="triggeringSync" @click="forceStockPriceSync">
-            Atualizar preços agora
-          </b-button>
-        </div>
+        <div class="set-head"><h2 class="set-title">Configurações</h2></div>
+        <p class="set-desc">Ative ou desative funções do sistema.</p>
+        <b-switch v-model="stockPriceSyncEnabled">
+          Atualizar preços das ações brasileiras automaticamente
+        </b-switch>
+      </CardBody>
+    </Card>
+
+    <Card>
+      <CardBody>
+        <div class="set-head"><h2 class="set-title">Ações administrativas</h2></div>
+        <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
+        <ol class="set-action-list">
+          <li class="set-action-item">
+            <span class="set-action-sentence">
+              Clique para
+              <b-button :loading="triggeringSync" @click="forceStockPriceSync">
+                atualizar as cotações
+              </b-button>
+              das ações agora
+            </span>
+          </li>
+        </ol>
       </CardBody>
     </Card>
   </div>

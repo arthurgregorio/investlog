@@ -20,7 +20,7 @@ class StockPriceSyncService(
     fun syncPrices() {
         val tickers = stockPriceSyncRepository.findDistinctTickers()
 
-        logger.info { "Syncing prices for ${tickers.size} tickers" }
+        logger.debug { "Syncing prices for ${tickers.size} tickers" }
 
         for (ticker in tickers) {
             val price = try {
@@ -36,6 +36,8 @@ class StockPriceSyncService(
             }
 
             stockPriceSyncRepository.updatePrice(ticker, price)
+            logger.debug { "Price for $ticker synced" }
         }
+        logger.info { "Prices for ${tickers.size} tickers synced" }
     }
 }

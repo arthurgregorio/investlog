@@ -19,6 +19,7 @@ class StockPriceSyncScheduler(
 
     @Scheduled(cron = "0 0 10-18 * * MON-FRI", zone = "America/Sao_Paulo")
     fun syncPrices() {
+
         if (!configurationService.isEnabled(ConfigurationKey.STOCK_PRICE_SYNC_ENABLED)) {
             logger.info { "Stock price sync skipped: disabled via configuration" }
             return
@@ -29,6 +30,7 @@ class StockPriceSyncScheduler(
         } catch (exception: Exception) {
             logger.error(exception) { "Stock price sync run failed, next scheduled run will retry" }
         }
+
         logger.info { "Stock price sync run completed at ${LocalDateTime.now().humanReadable()}" }
     }
 }
