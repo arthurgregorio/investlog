@@ -1,7 +1,7 @@
 # InvestLog — Stock Price Sync Toggle Design
 
 **Date:** 2026-08-03
-**Status:** Draft (pending user review)
+**Status:** Approved — tracked in [#108](https://github.com/arthurgregorio/investlog/issues/108)
 
 ## Goal
 
@@ -208,7 +208,7 @@ already covers all of `/settings`.
 | `client/src/views/SettingsView.vue` | **update** — add the toggle + force-sync button `Card` |
 
 Per root `CLAUDE.md`, this splits into a **server PR** (migration + `configurations`
-package + scheduler guard) and a **client PR** (api/store/view), each `Refs #<issue>`
+package + scheduler guard) and a **client PR** (api/store/view), each `Refs #108`
 against the tracking issue for this feature.
 
 ## Verification

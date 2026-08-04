@@ -241,4 +241,5 @@ The persistence schema itself is fully defined (see below).
 
 `bootJar` is configured with layered jars (`dependencies`, `spring-boot-loader`,
 `snapshot-dependencies`, `application`), output as `server.jar`. `bootBuildImage` targets
-JVM 25 and produces `investlog/server:v<version>`.
+JVM 25, builds on BellSoft's Alpaquita Linux builder (`bellsoft/buildpacks.builder:musl`) for a
+smaller musl-based image, and produces `investlog/server:v<version>`.
