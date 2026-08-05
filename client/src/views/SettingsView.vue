@@ -10,6 +10,7 @@ import { useConfigurationsStore } from '@/stores/configurations'
 import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
 import { stockPriceSyncApi } from '@/api/stockPriceSync'
+import { cryptoPriceSyncApi } from '@/api/cryptoPriceSync'
 
 const toast = useToast()
 const typesListStore = useTypesListStore()
@@ -19,7 +20,8 @@ const auth = useAuthStore()
 
 const newStockType = ref('')
 const newFundType = ref('')
-const triggeringSync = ref(false)
+const triggeringStockSync = ref(false)
+const triggeringCryptoSync = ref(false)
 
 onMounted(() => {
   Promise.all([typesListStore.load(), ratesStore.load(), configurationsStore.load()])
@@ -41,13 +43,39 @@ const stockPriceSyncEnabled = computed({
   },
 })
 
+const cryptoPriceSyncEnabled = computed({
+  get: () => configurationsStore.values['crypto_price_sync_enabled'] === 'true',
+  set: async (enabled: boolean) => {
+    await configurationsStore.updateConfiguration(
+      'crypto_price_sync_enabled',
+      enabled ? 'true' : 'false',
+    )
+    toast.open({
+      message: enabled
+        ? 'Sincronização automática ativada.'
+        : 'Sincronização automática desativada.',
+      type: 'is-success',
+    })
+  },
+})
+
 async function forceStockPriceSync() {
-  triggeringSync.value = true
+  triggeringStockSync.value = true
   try {
     await stockPriceSyncApi.forceSync()
     toast.open({ message: 'Preços de ações atualizados.', type: 'is-success' })
   } finally {
-    triggeringSync.value = false
+    triggeringStockSync.value = false
+  }
+}
+
+async function forceCryptoPriceSync() {
+  triggeringCryptoSync.value = true
+  try {
+    await cryptoPriceSyncApi.forceSync()
+    toast.open({ message: 'Preços de criptomoedas atualizados.', type: 'is-success' })
+  } finally {
+    triggeringCryptoSync.value = false
   }
 }
 
@@ -204,6 +232,9 @@ async function commitRate(currencyCode: string) {
         <b-switch v-model="stockPriceSyncEnabled">
           Atualizar preços das ações brasileiras automaticamente
         </b-switch>
+        <b-switch v-model="cryptoPriceSyncEnabled">
+          Atualizar preços das criptomoedas automaticamente
+        </b-switch>
       </CardBody>
     </Card>
 
@@ -215,10 +246,19 @@ async function commitRate(currencyCode: string) {
           <li class="set-action-item">
             <span class="set-action-sentence">
               Clique para
-              <b-button :loading="triggeringSync" @click="forceStockPriceSync">
+              <b-button :loading="triggeringStockSync" @click="forceStockPriceSync">
                 atualizar as cotações
               </b-button>
               das ações agora
+            </span>
+          </li>
+          <li class="set-action-item">
+            <span class="set-action-sentence">
+              Clique para
+              <b-button :loading="triggeringCryptoSync" @click="forceCryptoPriceSync">
+                atualizar as cotações
+              </b-button>
+              das criptomoedas agora
             </span>
           </li>
         </ol>
