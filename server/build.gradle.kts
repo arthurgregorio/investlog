@@ -56,6 +56,7 @@ val wiremockSpringVersion = "4.0.9"
 dependencies {
     // spring stuff
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
     implementation("org.springframework.boot:spring-boot-starter-mail")
@@ -73,6 +74,9 @@ dependencies {
 
     // logging
     implementation("io.github.oshai:kotlin-logging-jvm:$kotlinLoggingJvmVersion")
+
+    // caching
+    implementation("com.github.ben-manes.caffeine:caffeine")
 
     // kotlin thing
     implementation("org.jetbrains.kotlin:kotlin-reflect")

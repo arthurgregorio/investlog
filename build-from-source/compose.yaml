@@ -43,6 +43,7 @@ services:
       TOTP_LOCKOUT_MAX_ATTEMPTS: ${TOTP_LOCKOUT_MAX_ATTEMPTS:-5}
       TOTP_LOCKOUT_BASE_DURATION: ${TOTP_LOCKOUT_BASE_DURATION:-60s}
       BRAPI_TOKEN: ${BRAPI_TOKEN:-}
+      COINGECKO_KEY: ${COINGECKO_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
