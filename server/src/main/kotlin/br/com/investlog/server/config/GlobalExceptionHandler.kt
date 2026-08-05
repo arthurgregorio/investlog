@@ -1,9 +1,12 @@
 package br.com.investlog.server.config
 
+import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
+import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
+import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.exceptions.UserNotApprovedException
@@ -17,6 +20,7 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.http.HttpStatus.TOO_MANY_REQUESTS
 import org.springframework.http.HttpStatus.UNAUTHORIZED
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
@@ -28,7 +32,7 @@ import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 import java.time.Instant
 
-private val log = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 @RestControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
@@ -40,7 +44,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         request: WebRequest,
     ): ResponseEntity<Any>? {
 
-        log.debug(ex) { "Data validation failed" }
+        br.com.investlog.server.config.logger.debug(ex) { "Data validation failed" }
 
         val errors = ex.allErrors.map(DefaultMessageSourceResolvable::getDefaultMessage)
 
@@ -55,7 +59,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(NotFoundException::class)
     fun handleNotFound(ex: NotFoundException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(NOT_FOUND, ex.message ?: "Resource not found")
+        val message = ex.message ?: "Resource not found"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(NOT_FOUND, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -64,7 +70,10 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(InvalidCredentialsException::class)
     fun handleInvalidCredentials(ex: InvalidCredentialsException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid credentials")
+        val message = ex.message ?: "Invalid credentials"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, message)
+        problemDetail.setProperty("error", "invalid_credentials")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -73,7 +82,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(SelfActionNotAllowedException::class)
     fun handleSelfActionNotAllowed(ex: SelfActionNotAllowedException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, ex.message ?: "This action cannot target your own account")
+        val message = ex.message ?: "This action cannot target your own account"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -82,7 +93,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(UserNotApprovedException::class)
     fun handleUserNotApproved(ex: UserNotApprovedException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, ex.message ?: "Your account is not approved")
+        val message = ex.message ?: "Your account is not approved"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, message)
         problemDetail.setProperty("error", "pending_approval")
         problemDetail.setProperty("timestamp", Instant.now())
 
@@ -92,7 +105,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(TotpRequiredException::class)
     fun handleTotpRequired(ex: TotpRequiredException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "TOTP code required")
+        val message = ex.message ?: "TOTP code required"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, message)
         problemDetail.setProperty("error", "totp_required")
         problemDetail.setProperty("timestamp", Instant.now())
 
@@ -102,8 +117,22 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(InvalidTotpCodeException::class)
     fun handleInvalidTotpCode(ex: InvalidTotpCodeException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, ex.message ?: "Invalid TOTP code")
+        val message = ex.message ?: "Invalid TOTP code"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, message)
         problemDetail.setProperty("error", "invalid_totp_code")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(TooManyTotpAttemptsException::class)
+    fun handleTooManyTotpAttempts(ex: TooManyTotpAttemptsException): ProblemDetail {
+
+        val message = ex.message ?: "Too many invalid TOTP attempts"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, message)
+        problemDetail.setProperty("error", "too_many_totp_attempts")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -112,7 +141,32 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(TotpAlreadyEnabledException::class)
     fun handleTotpAlreadyEnabled(ex: TotpAlreadyEnabledException): ProblemDetail {
 
-        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, ex.message ?: "TOTP is already enabled")
+        val message = ex.message ?: "TOTP is already enabled"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidUserStatusTransitionException::class)
+    fun handleInvalidUserStatusTransition(ex: InvalidUserStatusTransitionException): ProblemDetail {
+
+        val message = ex.message ?: "Invalid user status transition"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(AccountNotLocalException::class)
+    fun handleAccountNotLocal(ex: AccountNotLocalException): ProblemDetail {
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(
+            BAD_REQUEST,
+            ex.message ?: "This action is only available for local accounts"
+        )
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
@@ -121,7 +175,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleConstraintViolation(ex: ConstraintViolationException): ProblemDetail {
 
-        log.error(ex) { "Constraint violation occurred" }
+        br.com.investlog.server.config.logger.error(ex) { "Constraint violation occurred" }
 
         val errors = ex.constraintViolations.map { it.message }
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, "Validation failed")
@@ -136,7 +190,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(DataIntegrityViolationException::class)
     fun handleDataIntegrityViolation(ex: DataIntegrityViolationException): ProblemDetail {
 
-        log.error(ex) { "Data integrity violation occurred" }
+        br.com.investlog.server.config.logger.error(ex) { "Data integrity violation occurred" }
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, "The request conflicts with existing data")
         problemDetail.setProperty("timestamp", Instant.now())
@@ -147,7 +201,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(Exception::class)
     fun handleUnexpected(ex: Exception): ProblemDetail {
 
-        log.error(ex) { "Unexpected exception occurred" }
+        br.com.investlog.server.config.logger.error(ex) { "Unexpected exception occurred" }
 
         val problemDetail = ProblemDetail.forStatusAndDetail(INTERNAL_SERVER_ERROR, "An unexpected error occurred")
         problemDetail.setProperty("timestamp", Instant.now())

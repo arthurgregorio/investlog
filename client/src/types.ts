@@ -10,7 +10,7 @@ export interface WalletTypeMeta {
 }
 
 /** Accent keys map to the [data-accent] CSS variants. */
-export type AccentKey = 'blue' | 'indigo' | 'teal' | 'green'
+export type AccentKey = 'blue' | 'indigo' | 'teal' | 'yellow'
 
 // --- API response types (match backend response payloads exactly) ---
 
@@ -133,13 +133,14 @@ export interface PagedResponse<T> {
 
 export type UserRole = 'ADMIN' | 'USER'
 
-export type UserStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+export type UserStatus = 'PENDING' | 'APPROVED' | 'BLOCKED'
 
 export interface SessionResponse {
   name: string
   email: string
   role: UserRole
   status: UserStatus
+  authProvider: 'LOCAL' | 'GOOGLE'
 }
 
 export interface AuthConfigResponse {
@@ -178,4 +179,10 @@ export interface ProfileResponse {
 export interface ProfileUpdateRequest {
   accentColor?: string
   preferredCurrency?: string
+}
+
+export interface ConfigurationResponse {
+  key: string
+  value: string
+  updatedAt: string
 }

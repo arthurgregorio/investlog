@@ -6,6 +6,7 @@ import type { WalletKind } from '@/types'
 export interface ModalControls {
   openAddInvestment: (kind?: WalletKind) => void
   openCreateWallet: (type?: WalletKind) => void
+  openPasswordChange: () => void
 }
 
 export const ModalKey: InjectionKey<ModalControls> = Symbol('investlog.modals')

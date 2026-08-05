@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <!--
+        Reusable global key/value settings store, loaded into memory by ConfigurationService.
+        First consumer is stock_price_sync_enabled; future global toggles (e.g. currency
+        auto-update) are just another seeded row, not another migration.
+    -->
+
+    <changeSet id="03-1400-1" author="${claude}">
+        <comment>Create system.configurations, a global key/value settings table</comment>
+        <sql>
+            CREATE TABLE system.configurations (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>
+                DROP TABLE system.configurations;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="03-1400-2" author="${claude}">
+        <comment>Seed stock_price_sync_enabled, defaulting the automated sync job to on</comment>
+        <sql>
+            INSERT INTO system.configurations (key, value) VALUES ('stock_price_sync_enabled', 'true');
+        </sql>
+        <rollback>
+            <sql>
+                DELETE FROM system.configurations WHERE key = 'stock_price_sync_enabled';
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

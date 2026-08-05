@@ -37,6 +37,32 @@ table aliases, and loop iterators. Examples of what to avoid and what to use ins
 
 This applies to both the Kotlin variable name **and** the SQL alias string passed to `.as()`.
 
+**Constructor parameters never carry an inline annotation** — `@Value(...)` (or any other
+annotation) goes on its own line above the `private val`/`val`. Function-signature parameters
+(not constructors) may keep the annotation inline, e.g. `fun foo(@PathVariable id: UUID)`.
+
+**`@Value` uses Kotlin 2.3's `$$` multi-dollar interpolation prefix**, not the old `"\${...}"`
+escape: `@Value($$"${investlog.brapi.token:}")`.
+
+**REST controllers always return `ResponseEntity<T>`, never `@ResponseStatus`** — use
+`ResponseEntity.ok(...)`, `.status(HttpStatus.CREATED).body(...)`, or `.noContent().build()`
+(typed `ResponseEntity<Void>` for delete/no-body responses).
+
+**Every `@Service` class carries `@Transactional(readOnly = true)`**; each write method adds its
+own explicit `@Transactional`. `StockPriceSyncService` is the reference example. Gotcha: a class
+that extends a Spring base type with its own protected `logger`/`log` field (e.g.
+`ResponseEntityExceptionHandler`) will have that member shadow a file-level `KotlinLogging`
+property of the same name — calls silently resolve to the wrong overload and fail with a
+confusing `Argument type mismatch: () -> String vs Throwable!` compile error. Fully qualify the
+file-level property at the call site (e.g. `br.com.investlog.server.config.logger.error(ex) { }`)
+when this happens.
+
+**`KotlinLogging` instances are named `logger`, not `log`**: `private val logger =
+KotlinLogging.logger {}`.
+
+See the root `CLAUDE.md` for the repo-wide comment convention and branch-naming rule — both
+apply here too.
+
 ## Migrations
 
 **Never edit an existing Liquibase changelog file** under
@@ -65,10 +91,11 @@ has:
   `Authenticated`/`EnrollmentRequired`) is `auth`'s own return type, kept in its own file rather
   than co-located in `AuthService.kt` — one type per file, even for small/tightly-coupled types.
 - `usersadmin` — admin-only user management: `GET /users` (paginated), `PATCH
-  /users/{id}/approve|reject|role|totp-reset`, `DELETE /users/{id}`. Gated to `ROLE_ADMIN` in
-  `SecurityConfig`. `changeRole`/`reject`/`delete` all guard against the caller targeting their
-  own account (`SelfActionNotAllowedException`, 400) to prevent a self-lockout; `approve` and
-  `resetTotp` don't need the guard since self-targeting them is a genuine no-op, not a lockout.
+  /users/{id}/approve|block|unblock|role|totp-reset|password`, `DELETE /users/{id}`. Gated to
+  `ROLE_ADMIN` in `SecurityConfig`. `block`/`changeRole`/`delete`/`resetPassword` all guard
+  against the caller targeting their own account (`SelfActionNotAllowedException`, 400) to
+  prevent a self-lockout; `approve`, `unblock`, and `resetTotp` don't need the guard since
+  self-targeting them is a genuine no-op, not a lockout.
 - `shared/persistence` — `pagedModelOf(content, pageable, total)`, the single place jOOQ page
   results become `org.springframework.data.web.PagedModel<T>` for collection endpoints.
 - `shared/exceptions` — domain exceptions (`NotFoundException`, `InvalidCredentialsException`,
@@ -77,20 +104,22 @@ has:
   `GlobalExceptionHandler` to a `ProblemDetail`.
 - `config` — `WebMvcConfig` (path-segment API versioning, prefixes `@RestController`s under
   `/private/{version}`; `@EnableSpringDataWebSupport` activates `Pageable` parameter resolution),
-  `SecurityConfig` (the filter chain — see below), and `GlobalExceptionHandler` (RFC 7807
-  `ProblemDetail` error responses: 400 validation errors, 404 `NotFoundException`, 409
-  `DataIntegrityViolationException` from unique/FK-restrict violations, 500 catch-all).
-- `shared/rest/payloads` — shared REST payload types: `CurrencyCode` (typed enum used as a path
-  variable in the currency-rates controller) and `AccessDeniedResponse` (the JSON shape written
-  by `SecurityConfig`'s `AccessDeniedHandler`).
-- `profile` — `GET`/`PATCH /private/v1/profile`, following a `rest/{controllers,payloads}` +
-  `domain/services` layout.
+  `SecurityConfig` (the filter chain — see below; its `AccessDeniedHandler` writes a nested
+  `SecurityConfig.AccessDeniedResponse` data class, not a shared payload type), and
+  `GlobalExceptionHandler` (RFC 7807 `ProblemDetail` error responses: 400 validation errors, 404
+  `NotFoundException`, 409 `DataIntegrityViolationException` from unique/FK-restrict violations,
+  500 catch-all).
+- `profile` — `GET`/`PATCH /private/v1/profile`, `PATCH /private/v1/profile/password`, following
+  the flat `<feature>/<Controller>.kt` + `services/` + `rest/payloads/` layout every feature
+  package uses (no `domain/` layer, no `rest/controllers/` subfolder — dropped repo-wide).
 - `typelists` — `GET`/`POST`/`DELETE /private/v1/stock-types` and `.../fund-types`, paginated,
   sharing one pair of payloads (`TypeResponse`/`TypeCreateRequest`) since both resources are
-  `{id, name}`. Extends the `profile` layout with `domain/repositories`.
+  `{id, name}`. Extends the `profile` layout with a `repositories/` folder.
 - `currencyrates` — `GET`/`PUT /private/v1/currency-rates`, addressed by `currencyCode` (not
   `external_id`); `PUT` upserts and, when `isBase: true`, clears the previous base row in the
-  same transaction.
+  same transaction. Owns `CurrencyCode` (`currencyrates/rest/payloads/CurrencyCode.kt`) — the
+  typed enum used as the path variable here and imported cross-package by `profile` for
+  `preferredCurrency`.
 - `holdingsoverview` — `GET /private/v1/holdings` with optional `kind` filter and Spring
   `Pageable` for server-side pagination. Returns `HoldingRowResponse` rows from the
   `holdings_overview` VIEW (joined with `wallets`). Computes `gain` and `gainPct` in Kotlin.
@@ -98,6 +127,33 @@ has:
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
   (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
+- `stockpricesync` — no REST controller. `StockPriceSyncScheduler` runs
+  `@Scheduled(cron = "0 0 10-18 * * MON-FRI", zone = "America/Sao_Paulo")` (B3 trading hours only)
+  and calls `StockPriceSyncService.syncPrices()`, which fetches every distinct `ticker` in
+  `finances.stock_holdings` and calls the `StocksClient` HTTP service (`GET
+  /v2/stocks/quote?symbols={ticker}` on [brapi.dev](https://brapi.dev/) — the current documented
+  endpoint; the legacy `/api/quote/{ticker}` still works but is explicitly called out as legacy in
+  brapi's own docs — one call per ticker, price nested under `results[].data.regularMarketPrice`)
+  to refresh `current_price`/`updated_at`. A ticker that 404s, times out, or otherwise fails is
+  logged as a warning and skipped — it keeps its last-known price and the loop moves on to the
+  next ticker, so one bad ticker never blocks the rest of a run. `StocksClient` lives in
+  `shared/http/brapi` rather than inside `stockpricesync` itself — it's a reusable brapi.dev
+  client, not owned by this one sync job — and is registered via `@ImportHttpServices(group =
+  "brapi")` in `config/http/BrApiHttpClientsConfig`; **Spring Boot
+  4.1.0 has no `spring.http.serviceclient.*` auto-configuration** (verified against the shipped
+  jars — no such properties exist), so the base URL and the `Authorization: Bearer
+  ${investlog.brapi.token}` header (from `BRAPI_TOKEN` — brapi requires a token unlike CoinGecko's
+  keyless `/simple/price`) are set programmatically on the group's `RestClient.Builder` via a
+  `RestClientHttpServiceGroupConfigurer` bean, sourced from `investlog.brapi.base-url`/
+  `investlog.brapi.token`, not from Boot-managed YAML properties.
+  `config/SchedulingConfig` (`@EnableScheduling @Profile("!test")`) keeps the cron disabled during
+  tests; tests call `syncPrices()` directly and stub brapi with WireMock rather than a
+  hand-written fake (this codebase uses no object-mocking framework, but WireMock stubs HTTP, not
+  Kotlin objects, so it fits) — `org.wiremock:wiremock-standalone` (not the bare `wiremock`
+  artifact) is required, since the bare artifact's transitive Jetty version gets silently
+  mangled by Spring's dependency-management BOM. The manual `PATCH
+  /wallets/{walletId}/stock-holdings/{holdingId}` endpoint in `stockholdings` still works as an
+  override — a hand-edited price is simply overwritten again on the next scheduled run.
 
 ### Authentication & Authorization
 
@@ -185,4 +241,5 @@ The persistence schema itself is fully defined (see below).
 
 `bootJar` is configured with layered jars (`dependencies`, `spring-boot-loader`,
 `snapshot-dependencies`, `application`), output as `server.jar`. `bootBuildImage` targets
-JVM 25 and produces `investlog/server:v<version>`.
+JVM 25, builds on BellSoft's Alpaquita Linux builder (`bellsoft/buildpacks.builder:musl`) for a
+smaller musl-based image, and produces `investlog/server:v<version>`.

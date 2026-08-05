@@ -49,7 +49,8 @@ if ($hasUser -ne '1') {
 }
 
 Write-Host "==> Loading sample data (this is NOT idempotent)..."
-Get-Content $sqlFile -Raw | docker exec -i $container psql -U $dbUser -d $dbName
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+Get-Content $sqlFile -Raw -Encoding UTF8 | docker exec -i $container psql -U $dbUser -d $dbName
 if ($LASTEXITCODE -ne 0) { throw "psql load failed" }
 
 Write-Host ""

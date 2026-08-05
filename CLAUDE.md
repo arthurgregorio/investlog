@@ -45,3 +45,14 @@ per-layer PRs target that feature branch, not `main`; the feature branch itself 
 
 Use `gh pr edit <N> --add-label feature --add-assignee arthurgregorio` right after `gh pr create`
 if the label/assignee weren't set at creation time — don't leave a PR unlabeled or unassigned.
+
+## Branch naming
+
+Every branch Claude creates must be `feature/<slug>` or `fix/<slug>` and reference an issue —
+no exceptions. Only the user may bypass this rule themselves.
+
+## Comments
+
+**No comments that just restate the spec or business logic**, in server or client code — only
+comment a non-obvious WHY (a framework quirk, a workaround, a hidden constraint). Applies
+everywhere in the repo, not just the folder currently being edited.

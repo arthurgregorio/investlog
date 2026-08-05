@@ -10,7 +10,7 @@ const auth = useAuthStore()
 const route = useRoute()
 const googleAuthEnabled = ref(false)
 
-type Step = 'credentials' | 'register' | 'enroll' | 'totp'
+type Step = 'credentials' | 'register' | 'enroll' | 'totp' | 'link'
 
 const step = ref<Step>('credentials')
 const name = ref('')
@@ -20,9 +20,17 @@ const totpCode = ref('')
 const qrCodeDataUri = ref('')
 const error = ref('')
 const submitting = ref(false)
+const linkToken = ref('')
+const linkEmail = ref('')
+const linkPassword = ref('')
 
 onMounted(async () => {
-  if (route.query.error === 'email_in_use') {
+  const queryLinkToken = route.query.linkToken
+  if (route.query.error === 'email_in_use' && typeof queryLinkToken === 'string') {
+    linkToken.value = queryLinkToken
+    linkEmail.value = typeof route.query.linkEmail === 'string' ? route.query.linkEmail : ''
+    step.value = 'link'
+  } else if (route.query.error === 'email_in_use') {
     error.value = 'Já existe uma conta com este e-mail. Entre com e-mail e senha.'
   } else if (route.query.error === 'oauth_failed') {
     error.value = 'Não foi possível entrar com o Google. Tente novamente.'
@@ -35,6 +43,7 @@ const title = computed(() => {
   if (step.value === 'register') return 'Criar conta'
   if (step.value === 'enroll') return 'Configure a autenticação em duas etapas'
   if (step.value === 'totp') return 'Confirme o código de autenticação'
+  if (step.value === 'link') return 'Vincular conta ao Google'
   return 'Bem-vindo de volta'
 })
 
@@ -44,6 +53,8 @@ const subtitle = computed(() => {
   if (step.value === 'enroll')
     return 'Escaneie o QR code com um aplicativo autenticador e digite o código gerado.'
   if (step.value === 'totp') return 'Digite o código do seu aplicativo autenticador.'
+  if (step.value === 'link')
+    return `Já existe uma conta para ${linkEmail.value}. Informe a senha para vincular ao Google.`
   return 'Entre para acompanhar seus investimentos.'
 })
 
@@ -114,6 +125,18 @@ async function submitTotpCode() {
     error.value = 'Código inválido. Tente novamente.'
   } catch {
     error.value = 'Código inválido. Tente novamente.'
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function submitGoogleLink() {
+  error.value = ''
+  submitting.value = true
+  try {
+    await auth.linkGoogleAccount(linkToken.value, linkPassword.value)
+  } catch {
+    error.value = 'Senha incorreta ou link expirado. Tente entrar com o Google novamente.'
   } finally {
     submitting.value = false
   }
@@ -252,7 +275,7 @@ async function submitTotpCode() {
           </b-button>
         </form>
 
-        <form v-else class="form-stack" @submit.prevent="submitTotpCode">
+        <form v-else-if="step === 'totp'" class="form-stack" @submit.prevent="submitTotpCode">
           <b-field label="Código de 6 dígitos">
             <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
           </b-field>
@@ -264,6 +287,21 @@ async function submitTotpCode() {
             class="auth-submit has-text-light"
           >
             Entrar
+          </b-button>
+        </form>
+
+        <form v-else class="form-stack" @submit.prevent="submitGoogleLink">
+          <b-field label="Senha">
+            <b-input v-model="linkPassword" type="password" placeholder="••••••••" required />
+          </b-field>
+          <b-button
+            type="is-primary"
+            expanded
+            native-type="submit"
+            :loading="submitting"
+            class="auth-submit has-text-light"
+          >
+            Vincular conta
           </b-button>
         </form>
       </div>

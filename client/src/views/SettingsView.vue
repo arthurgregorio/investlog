@@ -1,35 +1,55 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import { useTypesListStore } from '@/stores/typesList'
 import { useRatesStore } from '@/stores/rates'
-import { useAppearanceStore } from '@/stores/appearance'
+import { useConfigurationsStore } from '@/stores/configurations'
 import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
-import type { AccentKey } from '@/types'
+import { stockPriceSyncApi } from '@/api/stockPriceSync'
 
 const toast = useToast()
 const typesListStore = useTypesListStore()
 const ratesStore = useRatesStore()
-const appearance = useAppearanceStore()
+const configurationsStore = useConfigurationsStore()
 const auth = useAuthStore()
 
 const newStockType = ref('')
 const newFundType = ref('')
-
-const accents: { key: AccentKey; hex: string }[] = [
-  { key: 'blue', hex: '#206bc4' },
-  { key: 'indigo', hex: '#4263eb' },
-  { key: 'teal', hex: '#0ca678' },
-  { key: 'green', hex: '#15915b' },
-]
+const triggeringSync = ref(false)
 
 onMounted(() => {
-  Promise.all([typesListStore.load(), ratesStore.load()])
+  Promise.all([typesListStore.load(), ratesStore.load(), configurationsStore.load()])
 })
+
+const stockPriceSyncEnabled = computed({
+  get: () => configurationsStore.values['stock_price_sync_enabled'] === 'true',
+  set: async (enabled: boolean) => {
+    await configurationsStore.updateConfiguration(
+      'stock_price_sync_enabled',
+      enabled ? 'true' : 'false',
+    )
+    toast.open({
+      message: enabled
+        ? 'Sincronização automática ativada.'
+        : 'Sincronização automática desativada.',
+      type: 'is-success',
+    })
+  },
+})
+
+async function forceStockPriceSync() {
+  triggeringSync.value = true
+  try {
+    await stockPriceSyncApi.forceSync()
+    toast.open({ message: 'Preços de ações atualizados.', type: 'is-success' })
+  } finally {
+    triggeringSync.value = false
+  }
+}
 
 async function addStockType() {
   const name = newStockType.value.trim()
@@ -178,26 +198,30 @@ async function commitRate(currencyCode: string) {
 
     <Card>
       <CardBody>
-        <div class="set-head"><h2 class="set-title">Aparência</h2></div>
-        <p class="set-desc">Escolha a cor de destaque da interface.</p>
-        <div class="accent-row">
-          <button
-            v-for="accentOption in accents"
-            :key="accentOption.key"
-            class="accent-swatch"
-            :class="{ active: appearance.accent === accentOption.key }"
-            :style="{ background: accentOption.hex }"
-            :aria-label="`Cor ${accentOption.key}`"
-            @click="appearance.setAccent(accentOption.key)"
-          >
-            <b-icon
-              v-if="appearance.accent === accentOption.key"
-              icon="check"
-              size="is-small"
-              class="sw-check"
-            />
-          </button>
-        </div>
+        <b-loading :is-full-page="false" :active="configurationsStore.loading" />
+        <div class="set-head"><h2 class="set-title">Configurações</h2></div>
+        <p class="set-desc">Ative ou desative funções do sistema.</p>
+        <b-switch v-model="stockPriceSyncEnabled">
+          Atualizar preços das ações brasileiras automaticamente
+        </b-switch>
+      </CardBody>
+    </Card>
+
+    <Card>
+      <CardBody>
+        <div class="set-head"><h2 class="set-title">Ações administrativas</h2></div>
+        <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
+        <ol class="set-action-list">
+          <li class="set-action-item">
+            <span class="set-action-sentence">
+              Clique para
+              <b-button :loading="triggeringSync" @click="forceStockPriceSync">
+                atualizar as cotações
+              </b-button>
+              das ações agora
+            </span>
+          </li>
+        </ol>
       </CardBody>
     </Card>
   </div>

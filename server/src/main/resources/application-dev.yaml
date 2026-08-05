@@ -3,4 +3,6 @@ logging:
     br.com.investlog: debug
 
 investlog:
-  totp-required: false
+  security:
+    totp:
+      enabled: false

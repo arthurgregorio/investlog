@@ -51,6 +51,7 @@ val postgresDriverVersion = "42.7.11"
 val kotlinLoggingJvmVersion = "7.0.14"
 val totpVersion = "1.7.1"
 val zxingVersion = "3.5.4"
+val wiremockSpringVersion = "4.0.9"
 
 dependencies {
     // spring stuff
@@ -94,12 +95,13 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("tools.jackson.core:jackson-databind")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("org.testcontainers:testcontainers-postgresql")
+
+    testImplementation("org.wiremock.integrations:wiremock-spring-boot:$wiremockSpringVersion")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
@@ -237,29 +239,11 @@ tasks {
     }
 
     bootJar {
-        layered {
-            enabled.set(true)
-            application {
-                intoLayer("spring-boot-loader") {
-                    include("org/springframework/boot/loader/**")
-                }
-                intoLayer("application")
-            }
-            dependencies {
-                intoLayer("application") {
-                    includeProjectDependencies()
-                }
-                intoLayer("snapshot-dependencies") {
-                    include("*:*:*SNAPSHOT")
-                }
-                intoLayer("dependencies")
-            }
-            layerOrder.set(listOf("dependencies", "spring-boot-loader", "snapshot-dependencies", "application"))
-        }
         archiveFileName.set("${project.name}.${archiveExtension.get()}")
     }
 
     bootBuildImage {
+        builder = "bellsoft/buildpacks.builder:musl"
         environment.put("BP_JVM_VERSION", JVM_25.target)
         environment.put("BPE_DELIM_JAVA_TOOL_OPTIONS", " ")
         environment.put(

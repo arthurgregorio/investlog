@@ -8,11 +8,12 @@ import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
 import org.springframework.stereotype.Component
 
-private val log = KotlinLogging.logger {}
+private val logger = KotlinLogging.logger {}
 
 @Component
 class GoogleLoginFailureHandler(
-    @Value("\${investlog.client-base-url}") private val clientBaseUrl: String,
+    @Value($$"${investlog.google-auth.client-base-url}")
+    private val clientBaseUrl: String
 ) : AuthenticationFailureHandler {
 
     override fun onAuthenticationFailure(
@@ -20,7 +21,7 @@ class GoogleLoginFailureHandler(
         response: HttpServletResponse,
         exception: AuthenticationException,
     ) {
-        log.warn(exception) { "Google login failed" }
+        logger.warn(exception) { "Google login failed" }
         response.sendRedirect("$clientBaseUrl/login?error=oauth_failed")
     }
 }
