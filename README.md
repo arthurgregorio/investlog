@@ -24,6 +24,10 @@ InvestLog ships as three Docker containers orchestrated by Compose:
 
 The browser only talks to nginx on port `8081`. nginx serves the SPA and forwards
 every `/private/*` request to the server container, so there are no cross-origin calls.
+The proxy target is `BACKEND_HOST`/`BACKEND_PORT` (client image env vars, default
+`server`/`8080` to match the Compose service name below) — see
+[Deploying without Compose](#deploying-without-compose) if you're not using either
+`compose.yaml` as-is.
 
 ## Prerequisites
 
@@ -82,6 +86,20 @@ docker compose up -d
 ```
 
 Open **http://localhost:8081**.
+
+### Deploying without Compose
+
+The client image's nginx proxies `/private/*` to `http://${BACKEND_HOST}:${BACKEND_PORT}`,
+rendered from [`client/nginx.conf.template`](client/nginx.conf.template) at container start
+(the standard `nginx:alpine` template + `envsubst` mechanism). Both variables default to
+`server`/`8080` — the `server` container name used by `compose.yaml` and
+`build-from-source/compose.yaml` — so neither Compose stack needs to set them.
+
+On a platform without that shared network (Railway, ECS, ...), set `BACKEND_HOST` (and
+`BACKEND_PORT` if not `8080`) on the client service to wherever the server is reachable from
+it — e.g. on Railway, the server service's private-networking domain
+(`${{<server-service-name>.RAILWAY_PRIVATE_DOMAIN}}` as a Railway variable reference) keeps
+the API call off the public internet.
 
 ---
 
