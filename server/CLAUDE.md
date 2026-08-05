@@ -180,19 +180,20 @@ has:
   `@ImportHttpServices(group = "coingecko")` in `config/http/CoinGeckoHttpClientsConfig`, base URL
   set programmatically via `RestClientHttpServiceGroupConfigurer` for the same reason documented
   above for brapi — no `spring.http.serviceclient.*` Boot auto-configuration exists in 4.1.0. Base
-  URL (`investlog.coingecko.base-url`/`COINGECKO_BASE_URL`) and the auth header name
-  (`investlog.coingecko.api-key-header`/`COINGECKO_API_KEY_HEADER`) are both plain overridable
-  properties rather than a plan/tier abstraction — a user with a paid CoinGecko account points
-  both at `pro-api.coingecko.com` and `x-cg-pro-api-key` themselves; the free/demo path needs
-  neither variable set. Their real defaults (`api.coingecko.com`, `x-cg-demo-api-key`) are applied
-  in Kotlin via `.ifBlank { … }`, deliberately **not** as a `${VAR:default}` fallback in
-  `application.yaml` — `compose.yaml` always declares `COINGECKO_BASE_URL: ${COINGECKO_BASE_URL:-}`,
-  so under Docker the container's env var is *present but empty* rather than absent whenever a
-  user leaves it unset in `.env`, and Spring's colon-default only triggers on a fully-absent key —
-  an empty string wins over the YAML default and silently breaks the `RestClient` with `URI with
-  undefined scheme`. Applying the default in code sidesteps this regardless of how the blank value
-  arrives. The header is added only when `investlog.coingecko.api-key`/`COINGECKO_KEY` is
-  non-blank; both endpoints used here work fully keyless on the demo tier, a key just raises the
+  URL and the auth header name are plain properties with their real defaults declared once, in
+  `application.yaml` (`investlog.coingecko.base-url`/`api-key-header`, defaulting to
+  `api.coingecko.com`/`x-cg-demo-api-key`) — not a plan/tier abstraction, and not duplicated as
+  constants in `CoinGeckoHttpClientsConfig`. A paid CoinGecko Pro account means editing those two
+  values directly (`pro-api.coingecko.com` / `x-cg-pro-api-key`); they're deliberately **not**
+  wired as `.env`/`COINGECKO_*` variables through `compose.yaml` the way `COINGECKO_KEY` is —
+  `compose.yaml`'s `environment:` block always sets whatever it lists, blank or not, and Spring's
+  `${VAR:default}` only falls back on a fully-absent key, not an empty one, so a blank passthrough
+  would silently override the YAML default with an empty string and break the `RestClient` with
+  `URI with undefined scheme`. Skipping them in `compose.yaml` keeps the key genuinely absent for
+  the packaged stack, so `application.yaml`'s default actually applies; a Pro-plan user overrides
+  it by editing `application.yaml` (or their own Compose customization) instead. The header is
+  added only when `investlog.coingecko.api-key`/`COINGECKO_KEY` is non-blank; both endpoints used
+  here work fully keyless on the demo tier, a key just raises the
   practical rate ceiling. `CryptoPriceSyncRepository.updatePrice` matches on ticker **and** wallet currency
   (joined through `finances.wallets`, filtered to `kind = 'CRYPTO'`) since, unlike stocks which are
   always BRL on B3, a crypto wallet can be BRL or USD — the same ticker can need two different
