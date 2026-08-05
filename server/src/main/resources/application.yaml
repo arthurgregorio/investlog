@@ -35,3 +35,7 @@ investlog:
   brapi:
     base-url: https://brapi.dev/api
     token: ${BRAPI_TOKEN:}
+
+  coingecko:
+    base-url: https://api.coingecko.com/api/v3
+    api-key: ${COINGECKO_KEY:}

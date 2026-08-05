@@ -1,0 +1,9 @@
+[
+  {
+    "id": "bitcoin",
+    "symbol": "btc",
+    "name": "Bitcoin",
+    "current_price": 64041,
+    "market_cap_rank": 1
+  }
+]

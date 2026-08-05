@@ -73,6 +73,7 @@ class SecurityConfig {
                 authorize(HttpMethod.PUT, "/private/v1/currency-rates/**", hasAuthority("ROLE_ADMIN"))
                 authorize(HttpMethod.PATCH, "/private/v1/configurations/**", hasAuthority("ROLE_ADMIN"))
                 authorize(HttpMethod.POST, "/private/v1/stock-price-sync/**", hasAuthority("ROLE_ADMIN"))
+                authorize(HttpMethod.POST, "/private/v1/crypto-price-sync/**", hasAuthority("ROLE_ADMIN"))
                 authorize(anyRequest, hasAuthority("STATUS_APPROVED"))
             }
             exceptionHandling {

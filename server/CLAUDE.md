@@ -154,6 +154,41 @@ has:
   mangled by Spring's dependency-management BOM. The manual `PATCH
   /wallets/{walletId}/stock-holdings/{holdingId}` endpoint in `stockholdings` still works as an
   override — a hand-edited price is simply overwritten again on the next scheduled run.
+- `cryptopricesync` — mirrors `stockpricesync`'s shape (repository/services/scheduler/rest, no
+  `domain/` layer) but syncs on `@Scheduled(cron = "0 0 * * * *")`, every hour 24/7 since crypto
+  markets don't close, gated the same way by `ConfigurationKey.CRYPTO_PRICE_SYNC_ENABLED` and a
+  `POST /crypto-price-sync` admin-only manual trigger (`hasAuthority("ROLE_ADMIN")` in
+  `SecurityConfig`, same as `/stock-price-sync`). The price source is CoinGecko's free, keyless
+  `/simple/price`, but unlike brapi.dev's stock tickers, crypto ticker symbols are **not**
+  globally unique on CoinGecko — e.g. `btc` and `eth` each match 10+ unrelated coins (verified
+  against the live `/coins/list`) — so `CryptoPriceSyncService.syncPrices()` never queries
+  `/simple/price` by symbol directly. It first resolves each distinct ticker in
+  `finances.crypto_holdings` to CoinGecko's canonical coin id via `GET
+  /coins/markets?vs_currency=usd&symbols={tickers}&order=market_cap_desc`, which returns exactly
+  one, market-cap-ranked row per symbol (CoinGecko's own disambiguation, not a local heuristic).
+  That resolve call goes through `CoinGeckoSymbolResolver`, a separate `@Service` (not a method on
+  `CryptoPriceSyncService` itself) so its `@Cacheable` annotation actually takes effect — Spring's
+  proxy-based caching is a no-op on self-invocation, so cross-bean placement is load-bearing, not
+  a style choice. The cache (`CachingConfig`, Caffeine, 10-minute `expireAfterWrite`, keyed by the
+  sorted distinct ticker list) exists to collapse repeat resolves within a burst of manual
+  triggers; it's always fully expired well before the next hourly run. Only the resolve step is
+  cached — the subsequent `GET /simple/price?ids={resolved ids}&vs_currencies={wallet currencies}`
+  call is never cached, so the price actually written is always fresh. A ticker CoinGecko has no
+  match for (typo, delisted) is skipped with a warning and keeps its last-known price, same
+  fallback as `stockpricesync`. `CoinGeckoClient` lives in `cryptopricesync/http` (not `shared/`,
+  unlike `StocksClient` — CoinGecko has no other consumer in this codebase) and is registered via
+  `@ImportHttpServices(group = "coingecko")` in `config/http/CoinGeckoHttpClientsConfig`, base URL
+  set programmatically via `RestClientHttpServiceGroupConfigurer` for the same reason documented
+  above for brapi — no `spring.http.serviceclient.*` Boot auto-configuration exists in 4.1.0. The
+  `x-cg-demo-api-key` header (from `COINGECKO_KEY`/`investlog.coingecko.api-key`) is added only
+  when non-blank; both endpoints used here work fully keyless, a key just raises the practical
+  rate ceiling. `CryptoPriceSyncRepository.updatePrice` matches on ticker **and** wallet currency
+  (joined through `finances.wallets`, filtered to `kind = 'CRYPTO'`) since, unlike stocks which are
+  always BRL on B3, a crypto wallet can be BRL or USD — the same ticker can need two different
+  prices written to two different sets of rows in the same sync run. Tests stub both CoinGecko
+  endpoints with WireMock, including a fixture that only returns the canonical coin for a
+  collision-prone symbol, asserting the service trusts CoinGecko's resolved id rather than the raw
+  ticker.
 
 ### Authentication & Authorization
 
