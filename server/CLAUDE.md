@@ -179,10 +179,15 @@ has:
   unlike `StocksClient` — CoinGecko has no other consumer in this codebase) and is registered via
   `@ImportHttpServices(group = "coingecko")` in `config/http/CoinGeckoHttpClientsConfig`, base URL
   set programmatically via `RestClientHttpServiceGroupConfigurer` for the same reason documented
-  above for brapi — no `spring.http.serviceclient.*` Boot auto-configuration exists in 4.1.0. The
-  `x-cg-demo-api-key` header (from `COINGECKO_KEY`/`investlog.coingecko.api-key`) is added only
-  when non-blank; both endpoints used here work fully keyless, a key just raises the practical
-  rate ceiling. `CryptoPriceSyncRepository.updatePrice` matches on ticker **and** wallet currency
+  above for brapi — no `spring.http.serviceclient.*` Boot auto-configuration exists in 4.1.0.
+  `CoinGeckoPlan` (`config/http/CoinGeckoPlan.kt`) picks the header name and default base URL:
+  `DEMO` (the default, `investlog.coingecko.plan`/`COINGECKO_PLAN` unset or `demo`) sends
+  `x-cg-demo-api-key` against `api.coingecko.com`; `PRO` sends `x-cg-pro-api-key` against
+  `pro-api.coingecko.com`, for a user who brings a paid CoinGecko account. `investlog.coingecko.base-url`/
+  `COINGECKO_BASE_URL` can still override either plan's default explicitly. The header is added
+  only when `investlog.coingecko.api-key`/`COINGECKO_KEY` is non-blank; both endpoints used here
+  work fully keyless on the demo tier, a key just raises the practical rate ceiling — Pro requires
+  one. `CryptoPriceSyncRepository.updatePrice` matches on ticker **and** wallet currency
   (joined through `finances.wallets`, filtered to `kind = 'CRYPTO'`) since, unlike stocks which are
   always BRL on B3, a crypto wallet can be BRL or USD — the same ticker can need two different
   prices written to two different sets of rows in the same sync run. Tests stub both CoinGecko

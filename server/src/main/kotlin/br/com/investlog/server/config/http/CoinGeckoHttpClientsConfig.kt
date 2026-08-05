@@ -11,20 +11,24 @@ import org.springframework.web.service.registry.ImportHttpServices
 @Configuration(proxyBeanMethods = false)
 @ImportHttpServices(group = CLIENT_GROUP_NAME, basePackages = [PACKAGE_TO_SEARCH])
 class CoinGeckoHttpClientsConfig(
-    @Value($$"${investlog.coingecko.base-url:https://api.coingecko.com/api/v3}")
+    @Value($$"${investlog.coingecko.base-url:}")
     private val coinGeckoBaseUrl: String,
     @Value($$"${investlog.coingecko.api-key:}")
     private val coinGeckoApiKey: String,
+    @Value($$"${investlog.coingecko.plan:demo}")
+    private val coinGeckoPlanText: String,
 ) {
+
+    private val coinGeckoPlan = CoinGeckoPlan.fromText(coinGeckoPlanText)
 
     @Bean
     fun coinGeckoGroupConfigurer(): RestClientHttpServiceGroupConfigurer =
         RestClientHttpServiceGroupConfigurer { groups ->
             groups.filterByName(CLIENT_GROUP_NAME)
                 .forEachClient { _, builder ->
-                    builder.baseUrl(coinGeckoBaseUrl)
+                    builder.baseUrl(coinGeckoBaseUrl.ifBlank { coinGeckoPlan.defaultBaseUrl })
                     if (coinGeckoApiKey.isNotBlank()) {
-                        builder.defaultHeader(DEMO_API_KEY_HEADER, coinGeckoApiKey)
+                        builder.defaultHeader(coinGeckoPlan.apiKeyHeader, coinGeckoApiKey)
                     }
                 }
         }
@@ -32,6 +36,5 @@ class CoinGeckoHttpClientsConfig(
     companion object {
         private const val CLIENT_GROUP_NAME = "coingecko"
         private const val PACKAGE_TO_SEARCH = "br.com.investlog.server.cryptopricesync.http"
-        private const val DEMO_API_KEY_HEADER = "x-cg-demo-api-key"
     }
 }
