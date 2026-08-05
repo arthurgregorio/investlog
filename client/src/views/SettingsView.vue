@@ -229,7 +229,7 @@ async function commitRate(currencyCode: string) {
         <b-loading :is-full-page="false" :active="configurationsStore.loading" />
         <div class="set-head"><h2 class="set-title">Configurações</h2></div>
         <p class="set-desc">Ative ou desative funções do sistema.</p>
-        <b-switch v-model="stockPriceSyncEnabled">
+        <b-switch class="pb-3" v-model="stockPriceSyncEnabled">
           Atualizar preços das ações brasileiras automaticamente
         </b-switch>
         <b-switch v-model="cryptoPriceSyncEnabled">
