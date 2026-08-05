@@ -1,6 +1,6 @@
 package br.com.investlog.server.cryptopricesync.services
 
-import br.com.investlog.server.cryptopricesync.http.CoinGeckoClient
+import br.com.investlog.server.shared.http.coingecko.CoinGeckoClient
 import br.com.investlog.server.cryptopricesync.repositories.CryptoPriceSyncRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service

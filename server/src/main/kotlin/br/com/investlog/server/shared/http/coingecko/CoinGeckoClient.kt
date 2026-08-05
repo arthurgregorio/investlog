@@ -1,4 +1,4 @@
-package br.com.investlog.server.cryptopricesync.http
+package br.com.investlog.server.shared.http.coingecko
 
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.service.annotation.GetExchange

@@ -1,6 +1,5 @@
-package br.com.investlog.server.config
+package br.com.investlog.server.config.core
 
-import br.com.investlog.server.config.CachingConfig.Companion.CRYPTO_TICKER_RESOLUTION_CACHE
 import com.github.benmanes.caffeine.cache.Caffeine
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.EnableCaching
@@ -15,9 +14,8 @@ class CachingConfig {
 
     @Bean
     fun cacheManager(): CacheManager =
-        CaffeineCacheManager(CRYPTO_TICKER_RESOLUTION_CACHE).apply {
-            setCaffeine(Caffeine.newBuilder().expireAfterWrite(Duration.ofMinutes(10)))
-        }
+        CaffeineCacheManager(CRYPTO_TICKER_RESOLUTION_CACHE)
+            .apply { setCaffeine(Caffeine.newBuilder().expireAfterWrite(Duration.ofMinutes(10))) }
 
     companion object {
         const val CRYPTO_TICKER_RESOLUTION_CACHE = "cryptoTickerResolution"
