@@ -199,7 +199,8 @@ the box for a local run.
 | `TOTP_LOCKOUT_BASE_DURATION` | `60s` | Lockout duration after the max attempts are reached; doubles on each repeated lockout |
 | `BRAPI_TOKEN` | _(empty)_ | Free token from [brapi.dev/dashboard](https://brapi.dev/dashboard), used by the hourly stock/FII price sync. Without it, every sync run fails and holdings keep their last-known price |
 | `COINGECKO_KEY` | _(empty)_ | Optional API key from [CoinGecko's developer dashboard](https://www.coingecko.com/en/developers/dashboard), used by the hourly crypto price sync. The sync works without it on CoinGecko's public/keyless demo tier; a key just raises the rate limit |
-| `COINGECKO_PLAN` | `demo` | Set to `pro` if `COINGECKO_KEY` is a paid CoinGecko Pro key — switches the auth header and the default API host to `pro-api.coingecko.com`. Leave as `demo` for the free tier, with or without a key |
+| `COINGECKO_BASE_URL` | _(empty, defaults to `api.coingecko.com`)_ | Only needed for a paid CoinGecko Pro key — set to `https://pro-api.coingecko.com/api/v3` |
+| `COINGECKO_API_KEY_HEADER` | _(empty, defaults to `x-cg-demo-api-key`)_ | Only needed for a paid CoinGecko Pro key — set to `x-cg-pro-api-key` |
 
 Building from source adds two more variables, read from `build-from-source/.env`:
 

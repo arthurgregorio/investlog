@@ -1,6 +1,8 @@
 package br.com.investlog.server.config.http
 
 import br.com.investlog.server.config.http.CoinGeckoHttpClientsConfig.Companion.CLIENT_GROUP_NAME
+import br.com.investlog.server.config.http.CoinGeckoHttpClientsConfig.Companion.DEFAULT_API_KEY_HEADER
+import br.com.investlog.server.config.http.CoinGeckoHttpClientsConfig.Companion.DEFAULT_BASE_URL
 import br.com.investlog.server.config.http.CoinGeckoHttpClientsConfig.Companion.PACKAGE_TO_SEARCH
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -15,20 +17,18 @@ class CoinGeckoHttpClientsConfig(
     private val coinGeckoBaseUrl: String,
     @Value($$"${investlog.coingecko.api-key:}")
     private val coinGeckoApiKey: String,
-    @Value($$"${investlog.coingecko.plan:demo}")
-    private val coinGeckoPlanText: String,
+    @Value($$"${investlog.coingecko.api-key-header:}")
+    private val coinGeckoApiKeyHeader: String,
 ) {
-
-    private val coinGeckoPlan = CoinGeckoPlan.fromText(coinGeckoPlanText)
 
     @Bean
     fun coinGeckoGroupConfigurer(): RestClientHttpServiceGroupConfigurer =
         RestClientHttpServiceGroupConfigurer { groups ->
             groups.filterByName(CLIENT_GROUP_NAME)
                 .forEachClient { _, builder ->
-                    builder.baseUrl(coinGeckoBaseUrl.ifBlank { coinGeckoPlan.defaultBaseUrl })
+                    builder.baseUrl(coinGeckoBaseUrl.ifBlank { DEFAULT_BASE_URL })
                     if (coinGeckoApiKey.isNotBlank()) {
-                        builder.defaultHeader(coinGeckoPlan.apiKeyHeader, coinGeckoApiKey)
+                        builder.defaultHeader(coinGeckoApiKeyHeader.ifBlank { DEFAULT_API_KEY_HEADER }, coinGeckoApiKey)
                     }
                 }
         }
@@ -36,5 +36,7 @@ class CoinGeckoHttpClientsConfig(
     companion object {
         private const val CLIENT_GROUP_NAME = "coingecko"
         private const val PACKAGE_TO_SEARCH = "br.com.investlog.server.cryptopricesync.http"
+        private const val DEFAULT_BASE_URL = "https://api.coingecko.com/api/v3"
+        private const val DEFAULT_API_KEY_HEADER = "x-cg-demo-api-key"
     }
 }

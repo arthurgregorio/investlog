@@ -44,7 +44,8 @@ services:
       TOTP_LOCKOUT_BASE_DURATION: ${TOTP_LOCKOUT_BASE_DURATION:-60s}
       BRAPI_TOKEN: ${BRAPI_TOKEN:-}
       COINGECKO_KEY: ${COINGECKO_KEY:-}
-      COINGECKO_PLAN: ${COINGECKO_PLAN:-demo}
+      COINGECKO_BASE_URL: ${COINGECKO_BASE_URL:-}
+      COINGECKO_API_KEY_HEADER: ${COINGECKO_API_KEY_HEADER:-}
     depends_on:
       postgres:
         condition: service_healthy

@@ -26,7 +26,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CryptoPriceSyncProPlanTest : BaseIntegrationTest() {
+class CryptoPriceSyncCustomApiKeyHeaderTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var restTestClient: RestTestClient
@@ -41,7 +41,7 @@ class CryptoPriceSyncProPlanTest : BaseIntegrationTest() {
         walletId = restTestClient.post()
             .uri("/private/v1/wallets")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Pro Plan Wallet","kind":"crypto","currency":"BRL"}""")
+            .body("""{"name":"Custom Header Wallet","kind":"crypto","currency":"BRL"}""")
             .exchange()
             .returnResult<WalletResponse>()
             .responseBody!!
@@ -49,16 +49,16 @@ class CryptoPriceSyncProPlanTest : BaseIntegrationTest() {
 
         wireMockServer.stubFor(
             get(urlPathEqualTo("/coins/markets"))
-                .withHeader(PRO_API_KEY_HEADER, equalTo(TEST_PRO_KEY))
+                .withHeader(CUSTOM_API_KEY_HEADER, equalTo(TEST_API_KEY))
                 .willReturn(okJson(classpathResource("coingecko/markets-btc-response.json")))
         )
         wireMockServer.stubFor(
             get(urlPathEqualTo("/simple/price"))
-                .withHeader(PRO_API_KEY_HEADER, equalTo(TEST_PRO_KEY))
+                .withHeader(CUSTOM_API_KEY_HEADER, equalTo(TEST_API_KEY))
                 .willReturn(okJson(classpathResource("coingecko/simple-price-response.json")))
         )
-        // Any request that is missing the pro header (e.g. the demo header was sent instead) falls
-        // through to this catch-all and fails loudly instead of silently resolving.
+        // Any request missing the configured header (e.g. the default demo header was sent
+        // instead) falls through to this catch-all and fails loudly instead of silently resolving.
         wireMockServer.stubFor(
             get(urlPathEqualTo("/coins/markets")).atPriority(10).willReturn(aResponse().withStatus(401))
         )
@@ -99,7 +99,7 @@ class CryptoPriceSyncProPlanTest : BaseIntegrationTest() {
             .responseBody!!
 
     @Test
-    fun `plan set to pro sends x-cg-pro-api-key instead of the demo header`() {
+    fun `a configured api-key-header overrides the default demo header`() {
         val holding = createHolding("BTC", BigDecimal("300000.00"))
 
         cryptoPriceSyncService.syncPrices()
@@ -108,20 +108,20 @@ class CryptoPriceSyncProPlanTest : BaseIntegrationTest() {
     }
 
     companion object {
-        private const val TEST_PRO_KEY = "test-pro-key"
-        private const val PRO_API_KEY_HEADER = "x-cg-pro-api-key"
+        private const val TEST_API_KEY = "test-pro-key"
+        private const val CUSTOM_API_KEY_HEADER = "x-cg-pro-api-key"
         private val wireMockServer = WireMockServer(wireMockConfig().dynamicPort())
 
         private fun classpathResource(path: String): String =
-            CryptoPriceSyncProPlanTest::class.java.classLoader.getResource(path)!!.readText()
+            CryptoPriceSyncCustomApiKeyHeaderTest::class.java.classLoader.getResource(path)!!.readText()
 
         @JvmStatic
         @DynamicPropertySource
         fun properties(registry: DynamicPropertyRegistry) {
             wireMockServer.start()
             registry.add("investlog.coingecko.base-url") { "http://localhost:${wireMockServer.port()}" }
-            registry.add("investlog.coingecko.plan") { "pro" }
-            registry.add("investlog.coingecko.api-key") { TEST_PRO_KEY }
+            registry.add("investlog.coingecko.api-key-header") { CUSTOM_API_KEY_HEADER }
+            registry.add("investlog.coingecko.api-key") { TEST_API_KEY }
         }
     }
 }

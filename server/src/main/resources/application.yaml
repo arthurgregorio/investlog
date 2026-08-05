@@ -39,4 +39,4 @@ investlog:
   coingecko:
     base-url: ${COINGECKO_BASE_URL:}
     api-key: ${COINGECKO_KEY:}
-    plan: ${COINGECKO_PLAN:demo}
+    api-key-header: ${COINGECKO_API_KEY_HEADER:}
