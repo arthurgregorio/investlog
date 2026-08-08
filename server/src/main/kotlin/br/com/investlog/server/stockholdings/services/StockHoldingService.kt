@@ -32,14 +32,14 @@ class StockHoldingService(
     fun findById(walletExternalId: UUID, holdingExternalId: UUID): StockHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         return holdingRepo.findByExternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Stock holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
     }
 
     @Transactional
     fun create(walletExternalId: UUID, request: StockHoldingCreateRequest): StockHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val stockTypeId = holdingRepo.findStockTypeInternalId(request.stockTypeId)
-            ?: throw NotFoundException("Stock type not found: ${request.stockTypeId}")
+            ?: throw NotFoundException("Tipo de ação não encontrado: ${request.stockTypeId}")
         return holdingRepo.create(
             walletInternalId = walletId,
             stockTypeInternalId = stockTypeId,
@@ -58,7 +58,7 @@ class StockHoldingService(
     ): StockHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val stockTypeId = request.stockTypeId?.let {
-            holdingRepo.findStockTypeInternalId(it) ?: throw NotFoundException("Stock type not found: $it")
+            holdingRepo.findStockTypeInternalId(it) ?: throw NotFoundException("Tipo de ação não encontrado: $it")
         }
         return holdingRepo.update(
             walletInternalId = walletId,
@@ -67,21 +67,21 @@ class StockHoldingService(
             ticker = request.ticker,
             name = request.name,
             currentPrice = request.currentPrice,
-        ) ?: throw NotFoundException("Stock holding not found: $holdingExternalId")
+        ) ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
     }
 
     @Transactional
     fun delete(walletExternalId: UUID, holdingExternalId: UUID) {
         val walletId = walletService.resolveId(walletExternalId)
         val deleted = holdingRepo.deleteByExternalId(walletId, holdingExternalId)
-        if (deleted == 0) throw NotFoundException("Stock holding not found: $holdingExternalId")
+        if (deleted == 0) throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
     }
 
     @Transactional
     fun addLot(walletExternalId: UUID, holdingExternalId: UUID, request: LotCreateRequest): LotResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Stock holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
         return lotRepo.addLot(holdingId, request)
     }
 
@@ -89,9 +89,9 @@ class StockHoldingService(
     fun deleteLot(walletExternalId: UUID, holdingExternalId: UUID, lotExternalId: UUID) {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Stock holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
         val deleted = lotRepo.deleteByExternalId(holdingId, lotExternalId)
-        if (deleted == 0) throw NotFoundException("Lot not found: $lotExternalId")
+        if (deleted == 0) throw NotFoundException("Lote não encontrado: $lotExternalId")
     }
 
     @Transactional
@@ -103,8 +103,8 @@ class StockHoldingService(
     ): LotResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Stock holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
         return lotRepo.updateLotDate(holdingId, lotExternalId, request.lotDate)
-            ?: throw NotFoundException("Lot not found: $lotExternalId")
+            ?: throw NotFoundException("Lote não encontrado: $lotExternalId")
     }
 }

@@ -60,7 +60,7 @@ class AuthService(
         }
 
         val code = request.totpCode
-            ?: throw TotpRequiredException("A TOTP code is required to complete login")
+            ?: throw TotpRequiredException("Um código TOTP é necessário para concluir o login")
 
         totpAttemptLimiter.checkNotLocked(request.email)
 
@@ -83,7 +83,7 @@ class AuthService(
         val user = verifyCredentials(request.email, request.password)
 
         if (user.totpEnabled) {
-            throw TotpAlreadyEnabledException("TOTP is already enabled for this account")
+            throw TotpAlreadyEnabledException("O TOTP já está habilitado para esta conta")
         }
 
         val secret = totpService.generateSecret()
@@ -134,7 +134,7 @@ class AuthService(
 
         val user = userRepository.findByGoogleSub(googleSub) ?: run {
             if (userRepository.findByEmail(email) != null) {
-                throw GoogleAccountEmailInUseException("An account with email $email already exists")
+                throw GoogleAccountEmailInUseException("Já existe uma conta com o e-mail $email")
             }
             userRepository.createGoogleUser(googleSub, email, name, avatarUrl)
         }
@@ -154,7 +154,7 @@ class AuthService(
     ): SessionResponse {
 
         val pending = googleLinkTokenStore.consume(request.linkToken)
-            ?: throw InvalidCredentialsException("Link request expired or invalid — sign in with Google again")
+            ?: throw InvalidCredentialsException("Solicitação de vínculo expirada ou inválida — entre novamente com o Google")
 
         if (userRepository.findByEmail(pending.email)?.status == CurrentUser.Status.BLOCKED) {
             throw InvalidCredentialsException(BLOCKED_MESSAGE)
@@ -168,7 +168,7 @@ class AuthService(
 
     fun currentSession(): SessionResponse {
         val user = SecurityContextHolder.getContext().authentication?.principal as? CurrentUser
-            ?: throw InvalidCredentialsException("Not authenticated")
+            ?: throw InvalidCredentialsException("Não autenticado")
         return SessionResponse(
             name = user.name,
             email = user.email,
@@ -226,8 +226,8 @@ class AuthService(
     }
 
     companion object {
-        private const val INVALID_TOTP_CODE_MESSAGE = "Invalid TOTP code"
-        private const val INVALID_CREDENTIALS_MESSAGE = "Invalid email or password"
-        private const val BLOCKED_MESSAGE = "Login failed. Contact an administrator."
+        private const val INVALID_TOTP_CODE_MESSAGE = "Código TOTP inválido"
+        private const val INVALID_CREDENTIALS_MESSAGE = "E-mail ou senha inválidos"
+        private const val BLOCKED_MESSAGE = "Login falhou. Entre em contato com um administrador."
     }
 }

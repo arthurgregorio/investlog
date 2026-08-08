@@ -23,7 +23,7 @@ class FundTypeService(
     @Transactional
     fun delete(externalId: UUID) {
         if (fundTypeRepository.deleteByExternalId(externalId) == 0) {
-            throw NotFoundException("Fund type $externalId not found")
+            throw NotFoundException("Tipo de fundo $externalId não encontrado")
         }
     }
 }

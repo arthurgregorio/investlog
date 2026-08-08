@@ -35,10 +35,10 @@ class ConfigurationService(
     @Transactional
     fun update(key: String, value: String): ConfigurationResponse {
         val configurationKey = ConfigurationKey.entries.find { it.key == key }
-            ?: throw NotFoundException("Configuration $key not found")
+            ?: throw NotFoundException("Configuração $key não encontrada")
 
         val response = configurationRepository.update(configurationKey.key, value)
-            ?: throw NotFoundException("Configuration $key not found")
+            ?: throw NotFoundException("Configuração $key não encontrada")
 
         cache[configurationKey.key] = value
 

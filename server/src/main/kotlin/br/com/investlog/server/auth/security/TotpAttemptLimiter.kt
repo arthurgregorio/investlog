@@ -20,7 +20,7 @@ class TotpAttemptLimiter(
     fun checkNotLocked(email: String) {
         val lockedUntil = attemptStateByEmail[email]?.lockedUntil ?: return
         if (Instant.now().isBefore(lockedUntil)) {
-            throw TooManyTotpAttemptsException("Too many invalid TOTP attempts, try again later")
+            throw TooManyTotpAttemptsException("Muitas tentativas de código TOTP inválidas, tente novamente mais tarde")
         }
     }
 

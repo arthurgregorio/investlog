@@ -41,14 +41,14 @@ class UsersAdminService(
         val user = requireUser(externalId)
         requireNotSelf(user)
         demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
-        requireCurrentStatus(user, Status.APPROVED, "block")
+        requireCurrentStatus(user, Status.APPROVED, "bloquear")
         return updateStatus(externalId, Status.BLOCKED)
     }
 
     @Transactional
     fun unblock(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
-        requireCurrentStatus(user, Status.BLOCKED, "unblock")
+        requireCurrentStatus(user, Status.BLOCKED, "desbloquear")
         return updateStatus(externalId, Status.APPROVED)
     }
 
@@ -81,7 +81,7 @@ class UsersAdminService(
         requireNotSelf(user)
 
         if (AuthProvider.valueOf(user.authProvider!!) != AuthProvider.LOCAL) {
-            throw AccountNotLocalException("Password resets are only available for local accounts")
+            throw AccountNotLocalException("Redefinições de senha estão disponíveis apenas para contas locais")
         }
 
         demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
@@ -96,17 +96,17 @@ class UsersAdminService(
 
     private fun requireUser(externalId: UUID): UsersRecord =
         usersAdminRepository.findByExternalId(externalId)
-            ?: throw NotFoundException("User $externalId not found")
+            ?: throw NotFoundException("Usuário $externalId não encontrado")
 
     private fun requireNotSelf(user: UsersRecord) {
         if (user.id == currentUserProvider.getCurrentUser().id) {
-            throw SelfActionNotAllowedException("This action cannot target your own account")
+            throw SelfActionNotAllowedException("Esta ação não pode ser aplicada à sua própria conta")
         }
     }
 
     private fun requireCurrentStatus(user: UsersRecord, expected: Status, action: String) {
         if (Status.valueOf(user.status!!) != expected) {
-            throw InvalidUserStatusTransitionException("Cannot $action a user whose current status is not ${expected.name}")
+            throw InvalidUserStatusTransitionException("Não é possível $action um usuário cujo status atual não é ${expected.name}")
         }
     }
 }

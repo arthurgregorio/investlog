@@ -32,14 +32,14 @@ class FundHoldingService(
     fun findById(walletExternalId: UUID, holdingExternalId: UUID): FundHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         return holdingRepo.findByExternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Fund holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
     }
 
     @Transactional
     fun create(walletExternalId: UUID, request: FundHoldingCreateRequest): FundHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val fundTypeId = holdingRepo.findFundTypeInternalId(request.fundTypeId)
-            ?: throw NotFoundException("Fund type not found: ${request.fundTypeId}")
+            ?: throw NotFoundException("Tipo de fundo não encontrado: ${request.fundTypeId}")
         return holdingRepo.create(
             walletInternalId = walletId,
             fundTypeInternalId = fundTypeId,
@@ -53,7 +53,7 @@ class FundHoldingService(
     fun update(walletExternalId: UUID, holdingExternalId: UUID, request: FundHoldingUpdateRequest): FundHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val fundTypeId = request.fundTypeId?.let {
-            holdingRepo.findFundTypeInternalId(it) ?: throw NotFoundException("Fund type not found: $it")
+            holdingRepo.findFundTypeInternalId(it) ?: throw NotFoundException("Tipo de fundo não encontrado: $it")
         }
         return holdingRepo.update(
             walletInternalId = walletId,
@@ -61,14 +61,14 @@ class FundHoldingService(
             fundTypeInternalId = fundTypeId,
             name = request.name,
             currentValue = request.currentValue,
-        ) ?: throw NotFoundException("Fund holding not found: $holdingExternalId")
+        ) ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
     }
 
     @Transactional
     fun delete(walletExternalId: UUID, holdingExternalId: UUID) {
         val walletId = walletService.resolveId(walletExternalId)
         if (holdingRepo.deleteByExternalId(walletId, holdingExternalId) == 0) {
-            throw NotFoundException("Fund holding not found: $holdingExternalId")
+            throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
         }
     }
 
@@ -76,7 +76,7 @@ class FundHoldingService(
     fun addContribution(walletExternalId: UUID, holdingExternalId: UUID, request: ContributionCreateRequest): ContributionResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Fund holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
         return contributionRepo.addContribution(holdingId, request)
     }
 
@@ -84,9 +84,9 @@ class FundHoldingService(
     fun deleteContribution(walletExternalId: UUID, holdingExternalId: UUID, contributionExternalId: UUID) {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Fund holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
         if (contributionRepo.deleteByExternalId(holdingId, contributionExternalId) == 0) {
-            throw NotFoundException("Contribution not found: $contributionExternalId")
+            throw NotFoundException("Aporte não encontrado: $contributionExternalId")
         }
     }
 
@@ -99,8 +99,8 @@ class FundHoldingService(
     ): ContributionResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Fund holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
         return contributionRepo.updateContributionDate(holdingId, contributionExternalId, request.contributionDate)
-            ?: throw NotFoundException("Contribution not found: $contributionExternalId")
+            ?: throw NotFoundException("Aporte não encontrado: $contributionExternalId")
     }
 }
