@@ -5,9 +5,6 @@ spring:
     password: ${DB_PASSWORD}
 
 server:
-  # Railway's private network (*.railway.internal) is IPv6-only; without an explicit
-  # dual-stack bind, sibling services can't reach this service even though it's healthy
-  # locally (public healthcheck traffic takes a different path and still succeeds).
   address: '::'
   forward-headers-strategy: framework
 
