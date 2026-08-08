@@ -5,6 +5,7 @@ spring:
     password: ${DB_PASSWORD}
 
 server:
+  address: '::'
   forward-headers-strategy: framework
 
 investlog:
