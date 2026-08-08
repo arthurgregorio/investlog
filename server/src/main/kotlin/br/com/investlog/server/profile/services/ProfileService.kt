@@ -8,6 +8,7 @@ import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.security.AuthProvider
 import br.com.investlog.server.shared.security.CurrentUser
 import br.com.investlog.server.shared.security.CurrentUserProvider
+import br.com.investlog.server.shared.security.DemoModeGuard
 import br.com.investlog.server.shared.security.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -19,6 +20,7 @@ class ProfileService(
     private val userRepository: UserRepository,
     private val currentUserProvider: CurrentUserProvider,
     private val passwordEncoder: PasswordEncoder,
+    private val demoModeGuard: DemoModeGuard,
 ) {
 
     fun getProfile(): ProfileResponse = currentUserProvider.getCurrentUser().toResponse()
@@ -43,6 +45,8 @@ class ProfileService(
         if (user.authProvider != AuthProvider.LOCAL) {
             throw AccountNotLocalException("Password changes are only available for local accounts")
         }
+
+        demoModeGuard.assertNotProtectedAdminAccount(user.email)
 
         val currentPasswordHash = userRepository.findPasswordHashByEmail(user.email)
             ?: throw InvalidCredentialsException("Current password is incorrect")

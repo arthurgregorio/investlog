@@ -9,6 +9,7 @@ import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.security.AuthProvider
 import br.com.investlog.server.shared.security.CurrentUser.Status
 import br.com.investlog.server.shared.security.CurrentUserProvider
+import br.com.investlog.server.shared.security.DemoModeGuard
 import br.com.investlog.server.usersadmin.repositories.UsersAdminRepository
 import br.com.investlog.server.usersadmin.rest.payloads.PasswordResetRequest
 import br.com.investlog.server.usersadmin.rest.payloads.RoleUpdateRequest
@@ -27,6 +28,7 @@ class UsersAdminService(
     private val usersAdminRepository: UsersAdminRepository,
     private val passwordEncoder: PasswordEncoder,
     private val totpAttemptLimiter: TotpAttemptLimiter,
+    private val demoModeGuard: DemoModeGuard,
 ) {
 
     fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminRepository.findAll(pageable)
@@ -38,6 +40,7 @@ class UsersAdminService(
     fun block(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
+        demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
         requireCurrentStatus(user, Status.APPROVED, "block")
         return updateStatus(externalId, Status.BLOCKED)
     }
@@ -53,6 +56,7 @@ class UsersAdminService(
     fun changeRole(externalId: UUID, request: RoleUpdateRequest): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
+        demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
         return usersAdminRepository.updateRole(user.id!!, request.role)
     }
 
@@ -67,6 +71,7 @@ class UsersAdminService(
     fun delete(externalId: UUID) {
         val user = requireUser(externalId)
         requireNotSelf(user)
+        demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
         usersAdminRepository.deleteByExternalId(externalId)
     }
 
@@ -78,6 +83,8 @@ class UsersAdminService(
         if (AuthProvider.valueOf(user.authProvider!!) != AuthProvider.LOCAL) {
             throw AccountNotLocalException("Password resets are only available for local accounts")
         }
+
+        demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
 
         return usersAdminRepository.updatePasswordHash(user.id!!, passwordEncoder.encode(request.newPassword)!!)
     }
