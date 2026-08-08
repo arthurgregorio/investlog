@@ -14,7 +14,12 @@ const SILENT_ERROR_CODES = new Set(['totp_required', 'invalid_totp_code', 'inval
 // 401s from these endpoints are user-facing form outcomes (wrong password/code) that the
 // calling view already reports inline — not a dead/expired session, so they're never silenced
 // by URL alone here and fall through to SILENT_ERROR_CODES / the toast below as before.
-const AUTH_FORM_ENDPOINTS = ['/auth/login', '/auth/totp/enroll', '/auth/totp/verify']
+const AUTH_FORM_ENDPOINTS = [
+  '/auth/login',
+  '/auth/totp/enroll',
+  '/auth/totp/verify',
+  '/profile/password',
+]
 
 function isAuthFormRequest(url: string | undefined): boolean {
   return url !== undefined && AUTH_FORM_ENDPOINTS.some((endpoint) => url.startsWith(endpoint))
