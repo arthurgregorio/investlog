@@ -1,0 +1,13 @@
+# Image for the `investlog-demo-reset` Railway service (deploy.cronSchedule: "0 3 * * *").
+# Not part of the app stack — postgres:18-alpine ships psql, which is all this needs.
+#
+# Build context is the repo root (Railway's default when a service isn't given a custom root
+# directory) — COPY paths below are relative to the repo root, not this Dockerfile's own folder.
+FROM postgres:18-alpine
+
+WORKDIR /app
+COPY sample-data/reset-demo-data.sql sample-data/sample-data.sql ./
+
+# Overrides the base image's server entrypoint — this container only ever runs one psql
+# script against an existing database, never starts its own postgres server.
+ENTRYPOINT ["sh", "-c", "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f reset-demo-data.sql"]
