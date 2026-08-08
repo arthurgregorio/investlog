@@ -1,6 +1,7 @@
 package br.com.investlog.server.config
 
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
+import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
@@ -155,6 +156,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         val message = ex.message ?: "Invalid user status transition"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(DemoModeProtectedAccountException::class)
+    fun handleDemoModeProtectedAccount(ex: DemoModeProtectedAccountException): ProblemDetail {
+
+        val message = ex.message ?: "This action is disabled for the protected demo admin account."
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

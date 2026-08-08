@@ -18,6 +18,9 @@ logging:
     org.jooq.Constants: off
 
 investlog:
+  demo-mode:
+    enabled: false
+
   security:
     admin-default-password: ${ADMIN_DEFAULT_PASSWORD:admin}
     totp:

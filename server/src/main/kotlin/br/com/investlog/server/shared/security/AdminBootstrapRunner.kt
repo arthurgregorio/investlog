@@ -18,16 +18,12 @@ class AdminBootstrapRunner(
 ) : ApplicationRunner {
 
     override fun run(args: ApplicationArguments) {
-        val admin = userRepository.findByEmail(ADMIN_EMAIL) ?: return
-        val existingHash = userRepository.findPasswordHashByEmail(ADMIN_EMAIL)
+        val admin = userRepository.findByEmail(AdminAccount.EMAIL) ?: return
+        val existingHash = userRepository.findPasswordHashByEmail(AdminAccount.EMAIL)
 
         if (existingHash != null) return
 
         logger.warn { "Setting the seeded admin's password from investlog.security.admin-default-password — change it after first login." }
         userRepository.updatePasswordHash(admin.id, passwordEncoder.encode(adminDefaultPassword)!!)
-    }
-
-    companion object {
-        private const val ADMIN_EMAIL = "admin@admin.com"
     }
 }
