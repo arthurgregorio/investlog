@@ -32,27 +32,27 @@ class WalletService(
     fun findById(externalId: UUID): WalletResponse {
         val userId = currentUserProvider.getCurrentUser().id
         return walletRepository.findByExternalId(userId, externalId)
-            ?: throw NotFoundException("Wallet $externalId not found")
+            ?: throw NotFoundException("Carteira $externalId não encontrada")
     }
 
     @Transactional
     fun update(externalId: UUID, name: String): WalletResponse {
         val userId = currentUserProvider.getCurrentUser().id
         return walletRepository.update(userId, externalId, name)
-            ?: throw NotFoundException("Wallet $externalId not found")
+            ?: throw NotFoundException("Carteira $externalId não encontrada")
     }
 
     @Transactional
     fun delete(externalId: UUID) {
         val userId = currentUserProvider.getCurrentUser().id
         if (walletRepository.deleteByExternalId(userId, externalId) == 0) {
-            throw NotFoundException("Wallet $externalId not found")
+            throw NotFoundException("Carteira $externalId não encontrada")
         }
     }
 
     fun resolveId(externalId: UUID): Long {
         val userId = currentUserProvider.getCurrentUser().id
         return walletRepository.findInternalId(userId, externalId)
-            ?: throw NotFoundException("Wallet $externalId not found")
+            ?: throw NotFoundException("Carteira $externalId não encontrada")
     }
 }

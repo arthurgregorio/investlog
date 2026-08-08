@@ -13,6 +13,6 @@ enum class WalletKind(val text: String) {
         @JsonCreator
         fun fromText(text: String?): WalletKind =
             WalletKind.entries.find { it.text.equals(text, ignoreCase = true) }
-                ?: throw IllegalArgumentException("Invalid wallet kind [$text]")
+                ?: throw IllegalArgumentException("Tipo de carteira inválido [$text]")
     }
 }

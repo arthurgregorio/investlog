@@ -20,6 +20,6 @@ enum class AccentColor(@JsonValue val text: String) {
         @JvmStatic
         @JsonCreator
         fun fromText(text: String?): AccentColor = entries.find { it.text.equals(text, ignoreCase = true) }
-            ?: throw IllegalArgumentException("Invalid accent color [$text]")
+            ?: throw IllegalArgumentException("Cor de destaque inválida [$text]")
     }
 }

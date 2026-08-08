@@ -13,7 +13,7 @@ data class CryptoHoldingCreateRequest(
     @field:NotNull
     val lot: LotCreateRequest,
     @field:NotBlank
-    @field:Pattern(regexp = "^[A-Za-z0-9]+$", message = "ticker must contain only letters and digits")
+    @field:Pattern(regexp = "^[A-Za-z0-9]+$", message = "ticker deve conter apenas letras e números")
     val ticker: String,
     val name: String?,
     @field:PositiveOrZero

@@ -32,7 +32,7 @@ class CryptoHoldingService(
     fun findById(walletExternalId: UUID, holdingExternalId: UUID): CryptoHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         return holdingRepo.findByExternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Crypto holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
     }
 
     @Transactional
@@ -60,14 +60,14 @@ class CryptoHoldingService(
             ticker = request.ticker,
             name = request.name,
             currentPrice = request.currentPrice,
-        ) ?: throw NotFoundException("Crypto holding not found: $holdingExternalId")
+        ) ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
     }
 
     @Transactional
     fun delete(walletExternalId: UUID, holdingExternalId: UUID) {
         val walletId = walletService.resolveId(walletExternalId)
         if (holdingRepo.deleteByExternalId(walletId, holdingExternalId) == 0) {
-            throw NotFoundException("Crypto holding not found: $holdingExternalId")
+            throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
         }
     }
 
@@ -75,7 +75,7 @@ class CryptoHoldingService(
     fun addLot(walletExternalId: UUID, holdingExternalId: UUID, request: LotCreateRequest): LotResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Crypto holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
         return lotRepo.addLot(holdingId, request)
     }
 
@@ -83,9 +83,9 @@ class CryptoHoldingService(
     fun deleteLot(walletExternalId: UUID, holdingExternalId: UUID, lotExternalId: UUID) {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Crypto holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
         if (lotRepo.deleteByExternalId(holdingId, lotExternalId) == 0) {
-            throw NotFoundException("Lot not found: $lotExternalId")
+            throw NotFoundException("Lote não encontrado: $lotExternalId")
         }
     }
 
@@ -98,8 +98,8 @@ class CryptoHoldingService(
     ): LotResponse {
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
-            ?: throw NotFoundException("Crypto holding not found: $holdingExternalId")
+            ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
         return lotRepo.updateLotDate(holdingId, lotExternalId, request.lotDate)
-            ?: throw NotFoundException("Lot not found: $lotExternalId")
+            ?: throw NotFoundException("Lote não encontrado: $lotExternalId")
     }
 }

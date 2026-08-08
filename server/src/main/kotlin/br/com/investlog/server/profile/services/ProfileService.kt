@@ -43,16 +43,16 @@ class ProfileService(
         val user = currentUserProvider.getCurrentUser()
 
         if (user.authProvider != AuthProvider.LOCAL) {
-            throw AccountNotLocalException("Password changes are only available for local accounts")
+            throw AccountNotLocalException("Alterações de senha estão disponíveis apenas para contas locais")
         }
 
         demoModeGuard.assertNotProtectedAdminAccount(user.email)
 
         val currentPasswordHash = userRepository.findPasswordHashByEmail(user.email)
-            ?: throw InvalidCredentialsException("Current password is incorrect")
+            ?: throw InvalidCredentialsException("A senha atual está incorreta")
 
         if (!passwordEncoder.matches(request.currentPassword, currentPasswordHash)) {
-            throw InvalidCredentialsException("Current password is incorrect")
+            throw InvalidCredentialsException("A senha atual está incorreta")
         }
 
         userRepository.updatePasswordHash(user.id, passwordEncoder.encode(request.newPassword)!!)

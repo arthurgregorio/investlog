@@ -5,7 +5,7 @@ import jakarta.validation.constraints.PositiveOrZero
 import java.math.BigDecimal
 
 data class CryptoHoldingUpdateRequest(
-    @field:Pattern(regexp = "^[A-Za-z0-9]+$", message = "ticker must contain only letters and digits")
+    @field:Pattern(regexp = "^[A-Za-z0-9]+$", message = "ticker deve conter apenas letras e números")
     val ticker: String? = null,
     val name: String? = null,
     @field:PositiveOrZero

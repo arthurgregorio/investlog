@@ -17,10 +17,10 @@ class SecurityContextCurrentUserProvider(private val userRepository: UserReposit
             ?: error("No authenticated user in the current security context")
 
         val user = userRepository.findByEmail(sessionPrincipal.email)
-            ?: throw InvalidCredentialsException("Authenticated user no longer exists")
+            ?: throw InvalidCredentialsException("O usuário autenticado não existe mais")
 
         if (user.status != CurrentUser.Status.APPROVED) {
-            throw UserNotApprovedException("User ${user.email} is not approved")
+            throw UserNotApprovedException("O usuário ${user.email} não está aprovado")
         }
 
         return user

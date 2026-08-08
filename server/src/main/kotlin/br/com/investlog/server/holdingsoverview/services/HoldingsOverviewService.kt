@@ -31,7 +31,7 @@ class HoldingsOverviewService(
             try {
                 JooqWalletKind.valueOf(it)
             } catch (ex: IllegalArgumentException) {
-                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid kind: $it", ex)
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Tipo de carteira inválido: $it", ex)
             }
         }
         return holdingsOverviewRepository.findAll(userId, jooqKind, typeLabel, walletId, search, pageable)

@@ -13,6 +13,6 @@ enum class CurrencyCode(@JsonValue val text: String) {
         @JsonCreator
         fun fromText(text: String?): CurrencyCode =
             entries.find { it.text.equals(text, ignoreCase = true) }
-                ?: throw IllegalArgumentException("Invalid currency code [$text]")
+                ?: throw IllegalArgumentException("Código de moeda inválido [$text]")
     }
 }

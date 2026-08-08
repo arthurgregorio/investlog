@@ -23,7 +23,7 @@ class StockTypeService(
     @Transactional
     fun delete(externalId: UUID) {
         if (stockTypeRepository.deleteByExternalId(externalId) == 0) {
-            throw NotFoundException("Stock type $externalId not found")
+            throw NotFoundException("Tipo de ação $externalId não encontrado")
         }
     }
 }

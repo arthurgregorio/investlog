@@ -31,9 +31,9 @@ class SecurityConfig {
         val isPendingApproval = authentication?.authorities.orEmpty().none { it.authority == "STATUS_APPROVED" }
 
         val body = if (isPendingApproval) {
-            AccessDeniedResponse("pending_approval", "Your account is pending administrator approval")
+            AccessDeniedResponse("pending_approval", "Sua conta está pendente de aprovação de um administrador")
         } else {
-            AccessDeniedResponse("forbidden", "You do not have permission to perform this action")
+            AccessDeniedResponse("forbidden", "Você não tem permissão para executar esta ação")
         }
 
         response.status = HttpStatus.FORBIDDEN.value()
