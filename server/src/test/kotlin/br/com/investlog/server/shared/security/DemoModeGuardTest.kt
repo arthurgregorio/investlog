@@ -138,6 +138,16 @@ class DemoModeGuardTest : BaseIntegrationTest() {
             .expectStatus().isEqualTo(403)
     }
 
+    @Test
+    @Order(6)
+    fun `blocking the protected admin account is forbidden in demo mode`() {
+        restTestClient.patch()
+            .uri("/private/v1/users/$protectedAdminId/block")
+            .header("Cookie", secondAdminCookie)
+            .exchange()
+            .expectStatus().isEqualTo(403)
+    }
+
     companion object {
         private lateinit var secondAdminCookie: String
         private lateinit var protectedAdminId: String

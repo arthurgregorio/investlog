@@ -40,6 +40,7 @@ class UsersAdminService(
     fun block(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
         requireNotSelf(user)
+        demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
         requireCurrentStatus(user, Status.APPROVED, "block")
         return updateStatus(externalId, Status.BLOCKED)
     }
