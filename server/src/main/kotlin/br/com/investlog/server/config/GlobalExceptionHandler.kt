@@ -164,7 +164,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     @ExceptionHandler(DemoModeProtectedAccountException::class)
     fun handleDemoModeProtectedAccount(ex: DemoModeProtectedAccountException): ProblemDetail {
 
-        val message = ex.message ?: "This action is disabled for the protected demo admin account."
+        val message = ex.message ?: "Esta ação está desabilitada para a conta protegida do administrador de demonstração."
 
         val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, message)
         problemDetail.setProperty("timestamp", Instant.now())

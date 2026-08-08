@@ -12,7 +12,7 @@ class DemoModeGuard(
 
     fun assertNotProtectedAdminAccount(email: String) {
         if (demoModeEnabled && email == AdminAccount.EMAIL) {
-            throw DemoModeProtectedAccountException("This action is disabled for the protected demo admin account.")
+            throw DemoModeProtectedAccountException("Esta ação está desabilitada para a conta protegida do administrador de demonstração.")
         }
     }
 }
