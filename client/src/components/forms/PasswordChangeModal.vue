@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
 import { profileApi } from '@/api/profile'
@@ -12,6 +12,7 @@ const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const submitting = ref(false)
+const currentPasswordError = ref('')
 
 const passwordsMatch = computed(
   () => confirmPassword.value.length === 0 || newPassword.value === confirmPassword.value,
@@ -24,13 +25,20 @@ const valid = computed(
     newPassword.value === confirmPassword.value,
 )
 
+watch(currentPassword, () => {
+  currentPasswordError.value = ''
+})
+
 async function submit() {
   if (!valid.value || submitting.value) return
+  currentPasswordError.value = ''
   submitting.value = true
   try {
     await profileApi.changePassword(currentPassword.value, newPassword.value)
     emit('close')
     toast.open({ message: 'Senha alterada!', type: 'is-success' })
+  } catch {
+    currentPasswordError.value = 'Senha atual incorreta.'
   } finally {
     submitting.value = false
   }
@@ -44,7 +52,12 @@ async function submit() {
     @close="emit('close')"
   >
     <div class="form-grid">
-      <b-field label="Senha atual" style="grid-column: 1/-1">
+      <b-field
+        label="Senha atual"
+        style="grid-column: 1/-1"
+        :type="currentPasswordError ? 'is-danger' : undefined"
+        :message="currentPasswordError || undefined"
+      >
         <b-input v-model="currentPassword" type="password" password-reveal autofocus />
       </b-field>
       <b-field label="Nova senha">
