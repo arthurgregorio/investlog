@@ -24,7 +24,7 @@ class ConfigurationControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.content[?(@.key=='stock_price_sync_enabled')].value").isEqualTo("true")
+            .jsonPath("$.content[?(@.key=='stock_price_sync_enabled')].value").isEqualTo("false")
     }
 
     @Test
@@ -33,19 +33,19 @@ class ConfigurationControllerTest : BaseIntegrationTest() {
         restTestClient.patch()
             .uri("/private/v1/configurations/stock_price_sync_enabled")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"value":"false"}""")
+            .body("""{"value":"true"}""")
             .exchange()
             .expectStatus().isOk()
             .expectBody()
             .jsonPath("$.key").isEqualTo("stock_price_sync_enabled")
-            .jsonPath("$.value").isEqualTo("false")
+            .jsonPath("$.value").isEqualTo("true")
 
         restTestClient.get()
             .uri("/private/v1/configurations")
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.content[?(@.key=='stock_price_sync_enabled')].value").isEqualTo("false")
+            .jsonPath("$.content[?(@.key=='stock_price_sync_enabled')].value").isEqualTo("true")
     }
 
     @Test
