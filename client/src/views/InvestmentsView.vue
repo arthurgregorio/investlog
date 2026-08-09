@@ -192,7 +192,7 @@ function openAddInvestment() {
         >
           <option value="">Todas as carteiras</option>
           <option v-for="wallet in walletOptions" :key="wallet.id" :value="wallet.id">
-            {{ wallet.name }}
+            [{{ WALLET_TYPES[wallet.kind].label }}] {{ wallet.name }}
           </option>
         </b-select>
         <b-select
