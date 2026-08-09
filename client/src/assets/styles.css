@@ -1370,16 +1370,9 @@ a {
   padding: 12px 2px 2px;
 }
 
-.detail-foot .avg-note {
-  margin-left: auto;
-}
-
 .avg-note {
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.avg-note b {
+  font-size: 11px;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
