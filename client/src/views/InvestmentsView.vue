@@ -192,7 +192,7 @@ function openAddInvestment() {
         >
           <option value="">Todas as carteiras</option>
           <option v-for="wallet in walletOptions" :key="wallet.id" :value="wallet.id">
-            {{ wallet.name }}
+            [{{ WALLET_TYPES[wallet.kind].label }}] {{ wallet.name }}
           </option>
         </b-select>
         <b-select
@@ -343,6 +343,15 @@ function openAddInvestment() {
                       }}
                     </template>
                     <span v-else class="gl-empty">—</span>
+                    <div v-if="row.kind !== 'FUNDS' && row.quantity" class="avg-note">
+                      PM
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.costBasis / row.quantity, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
+                    </div>
                   </td>
                   <td class="c-num">
                     <div class="cell-strong">
