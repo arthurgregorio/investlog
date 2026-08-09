@@ -343,6 +343,15 @@ function openAddInvestment() {
                       }}
                     </template>
                     <span v-else class="gl-empty">—</span>
+                    <div v-if="row.kind !== 'FUNDS' && row.quantity" class="avg-note">
+                      PM
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.costBasis / row.quantity, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
+                    </div>
                   </td>
                   <td class="c-num">
                     <div class="cell-strong">
