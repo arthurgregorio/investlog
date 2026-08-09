@@ -113,6 +113,22 @@ section{max-width:1140px;margin:0 auto;padding:64px 24px;}
 .cta-band .btn-primary{background:#fff;color:var(--primary-d);}
 .cta-band .btn-primary:hover{background:#eef3fb;}
 
+/* ===== Open source ===== */
+.oss-card{display:flex;align-items:center;gap:32px;background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:44px;box-shadow:var(--shadow);}
+.oss-icon{width:64px;height:64px;border-radius:16px;background:var(--primary-soft);color:var(--primary-d);
+  display:grid;place-items:center;flex-shrink:0;}
+.oss-body{flex:1;display:flex;flex-direction:column;gap:8px;}
+.oss-body h2{font-size:24px;font-weight:800;letter-spacing:-.025em;margin:0;}
+.oss-body p{font-size:14.5px;color:var(--text-2);line-height:1.6;margin:0;max-width:520px;}
+.oss-actions{display:flex;gap:12px;flex-shrink:0;}
+.btn-github{background:var(--text);color:#fff;}
+.btn-github:hover{background:#0d1524;}
+@media(max-width:760px){
+  .oss-card{flex-direction:column;text-align:center;padding:32px 24px;}
+  .oss-actions{flex-direction:column;width:100%;}
+}
+
 /* ===== Footer ===== */
 footer{border-top:1px solid var(--border);padding:32px 24px;}
 .footer-inner{max-width:1140px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
@@ -266,6 +282,25 @@ footer{border-top:1px solid var(--border);padding:32px 24px;}
     </div>
   </section>
 
+  <section id="opensource">
+    <div class="oss-card">
+      <span class="oss-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.9.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.35-3.88-1.35-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18a10.9 10.9 0 0 1 5.75 0c2.2-1.49 3.15-1.18 3.15-1.18.63 1.58.24 2.75.12 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.67.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .3.21.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"></path></svg>
+      </span>
+      <div class="oss-body">
+        <h2>Código aberto e gratuito</h2>
+        <p>InvestLog é open-source: qualquer pessoa pode usar, estudar, modificar e contribuir com o projeto.
+          O código está disponível publicamente no GitHub, sob a licença <strong>Apache License 2.0</strong>.</p>
+      </div>
+      <div class="oss-actions">
+        <a class="btn btn-github btn-lg" href="https://github.com/arthurgregorio/investlog" target="_blank" rel="noopener">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.9.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.35-3.88-1.35-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18a10.9 10.9 0 0 1 5.75 0c2.2-1.49 3.15-1.18 3.15-1.18.63 1.58.24 2.75.12 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.67.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .3.21.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"></path></svg>
+          Ver no GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
   <section id="cta">
     <div class="cta-band">
       <h2>Pronto para organizar seus investimentos?</h2>
@@ -292,7 +327,7 @@ footer{border-top:1px solid var(--border);padding:32px 24px;}
     <div class="footer-links">
       <a href="https://demo.investlog.com.br" target="_blank" rel="noopener">Demo</a>
       <a href="#video">Vídeo</a>
-      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/arthurgregorio/investlog" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
 </footer>
