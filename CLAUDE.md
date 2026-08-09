@@ -35,16 +35,23 @@ per-layer PRs target that feature branch, not `main`; the feature branch itself 
 - Be assigned to `arthurgregorio`.
 - Reference its tracking issue in the body, using the issue number from the phase/feature this
   work belongs to.
-  - **One PR closes one issue:** use `Closes #N` — GitHub auto-closes the issue when this PR
-    merges.
-  - **Multiple PRs address the same issue** (the normal case, since server/client/docs are
-    always split — see above): every one of those PRs uses `Refs #N`, never `Closes #N`. Using
-    `Closes #N` on more than one PR auto-closes the issue the moment the *first* of them merges,
-    even though the others (and the rest of the phase) are still open. Close the issue manually
-    once every PR for that phase has actually merged.
+  - **This PR is the entire fix for the issue** (e.g. a self-contained docs/spec issue, or the
+    last remaining layer of a split feature): use `Closes #N` — GitHub auto-closes the issue when
+    this PR merges. This is about whether the *work* is fully done by this PR, not about which
+    category (server/client/docs) it falls into — a docs-only issue with one PR still gets
+    `Closes #N`.
+  - **More PRs are still coming for the same issue** (the normal case for a multi-layer feature,
+    since server/client/docs are always split — see above): every one of those PRs uses `Refs #N`,
+    never `Closes #N`. Using `Closes #N` on more than one PR auto-closes the issue the moment the
+    *first* of them merges, even though the others (and the rest of the phase) are still open.
+    Close the issue manually once every PR for that phase has actually merged.
+- Carry the same milestone as its tracking issue (`gh issue view <N> --json milestone` to check,
+  `gh pr create --milestone "<name>"` or `gh pr edit <N> --milestone "<name>"` to set it). Easy to
+  drop since `gh pr create` doesn't set it from the issue automatically.
 
-Use `gh pr edit <N> --add-label feature --add-assignee arthurgregorio` right after `gh pr create`
-if the label/assignee weren't set at creation time — don't leave a PR unlabeled or unassigned.
+Use `gh pr edit <N> --add-label feature --add-assignee arthurgregorio --milestone "<name>"` right
+after `gh pr create` if any of label/assignee/milestone weren't set at creation time — don't leave
+a PR missing one of these.
 
 ## Branch naming
 
