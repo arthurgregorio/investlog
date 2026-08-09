@@ -3,6 +3,8 @@ name: Deploy landing page
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'landing-page/**'
 
   workflow_dispatch:
 
