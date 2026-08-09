@@ -43,9 +43,6 @@ const tradeDetail = computed(() =>
   detail.value && !isFund.value ? (detail.value as StockHoldingDetail) : null,
 )
 
-const costBasis = computed(() => props.row.costBasis)
-const quantity = computed(() => props.row.quantity)
-
 const currentAmount = computed<number | null>(() => {
   if (!detail.value) return null
   return isFund.value
@@ -303,16 +300,6 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
       <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
         Remover
       </b-button>
-
-      <span v-if="!isFund && quantity" class="avg-note">
-        Preço médio
-        <b>{{
-          fmt.money(
-            currencyStore.convert(costBasis / quantity, row.walletCurrency),
-            currencyStore.displayCurrency,
-          )
-        }}</b>
-      </span>
     </div>
 
     <AddPositionModal
