@@ -41,6 +41,8 @@ class AuthService(
     private val googleAuthEnabled: Boolean,
     @Value($$"${investlog.security.totp.enabled:true}")
     private val totpRequired: Boolean,
+    @Value($$"${investlog.demo-mode.enabled:false}")
+    private val demoModeEnabled: Boolean,
 ) {
 
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
@@ -175,6 +177,7 @@ class AuthService(
             role = user.role,
             status = user.status,
             authProvider = user.authProvider,
+            demoModeEnabled = demoModeEnabled,
         )
     }
 
@@ -222,6 +225,7 @@ class AuthService(
             role = user.role,
             status = user.status,
             authProvider = user.authProvider,
+            demoModeEnabled = demoModeEnabled,
         )
     }
 
