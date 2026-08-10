@@ -84,6 +84,17 @@ class ConfigurationControllerTest : BaseIntegrationTest() {
             .expectStatus().isEqualTo(403)
     }
 
+    @Test
+    @Order(6)
+    fun `returns the seeded usd_price_sync_enabled configuration as false`() {
+        restTestClient.get()
+            .uri("/private/v1/configurations")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[?(@.key=='usd_price_sync_enabled')].value").isEqualTo("false")
+    }
+
     private fun registerApproveAndLogin(email: String, password: String): String {
         restTestClient.post()
             .uri("/private/v1/auth/register")
