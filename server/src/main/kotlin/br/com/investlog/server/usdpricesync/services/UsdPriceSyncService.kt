@@ -7,6 +7,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.client.RestClientException
+import java.math.RoundingMode
 
 private val logger = KotlinLogging.logger {}
 
@@ -31,7 +32,9 @@ class UsdPriceSyncService(
             return
         }
 
-        currencyRateService.upsert(CurrencyCode.USD, quote.bid, isBase = false)
-        logger.info { "USD/BRL rate sync completed: rate=${quote.bid}" }
+        val roundedValue = quote.bid.setScale(2, RoundingMode.HALF_UP)
+        currencyRateService.upsert(CurrencyCode.USD, roundedValue, isBase = false)
+
+        logger.info { "USD/BRL rate sync completed: rate=$roundedValue" }
     }
 }
