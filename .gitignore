@@ -53,3 +53,6 @@ out/
 # claude local settings
 .junie
 .kotlin
+
+# Subagent-driven-development scratch workspace
+.superpowers/
