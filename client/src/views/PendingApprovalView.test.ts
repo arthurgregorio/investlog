@@ -37,6 +37,7 @@ describe('PendingApprovalView', () => {
       role: 'USER',
       status: 'PENDING',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     }
     router.push('/pending-approval')
     await router.isReady()
@@ -55,6 +56,7 @@ describe('PendingApprovalView', () => {
       role: 'USER',
       status: 'PENDING',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     }
     const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue()
     router.push('/pending-approval')

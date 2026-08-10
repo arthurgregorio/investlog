@@ -141,6 +141,7 @@ export interface SessionResponse {
   role: UserRole
   status: UserStatus
   authProvider: 'LOCAL' | 'GOOGLE'
+  demoModeEnabled: boolean
 }
 
 export interface AuthConfigResponse {

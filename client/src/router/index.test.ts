@@ -36,6 +36,7 @@ describe('router auth guard', () => {
       role: 'ADMIN',
       status: 'APPROVED',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     }
 
     const { router } = await import('./index')
@@ -54,6 +55,7 @@ describe('router auth guard', () => {
       role: 'USER',
       status: 'PENDING',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     }
 
     const { router } = await import('./index')
@@ -72,6 +74,7 @@ describe('router auth guard', () => {
       role: 'ADMIN',
       status: 'APPROVED',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     }
 
     const { router } = await import('./index')
@@ -90,6 +93,7 @@ describe('router auth guard', () => {
       role: 'USER',
       status: 'APPROVED',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     }
 
     const { router } = await import('./index')
@@ -108,6 +112,7 @@ describe('router auth guard', () => {
       role: 'USER',
       status: 'APPROVED',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     }
 
     const { router } = await import('./index')
