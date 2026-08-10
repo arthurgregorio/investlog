@@ -10,4 +10,5 @@ data class SessionResponse(
     val role: UserRole,
     val status: Status,
     val authProvider: AuthProvider,
+    val demoModeEnabled: Boolean,
 )

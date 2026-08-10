@@ -133,6 +133,7 @@ class AuthControllerTest : BaseIntegrationTest() {
 
         assertEquals("Administrador", response?.name)
         assertEquals("admin@admin.com", response?.email)
+        assertEquals(false, response?.demoModeEnabled)
     }
 
     @Test
@@ -277,6 +278,34 @@ class AuthControllerTest : BaseIntegrationTest() {
                 .responseBody
 
             assertEquals("admin@admin.com", response?.email)
+        }
+    }
+
+    @Nested
+    @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
+    @AutoConfigureRestTestClient
+    @ActiveProfiles("test")
+    @Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
+    @SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = ["investlog.demo-mode.enabled=true"],
+    )
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+    inner class WhenDemoModeIsEnabled {
+
+        @Autowired
+        lateinit var restTestClient: RestTestClient
+
+        @Test
+        fun `session reflects demoModeEnabled from the configured property`() {
+            val response = restTestClient.get()
+                .uri("/private/v1/auth/session")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<SessionResponse>()
+                .responseBody
+
+            assertEquals(true, response?.demoModeEnabled)
         }
     }
 
