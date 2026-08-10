@@ -23,6 +23,8 @@ const newFundType = ref('')
 const triggeringStockSync = ref(false)
 const triggeringCryptoSync = ref(false)
 
+const demoModeEnabled = computed(() => auth.session?.demoModeEnabled === true)
+
 onMounted(() => {
   Promise.all([typesListStore.load(), ratesStore.load(), configurationsStore.load()])
 })
@@ -229,10 +231,13 @@ async function commitRate(currencyCode: string) {
         <b-loading :is-full-page="false" :active="configurationsStore.loading" />
         <div class="set-head"><h2 class="set-title">Configurações</h2></div>
         <p class="set-desc">Ative ou desative funções do sistema.</p>
-        <b-switch class="pb-3" v-model="stockPriceSyncEnabled">
+        <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
+          Indisponível no modo demonstração.
+        </b-notification>
+        <b-switch v-model="stockPriceSyncEnabled" class="pb-3" :disabled="demoModeEnabled">
           Atualizar preços das ações brasileiras automaticamente
         </b-switch>
-        <b-switch v-model="cryptoPriceSyncEnabled">
+        <b-switch v-model="cryptoPriceSyncEnabled" :disabled="demoModeEnabled">
           Atualizar preços das criptomoedas automaticamente
         </b-switch>
       </CardBody>
@@ -242,11 +247,18 @@ async function commitRate(currencyCode: string) {
       <CardBody>
         <div class="set-head"><h2 class="set-title">Ações administrativas</h2></div>
         <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
+        <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
+          Indisponível no modo demonstração.
+        </b-notification>
         <ol class="set-action-list">
           <li class="set-action-item">
             <span class="set-action-sentence">
               Clique para
-              <b-button :loading="triggeringStockSync" @click="forceStockPriceSync">
+              <b-button
+                :loading="triggeringStockSync"
+                :disabled="demoModeEnabled"
+                @click="forceStockPriceSync"
+              >
                 atualizar as cotações
               </b-button>
               das ações agora
@@ -255,7 +267,11 @@ async function commitRate(currencyCode: string) {
           <li class="set-action-item">
             <span class="set-action-sentence">
               Clique para
-              <b-button :loading="triggeringCryptoSync" @click="forceCryptoPriceSync">
+              <b-button
+                :loading="triggeringCryptoSync"
+                :disabled="demoModeEnabled"
+                @click="forceCryptoPriceSync"
+              >
                 atualizar as cotações
               </b-button>
               das criptomoedas agora

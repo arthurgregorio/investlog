@@ -31,6 +31,7 @@ describe('auth store', () => {
         role: 'ADMIN',
         status: 'APPROVED',
         authProvider: 'LOCAL',
+        demoModeEnabled: false,
       },
     })
 
@@ -44,6 +45,7 @@ describe('auth store', () => {
       role: 'ADMIN',
       status: 'APPROVED',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     })
     expect(window.location.href).toBe('/overview')
   })
@@ -68,6 +70,7 @@ describe('auth store', () => {
         role: 'ADMIN',
         status: 'APPROVED',
         authProvider: 'LOCAL',
+        demoModeEnabled: false,
       },
     })
     vi.mocked(authApi.logout).mockResolvedValue(undefined)
@@ -96,6 +99,7 @@ describe('auth store', () => {
       role: 'ADMIN',
       status: 'APPROVED',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     })
 
     const store = useAuthStore()
@@ -124,6 +128,7 @@ describe('auth store', () => {
       role: 'ADMIN',
       status: 'APPROVED',
       authProvider: 'LOCAL',
+      demoModeEnabled: false,
     })
 
     const store = useAuthStore()
@@ -152,6 +157,7 @@ describe('auth store', () => {
         role: 'ADMIN',
         status: 'APPROVED',
         authProvider: 'LOCAL',
+        demoModeEnabled: false,
       },
     })
 
