@@ -26,6 +26,6 @@ class AwesomeApiHttpClientsConfig(
 
     companion object {
         private const val CLIENT_GROUP_NAME = "awesomeapi"
-        private const val PACKAGE_TO_SEARCH = "br.com.investlog.server.usdpricesync.http"
+        private const val PACKAGE_TO_SEARCH = "br.com.investlog.server.shared.http.awesomeapi"
     }
 }

@@ -2,7 +2,7 @@ package br.com.investlog.server.usdpricesync.services
 
 import br.com.investlog.server.currencyrates.rest.payloads.CurrencyCode
 import br.com.investlog.server.currencyrates.services.CurrencyRateService
-import br.com.investlog.server.usdpricesync.http.AwesomeApiLastQuoteClient
+import br.com.investlog.server.shared.http.awesomeapi.LastQuoteClient
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -13,14 +13,14 @@ private val logger = KotlinLogging.logger {}
 @Service
 @Transactional(readOnly = true)
 class UsdPriceSyncService(
-    private val awesomeApiLastQuoteClient: AwesomeApiLastQuoteClient,
     private val currencyRateService: CurrencyRateService,
+    private val lastQuoteClient: LastQuoteClient
 ) {
 
     @Transactional
     fun syncRate() {
         val quote = try {
-            awesomeApiLastQuoteClient.getLastQuote("USD-BRL")["USDBRL"]
+            lastQuoteClient.getLastQuote("USD-BRL")["USDBRL"]
         } catch (ex: RestClientException) {
             logger.error(ex) { "Failed to fetch USD/BRL rate from AwesomeAPI, skipping this run" }
             return

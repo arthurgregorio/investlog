@@ -15,7 +15,7 @@ class UsdPriceSyncScheduler(
     private val configurationService: ConfigurationService,
 ) {
 
-    @Scheduled(cron = "0 0 7 * * *", zone = "America/Sao_Paulo")
+    @Scheduled(cron = "0 0 7,18 * * *", zone = "America/Sao_Paulo")
     fun syncRate() {
 
         if (!configurationService.isEnabled(ConfigurationKey.USD_PRICE_SYNC_ENABLED)) {
