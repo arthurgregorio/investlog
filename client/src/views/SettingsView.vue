@@ -61,6 +61,22 @@ const cryptoPriceSyncEnabled = computed({
   },
 })
 
+const usdPriceSyncEnabled = computed({
+  get: () => configurationsStore.values['usd_price_sync_enabled'] === 'true',
+  set: async (enabled: boolean) => {
+    await configurationsStore.updateConfiguration(
+      'usd_price_sync_enabled',
+      enabled ? 'true' : 'false',
+    )
+    toast.open({
+      message: enabled
+        ? 'Sincronização automática ativada.'
+        : 'Sincronização automática desativada.',
+      type: 'is-success',
+    })
+  },
+})
+
 async function forceStockPriceSync() {
   triggeringStockSync.value = true
   try {
@@ -237,8 +253,11 @@ async function commitRate(currencyCode: string) {
         <b-switch v-model="stockPriceSyncEnabled" class="pb-3" :disabled="demoModeEnabled">
           Atualizar preços das ações brasileiras automaticamente
         </b-switch>
-        <b-switch v-model="cryptoPriceSyncEnabled" :disabled="demoModeEnabled">
+        <b-switch v-model="cryptoPriceSyncEnabled" class="pb-3" :disabled="demoModeEnabled">
           Atualizar preços das criptomoedas automaticamente
+        </b-switch>
+        <b-switch v-model="usdPriceSyncEnabled" :disabled="demoModeEnabled">
+          Atualizar cotação do dólar automaticamente
         </b-switch>
       </CardBody>
     </Card>
