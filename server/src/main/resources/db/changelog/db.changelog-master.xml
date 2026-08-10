@@ -25,5 +25,6 @@
 
     <include file="db/changelog/changes/2026/08/03-1400-add-configurations-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/08/05-1000-seed-crypto-price-sync-enabled.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/08/09-1000-disable-price-sync-by-default.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
