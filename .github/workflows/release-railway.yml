@@ -2,8 +2,8 @@ name: Deploy to Railway
 
 on:
   workflow_run:
-    workflows: ["Release"]
-    types: [completed]
+    workflows: [ "Release" ]
+    types: [ completed ]
 
 jobs:
   check-release:
@@ -25,27 +25,23 @@ jobs:
   deploy-server:
     name: Deploy server
     runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
     needs: check-release
     if: needs.check-release.outputs.is-prerelease == 'false'
     steps:
-      - name: Install Railway CLI
-        run: curl -fsSL https://railway.com/install.sh | sh
-
       - name: Redeploy investlog-server
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway redeploy --service investlog-server --environment production --from-source --yes
+        run: railway redeploy --service investlog-server --environment production --yes
 
   deploy-client:
     name: Deploy client
     runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
     needs: check-release
     if: needs.check-release.outputs.is-prerelease == 'false'
     steps:
-      - name: Install Railway CLI
-        run: curl -fsSL https://railway.com/install.sh | sh
-
       - name: Redeploy investlog-client
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway redeploy --service investlog-client --environment production --from-source --yes
+        run: railway redeploy --service investlog-client --environment production --yes
