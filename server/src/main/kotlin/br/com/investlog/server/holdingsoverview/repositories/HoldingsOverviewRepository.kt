@@ -2,6 +2,7 @@ package br.com.investlog.server.holdingsoverview.repositories
 
 import br.com.investlog.server.holdingsoverview.rest.payloads.HoldingRowResponse
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
+import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_REPORT_ROWS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.shared.utils.pagedModelOf
 import org.jooq.DSLContext
@@ -106,5 +107,70 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         )
 
         return pagedModelOf(content, pageable, total.toLong())
+    }
+
+    fun findAllForReport(
+        userId: Long,
+        kind: JooqWalletKind?,
+        typeLabel: String?,
+        walletId: UUID?,
+        search: String?,
+    ): List<HoldingRowResponse> {
+        val wallets = WALLETS.`as`("wallets")
+        val reportRows = HOLDINGS_REPORT_ROWS.`as`("report_rows")
+
+        val baseCondition = wallets.USER_ID.eq(userId)
+        val kindCondition = if (kind != null) reportRows.KIND.eq(kind) else DSL.noCondition()
+        val typeLabelCondition = if (typeLabel != null) reportRows.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
+        val walletIdCondition = if (walletId != null) wallets.EXTERNAL_ID.eq(walletId) else DSL.noCondition()
+        val searchCondition = if (!search.isNullOrBlank()) {
+            reportRows.NAME.likeIgnoreCase("%$search%").or(reportRows.TICKER.likeIgnoreCase("%$search%"))
+        } else {
+            DSL.noCondition()
+        }
+
+        return dsl.select(
+            reportRows.EXTERNAL_ID,
+            reportRows.KIND,
+            reportRows.NAME,
+            reportRows.TICKER,
+            reportRows.TYPE_LABEL,
+            wallets.EXTERNAL_ID,
+            wallets.NAME,
+            wallets.CURRENCY,
+            reportRows.QUANTITY,
+            reportRows.COST_BASIS,
+            reportRows.CURRENT_PRICE,
+            reportRows.CURRENT_VALUE,
+        )
+            .from(reportRows)
+            .join(wallets).on(wallets.ID.eq(reportRows.WALLET_ID))
+            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
+            .orderBy(wallets.NAME, reportRows.COST_BASIS.desc().nullsLast())
+            .fetch { record ->
+                val costBasis = record.get(reportRows.COST_BASIS) ?: BigDecimal.ZERO
+                val currentValue = record.get(reportRows.CURRENT_VALUE)
+                val gain = currentValue?.let { it - costBasis }
+                val gainPct = if (gain != null && costBasis.signum() != 0) {
+                    gain.divide(costBasis, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))
+                } else null
+
+                HoldingRowResponse(
+                    id = record.get(reportRows.EXTERNAL_ID)!!,
+                    kind = record.get(reportRows.KIND)!!.literal,
+                    name = record.get(reportRows.NAME)!!,
+                    ticker = record.get(reportRows.TICKER),
+                    typeLabel = record.get(reportRows.TYPE_LABEL),
+                    walletId = record.get(wallets.EXTERNAL_ID)!!,
+                    walletName = record.get(wallets.NAME)!!,
+                    walletCurrency = record.get(wallets.CURRENCY)!!,
+                    quantity = record.get(reportRows.QUANTITY),
+                    costBasis = costBasis,
+                    currentPrice = record.get(reportRows.CURRENT_PRICE),
+                    currentValue = currentValue,
+                    gain = gain,
+                    gainPct = gainPct,
+                )
+            }
     }
 }
