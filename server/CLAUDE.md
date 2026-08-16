@@ -48,6 +48,21 @@ escape: `@Value($$"${investlog.brapi.token:}")`.
 `ResponseEntity.ok(...)`, `.status(HttpStatus.CREATED).body(...)`, or `.noContent().build()`
 (typed `ResponseEntity<Void>` for delete/no-body responses).
 
+**`@RequestParam`/`@PathVariable` for a value with a fixed set of options is typed as the enum
+itself, never `String`** — e.g. `HoldingsOverviewController.findAll`'s `kind: WalletKind?`. Spring
+converts the raw query/path string to the enum automatically (matching the constant name), so an
+invalid value 400s before the handler method even runs, with no manual validation needed. This
+also matches what the client already sends — the frontend posts the enum's own text value, so no
+translation step is needed on either side.
+
+**Not every feature needs a `@Service`.** If a controller method would do nothing but call a
+repository method and return its result unchanged, skip the service and have the controller call
+the repository directly (see `HoldingsOverviewController`/`OverviewController`). Only add a
+`@Service` when there's actual work to do between the repository and the response: transforming
+the repository's result before it goes to the controller, or real business logic (validation
+beyond `@Valid`, multi-step orchestration, side effects, calling other services). A service that
+just delegates one-to-one to a repository is a pass-through layer that adds nothing.
+
 **Every `@Service` class carries `@Transactional(readOnly = true)`**; each write method adds its
 own explicit `@Transactional`. `StockPriceSyncService` is the reference example. Gotcha: a class
 that extends a Spring base type with its own protected `logger`/`log` field (e.g.
@@ -92,7 +107,7 @@ has:
   than co-located in `AuthService.kt` — one type per file, even for small/tightly-coupled types.
 - `usersadmin` — admin-only user management: `GET /users` (paginated), `PATCH
   /users/{id}/approve|block|unblock|role|totp-reset|password`, `DELETE /users/{id}`. Gated to
-  `ROLE_ADMIN` in `SecurityConfig`. `block`/`changeRole`/`delete`/`resetPassword` all guard
+  `ROLE_ADMIN` in `SecurityConfiguration`. `block`/`changeRole`/`delete`/`resetPassword` all guard
   against the caller targeting their own account (`SelfActionNotAllowedException`, 400) to
   prevent a self-lockout; `approve`, `unblock`, and `resetTotp` don't need the guard since
   self-targeting them is a genuine no-op, not a lockout.
@@ -102,9 +117,9 @@ has:
   `InvalidTotpCodeException`, `TotpAlreadyEnabledException`, `TotpRequiredException`,
   `UserNotApprovedException`, `SelfActionNotAllowedException`), each mapped by
   `GlobalExceptionHandler` to a `ProblemDetail`.
-- `config` — `WebMvcConfig` (path-segment API versioning, prefixes `@RestController`s under
+- `config` — `WebMvcConfiguration` (path-segment API versioning, prefixes `@RestController`s under
   `/private/{version}`; `@EnableSpringDataWebSupport` activates `Pageable` parameter resolution),
-  `SecurityConfig` (the filter chain — see below; its `AccessDeniedHandler` writes a nested
+  `SecurityConfiguration` (the filter chain — see below; its `AccessDeniedHandler` writes a nested
   `SecurityConfig.AccessDeniedResponse` data class, not a shared payload type), and
   `GlobalExceptionHandler` (RFC 7807 `ProblemDetail` error responses: 400 validation errors, 404
   `NotFoundException`, 409 `DataIntegrityViolationException` from unique/FK-restrict violations,
@@ -158,7 +173,7 @@ has:
   `domain/` layer) but syncs on `@Scheduled(cron = "0 0 * * * *")`, every hour 24/7 since crypto
   markets don't close, gated the same way by `ConfigurationKey.CRYPTO_PRICE_SYNC_ENABLED` and a
   `POST /crypto-price-sync` admin-only manual trigger (`hasAuthority("ROLE_ADMIN")` in
-  `SecurityConfig`, same as `/stock-price-sync`). The price source is CoinGecko's free, keyless
+  `SecurityConfiguration`, same as `/stock-price-sync`). The price source is CoinGecko's free, keyless
   `/simple/price`, but unlike brapi.dev's stock tickers, crypto ticker symbols are **not**
   globally unique on CoinGecko — e.g. `btc` and `eth` each match 10+ unrelated coins (verified
   against the live `/coins/list`) — so `CryptoPriceSyncService.syncPrices()` never queries
@@ -169,7 +184,7 @@ has:
   That resolve call goes through `CoinGeckoSymbolResolver`, a separate `@Service` (not a method on
   `CryptoPriceSyncService` itself) so its `@Cacheable` annotation actually takes effect — Spring's
   proxy-based caching is a no-op on self-invocation, so cross-bean placement is load-bearing, not
-  a style choice. The cache (`CachingConfig`, Caffeine, 10-minute `expireAfterWrite`, keyed by the
+  a style choice. The cache (`CachingConfiguration`, Caffeine, 10-minute `expireAfterWrite`, keyed by the
   sorted distinct ticker list) exists to collapse repeat resolves within a burst of manual
   triggers; it's always fully expired well before the next hourly run. Only the resolve step is
   cached — the subsequent `GET /simple/price?ids={resolved ids}&vs_currencies={wallet currencies}`
@@ -183,7 +198,7 @@ has:
   URL and the auth header name are plain properties with their real defaults declared once, in
   `application.yaml` (`investlog.coingecko.base-url`/`api-key-header`, defaulting to
   `api.coingecko.com`/`x-cg-demo-api-key`) — not a plan/tier abstraction, and not duplicated as
-  constants in `CoinGeckoHttpClientsConfig`. A paid CoinGecko Pro account means editing those two
+  constants in `CoinGeckoHttpClientsConfiguration`. A paid CoinGecko Pro account means editing those two
   values directly (`pro-api.coingecko.com` / `x-cg-pro-api-key`); they're deliberately **not**
   wired as `.env`/`COINGECKO_*` variables through `compose.yaml` the way `COINGECKO_KEY` is —
   `compose.yaml`'s `environment:` block always sets whatever it lists, blank or not, and Spring's
@@ -206,7 +221,7 @@ has:
 
 - **Session authorities are computed once at login and never re-evaluated per request.**
   `AuthService.establishSession` bakes `ROLE_${role}` and `STATUS_${status}` into the session's
-  `Authentication` at login time; `SecurityConfig`'s filter chain (`hasAuthority(...)`) only ever
+  `Authentication` at login time; `SecurityConfiguration`'s filter chain (`hasAuthority(...)`) only ever
   checks those cached values, never the database. Concretely: promoting/demoting a user, or
   approving them, takes effect on their *next login*, not immediately. Rejecting or deleting a
   user is different and more urgent — a stale `STATUS_APPROVED` authority would otherwise leave
@@ -227,7 +242,7 @@ has:
   `tools.jackson.databind.ObjectMapper` — Spring auto-configures a `JsonMapper` bean as the
   concrete JSON mapper; `ObjectMapper` is now a more generic base type not meant for direct
   injection. Needed anywhere you serialize a response body by hand outside the normal
-  controller/`ProblemDetail` pipeline (e.g. `SecurityConfig`'s `AccessDeniedHandler`).
+  controller/`ProblemDetail` pipeline (e.g. `SecurityConfiguration`'s `AccessDeniedHandler`).
 - The shared test harness (`RestClientTestConfiguration` /
   `AdminSessionCookieInterceptor`, `src/test/.../AdminSessionCookieInterceptor.kt`) auto-injects
   an admin session cookie into any `RestTestClient` request that doesn't already carry a `Cookie`

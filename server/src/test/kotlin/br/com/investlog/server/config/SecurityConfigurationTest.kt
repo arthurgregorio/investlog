@@ -8,7 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
-class SecurityConfigTest : BaseIntegrationTest() {
+class SecurityConfigurationTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var restTestClient: RestTestClient

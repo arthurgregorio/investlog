@@ -20,7 +20,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import tools.jackson.databind.json.JsonMapper
 
 @Configuration
-class SecurityConfig {
+class SecurityConfiguration {
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()

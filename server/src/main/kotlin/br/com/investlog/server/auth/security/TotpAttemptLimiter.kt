@@ -1,18 +1,14 @@
 package br.com.investlog.server.auth.security
 
+import br.com.investlog.server.config.InvestlogConfigurations
 import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class TotpAttemptLimiter(
-    @Value($$"${investlog.security.totp.lockout.max-attempts:5}")
-    private val maxAttemptsBeforeLockout: Int,
-    @Value($$"${investlog.security.totp.lockout.base-duration:60s}")
-    private val baseLockoutDuration: Duration,
+    private val investlogConfigurations: InvestlogConfigurations
 ) {
 
     private val attemptStateByEmail = ConcurrentHashMap<String, AttemptState>()
@@ -25,10 +21,13 @@ class TotpAttemptLimiter(
     }
 
     fun recordFailure(email: String) {
+
+        val totpConfigs = investlogConfigurations.security.totp
+
         attemptStateByEmail.compute(email) { _, existingState ->
             val failureCount = (existingState?.failureCount ?: 0) + 1
 
-            if (failureCount < maxAttemptsBeforeLockout) {
+            if (failureCount < totpConfigs.lockoutMaxAttempts) {
                 existingState?.copy(failureCount = failureCount)
                     ?: AttemptState(failureCount = failureCount, lockoutCount = 0, lockedUntil = null)
             } else {
@@ -37,7 +36,8 @@ class TotpAttemptLimiter(
                 AttemptState(
                     failureCount = 0,
                     lockoutCount = lockoutCount,
-                    lockedUntil = Instant.now().plus(baseLockoutDuration.multipliedBy(backoffMultiplier)),
+                    lockedUntil = Instant.now()
+                        .plus(totpConfigs.lockoutBaseDuration.multipliedBy(backoffMultiplier)),
                 )
             }
         }

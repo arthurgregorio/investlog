@@ -15,7 +15,6 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.OffsetDateTime
 import java.util.UUID
-import br.com.investlog.server.jooq.finances.enums.WalletKind as JooqWalletKind
 
 @Repository
 class WalletRepository(private val dsl: DSLContext) {
@@ -41,7 +40,7 @@ class WalletRepository(private val dsl: DSLContext) {
         val wallet = dsl.insertInto(WALLETS)
             .set(WALLETS.USER_ID, userId)
             .set(WALLETS.NAME, name)
-            .set(WALLETS.KIND, JooqWalletKind.valueOf(kind.name))
+            .set(WALLETS.KIND, kind.jooqWalletKind)
             .set(WALLETS.CURRENCY, currency)
             .returning()
             .fetchSingle()
