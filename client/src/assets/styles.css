@@ -2309,3 +2309,183 @@ a {
   }
 }
 
+/* ===== Investment report ===== */
+.report-page {
+  max-width: 980px;
+}
+
+.report-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report-header {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.report-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  margin: 4px 0 0;
+}
+
+.report-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.report-grand-total {
+  display: flex;
+  gap: 28px;
+  margin-top: 14px;
+}
+
+.rgt-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rgt-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.rgt-value {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.report-kind-section {
+  margin-top: 22px;
+}
+
+.report-kind-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.report-kind-head h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  flex: 1;
+}
+
+.report-subgroup {
+  margin-top: 14px;
+  break-inside: avoid;
+}
+
+.report-subgroup-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin: 0 0 6px;
+}
+
+.report-wallet-block {
+  margin-bottom: 10px;
+  break-inside: avoid;
+}
+
+.report-wallet-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-2);
+  text-align: left;
+}
+
+.report-table th.c-num,
+.report-table td.c-num {
+  text-align: right;
+}
+
+.report-table thead th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.report-subtotal-row td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+}
+
+.report-subtotal-line {
+  display: flex;
+  gap: 18px;
+  justify-content: flex-end;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.report-subgroup-subtotal {
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+@media print {
+  .navbar,
+  .topnav,
+  .no-print {
+    display: none !important;
+  }
+
+  .content {
+    overflow: visible;
+  }
+
+  .report-page {
+    max-width: none;
+    padding: 0;
+  }
+
+  .report-kind-section,
+  .report-subgroup,
+  .report-wallet-block {
+    break-inside: avoid;
+  }
+}
+

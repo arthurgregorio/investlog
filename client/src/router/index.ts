@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import OverviewView from '@/views/OverviewView.vue'
 import WalletsView from '@/views/WalletsView.vue'
 import InvestmentsView from '@/views/InvestmentsView.vue'
+import InvestmentReportView from '@/views/InvestmentReportView.vue'
 import PriceCurrenciesView from '@/views/PriceCurrenciesView.vue'
 import TypesView from '@/views/TypesView.vue'
 import UsersView from '@/views/UsersView.vue'
@@ -19,6 +20,11 @@ export const router = createRouter({
     { path: '/overview', name: 'overview', component: OverviewView },
     { path: '/wallets', name: 'wallets', component: WalletsView },
     { path: '/investments', name: 'investments', component: InvestmentsView },
+    {
+      path: '/investments/report',
+      name: 'investments-report',
+      component: InvestmentReportView,
+    },
     { path: '/settings', redirect: { name: 'settings-price-currencies' } },
     {
       path: '/settings/price-currencies',
