@@ -37,4 +37,21 @@ class HoldingsOverviewController(
 
         return ResponseEntity.ok(holdings)
     }
+
+    @GetMapping("/report")
+    fun findAllForReport(
+        @RequestParam(required = false) kind: WalletKind?,
+        @RequestParam(required = false) typeLabel: String?,
+        @RequestParam(required = false) walletId: UUID?,
+        @RequestParam(required = false) search: String?,
+    ): ResponseEntity<List<HoldingRowResponse>> {
+
+        val userId = currentUserProvider.getCurrentUser().id
+
+        val holdings = holdingsOverviewRepository.findAllForReport(
+            userId, kind?.jooqWalletKind, typeLabel, walletId, search
+        )
+
+        return ResponseEntity.ok(holdings)
+    }
 }
