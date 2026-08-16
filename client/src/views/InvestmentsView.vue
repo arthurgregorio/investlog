@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
@@ -36,21 +37,53 @@ const tabs: { key: Filter; label: string; icon: string }[] = [
   { key: 'FUNDS', label: 'Fundos', icon: 'office-building-outline' },
 ]
 const validFilters: Filter[] = ['all', 'STOCKS', 'CRYPTO', 'FUNDS']
+const validSortKeys: SortKey[] = ['wallet', 'price', 'invested', 'current', 'gain']
+const QUERY_KEYS = ['filter', 'walletId', 'type', 'search', 'sort', 'page'] as const
 
-function filterFromRoute(): Filter {
-  const filterParam = route.query.filter
+function parseFilter(query: LocationQuery): Filter {
+  const filterParam = query.filter
   return typeof filterParam === 'string' && validFilters.includes(filterParam as Filter)
     ? (filterParam as Filter)
     : 'all'
 }
 
-const activeFilter = ref<Filter>(filterFromRoute())
+function parseSort(query: LocationQuery): { key: SortKey | null; direction: 'asc' | 'desc' } {
+  const sortParam = query.sort
+  if (typeof sortParam !== 'string') return { key: null, direction: 'desc' }
+  const [key, direction] = sortParam.split(',')
+  if (!validSortKeys.includes(key as SortKey)) return { key: null, direction: 'desc' }
+  return { key: key as SortKey, direction: direction === 'asc' ? 'asc' : 'desc' }
+}
+
+function parsePage(query: LocationQuery): number {
+  const pageParam = query.page
+  const pageNumber = typeof pageParam === 'string' ? parseInt(pageParam, 10) : NaN
+  return Number.isFinite(pageNumber) && pageNumber > 1 ? pageNumber - 1 : 0
+}
+
+function queryFingerprint(query: LocationQuery | LocationQueryRaw): string {
+  return QUERY_KEYS.map((key) => `${key}=${query[key] ?? ''}`).join('&')
+}
+
+const initialSort = parseSort(route.query)
+
+const activeFilter = ref<Filter>(parseFilter(route.query))
 const openedDetails = ref<HoldingRow[]>([])
-const typeLabelFilter = ref<string | undefined>(undefined)
-const walletIdFilter = ref<string | undefined>(undefined)
-const searchQuery = ref('')
-const sortKey = ref<SortKey | null>(null)
-const sortDirection = ref<'asc' | 'desc'>('desc')
+const typeLabelFilter = ref<string | undefined>(
+  typeof route.query.type === 'string' ? route.query.type : undefined,
+)
+const walletIdFilter = ref<string | undefined>(
+  typeof route.query.walletId === 'string' ? route.query.walletId : undefined,
+)
+const searchQuery = ref(typeof route.query.search === 'string' ? route.query.search : '')
+const sortKey = ref<SortKey | null>(initialSort.key)
+const sortDirection = ref<'asc' | 'desc'>(initialSort.direction)
+
+// Tracks the query this component last wrote via router.replace, so the watcher below can tell
+// its own self-echo apart from a real external navigation (WalletsView link, back/forward, pasted
+// URL) and only re-hydrate state in the latter case — otherwise every local filter change would
+// immediately wipe itself out.
+let lastWrittenQueryFingerprint = queryFingerprint(route.query)
 
 let searchDebounceHandle: ReturnType<typeof setTimeout> | undefined
 
@@ -65,7 +98,26 @@ const walletOptions = computed(() => {
   return walletsStore.wallets.filter((wallet) => wallet.kind === activeFilter.value)
 })
 
+function buildQuery(pageNumber: number): LocationQueryRaw {
+  const query: LocationQueryRaw = {}
+  if (activeFilter.value !== 'all') query.filter = activeFilter.value
+  if (walletIdFilter.value) query.walletId = walletIdFilter.value
+  if (typeLabelFilter.value) query.type = typeLabelFilter.value
+  const trimmedSearch = searchQuery.value.trim()
+  if (trimmedSearch) query.search = trimmedSearch
+  if (sortKey.value) query.sort = `${sortKey.value},${sortDirection.value}`
+  if (pageNumber > 0) query.page = String(pageNumber + 1)
+  return query
+}
+
+function syncQueryToRoute(pageNumber: number) {
+  const query = buildQuery(pageNumber)
+  lastWrittenQueryFingerprint = queryFingerprint(query)
+  router.replace({ query })
+}
+
 function reload(pageNumber = 0) {
+  syncQueryToRoute(pageNumber)
   holdingsListStore.loadKind(activeFilter.value, pageNumber, {
     typeLabel: typeLabelFilter.value,
     walletId: walletIdFilter.value,
@@ -74,15 +126,23 @@ function reload(pageNumber = 0) {
   })
 }
 
+function hydrateFiltersFromRoute(query: LocationQuery) {
+  activeFilter.value = parseFilter(query)
+  walletIdFilter.value = typeof query.walletId === 'string' ? query.walletId : undefined
+  typeLabelFilter.value = typeof query.type === 'string' ? query.type : undefined
+  searchQuery.value = typeof query.search === 'string' ? query.search : ''
+  const sort = parseSort(query)
+  sortKey.value = sort.key
+  sortDirection.value = sort.direction
+}
+
 watch(
-  () => route.query.filter,
-  () => {
-    activeFilter.value = filterFromRoute()
-    typeLabelFilter.value = undefined
-    walletIdFilter.value = undefined
-    searchQuery.value = ''
+  () => route.query,
+  (newQuery) => {
+    if (queryFingerprint(newQuery) === lastWrittenQueryFingerprint) return
+    hydrateFiltersFromRoute(newQuery)
     openedDetails.value = []
-    reload(0)
+    reload(parsePage(newQuery))
   },
 )
 
@@ -91,12 +151,17 @@ onMounted(() => {
   walletsStore.load()
   currencyStore.load()
   ratesStore.load()
-  reload(0)
+  reload(parsePage(route.query))
 })
 
 function selectTab(filter: Filter) {
   if (filter === activeFilter.value) return
-  router.replace({ query: { ...route.query, filter: filter === 'all' ? undefined : filter } })
+  activeFilter.value = filter
+  typeLabelFilter.value = undefined
+  walletIdFilter.value = undefined
+  searchQuery.value = ''
+  openedDetails.value = []
+  reload(0)
 }
 
 function onTypeLabelChange(value: string) {
