@@ -84,13 +84,51 @@ describe('router auth guard', () => {
     expect(router.currentRoute.value.name).toBe('overview')
   })
 
-  it('redirects a non-admin away from /settings', async () => {
+  it('redirects a non-admin away from /settings/price-currencies', async () => {
     vi.resetModules()
     const auth = useAuthStore()
     auth.session = {
       name: 'Usuário Comum',
       email: 'user@example.com',
       role: 'USER',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    }
+
+    const { router } = await import('./index')
+    router.push('/settings/price-currencies')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
+
+  it('redirects a non-admin away from /settings/users', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Usuário Comum',
+      email: 'user@example.com',
+      role: 'USER',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    }
+
+    const { router } = await import('./index')
+    router.push('/settings/users')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
+
+  it('redirects /settings to /settings/price-currencies for an admin', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
       status: 'APPROVED',
       authProvider: 'LOCAL',
       demoModeEnabled: false,
@@ -100,25 +138,6 @@ describe('router auth guard', () => {
     router.push('/settings')
     await router.isReady()
 
-    expect(router.currentRoute.value.name).toBe('overview')
-  })
-
-  it('redirects a non-admin away from /users', async () => {
-    vi.resetModules()
-    const auth = useAuthStore()
-    auth.session = {
-      name: 'Usuário Comum',
-      email: 'user@example.com',
-      role: 'USER',
-      status: 'APPROVED',
-      authProvider: 'LOCAL',
-      demoModeEnabled: false,
-    }
-
-    const { router } = await import('./index')
-    router.push('/users')
-    await router.isReady()
-
-    expect(router.currentRoute.value.name).toBe('overview')
+    expect(router.currentRoute.value.name).toBe('settings-price-currencies')
   })
 })
