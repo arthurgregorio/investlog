@@ -62,7 +62,6 @@ function isActive(item: NavItem): boolean {
               >
                 <span class="nav-icon"><b-icon :icon="item.icon" size="is-small" /></span>
                 <span class="nav-label">{{ item.label }}</span>
-                <b-icon icon="menu-down" size="is-small" />
               </button>
             </template>
             <b-dropdown-item
