@@ -227,6 +227,18 @@ function subLabel(row: HoldingRow): string {
 function openAddInvestment() {
   modals.openAddInvestment(activeFilter.value !== 'all' ? activeFilter.value : undefined)
 }
+
+function openReport() {
+  const query: LocationQueryRaw = {}
+  if (activeFilter.value !== 'all') query.filter = activeFilter.value
+  if (walletIdFilter.value) query.walletId = walletIdFilter.value
+  if (typeLabelFilter.value) query.type = typeLabelFilter.value
+  const trimmedSearch = searchQuery.value.trim()
+  if (trimmedSearch) query.search = trimmedSearch
+
+  const { href } = router.resolve({ name: 'investments-report', query })
+  window.open(href, '_blank')
+}
 </script>
 
 <template>
@@ -277,6 +289,9 @@ function openAddInvestment() {
           placeholder="Buscar por nome ou ticker"
           @update:model-value="onSearchChange"
         />
+        <b-button icon-left="file-export-outline" outlined @click="openReport">
+          Exportar relatório
+        </b-button>
         <b-button
           type="is-primary"
           class="has-text-light toolbar-add"
