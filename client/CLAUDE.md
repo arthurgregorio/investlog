@@ -144,7 +144,7 @@ login, so a user blocked mid-session won't see any UI change until their next re
 they refresh — the server-side revocation (next action, not next login) is the actual security
 guarantee; this view is UX, not enforcement.
 
-`UsersView.vue` (route `/users`, admin-only like `/settings`) is the local-user management screen,
+`UsersView.vue` (route `/settings/users`, admin-only like the rest of `/settings/*`) is the local-user management screen,
 laid out with the same `.wallet-grid`/`.wallet-card` pattern as `WalletsView.vue`. The acting
 admin's own row hides role-change/block/delete (`isSelf(user.email)`) but leaves approve and
 TOTP-reset visible — those two are safe no-ops on your own account, not lockout risks, so hiding
