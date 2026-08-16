@@ -1,6 +1,6 @@
 package br.com.investlog.server.cryptopricesync.services
 
-import br.com.investlog.server.config.core.CachingConfig.Companion.CRYPTO_TICKER_RESOLUTION_CACHE
+import br.com.investlog.server.config.core.CachingConfiguration.Companion.CRYPTO_TICKER_RESOLUTION_CACHE
 import br.com.investlog.server.shared.http.coingecko.CoinGeckoClient
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service

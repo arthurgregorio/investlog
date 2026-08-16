@@ -25,9 +25,8 @@ investlog:
     admin-default-password: ${ADMIN_DEFAULT_PASSWORD:admin}
     totp:
       enabled: ${TOTP_REQUIRED:true}
-      lockout:
-        max-attempts: ${TOTP_LOCKOUT_MAX_ATTEMPTS:5}
-        base-duration: ${TOTP_LOCKOUT_BASE_DURATION:60s}
+      lockout-max-attempts: ${TOTP_LOCKOUT_MAX_ATTEMPTS:5}
+      lockout-base-duration: ${TOTP_LOCKOUT_BASE_DURATION:60s}
 
   google-auth:
     enabled: ${GOOGLE_AUTH_ENABLED:false}

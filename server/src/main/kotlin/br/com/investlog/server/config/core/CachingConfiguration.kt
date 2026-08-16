@@ -10,7 +10,7 @@ import java.time.Duration
 
 @EnableCaching
 @Configuration(proxyBeanMethods = false)
-class CachingConfig {
+class CachingConfiguration {
 
     @Bean
     fun cacheManager(): CacheManager =

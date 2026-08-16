@@ -135,8 +135,8 @@ class OverviewRepository(private val dsl: DSLContext) {
     }
 
     /**
-     * Rate of [displayCurrency] relative to the rates-anchor currency (1 if it has no
-     * configured row, e.g. it IS the anchor — the anchor's own row always stores rate=1).
+     * Rate of [displayCurrency] relative to the rates-anchor currency (1 if it has no configured row, e.g. it IS the
+     * anchor — the anchor's own row always stores rate=1).
      */
     private fun displayCurrencyRate(displayCurrency: String): BigDecimal =
         dsl.select(CURRENCY_RATES.RATE)

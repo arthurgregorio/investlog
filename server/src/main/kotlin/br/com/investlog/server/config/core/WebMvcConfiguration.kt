@@ -10,7 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @EnableSpringDataWebSupport
 @Configuration(proxyBeanMethods = false)
-class WebMvcConfig : WebMvcConfigurer {
+class WebMvcConfiguration : WebMvcConfigurer {
 
     override fun configurePathMatch(configurer: PathMatchConfigurer) {
         configurer.addPathPrefix(

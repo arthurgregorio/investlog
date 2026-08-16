@@ -7,4 +7,4 @@ import org.springframework.scheduling.annotation.EnableScheduling
 @EnableScheduling
 @Profile("!test")
 @Configuration(proxyBeanMethods = false)
-class SchedulingConfig
+class SchedulingConfiguration
