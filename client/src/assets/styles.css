@@ -2533,6 +2533,12 @@ h3.report-subgroup-title {
 }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
   html,
   body {
     height: auto;
@@ -2576,7 +2582,11 @@ h3.report-subgroup-title {
     white-space: normal;
   }
 
-  .report-kind-section,
+  /* report-kind-section is deliberately NOT break-inside: avoid — a kind
+     like "Ações" can span several pages on its own, and forcing the whole
+     section to stay together just pushes it entirely onto the next page,
+     leaving the previous one mostly blank. Only the smaller subgroup/wallet
+     units (which normally do fit on one page) avoid splitting. */
   .report-subgroup,
   .report-wallet-block {
     break-inside: avoid;
