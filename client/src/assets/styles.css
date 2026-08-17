@@ -2321,7 +2321,6 @@ a {
 }
 
 .report-header {
-  border-bottom: 2px solid var(--border);
   padding-bottom: 18px;
   display: flex;
   flex-direction: column;
@@ -2427,10 +2426,12 @@ h1.report-title {
 }
 
 h3.report-subgroup-title {
+  border-bottom: 1px solid var(--border);
   font-size: 13px;
   font-weight: 700;
   color: var(--text-2);
   margin: 0 0 6px;
+  padding-bottom: 5px;
 }
 
 .report-wallet-block {
@@ -2443,6 +2444,7 @@ h3.report-subgroup-title {
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 4px;
+  margin-top: 15px;
 }
 
 .report-table {
