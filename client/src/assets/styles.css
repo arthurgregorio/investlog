@@ -2373,32 +2373,32 @@ h1.report-title {
 
 .report-grand-total {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   flex-shrink: 0;
 }
 
 .rgt-item {
   display: flex;
-  align-items: baseline;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
   white-space: nowrap;
 }
 
 .rgt-label {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .03em;
+  letter-spacing: .06em;
   color: var(--text-muted);
   font-weight: 700;
 }
 
 .rgt-value {
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 800;
 }
 
 .rgt-item .gl {
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 800;
 }
 

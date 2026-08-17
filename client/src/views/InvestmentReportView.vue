@@ -126,7 +126,7 @@ function print() {
               </span>
             </div>
             <div class="rgt-item">
-              <span class="rgt-label">Atual</span>
+              <span class="rgt-label">Valor atual</span>
               <span class="rgt-value">
                 {{ fmt.money(grouping.grandTotals.currentValue, currencyStore.displayCurrency) }}
               </span>
@@ -158,7 +158,7 @@ function print() {
               }}</span>
             </div>
             <div class="stotal-item">
-              <span class="stotal-label">Atual</span>
+              <span class="stotal-label">Valor atual</span>
               <span class="stotal-value">{{
                 fmt.money(kindGroup.totals.currentValue, currencyStore.displayCurrency)
               }}</span>
@@ -249,7 +249,7 @@ function print() {
               }}</span>
             </div>
             <div class="stotal-item">
-              <span class="stotal-label">Atual</span>
+              <span class="stotal-label">Valor atual</span>
               <span class="stotal-value">{{
                 fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
               }}</span>
