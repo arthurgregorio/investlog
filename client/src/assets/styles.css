@@ -2563,6 +2563,18 @@ h3.report-subgroup-title {
     overflow: visible;
   }
 
+  /* Force a plain white page regardless of theme — dark mode's --bg (and
+     even light mode's slightly-off-white --bg) would otherwise now print
+     exactly, since the color-adjust rule above stops the browser from
+     stripping it like it used to. */
+  body,
+  .app-root,
+  .main,
+  .content,
+  .report-page {
+    background: #fff !important;
+  }
+
   .report-page {
     max-width: none;
     width: 100%;
@@ -2582,12 +2594,12 @@ h3.report-subgroup-title {
     white-space: normal;
   }
 
-  /* report-kind-section is deliberately NOT break-inside: avoid — a kind
-     like "Ações" can span several pages on its own, and forcing the whole
-     section to stay together just pushes it entirely onto the next page,
-     leaving the previous one mostly blank. Only the smaller subgroup/wallet
-     units (which normally do fit on one page) avoid splitting. */
-  .report-subgroup,
+  /* report-kind-section and report-subgroup are deliberately NOT
+     break-inside: avoid — either can span several pages on its own (a
+     subgroup with more than one wallet especially), and forcing a big
+     block to stay together just pushes it entirely onto the next page,
+     leaving the previous one mostly blank. Only report-wallet-block (one
+     table, normally small enough to fit on one page) avoids splitting. */
   .report-wallet-block {
     break-inside: avoid;
   }
