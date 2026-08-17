@@ -2580,12 +2580,36 @@ h3.report-subgroup-title {
     padding: 0;
   }
 
-  /* A4's printable width can't always fit the title + grand-total on one
-     line at screen font sizes — wrap as a fallback instead of letting the
-     browser clip the overflow at the page edge (the on-screen layout keeps
-     nowrap since it does fit there). */
+  /* The title + grand-total row is tuned to fit the ~920px screen
+     container, which is wider than A4's printable area (~700px) — shrink
+     both down for print so they actually stay on one line there instead
+     of just avoiding a clip. flex-wrap/white-space stay as a last-resort
+     safety net (e.g. a very large number pushing a value wider than
+     usual), not the normal path. */
   .report-title-row {
     flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  h1.report-title {
+    font-size: 16px;
+  }
+
+  .report-grand-total {
+    gap: 12px;
+  }
+
+  .rgt-item {
+    gap: 1px;
+  }
+
+  .rgt-label {
+    font-size: 8px;
+  }
+
+  .rgt-value,
+  .rgt-item .gl {
+    font-size: 12px;
   }
 
   .report-title,
