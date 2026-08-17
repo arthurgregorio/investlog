@@ -297,12 +297,13 @@ function openReport() {
         >
           Adicionar investimento
         </b-button>
-        <b-button
-          icon-left="file-export-outline"
-          outlined
-          aria-label="Exportar relatório"
-          @click="openReport"
-        />
+        <b-tooltip label="Exportar" position="is-top">
+          <b-button
+            icon-left="file-export-outline"
+            aria-label="Exportar relatório"
+            @click="openReport"
+          />
+        </b-tooltip>
       </div>
     </div>
 

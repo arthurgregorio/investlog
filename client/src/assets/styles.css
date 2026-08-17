@@ -2350,11 +2350,11 @@ a {
   justify-content: space-between;
   flex-wrap: nowrap;
   gap: 16px;
-  margin-top: 4px;
+  margin-top: 50px;
 }
 
 h1.report-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -.02em;
   margin: 0;
