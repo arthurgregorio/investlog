@@ -109,7 +109,7 @@ function print() {
             <span class="brand-mark"><LogoMark :size="22" /></span>
             <div class="report-brand-text">
               <span class="brand-name">Invest<b>Log</b></span>
-              <span class="report-brand-url">created by investlog.com.br</span>
+              <span class="report-brand-url">investlog.com.br</span>
             </div>
           </div>
           <div class="report-meta">

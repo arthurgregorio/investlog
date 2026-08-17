@@ -2353,6 +2353,7 @@ a {
   font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
+  margin-top: -5px;
 }
 
 .report-title-row {
