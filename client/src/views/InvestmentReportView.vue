@@ -242,17 +242,26 @@ function print() {
           </div>
 
           <div class="report-subtotal-line report-subgroup-subtotal">
-            <span class="stotal-value">{{
-              fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
-            }}</span>
-            <span class="stotal-value">{{
-              fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
-            }}</span>
-            <GainChip
-              :value="subGroup.totals.gain"
-              :pct="subGroup.totals.gainPct"
-              :cur="currencyStore.displayCurrency"
-            />
+            <div class="stotal-item">
+              <span class="stotal-label">Investido</span>
+              <span class="stotal-value">{{
+                fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="stotal-item">
+              <span class="stotal-label">Valor atual</span>
+              <span class="stotal-value">{{
+                fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="stotal-item">
+              <span class="stotal-label">Resultado</span>
+              <GainChip
+                :value="subGroup.totals.gain"
+                :pct="subGroup.totals.gainPct"
+                :cur="currencyStore.displayCurrency"
+              />
+            </div>
           </div>
         </div>
       </section>
