@@ -2402,7 +2402,7 @@ h1.report-title {
 }
 
 .report-kind-section {
-  margin-top: 22px;
+  margin-top: 15px;
 }
 
 .report-kind-head {
@@ -2421,7 +2421,7 @@ h1.report-title {
 }
 
 .report-subgroup {
-  margin-top: 14px;
+  margin-top: 15px;
   break-inside: avoid;
 }
 
