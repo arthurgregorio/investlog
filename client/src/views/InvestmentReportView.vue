@@ -175,7 +175,31 @@ function print() {
         </div>
 
         <div v-for="subGroup in kindGroup.subGroups" :key="subGroup.key" class="report-subgroup">
-          <h3 class="report-subgroup-title">{{ subGroup.label }}</h3>
+          <div class="report-subgroup-head">
+            <h3 class="report-subgroup-title">{{ subGroup.label }}</h3>
+            <div class="report-subtotal-line">
+              <div class="stotal-item">
+                <span class="stotal-label">Investido</span>
+                <span class="stotal-value">{{
+                  fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
+                }}</span>
+              </div>
+              <div class="stotal-item">
+                <span class="stotal-label">Atual</span>
+                <span class="stotal-value">{{
+                  fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
+                }}</span>
+              </div>
+              <div class="stotal-item">
+                <span class="stotal-label">Resultado</span>
+                <GainChip
+                  :value="subGroup.totals.gain"
+                  :pct="subGroup.totals.gainPct"
+                  :cur="currencyStore.displayCurrency"
+                />
+              </div>
+            </div>
+          </div>
 
           <div
             v-for="walletGroup in subGroup.walletGroups"
@@ -239,29 +263,6 @@ function print() {
                 </tr>
               </tbody>
             </table>
-          </div>
-
-          <div class="report-subtotal-line report-subgroup-subtotal">
-            <div class="stotal-item">
-              <span class="stotal-label">Investido</span>
-              <span class="stotal-value">{{
-                fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
-              }}</span>
-            </div>
-            <div class="stotal-item">
-              <span class="stotal-label">Atual</span>
-              <span class="stotal-value">{{
-                fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
-              }}</span>
-            </div>
-            <div class="stotal-item">
-              <span class="stotal-label">Resultado</span>
-              <GainChip
-                :value="subGroup.totals.gain"
-                :pct="subGroup.totals.gainPct"
-                :cur="currencyStore.displayCurrency"
-              />
-            </div>
           </div>
         </div>
       </section>

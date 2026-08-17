@@ -2425,13 +2425,21 @@ h1.report-title {
   break-inside: avoid;
 }
 
-h3.report-subgroup-title {
+.report-subgroup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+  margin: 0 0 6px;
+}
+
+h3.report-subgroup-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-2);
-  margin: 0 0 6px;
-  padding-bottom: 5px;
+  margin: 0;
+  flex: 1;
 }
 
 .report-wallet-block {
@@ -2507,12 +2515,6 @@ h3.report-subgroup-title {
 .report-subtotal-line .gl {
   font-size: 11.5px;
   font-weight: 800;
-}
-
-.report-subgroup-subtotal {
-  border-top: 1px dashed var(--border);
-  padding-top: 6px;
-  margin-top: 6px;
 }
 
 @media print {
