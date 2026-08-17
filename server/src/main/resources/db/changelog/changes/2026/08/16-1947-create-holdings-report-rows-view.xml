@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="16-1947-1" author="${claude}">
+        <comment>
+            holdings_report_rows merges rows from holdings_overview that share
+            (wallet_id, kind, ticker, type_label, name), collapsing duplicate same-wallet/
+            same-ticker holdings (e.g. crypto bought as two separate holdings) into one row for
+            the printable investment report. Groups that already have exactly one row pass
+            through unchanged.
+        </comment>
+        <sql>
+            CREATE VIEW finances.holdings_report_rows AS
+            SELECT
+                MIN(external_id::TEXT)::UUID AS external_id,
+                wallet_id,
+                kind,
+                name,
+                ticker,
+                type_label,
+                CASE
+                    WHEN SUM(quantity) IS NOT NULL AND SUM(quantity) <![CDATA[<>]]> 0
+                        THEN SUM(current_value) / SUM(quantity)
+                    ELSE MAX(current_price)
+                END AS current_price,
+                SUM(quantity) AS quantity,
+                SUM(cost_basis) AS cost_basis,
+                SUM(current_value) AS current_value
+            FROM finances.holdings_overview
+            GROUP BY wallet_id, kind, name, ticker, type_label;
+        </sql>
+        <rollback>
+            <sql>DROP VIEW finances.holdings_report_rows;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
