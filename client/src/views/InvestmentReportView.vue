@@ -116,27 +116,29 @@ function print() {
             >
           </div>
         </div>
-        <h1 class="report-title">Relatório de investimentos</h1>
-        <div class="report-grand-total">
-          <div class="rgt-item">
-            <span class="rgt-label">Investido</span>
-            <span class="rgt-value">{{
-              fmt.money(grouping.grandTotals.costBasis, currencyStore.displayCurrency)
-            }}</span>
-          </div>
-          <div class="rgt-item">
-            <span class="rgt-label">Valor atual</span>
-            <span class="rgt-value">{{
-              fmt.money(grouping.grandTotals.currentValue, currencyStore.displayCurrency)
-            }}</span>
-          </div>
-          <div class="rgt-item">
-            <span class="rgt-label">Resultado</span>
-            <GainChip
-              :value="grouping.grandTotals.gain"
-              :pct="grouping.grandTotals.gainPct"
-              :cur="currencyStore.displayCurrency"
-            />
+        <div class="report-title-row">
+          <h1 class="report-title">Relatório de investimentos</h1>
+          <div class="report-grand-total">
+            <div class="rgt-item">
+              <span class="rgt-label">Investido</span>
+              <span class="rgt-value">{{
+                fmt.money(grouping.grandTotals.costBasis, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="rgt-item">
+              <span class="rgt-label">Valor atual</span>
+              <span class="rgt-value">{{
+                fmt.money(grouping.grandTotals.currentValue, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="rgt-item">
+              <span class="rgt-label">Resultado</span>
+              <GainChip
+                :value="grouping.grandTotals.gain"
+                :pct="grouping.grandTotals.gainPct"
+                :cur="currencyStore.displayCurrency"
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -240,26 +242,17 @@ function print() {
           </div>
 
           <div class="report-subtotal-line report-subgroup-subtotal">
-            <div class="stotal-item">
-              <span class="stotal-label">Investido</span>
-              <span class="stotal-value">{{
-                fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
-              }}</span>
-            </div>
-            <div class="stotal-item">
-              <span class="stotal-label">Valor atual</span>
-              <span class="stotal-value">{{
-                fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
-              }}</span>
-            </div>
-            <div class="stotal-item">
-              <span class="stotal-label">Resultado</span>
-              <GainChip
-                :value="subGroup.totals.gain"
-                :pct="subGroup.totals.gainPct"
-                :cur="currencyStore.displayCurrency"
-              />
-            </div>
+            <span class="stotal-value">{{
+              fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
+            }}</span>
+            <span class="stotal-value">{{
+              fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
+            }}</span>
+            <GainChip
+              :value="subGroup.totals.gain"
+              :pct="subGroup.totals.gainPct"
+              :cur="currencyStore.displayCurrency"
+            />
           </div>
         </div>
       </section>

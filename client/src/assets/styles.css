@@ -2344,11 +2344,21 @@ a {
   font-size: 15px;
 }
 
-.report-title {
-  font-size: 22px;
+.report-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+h1.report-title {
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -.02em;
-  margin: 4px 0 0;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .report-meta {
@@ -2363,31 +2373,32 @@ a {
 
 .report-grand-total {
   display: flex;
-  gap: 28px;
-  margin-top: 14px;
+  gap: 16px;
+  flex-shrink: 0;
 }
 
 .rgt-item {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .rgt-label {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .03em;
   color: var(--text-muted);
   font-weight: 700;
 }
 
 .rgt-value {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .rgt-item .gl {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -2415,7 +2426,7 @@ a {
   break-inside: avoid;
 }
 
-.report-subgroup-title {
+h3.report-subgroup-title {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-2);
@@ -2447,8 +2458,9 @@ a {
   text-align: left;
 }
 
+.report-table th.c-num,
 .report-table td.c-num {
-  text-align: right;
+  text-align: right !important;
 }
 
 .report-table thead th {
@@ -2457,7 +2469,6 @@ a {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .04em;
-  text-align: right !important;
 }
 
 .report-subtotal-row td {
@@ -2491,7 +2502,7 @@ a {
   font-weight: 800;
 }
 
-.stotal-item .gl {
+.report-subtotal-line .gl {
   font-size: 11.5px;
   font-weight: 800;
 }
