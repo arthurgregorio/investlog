@@ -112,7 +112,7 @@ function print() {
           <div class="report-meta">
             <span>Gerado em {{ formattedGeneratedAt }}</span>
             <span v-if="activeFilterLabels.length > 0"
-              >· Filtros: {{ activeFilterLabels.join(', ') }}</span
+              >Filtros: {{ activeFilterLabels.join(', ') }}</span
             >
           </div>
         </div>
