@@ -105,9 +105,12 @@ function print() {
     <template v-else-if="!loading">
       <header class="report-header">
         <div class="report-header-top">
-          <div class="report-brand">
-            <span class="brand-mark"><LogoMark :size="22" /></span>
-            <span class="brand-name">Invest<b>Log</b></span>
+          <div class="report-brand-block">
+            <div class="report-brand">
+              <span class="brand-mark"><LogoMark :size="22" /></span>
+              <span class="brand-name">Invest<b>Log</b></span>
+            </div>
+            <span class="report-brand-url">investlog.com.br</span>
           </div>
           <div class="report-meta">
             <span>Gerado em {{ formattedGeneratedAt }}</span>

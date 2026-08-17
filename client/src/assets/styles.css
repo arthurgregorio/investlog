@@ -2334,6 +2334,12 @@ a {
   gap: 16px;
 }
 
+.report-brand-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .report-brand {
   display: flex;
   align-items: center;
@@ -2341,6 +2347,11 @@ a {
   color: var(--primary);
   font-weight: 700;
   font-size: 15px;
+}
+
+.report-brand-url {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .report-title-row {
