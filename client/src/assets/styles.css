@@ -2392,12 +2392,11 @@ h1.report-title {
 }
 
 .rgt-value {
-  font-size: 18px;
   font-weight: 800;
 }
 
 .rgt-item .gl {
-  font-size: 18px;
+  font-size: inherit;
   font-weight: 800;
 }
 
