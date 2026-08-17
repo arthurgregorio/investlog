@@ -104,17 +104,19 @@ function print() {
 
     <template v-else-if="!loading">
       <header class="report-header">
-        <div class="report-brand">
-          <span class="brand-mark"><LogoMark :size="22" /></span>
-          <span class="brand-name">Invest<b>Log</b></span>
+        <div class="report-header-top">
+          <div class="report-brand">
+            <span class="brand-mark"><LogoMark :size="22" /></span>
+            <span class="brand-name">Invest<b>Log</b></span>
+          </div>
+          <div class="report-meta">
+            <span>Gerado em {{ formattedGeneratedAt }}</span>
+            <span v-if="activeFilterLabels.length > 0"
+              >· Filtros: {{ activeFilterLabels.join(', ') }}</span
+            >
+          </div>
         </div>
         <h1 class="report-title">Relatório de investimentos</h1>
-        <div class="report-meta">
-          <span>Gerado em {{ formattedGeneratedAt }}</span>
-          <span v-if="activeFilterLabels.length > 0"
-            >· Filtros: {{ activeFilterLabels.join(', ') }}</span
-          >
-        </div>
         <div class="report-grand-total">
           <div class="rgt-item">
             <span class="rgt-label">Investido</span>
@@ -145,18 +147,28 @@ function print() {
         class="report-kind-section"
       >
         <div class="report-kind-head">
-          <span class="wref-dot" :style="{ background: WALLET_TYPES[kindGroup.kind].accent }" />
           <h2>{{ kindGroup.label }}</h2>
           <div class="report-subtotal-line">
-            <span>{{ fmt.money(kindGroup.totals.costBasis, currencyStore.displayCurrency) }}</span>
-            <span>{{
-              fmt.money(kindGroup.totals.currentValue, currencyStore.displayCurrency)
-            }}</span>
-            <GainChip
-              :value="kindGroup.totals.gain"
-              :pct="kindGroup.totals.gainPct"
-              :cur="currencyStore.displayCurrency"
-            />
+            <div class="stotal-item">
+              <span class="stotal-label">Investido</span>
+              <span class="stotal-value">{{
+                fmt.money(kindGroup.totals.costBasis, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="stotal-item">
+              <span class="stotal-label">Valor atual</span>
+              <span class="stotal-value">{{
+                fmt.money(kindGroup.totals.currentValue, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="stotal-item">
+              <span class="stotal-label">Resultado</span>
+              <GainChip
+                :value="kindGroup.totals.gain"
+                :pct="kindGroup.totals.gainPct"
+                :cur="currencyStore.displayCurrency"
+              />
+            </div>
           </div>
         </div>
 
@@ -208,7 +220,7 @@ function print() {
                   </td>
                 </tr>
                 <tr class="report-subtotal-row">
-                  <td colspan="3">Subtotal — {{ walletGroup.walletName }}</td>
+                  <td colspan="3"></td>
                   <td class="c-num">
                     {{ fmt.money(walletGroup.totals.costBasis, currencyStore.displayCurrency) }}
                   </td>
@@ -228,16 +240,26 @@ function print() {
           </div>
 
           <div class="report-subtotal-line report-subgroup-subtotal">
-            <span>Subtotal — {{ subGroup.label }}</span>
-            <span>{{ fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency) }}</span>
-            <span>{{
-              fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
-            }}</span>
-            <GainChip
-              :value="subGroup.totals.gain"
-              :pct="subGroup.totals.gainPct"
-              :cur="currencyStore.displayCurrency"
-            />
+            <div class="stotal-item">
+              <span class="stotal-label">Investido</span>
+              <span class="stotal-value">{{
+                fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="stotal-item">
+              <span class="stotal-label">Valor atual</span>
+              <span class="stotal-value">{{
+                fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
+              }}</span>
+            </div>
+            <div class="stotal-item">
+              <span class="stotal-label">Resultado</span>
+              <GainChip
+                :value="subGroup.totals.gain"
+                :pct="subGroup.totals.gainPct"
+                :cur="currencyStore.displayCurrency"
+              />
+            </div>
           </div>
         </div>
       </section>

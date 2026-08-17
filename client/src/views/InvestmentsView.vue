@@ -289,9 +289,6 @@ function openReport() {
           placeholder="Buscar por nome ou ticker"
           @update:model-value="onSearchChange"
         />
-        <b-button icon-left="file-export-outline" outlined @click="openReport">
-          Exportar relatório
-        </b-button>
         <b-button
           type="is-primary"
           class="has-text-light toolbar-add"
@@ -300,6 +297,12 @@ function openReport() {
         >
           Adicionar investimento
         </b-button>
+        <b-button
+          icon-left="file-export-outline"
+          outlined
+          aria-label="Exportar relatório"
+          @click="openReport"
+        />
       </div>
     </div>
 
