@@ -552,6 +552,41 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             .expectStatus().isBadRequest()
     }
 
+    @Test
+    @Order(22)
+    fun `admin password reset rejects a new password shorter than 8 characters`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Senha Curta","email":"senha-curta-admin@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val targetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "senha-curta-admin@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/password")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"newPassword":"1234567"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
     companion object {
         private lateinit var approveTargetId: String
         private lateinit var blockTargetId: String
