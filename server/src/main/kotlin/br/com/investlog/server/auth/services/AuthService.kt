@@ -9,6 +9,7 @@ import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
 import br.com.investlog.server.auth.security.GoogleLinkTokenStore
+import br.com.investlog.server.auth.security.LoginAttemptLimiter
 import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
@@ -37,6 +38,7 @@ class AuthService(
     private val totpService: TotpService,
     private val googleLinkTokenStore: GoogleLinkTokenStore,
     private val totpAttemptLimiter: TotpAttemptLimiter,
+    private val loginAttemptLimiter: LoginAttemptLimiter,
     @Value($$"${investlog.google-auth.enabled:false}")
     private val googleAuthEnabled: Boolean,
     @Value($$"${investlog.security.totp.enabled:true}")
@@ -190,6 +192,9 @@ class AuthService(
     }
 
     private fun verifyCredentials(email: String, password: String): CurrentUser {
+
+        loginAttemptLimiter.checkNotLocked(email)
+
         val user = userRepository.findByEmail(email)
             ?: throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
 
@@ -197,8 +202,11 @@ class AuthService(
             ?: throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
 
         if (!passwordEncoder.matches(password, passwordHash)) {
+            loginAttemptLimiter.recordFailure(email)
             throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
         }
+
+        loginAttemptLimiter.recordSuccess(email)
 
         return user
     }
