@@ -30,13 +30,27 @@ class RegistrationControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(2)
-    fun `duplicate email registration is rejected`() {
+    fun `duplicate email registration responds identically to a new registration, without overwriting the existing account`() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
             .body("""{"name":"Outra Pessoa","email":"nova@example.com","password":"outrasenha"}""")
             .exchange()
-            .expectStatus().isEqualTo(409)
+            .expectStatus().isCreated()
+
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"nova@example.com","password":"outrasenha"}""")
+            .exchange()
+            .expectStatus().isUnauthorized()
+
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"nova@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isEqualTo(202)
     }
 
     @Test
