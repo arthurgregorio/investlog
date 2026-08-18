@@ -47,11 +47,11 @@ class AuthService(
 
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
 
-        if (userRepository.findByEmail(request.email)?.status == CurrentUser.Status.BLOCKED) {
+        val user = verifyCredentials(request.email, request.password)
+
+        if (user.status == CurrentUser.Status.BLOCKED) {
             throw InvalidCredentialsException(BLOCKED_MESSAGE)
         }
-
-        val user = verifyCredentials(request.email, request.password)
 
         if (!totpRequired) {
             return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
@@ -158,11 +158,12 @@ class AuthService(
         val pending = googleLinkTokenStore.consume(request.linkToken)
             ?: throw InvalidCredentialsException("Solicitação de vínculo expirada ou inválida — entre novamente com o Google")
 
-        if (userRepository.findByEmail(pending.email)?.status == CurrentUser.Status.BLOCKED) {
+        val user = verifyCredentials(pending.email, request.password)
+
+        if (user.status == CurrentUser.Status.BLOCKED) {
             throw InvalidCredentialsException(BLOCKED_MESSAGE)
         }
 
-        val user = verifyCredentials(pending.email, request.password)
         userRepository.linkGoogleAccount(user.id, pending.googleSub)
 
         return establishSession(user.copy(authProvider = AuthProvider.GOOGLE), servletRequest, servletResponse)

@@ -251,6 +251,91 @@ class AuthControllerTest : BaseIntegrationTest() {
         assertEquals("GOOGLE", response?.authProvider?.name)
     }
 
+    @Test
+    @Order(14)
+    fun `wrong password against an unknown, unapproved, or blocked account is indistinguishable`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Enum Approved","email":"enum-approved@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Enum Blocked","email":"enum-blocked@example.com","password":"senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        // By this point admin already has totp enabled (Order 7), so the shared RestTestClient's
+        // lazy auto-login as admin (AdminSessionCookieInterceptor) would fail on its first-ever
+        // attempt here, since it only knows how to handle a not-yet-enrolled admin. Authenticate
+        // as admin ourselves and pass the cookie explicitly, which short-circuits auto-injection.
+        val adminCookie = restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"admin@admin.com","password":"admin","totpCode":"${currentTotpCode(adminTotpSecret)}"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders
+            .getFirst("Set-Cookie")
+            ?.substringBefore(";")
+            ?: error("Admin login did not set a session cookie")
+
+        val blockedTargetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .header("Cookie", adminCookie)
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "enum-blocked@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$blockedTargetId/approve")
+            .header("Cookie", adminCookie)
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$blockedTargetId/block")
+            .header("Cookie", adminCookie)
+            .exchange()
+            .expectStatus().isOk()
+
+        val nonexistentDetail = loginErrorDetail("enum-nobody@example.com", "whatever")
+        val approvedWrongPasswordDetail = loginErrorDetail("enum-approved@example.com", "wrong-password")
+        val blockedWrongPasswordDetail = loginErrorDetail("enum-blocked@example.com", "wrong-password")
+
+        assertEquals(nonexistentDetail, approvedWrongPasswordDetail)
+        assertEquals(nonexistentDetail, blockedWrongPasswordDetail)
+    }
+
+    @Test
+    @Order(15)
+    fun `a blocked account's correct password still reveals the account is blocked`() {
+        val detail = loginErrorDetail("enum-blocked@example.com", "senha123")
+
+        assertEquals("Login falhou. Entre em contato com um administrador.", detail)
+    }
+
+    private fun loginErrorDetail(email: String, password: String): String? =
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"$email","password":"$password"}""")
+            .exchange()
+            .expectStatus().isUnauthorized()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            ?.get("detail") as String?
+
     @Nested
     @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
     @AutoConfigureRestTestClient
