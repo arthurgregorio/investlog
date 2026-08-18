@@ -257,7 +257,7 @@ class AuthControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Enum Approved","email":"enum-approved@example.com","password":"senha123"}""")
+            .body("""{"name":"Enum Pending","email":"enum-pending@example.com","password":"senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -310,10 +310,11 @@ class AuthControllerTest : BaseIntegrationTest() {
             .expectStatus().isOk()
 
         val nonexistentDetail = loginErrorDetail("enum-nobody@example.com", "whatever")
-        val approvedWrongPasswordDetail = loginErrorDetail("enum-approved@example.com", "wrong-password")
+        val pendingWrongPasswordDetail = loginErrorDetail("enum-pending@example.com", "wrong-password")
         val blockedWrongPasswordDetail = loginErrorDetail("enum-blocked@example.com", "wrong-password")
 
-        assertEquals(nonexistentDetail, approvedWrongPasswordDetail)
+        assertEquals("E-mail ou senha inválidos", nonexistentDetail)
+        assertEquals(nonexistentDetail, pendingWrongPasswordDetail)
         assertEquals(nonexistentDetail, blockedWrongPasswordDetail)
     }
 
