@@ -227,6 +227,18 @@ function subLabel(row: HoldingRow): string {
 function openAddInvestment() {
   modals.openAddInvestment(activeFilter.value !== 'all' ? activeFilter.value : undefined)
 }
+
+function openReport() {
+  const query: LocationQueryRaw = {}
+  if (activeFilter.value !== 'all') query.filter = activeFilter.value
+  if (walletIdFilter.value) query.walletId = walletIdFilter.value
+  if (typeLabelFilter.value) query.type = typeLabelFilter.value
+  const trimmedSearch = searchQuery.value.trim()
+  if (trimmedSearch) query.search = trimmedSearch
+
+  const { href } = router.resolve({ name: 'investments-report', query })
+  window.open(href, '_blank')
+}
 </script>
 
 <template>
@@ -285,6 +297,13 @@ function openAddInvestment() {
         >
           Adicionar investimento
         </b-button>
+        <b-tooltip label="Exportar" position="is-top">
+          <b-button
+            icon-left="file-export-outline"
+            aria-label="Exportar relatório"
+            @click="openReport"
+          />
+        </b-tooltip>
       </div>
     </div>
 

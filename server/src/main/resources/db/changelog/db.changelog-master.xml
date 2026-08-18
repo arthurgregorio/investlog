@@ -27,5 +27,6 @@
     <include file="db/changelog/changes/2026/08/05-1000-seed-crypto-price-sync-enabled.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/08/09-1000-disable-price-sync-by-default.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/08/09-1100-seed-usd-price-sync-enabled.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/08/16-1947-create-holdings-report-rows-view.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

@@ -22,6 +22,15 @@ export const holdingsApi = {
     return apiClient.get<PagedResponse<HoldingRow>>('/holdings', { params }).then((r) => r.data)
   },
 
+  findAllForReport(params: {
+    kind?: string
+    typeLabel?: string
+    walletId?: string
+    search?: string
+  }): Promise<HoldingRow[]> {
+    return apiClient.get<HoldingRow[]>('/holdings/report', { params }).then((r) => r.data)
+  },
+
   // --- Stock holdings ---
 
   getStockHolding(walletId: string, holdingId: string): Promise<StockHoldingDetail> {

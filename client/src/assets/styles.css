@@ -2309,3 +2309,335 @@ a {
   }
 }
 
+/* ===== Investment report ===== */
+.report-page {
+  max-width: 980px;
+}
+
+.report-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.report-header {
+  padding-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.report-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.report-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.report-brand-url {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: -5px;
+}
+
+.report-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 16px;
+  margin-top: 50px;
+}
+
+h1.report-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.report-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.report-grand-total {
+  display: flex;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.rgt-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.rgt-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.rgt-value {
+  font-weight: 800;
+}
+
+.rgt-item .gl {
+  font-size: inherit;
+  font-weight: 800;
+}
+
+.report-kind-section {
+  margin-top: 15px;
+}
+
+.report-kind-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.report-kind-head h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  flex: 1;
+}
+
+.report-subgroup {
+  margin-top: 15px;
+  break-inside: avoid;
+}
+
+.report-subgroup-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+  margin: 0 0 6px;
+}
+
+h3.report-subgroup-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-2);
+  margin: 0;
+  flex: 1;
+}
+
+.report-wallet-block {
+  margin-bottom: 10px;
+  break-inside: avoid;
+}
+
+.report-wallet-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  margin-top: 15px;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-2);
+  text-align: left;
+}
+
+.report-table th.c-num,
+.report-table td.c-num {
+  text-align: right !important;
+}
+
+.report-table thead th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.report-subtotal-row td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+}
+
+.report-subtotal-line {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+}
+
+.stotal-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.stotal-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.stotal-value {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.report-subtotal-line .gl {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.report-subgroup-head .stotal-label {
+  font-size: 9px;
+}
+
+.report-subgroup-head .stotal-value,
+.report-subgroup-head .report-subtotal-line .gl {
+  font-size: 12px;
+}
+
+@page {
+  size: A4;
+  margin: 14mm 12mm;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    height: auto;
+  }
+
+  .app-root {
+    height: auto;
+    overflow: visible;
+  }
+
+  .main {
+    overflow: visible;
+  }
+
+  .navbar,
+  .topnav,
+  .no-print {
+    display: none !important;
+  }
+
+  .content {
+    overflow: visible;
+  }
+
+  /* Force a plain white page regardless of theme — dark mode's --bg (and
+     even light mode's slightly-off-white --bg) would otherwise now print
+     exactly, since the color-adjust rule above stops the browser from
+     stripping it like it used to. */
+  body,
+  .app-root,
+  .main,
+  .content,
+  .report-page {
+    background: #fff !important;
+  }
+
+  .report-page {
+    max-width: none;
+    width: 100%;
+    padding: 0;
+  }
+
+  /* The title + grand-total row is tuned to fit the ~920px screen
+     container, which is wider than A4's printable area (~700px) — shrink
+     both down for print so they actually stay on one line there instead
+     of just avoiding a clip. flex-wrap/white-space stay as a last-resort
+     safety net (e.g. a very large number pushing a value wider than
+     usual), not the normal path. */
+  .report-title-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  h1.report-title {
+    font-size: 16px;
+  }
+
+  .report-grand-total {
+    gap: 12px;
+  }
+
+  .rgt-item {
+    gap: 1px;
+  }
+
+  .rgt-label {
+    font-size: 8px;
+  }
+
+  .rgt-value,
+  .rgt-item .gl {
+    font-size: 12px;
+  }
+
+  .report-title,
+  .rgt-item {
+    white-space: normal;
+  }
+
+  /* report-kind-section and report-subgroup are deliberately NOT
+     break-inside: avoid — either can span several pages on its own (a
+     subgroup with more than one wallet especially), and forcing a big
+     block to stay together just pushes it entirely onto the next page,
+     leaving the previous one mostly blank. Only report-wallet-block (one
+     table, normally small enough to fit on one page) avoids splitting. */
+  .report-wallet-block {
+    break-inside: avoid;
+  }
+}
+
