@@ -572,6 +572,15 @@ class AuthControllerTest : BaseIntegrationTest() {
                 .responseBody
                 .let { assertEquals("too_many_login_attempts", it?.get("error")) }
 
+            // The limiter guards every call site through the shared verifyCredentials, not just
+            // /auth/login: /auth/totp/enroll is blocked too, for the same account
+            restTestClient.post()
+                .uri("/private/v1/auth/totp/enroll")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"login-lockout@example.com","password":"senha123"}""")
+                .exchange()
+                .expectStatus().isEqualTo(429)
+
             Thread.sleep(3100)
 
             restTestClient.post()
