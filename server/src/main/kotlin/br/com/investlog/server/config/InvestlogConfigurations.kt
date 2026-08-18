@@ -18,12 +18,18 @@ data class InvestlogConfigurations(
 
     data class Security(
         val adminDefaultPassword: String,
-        val totp: Totp
+        val totp: Totp,
+        val login: Login,
     ) {
         data class Totp(
             val enabled: Boolean,
             val lockoutMaxAttempts: Int,
             val lockoutBaseDuration: Duration
+        )
+
+        data class Login(
+            val lockoutMaxAttempts: Int,
+            val lockoutBaseDuration: Duration,
         )
     }
 

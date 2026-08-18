@@ -19,6 +19,10 @@ class TotpAttemptLimiterTest {
                         lockoutMaxAttempts = maxAttemptsBeforeLockout,
                         lockoutBaseDuration = baseLockoutDuration,
                     ),
+                    login = InvestlogConfigurations.Security.Login(
+                        lockoutMaxAttempts = 5,
+                        lockoutBaseDuration = Duration.ofMinutes(1),
+                    ),
                 ),
                 googleAuth = InvestlogConfigurations.GoogleAuth(
                     enabled = false,
