@@ -105,6 +105,17 @@ class RegistrationControllerTest : BaseIntegrationTest() {
             .expectStatus().isOk()
     }
 
+    @Test
+    @Order(5)
+    fun `registration rejects a password shorter than 8 characters`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Teste","email":"curta@example.com","password":"1234567"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
     companion object {
         private lateinit var pendingUserCookie: String
     }

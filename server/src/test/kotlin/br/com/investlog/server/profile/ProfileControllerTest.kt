@@ -171,6 +171,21 @@ class ProfileControllerTest : BaseIntegrationTest() {
         }
     }
 
+    @Test
+    @Order(8)
+    fun `self-service password change rejects a new password shorter than 8 characters`() {
+        val email = "senha-curta@example.com"
+        val cookie = registerApproveAndLogin(email, "senha123")
+
+        restTestClient.patch()
+            .uri("/private/v1/profile/password")
+            .header("Cookie", cookie)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"currentPassword":"senha123","newPassword":"1234567"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
     private fun registerApproveAndLogin(email: String, password: String): String {
         restTestClient.post()
             .uri("/private/v1/auth/register")
