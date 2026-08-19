@@ -81,7 +81,7 @@ async function submit() {
       >
         <b-input v-model="newPassword" type="password" password-reveal />
       </b-field>
-      <PasswordRequirementHint :password="newPassword" style="grid-column: 1/-1" />
+      <PasswordRequirementHint :password="newPassword" />
       <b-field
         label="Confirmar nova senha"
         :type="passwordsMatch ? undefined : 'is-danger'"
