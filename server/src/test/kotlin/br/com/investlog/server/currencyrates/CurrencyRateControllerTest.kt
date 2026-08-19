@@ -93,7 +93,7 @@ class CurrencyRateControllerTest : BaseIntegrationTest() {
     @Test
     @Order(6)
     fun `a non-admin approved user can read the shared currency rates`() {
-        val cookie = registerApproveAndLogin("currency-rates-reader@example.com", "senha123")
+        val cookie = registerApproveAndLogin("currency-rates-reader@example.com", "Senha123")
 
         val response = restTestClient.get()
             .uri("/private/v1/currency-rates")
@@ -111,7 +111,7 @@ class CurrencyRateControllerTest : BaseIntegrationTest() {
     @Test
     @Order(7)
     fun `a non-admin is forbidden from updating a currency rate`() {
-        val cookie = registerApproveAndLogin("currency-rates-writer@example.com", "senha123")
+        val cookie = registerApproveAndLogin("currency-rates-writer@example.com", "Senha123")
 
         restTestClient.put()
             .uri("/private/v1/currency-rates/BRL")

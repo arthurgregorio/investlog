@@ -114,17 +114,18 @@ describe('LoginView', () => {
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
-    await wrapper.find('input[type="password"]').setValue('senha123')
+    await wrapper.find('input[type="password"]').setValue('Senha123')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'senha123')
+    expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'Senha123')
     expect(router.currentRoute.value.name).toBe('pending-approval')
   })
 
   it('shows the server validation message when registration is rejected despite passing the client-side check', async () => {
-    // Long enough to pass the client-side gate so the (mocked) request is actually sent — the
-    // server stays the final authority even when the client thinks a password is fine.
+    // Long enough, with an uppercase letter and a digit, to pass the client-side gate so the
+    // (mocked) request is actually sent — the server stays the final authority even when the
+    // client thinks a password is fine.
     const store = useAuthStore()
     vi.spyOn(store, 'register').mockRejectedValue({
       isAxiosError: true,
@@ -140,14 +141,14 @@ describe('LoginView', () => {
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
-    await wrapper.find('input[type="password"]').setValue('senhaValidaAgora')
+    await wrapper.find('input[type="password"]').setValue('SenhaValidaAgora1')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(wrapper.find('.auth-error').text()).toBe('password deve ter entre 8 e 128 caracteres')
   })
 
-  it('disables the register button while the password is under 8 characters, and shows the requirement hint', async () => {
+  it('disables the register button until the password meets every requirement, and shows the requirement hint', async () => {
     const store = useAuthStore()
     const registerSpy = vi.spyOn(store, 'register')
     router.push('/login')
@@ -157,18 +158,29 @@ describe('LoginView', () => {
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
-    await wrapper.find('input[type="password"]').setValue('teste')
 
+    await wrapper.find('input[type="password"]').setValue('teste')
     expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
     expect(wrapper.text()).toContain('Mínimo de 8 caracteres')
+    expect(wrapper.text()).toContain('Ao menos uma letra maiúscula')
+    expect(wrapper.text()).toContain('Ao menos um número')
 
-    await wrapper.find('input[type="password"]').setValue('senha123')
+    // Long enough now, but still missing an uppercase letter and a number.
+    await wrapper.find('input[type="password"]').setValue('testeteste')
+    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
+
+    // Uppercase added, still missing a number.
+    await wrapper.find('input[type="password"]').setValue('Testeteste')
+    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
+
+    // All three requirements met.
+    await wrapper.find('input[type="password"]').setValue('Senha123')
     expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
 
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'senha123')
+    expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'Senha123')
   })
 
   it('shows the Google button when the server reports googleAuthEnabled: true', async () => {

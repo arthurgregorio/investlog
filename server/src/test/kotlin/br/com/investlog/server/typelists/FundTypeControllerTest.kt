@@ -105,7 +105,7 @@ class FundTypeControllerTest : BaseIntegrationTest() {
 
         sharedTypeId = response!!.id
 
-        val cookie = registerApproveAndLogin("fund-types-reader@example.com", "senha123")
+        val cookie = registerApproveAndLogin("fund-types-reader@example.com", "Senha123")
 
         val listResponse = restTestClient.get()
             .uri("/private/v1/fund-types?size=200")
@@ -123,7 +123,7 @@ class FundTypeControllerTest : BaseIntegrationTest() {
     @Test
     @Order(8)
     fun `a non-admin is forbidden from creating or deleting a fund type`() {
-        val cookie = registerApproveAndLogin("fund-types-writer@example.com", "senha123")
+        val cookie = registerApproveAndLogin("fund-types-writer@example.com", "Senha123")
 
         restTestClient.post()
             .uri("/private/v1/fund-types")

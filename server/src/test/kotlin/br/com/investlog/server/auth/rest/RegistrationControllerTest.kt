@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class RegistrationControllerTest : BaseIntegrationTest() {
 
@@ -23,7 +24,7 @@ class RegistrationControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Nova Usuária","email":"nova@example.com","password":"senha123"}""")
+            .body("""{"name":"Nova Usuária","email":"nova@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
     }
@@ -34,7 +35,7 @@ class RegistrationControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Outra Pessoa","email":"nova@example.com","password":"outrasenha"}""")
+            .body("""{"name":"Outra Pessoa","email":"nova@example.com","password":"OutraSenha1"}""")
             .exchange()
             .expectStatus().isEqualTo(409)
     }
@@ -45,14 +46,14 @@ class RegistrationControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"nova@example.com","password":"senha123"}""")
+            .body("""{"email":"nova@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isEqualTo(202)
 
         val secret = restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"nova@example.com","password":"senha123"}""")
+            .body("""{"email":"nova@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<TotpEnrollResponse>()
@@ -65,7 +66,7 @@ class RegistrationControllerTest : BaseIntegrationTest() {
         val cookie = restTestClient.post()
             .uri("/private/v1/auth/totp/verify")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"nova@example.com","password":"senha123","code":"$code"}""")
+            .body("""{"email":"nova@example.com","password":"Senha123","code":"$code"}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<SessionResponse>()
@@ -114,6 +115,42 @@ class RegistrationControllerTest : BaseIntegrationTest() {
             .body("""{"name":"Teste","email":"curta@example.com","password":"1234567"}""")
             .exchange()
             .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(6)
+    fun `registration rejects a password without an uppercase letter`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Teste","email":"semmaiuscula@example.com","password":"semmaiuscula123"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                val errors = it?.get("errors") as List<String>
+                assertTrue(errors.any { message -> message.contains("letra maiúscula") })
+            }
+    }
+
+    @Test
+    @Order(7)
+    fun `registration rejects a password without a number`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Teste","email":"semnumero@example.com","password":"SemNumeroAqui"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                val errors = it?.get("errors") as List<String>
+                assertTrue(errors.any { message -> message.contains("número") })
+            }
     }
 
     companion object {

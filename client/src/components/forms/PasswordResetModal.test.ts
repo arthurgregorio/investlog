@@ -40,8 +40,8 @@ describe('PasswordResetModal', () => {
 
     const wrapper = mountModal()
     const passwordInputs = wrapper.findAll('input[type="password"]')
-    await passwordInputs[0].setValue('senhaValidaAgora')
-    await passwordInputs[1].setValue('senhaValidaAgora')
+    await passwordInputs[0].setValue('SenhaValidaAgora1')
+    await passwordInputs[1].setValue('SenhaValidaAgora1')
     await wrapper.find('.button.is-success').trigger('click')
     await flushPromises()
 
@@ -59,7 +59,29 @@ describe('PasswordResetModal', () => {
 
     expect(wrapper.find('.button.is-success').attributes('disabled')).toBeDefined()
     expect(document.body.textContent).toContain('Mínimo de 8 caracteres')
+    expect(document.body.textContent).toContain('Ao menos uma letra maiúscula')
+    expect(document.body.textContent).toContain('Ao menos um número')
     expect(resetSpy).not.toHaveBeenCalled()
+  })
+
+  it('keeps the submit button disabled until the new password meets every requirement', async () => {
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+
+    // Long enough, but missing an uppercase letter and a number.
+    await passwordInputs[0].setValue('senhasenha')
+    await passwordInputs[1].setValue('senhasenha')
+    expect(wrapper.find('.button.is-success').attributes('disabled')).toBeDefined()
+
+    // Uppercase added, still missing a number.
+    await passwordInputs[0].setValue('Senhasenha')
+    await passwordInputs[1].setValue('Senhasenha')
+    expect(wrapper.find('.button.is-success').attributes('disabled')).toBeDefined()
+
+    // All three requirements met.
+    await passwordInputs[0].setValue('Senha123')
+    await passwordInputs[1].setValue('Senha123')
+    expect(wrapper.find('.button.is-success').attributes('disabled')).toBeUndefined()
   })
 
   it('does not show a field message for a non-validation failure, leaving the toast as the only feedback', async () => {
@@ -71,8 +93,8 @@ describe('PasswordResetModal', () => {
 
     const wrapper = mountModal()
     const passwordInputs = wrapper.findAll('input[type="password"]')
-    await passwordInputs[0].setValue('senhaNova123')
-    await passwordInputs[1].setValue('senhaNova123')
+    await passwordInputs[0].setValue('SenhaNova123')
+    await passwordInputs[1].setValue('SenhaNova123')
     await wrapper.find('.button.is-success').trigger('click')
     await flushPromises()
 

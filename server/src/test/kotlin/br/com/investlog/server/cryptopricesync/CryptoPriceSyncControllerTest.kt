@@ -115,7 +115,7 @@ class CryptoPriceSyncControllerTest : BaseIntegrationTest() {
     @Test
     @Order(2)
     fun `a non-admin is forbidden from forcing a sync run`() {
-        val cookie = registerApproveAndLogin("crypto-force-sync-writer@example.com", "senha123")
+        val cookie = registerApproveAndLogin("crypto-force-sync-writer@example.com", "Senha123")
 
         restTestClient.post()
             .uri("/private/v1/crypto-price-sync")
