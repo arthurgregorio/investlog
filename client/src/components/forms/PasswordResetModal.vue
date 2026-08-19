@@ -37,8 +37,10 @@ async function submit() {
     emit('close')
     toast.open({ message: 'Senha redefinida.', type: 'is-success' })
   } catch (caughtError) {
-    newPasswordError.value =
-      fieldValidationMessage(caughtError) ?? 'Não foi possível redefinir a senha.'
+    // A non-validation failure (network error, 500, self-action guard, ...) has no field message
+    // to show here — the global interceptor's toast is already this endpoint's only feedback for
+    // those, same as before this component had any inline handling at all.
+    newPasswordError.value = fieldValidationMessage(caughtError) ?? ''
   } finally {
     submitting.value = false
   }
