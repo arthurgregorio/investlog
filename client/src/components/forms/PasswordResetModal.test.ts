@@ -27,6 +27,8 @@ describe('PasswordResetModal', () => {
   })
 
   it('shows the server validation message when the new password is rejected', async () => {
+    // Long enough to pass the client-side gate so the (mocked) request is actually sent — the
+    // server stays the final authority even when the client thinks a password is fine.
     const store = useUsersAdminStore()
     vi.spyOn(store, 'resetPassword').mockRejectedValue({
       isAxiosError: true,
@@ -38,12 +40,26 @@ describe('PasswordResetModal', () => {
 
     const wrapper = mountModal()
     const passwordInputs = wrapper.findAll('input[type="password"]')
-    await passwordInputs[0].setValue('teste')
-    await passwordInputs[1].setValue('teste')
+    await passwordInputs[0].setValue('senhaValidaAgora')
+    await passwordInputs[1].setValue('senhaValidaAgora')
     await wrapper.find('.button.is-success').trigger('click')
     await flushPromises()
 
     expect(document.body.textContent).toContain('newPassword deve ter entre 8 e 128 caracteres')
+  })
+
+  it('disables the submit button while the new password is under 8 characters', async () => {
+    const store = useUsersAdminStore()
+    const resetSpy = vi.spyOn(store, 'resetPassword')
+
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+    await passwordInputs[0].setValue('teste')
+    await passwordInputs[1].setValue('teste')
+
+    expect(wrapper.find('.button.is-success').attributes('disabled')).toBeDefined()
+    expect(document.body.textContent).toContain('Mínimo de 8 caracteres')
+    expect(resetSpy).not.toHaveBeenCalled()
   })
 
   it('does not show a field message for a non-validation failure, leaving the toast as the only feedback', async () => {

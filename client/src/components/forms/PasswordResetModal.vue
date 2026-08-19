@@ -2,8 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { useToast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
+import PasswordRequirementHint from '@/components/forms/PasswordRequirementHint.vue'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 import { fieldValidationMessage } from '@/utils/apiErrors'
+import { meetsPasswordRequirements } from '@/utils/passwordRules'
 
 const props = defineProps<{ userId: string; userName: string }>()
 const emit = defineEmits<{ close: [] }>()
@@ -21,7 +23,7 @@ const passwordsMatch = computed(
 )
 
 const valid = computed(
-  () => newPassword.value.trim().length > 0 && newPassword.value === confirmPassword.value,
+  () => meetsPasswordRequirements(newPassword.value) && newPassword.value === confirmPassword.value,
 )
 
 watch(newPassword, () => {
@@ -62,6 +64,7 @@ async function submit() {
       >
         <b-input v-model="newPassword" type="password" password-reveal autofocus />
       </b-field>
+      <PasswordRequirementHint :password="newPassword" style="grid-column: 1/-1" />
       <b-field
         label="Confirmar nova senha"
         style="grid-column: 1/-1"

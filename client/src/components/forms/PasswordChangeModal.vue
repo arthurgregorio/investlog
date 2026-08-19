@@ -2,8 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { useToast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
+import PasswordRequirementHint from '@/components/forms/PasswordRequirementHint.vue'
 import { profileApi } from '@/api/profile'
 import { fieldValidationMessage } from '@/utils/apiErrors'
+import { meetsPasswordRequirements } from '@/utils/passwordRules'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -23,7 +25,7 @@ const passwordsMatch = computed(
 const valid = computed(
   () =>
     currentPassword.value.trim().length > 0 &&
-    newPassword.value.trim().length > 0 &&
+    meetsPasswordRequirements(newPassword.value) &&
     newPassword.value === confirmPassword.value,
 )
 
@@ -79,6 +81,7 @@ async function submit() {
       >
         <b-input v-model="newPassword" type="password" password-reveal />
       </b-field>
+      <PasswordRequirementHint :password="newPassword" style="grid-column: 1/-1" />
       <b-field
         label="Confirmar nova senha"
         :type="passwordsMatch ? undefined : 'is-danger'"

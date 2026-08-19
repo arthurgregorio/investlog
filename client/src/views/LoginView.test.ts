@@ -122,7 +122,9 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.name).toBe('pending-approval')
   })
 
-  it('shows the server validation message when registration is rejected for a short password', async () => {
+  it('shows the server validation message when registration is rejected despite passing the client-side check', async () => {
+    // Long enough to pass the client-side gate so the (mocked) request is actually sent — the
+    // server stays the final authority even when the client thinks a password is fine.
     const store = useAuthStore()
     vi.spyOn(store, 'register').mockRejectedValue({
       isAxiosError: true,
@@ -138,11 +140,35 @@ describe('LoginView', () => {
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
-    await wrapper.find('input[type="password"]').setValue('teste')
+    await wrapper.find('input[type="password"]').setValue('senhaValidaAgora')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
     expect(wrapper.find('.auth-error').text()).toBe('password deve ter entre 8 e 128 caracteres')
+  })
+
+  it('disables the register button while the password is under 8 characters, and shows the requirement hint', async () => {
+    const store = useAuthStore()
+    const registerSpy = vi.spyOn(store, 'register')
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await wrapper.find('[data-testid="toggle-register"]').trigger('click')
+    await wrapper.find('input[type="text"]').setValue('Nova Usuária')
+    await wrapper.find('input[type="email"]').setValue('nova@example.com')
+    await wrapper.find('input[type="password"]').setValue('teste')
+
+    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Mínimo de 8 caracteres')
+
+    await wrapper.find('input[type="password"]').setValue('senha123')
+    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
+
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'senha123')
   })
 
   it('shows the Google button when the server reports googleAuthEnabled: true', async () => {

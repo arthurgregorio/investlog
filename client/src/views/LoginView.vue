@@ -2,9 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LogoMark from '@/components/icons/LogoMark.vue'
+import PasswordRequirementHint from '@/components/forms/PasswordRequirementHint.vue'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
 import { fieldValidationMessage } from '@/utils/apiErrors'
+import { meetsPasswordRequirements } from '@/utils/passwordRules'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -58,6 +60,13 @@ const subtitle = computed(() => {
     return `Já existe uma conta para ${linkEmail.value}. Informe a senha para vincular ao Google.`
   return 'Entre para acompanhar seus investimentos.'
 })
+
+const registrationValid = computed(
+  () =>
+    name.value.trim().length > 0 &&
+    email.value.trim().length > 0 &&
+    meetsPasswordRequirements(password.value),
+)
 
 function toggleRegister() {
   error.value = ''
@@ -239,11 +248,13 @@ async function submitGoogleLink() {
           <b-field label="Senha">
             <b-input v-model="password" type="password" placeholder="••••••••" required />
           </b-field>
+          <PasswordRequirementHint :password="password" />
           <b-button
             type="is-primary"
             expanded
             native-type="submit"
             :loading="submitting"
+            :disabled="!registrationValid"
             class="auth-submit has-text-light"
           >
             Criar conta
