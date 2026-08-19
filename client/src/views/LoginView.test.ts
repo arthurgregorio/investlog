@@ -122,6 +122,29 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.name).toBe('pending-approval')
   })
 
+  it('shows the server validation message when registration is rejected for a short password', async () => {
+    const store = useAuthStore()
+    vi.spyOn(store, 'register').mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 400,
+        data: { errors: ['password deve ter entre 8 e 128 caracteres'] },
+      },
+    })
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await wrapper.find('[data-testid="toggle-register"]').trigger('click')
+    await wrapper.find('input[type="text"]').setValue('Nova Usuária')
+    await wrapper.find('input[type="email"]').setValue('nova@example.com')
+    await wrapper.find('input[type="password"]').setValue('teste')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(wrapper.find('.auth-error').text()).toBe('password deve ter entre 8 e 128 caracteres')
+  })
+
   it('shows the Google button when the server reports googleAuthEnabled: true', async () => {
     vi.mocked(authApi.fetchConfig).mockResolvedValueOnce({ googleAuthEnabled: true })
     router.push('/login')

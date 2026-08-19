@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import LogoMark from '@/components/icons/LogoMark.vue'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
+import { fieldValidationMessage } from '@/utils/apiErrors'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -95,8 +96,10 @@ async function submitRegistration() {
   try {
     await auth.register(name.value, email.value, password.value)
     await router.push({ name: 'pending-approval' })
-  } catch {
-    error.value = 'Não foi possível concluir o cadastro. Verifique os dados e tente novamente.'
+  } catch (caughtError) {
+    error.value =
+      fieldValidationMessage(caughtError) ??
+      'Não foi possível concluir o cadastro. Verifique os dados e tente novamente.'
   } finally {
     submitting.value = false
   }

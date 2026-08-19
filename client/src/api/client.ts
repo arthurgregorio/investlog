@@ -25,6 +25,15 @@ function isAuthFormRequest(url: string | undefined): boolean {
   return url !== undefined && AUTH_FORM_ENDPOINTS.some((endpoint) => url.startsWith(endpoint))
 }
 
+// These endpoints' callers read `response.data.errors` themselves and show the specific
+// field-validation message inline, next to the password input — the generic toast would just
+// be redundant noise on top of that. Every other endpoint keeps the toast as its only feedback.
+const PASSWORD_VALIDATION_ENDPOINTS = [/^\/auth\/register$/, /^\/profile\/password$/, /^\/users\/[^/]+\/password$/]
+
+function isPasswordValidationRequest(url: string | undefined): boolean {
+  return url !== undefined && PASSWORD_VALIDATION_ENDPOINTS.some((pattern) => pattern.test(url))
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -35,6 +44,13 @@ apiClient.interceptors.response.use(
       return Promise.reject(error)
     }
     if (SILENT_ERROR_CODES.has(error.response?.data?.error)) {
+      return Promise.reject(error)
+    }
+    if (
+      error.response?.status === 400 &&
+      Array.isArray(error.response?.data?.errors) &&
+      isPasswordValidationRequest(error.config?.url)
+    ) {
       return Promise.reject(error)
     }
     const message: string =
