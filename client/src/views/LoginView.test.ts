@@ -161,9 +161,9 @@ describe('LoginView', () => {
 
     await wrapper.find('input[type="password"]').setValue('teste')
     expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Mínimo de 8 caracteres')
-    expect(wrapper.text()).toContain('Ao menos uma letra maiúscula')
-    expect(wrapper.text()).toContain('Ao menos um número')
+    expect(wrapper.text()).toContain('8+ caracteres')
+    expect(wrapper.text()).toContain('1 maiúscula')
+    expect(wrapper.text()).toContain('1 número')
 
     // Long enough now, but still missing an uppercase letter and a number.
     await wrapper.find('input[type="password"]').setValue('testeteste')

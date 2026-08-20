@@ -62,9 +62,9 @@ describe('PasswordChangeModal', () => {
     await passwordInputs[2].setValue('teste')
 
     expect(wrapper.find('.button.is-success').attributes('disabled')).toBeDefined()
-    expect(document.body.textContent).toContain('Mínimo de 8 caracteres')
-    expect(document.body.textContent).toContain('Ao menos uma letra maiúscula')
-    expect(document.body.textContent).toContain('Ao menos um número')
+    expect(document.body.textContent).toContain('8+ caracteres')
+    expect(document.body.textContent).toContain('1 maiúscula')
+    expect(document.body.textContent).toContain('1 número')
     expect(profileApi.changePassword).not.toHaveBeenCalled()
   })
 
