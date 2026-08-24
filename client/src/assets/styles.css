@@ -2250,7 +2250,7 @@ a {
 }
 
 .auth-head {
-  margin-bottom: 22px;
+  margin-bottom: 15px;
 }
 
 .auth-title {
@@ -2279,7 +2279,7 @@ a {
   background: var(--down-soft);
   border-radius: 8px;
   padding: 10px 12px;
-  margin-bottom: 4px;
+  margin-bottom: 15px;
 }
 
 .auth-totp-qr {
