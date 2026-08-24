@@ -314,9 +314,14 @@ class AuthControllerTest : BaseIntegrationTest() {
     @AutoConfigureRestTestClient
     @ActiveProfiles("test")
     @Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
+    // A 15s window gives the still-locked assertions below real margin: both probe requests pay
+    // full bcrypt cost before TotpAttemptLimiter.checkNotLocked runs (measured ~2.2s locally for
+    // just those two requests), so a tight window can expire mid-request on a slower/loaded
+    // runner. The final unlock assertion sleeps past the deadline regardless, so a longer window
+    // only ever helps it, never hurts it.
     @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = ["investlog.security.totp.lockout-max-attempts=2", "investlog.security.totp.lockout-base-duration=3s"],
+        properties = ["investlog.security.totp.lockout-max-attempts=2", "investlog.security.totp.lockout-base-duration=15s"],
     )
     @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
     @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -382,7 +387,7 @@ class AuthControllerTest : BaseIntegrationTest() {
                 .exchange()
                 .expectStatus().isEqualTo(429)
 
-            Thread.sleep(3100)
+            Thread.sleep(15100)
 
             restTestClient.post()
                 .uri("/private/v1/auth/login")
