@@ -1,27 +1,27 @@
 package br.com.investlog.server.auth.security
 
 import br.com.investlog.server.config.InvestlogConfigurations
-import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
+import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
-class TotpAttemptLimiterTest {
+class LoginAttemptLimiterTest {
 
-    private fun limiterWith(maxAttemptsBeforeLockout: Int, baseLockoutDuration: Duration): TotpAttemptLimiter =
-        TotpAttemptLimiter(
+    private fun limiterWith(maxAttemptsBeforeLockout: Int, baseLockoutDuration: Duration): LoginAttemptLimiter =
+        LoginAttemptLimiter(
             InvestlogConfigurations(
                 demoMode = InvestlogConfigurations.DemoMode(enabled = false),
                 security = InvestlogConfigurations.Security(
                     adminDefaultPassword = "admin",
                     totp = InvestlogConfigurations.Security.Totp(
                         enabled = true,
-                        lockoutMaxAttempts = maxAttemptsBeforeLockout,
-                        lockoutBaseDuration = baseLockoutDuration,
-                    ),
-                    login = InvestlogConfigurations.Security.Login(
                         lockoutMaxAttempts = 5,
                         lockoutBaseDuration = Duration.ofMinutes(1),
+                    ),
+                    login = InvestlogConfigurations.Security.Login(
+                        lockoutMaxAttempts = maxAttemptsBeforeLockout,
+                        lockoutBaseDuration = baseLockoutDuration,
                     ),
                 ),
                 googleAuth = InvestlogConfigurations.GoogleAuth(
@@ -53,7 +53,7 @@ class TotpAttemptLimiterTest {
 
         repeat(3) { limiter.recordFailure("someone@example.com") }
 
-        assertFailsWith<TooManyTotpAttemptsException> { limiter.checkNotLocked("someone@example.com") }
+        assertFailsWith<TooManyLoginAttemptsException> { limiter.checkNotLocked("someone@example.com") }
     }
 
     @Test
@@ -61,7 +61,7 @@ class TotpAttemptLimiterTest {
         val limiter = limiterWith(maxAttemptsBeforeLockout = 3, baseLockoutDuration = Duration.ofMillis(150))
 
         repeat(3) { limiter.recordFailure("someone@example.com") }
-        assertFailsWith<TooManyTotpAttemptsException> { limiter.checkNotLocked("someone@example.com") }
+        assertFailsWith<TooManyLoginAttemptsException> { limiter.checkNotLocked("someone@example.com") }
 
         Thread.sleep(200)
 
@@ -90,7 +90,7 @@ class TotpAttemptLimiterTest {
 
         limiter.recordFailure("someone@example.com")
         Thread.sleep(200)
-        assertFailsWith<TooManyTotpAttemptsException> { limiter.checkNotLocked("someone@example.com") }
+        assertFailsWith<TooManyLoginAttemptsException> { limiter.checkNotLocked("someone@example.com") }
     }
 
     @Test
@@ -99,7 +99,7 @@ class TotpAttemptLimiterTest {
 
         repeat(2) { limiter.recordFailure("locked@example.com") }
 
-        assertFailsWith<TooManyTotpAttemptsException> { limiter.checkNotLocked("locked@example.com") }
+        assertFailsWith<TooManyLoginAttemptsException> { limiter.checkNotLocked("locked@example.com") }
         limiter.checkNotLocked("other@example.com")
     }
 }

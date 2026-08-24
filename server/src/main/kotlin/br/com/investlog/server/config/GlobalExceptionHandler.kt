@@ -7,6 +7,7 @@ import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
+import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
 import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
@@ -134,6 +135,18 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, message)
         problemDetail.setProperty("error", "too_many_totp_attempts")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(TooManyLoginAttemptsException::class)
+    fun handleTooManyLoginAttempts(ex: TooManyLoginAttemptsException): ProblemDetail {
+
+        val message = ex.message ?: "Muitas tentativas de login inválidas"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, message)
+        problemDetail.setProperty("error", "too_many_login_attempts")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

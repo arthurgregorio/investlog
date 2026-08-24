@@ -1,21 +1,21 @@
 package br.com.investlog.server.auth.security
 
 import br.com.investlog.server.config.InvestlogConfigurations
-import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
+import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
 import br.com.investlog.server.shared.security.AttemptLockoutTracker
 import org.springframework.stereotype.Component
 
 @Component
-class TotpAttemptLimiter(investlogConfigurations: InvestlogConfigurations) {
+class LoginAttemptLimiter(investlogConfigurations: InvestlogConfigurations) {
 
     private val tracker = AttemptLockoutTracker(
-        maxAttempts = investlogConfigurations.security.totp.lockoutMaxAttempts,
-        baseDuration = investlogConfigurations.security.totp.lockoutBaseDuration,
+        maxAttempts = investlogConfigurations.security.login.lockoutMaxAttempts,
+        baseDuration = investlogConfigurations.security.login.lockoutBaseDuration,
     )
 
     fun checkNotLocked(email: String) {
         if (tracker.lockedUntil(email) != null) {
-            throw TooManyTotpAttemptsException("Muitas tentativas de código TOTP inválidas, tente novamente mais tarde")
+            throw TooManyLoginAttemptsException("Muitas tentativas de login inválidas, tente novamente mais tarde")
         }
     }
 

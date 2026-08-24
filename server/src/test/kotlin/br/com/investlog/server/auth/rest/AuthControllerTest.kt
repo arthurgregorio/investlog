@@ -524,6 +524,73 @@ class AuthControllerTest : BaseIntegrationTest() {
         }
     }
 
+    @Nested
+    @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
+    @AutoConfigureRestTestClient
+    @ActiveProfiles("test")
+    @Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
+    @SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = ["investlog.security.login.lockout-max-attempts=2", "investlog.security.login.lockout-base-duration=3s"],
+    )
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
+    inner class WhenLoginAttemptsAreLimited {
+
+        @Autowired
+        lateinit var restTestClient: RestTestClient
+
+        @Test
+        @Order(1)
+        fun `locks the account after the configured number of invalid passwords, then unlocks once the window elapses`() {
+            restTestClient.post()
+                .uri("/private/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"name":"Login Lockout Test","email":"login-lockout@example.com","password":"senha123"}""")
+                .exchange()
+                .expectStatus().isCreated()
+
+            // Two invalid passwords trip the configured max-attempts=2 lockout
+            repeat(2) {
+                restTestClient.post()
+                    .uri("/private/v1/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("""{"email":"login-lockout@example.com","password":"wrong"}""")
+                    .exchange()
+                    .expectStatus().isUnauthorized()
+            }
+
+            // The account is now locked out, even with the correct password
+            restTestClient.post()
+                .uri("/private/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"login-lockout@example.com","password":"senha123"}""")
+                .exchange()
+                .expectStatus().isEqualTo(429)
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                .let { assertEquals("too_many_login_attempts", it?.get("error")) }
+
+            // The limiter guards every call site through the shared verifyCredentials, not just
+            // /auth/login: /auth/totp/enroll is blocked too, for the same account
+            restTestClient.post()
+                .uri("/private/v1/auth/totp/enroll")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"login-lockout@example.com","password":"senha123"}""")
+                .exchange()
+                .expectStatus().isEqualTo(429)
+
+            Thread.sleep(3100)
+
+            restTestClient.post()
+                .uri("/private/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"login-lockout@example.com","password":"senha123"}""")
+                .exchange()
+                .expectStatus().isEqualTo(202)
+        }
+    }
+
     companion object {
         private lateinit var adminTotpSecret: String
 

@@ -1,5 +1,6 @@
 package br.com.investlog.server.usersadmin.services
 
+import br.com.investlog.server.auth.security.LoginAttemptLimiter
 import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
@@ -28,6 +29,7 @@ class UsersAdminService(
     private val usersAdminRepository: UsersAdminRepository,
     private val passwordEncoder: PasswordEncoder,
     private val totpAttemptLimiter: TotpAttemptLimiter,
+    private val loginAttemptLimiter: LoginAttemptLimiter,
     private val demoModeGuard: DemoModeGuard,
 ) {
 
@@ -85,6 +87,8 @@ class UsersAdminService(
         }
 
         demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
+
+        loginAttemptLimiter.recordSuccess(user.email!!)
 
         return usersAdminRepository.updatePasswordHash(user.id!!, passwordEncoder.encode(request.newPassword)!!)
     }

@@ -27,6 +27,9 @@ investlog:
       enabled: ${TOTP_REQUIRED:true}
       lockout-max-attempts: ${TOTP_LOCKOUT_MAX_ATTEMPTS:5}
       lockout-base-duration: ${TOTP_LOCKOUT_BASE_DURATION:60s}
+    login:
+      lockout-max-attempts: ${LOGIN_LOCKOUT_MAX_ATTEMPTS:5}
+      lockout-base-duration: ${LOGIN_LOCKOUT_BASE_DURATION:60s}
 
   google-auth:
     enabled: ${GOOGLE_AUTH_ENABLED:false}
