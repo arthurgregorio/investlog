@@ -19,9 +19,11 @@ import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.security.AuthProvider
 import br.com.investlog.server.shared.security.CurrentUser
 import br.com.investlog.server.shared.security.UserRepository
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
@@ -29,6 +31,8 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 @Transactional(readOnly = true)
@@ -123,7 +127,11 @@ class AuthService(
 
     @Transactional
     fun register(request: RegisterRequest) {
-        userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
+        try {
+            userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
+        } catch (exception: DataIntegrityViolationException) {
+            logger.debug(exception) { "Registration attempted for an email that is already registered" }
+        }
     }
 
     @Transactional

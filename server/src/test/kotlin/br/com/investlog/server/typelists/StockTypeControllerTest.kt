@@ -117,7 +117,7 @@ class StockTypeControllerTest : BaseIntegrationTest() {
 
         sharedTypeId = response!!.id
 
-        val cookie = registerApproveAndLogin("stock-types-reader@example.com", "senha123")
+        val cookie = registerApproveAndLogin("stock-types-reader@example.com", "Senha123")
 
         val listResponse = restTestClient.get()
             .uri("/private/v1/stock-types?size=200")
@@ -135,7 +135,7 @@ class StockTypeControllerTest : BaseIntegrationTest() {
     @Test
     @Order(9)
     fun `a non-admin is forbidden from creating or deleting a stock type`() {
-        val cookie = registerApproveAndLogin("stock-types-writer@example.com", "senha123")
+        val cookie = registerApproveAndLogin("stock-types-writer@example.com", "Senha123")
 
         restTestClient.post()
             .uri("/private/v1/stock-types")
