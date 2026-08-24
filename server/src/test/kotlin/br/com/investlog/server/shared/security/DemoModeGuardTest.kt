@@ -22,7 +22,7 @@ class DemoModeGuardTest : BaseIntegrationTest() {
     @Order(1)
     fun `registers and promotes a second admin used to target the protected account`() {
         val email = "segundo-admin@example.com"
-        val password = "senha123"
+        val password = "Senha123"
 
         restTestClient.post()
             .uri("/private/v1/auth/register")

@@ -22,6 +22,7 @@ import kotlin.collections.get
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class ProfileControllerTest : BaseIntegrationTest() {
 
@@ -107,7 +108,7 @@ class ProfileControllerTest : BaseIntegrationTest() {
     @Test
     @Order(5)
     fun `self-service password change rejects the wrong current password`() {
-        val cookie = registerApproveAndLogin("senha-errada@example.com", "senha123")
+        val cookie = registerApproveAndLogin("senha-errada@example.com", "Senha123")
 
         restTestClient.patch()
             .uri("/private/v1/profile/password")
@@ -122,13 +123,13 @@ class ProfileControllerTest : BaseIntegrationTest() {
     @Order(6)
     fun `self-service password change updates the password, allowing login with the new one`() {
         val email = "trocar-senha@example.com"
-        val cookie = registerApproveAndLogin(email, "senha123")
+        val cookie = registerApproveAndLogin(email, "Senha123")
 
         restTestClient.patch()
             .uri("/private/v1/profile/password")
             .header("Cookie", cookie)
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"currentPassword":"senha123","newPassword":"novaSenha456"}""")
+            .body("""{"currentPassword":"Senha123","newPassword":"novaSenha456"}""")
             .exchange()
             .expectStatus().isNoContent()
 
@@ -169,6 +170,65 @@ class ProfileControllerTest : BaseIntegrationTest() {
                 PasswordChangeRequest(currentPassword = "whatever", newPassword = "novaSenha456"),
             )
         }
+    }
+
+    @Test
+    @Order(8)
+    fun `self-service password change rejects a new password shorter than 8 characters`() {
+        val email = "senha-curta@example.com"
+        val cookie = registerApproveAndLogin(email, "Senha123")
+
+        restTestClient.patch()
+            .uri("/private/v1/profile/password")
+            .header("Cookie", cookie)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"currentPassword":"Senha123","newPassword":"1234567"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(9)
+    fun `self-service password change rejects a new password without an uppercase letter`() {
+        val email = "senha-semmaiuscula@example.com"
+        val cookie = registerApproveAndLogin(email, "Senha123")
+
+        restTestClient.patch()
+            .uri("/private/v1/profile/password")
+            .header("Cookie", cookie)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"currentPassword":"Senha123","newPassword":"semmaiuscula123"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                val errors = it?.get("errors") as List<String>
+                assertTrue(errors.any { message -> message.contains("letra maiúscula") })
+            }
+    }
+
+    @Test
+    @Order(10)
+    fun `self-service password change rejects a new password without a number`() {
+        val email = "senha-semnumero@example.com"
+        val cookie = registerApproveAndLogin(email, "Senha123")
+
+        restTestClient.patch()
+            .uri("/private/v1/profile/password")
+            .header("Cookie", cookie)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"currentPassword":"Senha123","newPassword":"SemNumeroAqui"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                val errors = it?.get("errors") as List<String>
+                assertTrue(errors.any { message -> message.contains("número") })
+            }
     }
 
     private fun registerApproveAndLogin(email: String, password: String): String {
