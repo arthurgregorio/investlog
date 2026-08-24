@@ -1449,6 +1449,43 @@ a {
   gap: 16px;
 }
 
+/* --- Password requirement hint: attaches directly below the field it validates ---
+   Selectors here are 3 classes deep on purpose: this list can render inside the app
+   shell's `.content` wrapper (modals), and Bulma's `.content ul:not(:first-child)`
+   (2 classes + 1 type = higher specificity than a single `.password-requirement-hint`
+   class) would otherwise win the cascade and re-indent/offset the box. */
+.modal-card-body .form-stack > .field {
+  margin-bottom: 0;
+}
+
+.field-with-hint .field {
+  margin-bottom: 0;
+}
+
+.field-with-hint .input {
+  border-radius: 8px 8px 0 0;
+}
+
+.form-stack .field-with-hint .password-requirement-hint {
+  list-style: none;
+  margin: -1px 0 0;
+  padding: 10px 12px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  background-color: var(--surface-2);
+}
+
+.form-stack .field-with-hint .password-requirement-hint li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
 .form-notice {
   display: flex;
   align-items: center;

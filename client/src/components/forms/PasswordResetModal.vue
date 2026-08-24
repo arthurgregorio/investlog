@@ -55,19 +55,19 @@ async function submit() {
     subtitle="Defina uma nova senha para este usuário."
     @close="emit('close')"
   >
-    <div class="form-grid">
-      <b-field
-        label="Nova senha"
-        style="grid-column: 1/-1"
-        :type="newPasswordError ? 'is-danger' : undefined"
-        :message="newPasswordError || undefined"
-      >
-        <b-input v-model="newPassword" type="password" password-reveal autofocus />
-      </b-field>
-      <PasswordRequirementHint :password="newPassword" style="grid-column: 1/-1" />
+    <div class="form-stack">
+      <div class="field-with-hint">
+        <b-field
+          label="Nova senha"
+          :type="newPasswordError ? 'is-danger' : undefined"
+          :message="newPasswordError || undefined"
+        >
+          <b-input v-model="newPassword" type="password" password-reveal autofocus />
+        </b-field>
+        <PasswordRequirementHint :password="newPassword" />
+      </div>
       <b-field
         label="Confirmar nova senha"
-        style="grid-column: 1/-1"
         :type="passwordsMatch ? undefined : 'is-danger'"
         :message="passwordsMatch ? undefined : 'As senhas não coincidem.'"
       >

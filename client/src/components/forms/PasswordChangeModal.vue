@@ -65,23 +65,24 @@ async function submit() {
     subtitle="Informe sua senha atual e escolha a nova senha."
     @close="emit('close')"
   >
-    <div class="form-grid">
+    <div class="form-stack">
       <b-field
         label="Senha atual"
-        style="grid-column: 1/-1"
         :type="currentPasswordError ? 'is-danger' : undefined"
         :message="currentPasswordError || undefined"
       >
         <b-input v-model="currentPassword" type="password" password-reveal autofocus />
       </b-field>
-      <b-field
-        label="Nova senha"
-        :type="newPasswordError ? 'is-danger' : undefined"
-        :message="newPasswordError || undefined"
-      >
-        <b-input v-model="newPassword" type="password" password-reveal />
-      </b-field>
-      <PasswordRequirementHint :password="newPassword" />
+      <div class="field-with-hint">
+        <b-field
+          label="Nova senha"
+          :type="newPasswordError ? 'is-danger' : undefined"
+          :message="newPasswordError || undefined"
+        >
+          <b-input v-model="newPassword" type="password" password-reveal />
+        </b-field>
+        <PasswordRequirementHint :password="newPassword" />
+      </div>
       <b-field
         label="Confirmar nova senha"
         :type="passwordsMatch ? undefined : 'is-danger'"
