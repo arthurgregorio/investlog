@@ -51,14 +51,14 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Para Aprovar","email":"aprovar@example.com","password":"senha123"}""")
+            .body("""{"name":"Para Aprovar","email":"aprovar@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Para Bloquear","email":"bloquear@example.com","password":"senha123"}""")
+            .body("""{"name":"Para Bloquear","email":"bloquear@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -143,7 +143,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Bloqueada","email":"bloqueada@example.com","password":"senha123"}""")
+            .body("""{"name":"Bloqueada","email":"bloqueada@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -172,7 +172,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         val responseHeaders = restTestClient.post()
             .uri("/private/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"bloqueada@example.com","password":"senha123"}""")
+            .body("""{"email":"bloqueada@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isUnauthorized()
             .returnResult<Unit>()
@@ -196,7 +196,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Para Gerenciar","email":"gerenciar@example.com","password":"senha123"}""")
+            .body("""{"name":"Para Gerenciar","email":"gerenciar@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -310,7 +310,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Sessão Aberta","email":"sessao@example.com","password":"senha123"}""")
+            .body("""{"name":"Sessão Aberta","email":"sessao@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -334,7 +334,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         val secret = restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"sessao@example.com","password":"senha123"}""")
+            .body("""{"email":"sessao@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<TotpEnrollResponse>()
@@ -347,7 +347,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         val cookie = restTestClient.post()
             .uri("/private/v1/auth/totp/verify")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"sessao@example.com","password":"senha123","code":"$code"}""")
+            .body("""{"email":"sessao@example.com","password":"Senha123","code":"$code"}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<SessionResponse>()
@@ -403,7 +403,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Não Admin","email":"naoadmin@example.com","password":"senha123"}""")
+            .body("""{"name":"Não Admin","email":"naoadmin@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -427,7 +427,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         val secret = restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"naoadmin@example.com","password":"senha123"}""")
+            .body("""{"email":"naoadmin@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<TotpEnrollResponse>()
@@ -440,7 +440,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         val cookie = restTestClient.post()
             .uri("/private/v1/auth/totp/verify")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"naoadmin@example.com","password":"senha123","code":"$code"}""")
+            .body("""{"email":"naoadmin@example.com","password":"Senha123","code":"$code"}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<SessionResponse>()
@@ -462,7 +462,7 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Redefinir Senha","email":"redefinir-senha@example.com","password":"senha123"}""")
+            .body("""{"name":"Redefinir Senha","email":"redefinir-senha@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -550,6 +550,125 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             .body("""{"newPassword":"senhaNova789"}""")
             .exchange()
             .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(22)
+    fun `admin password reset rejects a new password shorter than 8 characters`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Senha Curta","email":"senha-curta-admin@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val targetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "senha-curta-admin@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/password")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"newPassword":"1234567"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(23)
+    fun `admin password reset rejects a new password without an uppercase letter`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Sem Maiuscula","email":"senha-semmaiuscula-admin@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val targetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "senha-semmaiuscula-admin@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/password")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"newPassword":"semmaiuscula123"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                val errors = it?.get("errors") as List<String>
+                assertTrue(errors.any { message -> message.contains("letra maiúscula") })
+            }
+    }
+
+    @Test
+    @Order(24)
+    fun `admin password reset rejects a new password without a number`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Sem Numero","email":"senha-semnumero-admin@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val targetId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == "senha-semnumero-admin@example.com" }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$targetId/password")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"newPassword":"SemNumeroAqui"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let {
+                @Suppress("UNCHECKED_CAST")
+                val errors = it?.get("errors") as List<String>
+                assertTrue(errors.any { message -> message.contains("número") })
+            }
     }
 
     companion object {
