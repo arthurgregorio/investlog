@@ -1449,6 +1449,39 @@ a {
   gap: 16px;
 }
 
+/* --- Password requirement hint: attaches directly below the field it validates --- */
+.modal-card-body .form-stack > .field {
+  margin-bottom: 0;
+}
+
+.field-with-hint .field {
+  margin-bottom: 0;
+}
+
+.field-with-hint .input {
+  border-radius: 8px 8px 0 0;
+}
+
+.password-requirement-hint {
+  list-style: none;
+  margin: -1px 0 0;
+  padding: 10px 12px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  background-color: var(--surface-2);
+}
+
+.password-requirement-hint li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
 .form-notice {
   display: flex;
   align-items: center;

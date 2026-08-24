@@ -245,10 +245,12 @@ async function submitGoogleLink() {
           <b-field label="E-mail">
             <b-input v-model="email" type="email" placeholder="voce@email.com" required />
           </b-field>
-          <b-field label="Senha">
-            <b-input v-model="password" type="password" placeholder="••••••••" required />
-          </b-field>
-          <PasswordRequirementHint :password="password" />
+          <div class="field-with-hint">
+            <b-field label="Senha">
+              <b-input v-model="password" type="password" placeholder="••••••••" required />
+            </b-field>
+            <PasswordRequirementHint :password="password" />
+          </div>
           <b-button
             type="is-primary"
             expanded
