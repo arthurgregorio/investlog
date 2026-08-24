@@ -2625,6 +2625,26 @@ h3.report-subgroup-title {
     background: #fff !important;
   }
 
+  /* .app-root carries its own data-theme attribute (see App.vue), so dark
+     mode's palette is redeclared on it directly — forcing the container
+     background above isn't enough, every --text/--border/--surface/--tag-bg
+     read via var(...) in the report still resolves to the dark values.
+     Force the full light-theme variable set here so the report always
+     renders with light-mode colors, regardless of the active theme. */
+  .app-root {
+    --bg: #f4f6fa !important;
+    --surface: #ffffff !important;
+    --surface-2: #f7f9fc !important;
+    --surface-hover: #f1f5fa !important;
+    --border: #e6e9ef !important;
+    --border-2: #eef1f6 !important;
+    --text: #172033 !important;
+    --text-2: #586375 !important;
+    --text-muted: #8a96a8 !important;
+    --chart-grid: #ecf0f5 !important;
+    --tag-bg: #f0f3f8 !important;
+  }
+
   .report-page {
     max-width: none;
     width: 100%;
