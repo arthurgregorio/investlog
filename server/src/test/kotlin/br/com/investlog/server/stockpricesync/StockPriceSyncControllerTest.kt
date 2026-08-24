@@ -120,7 +120,7 @@ class StockPriceSyncControllerTest : BaseIntegrationTest() {
     @Test
     @Order(2)
     fun `a non-admin is forbidden from forcing a sync run`() {
-        val cookie = registerApproveAndLogin("force-sync-writer@example.com", "senha123")
+        val cookie = registerApproveAndLogin("force-sync-writer@example.com", "Senha123")
 
         restTestClient.post()
             .uri("/private/v1/stock-price-sync")

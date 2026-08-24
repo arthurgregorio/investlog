@@ -73,7 +73,7 @@ class ConfigurationControllerTest : BaseIntegrationTest() {
     @Test
     @Order(5)
     fun `a non-admin is forbidden from updating a configuration`() {
-        val cookie = registerApproveAndLogin("configurations-writer@example.com", "senha123")
+        val cookie = registerApproveAndLogin("configurations-writer@example.com", "Senha123")
 
         restTestClient.patch()
             .uri("/private/v1/configurations/stock_price_sync_enabled")

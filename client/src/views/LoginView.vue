@@ -2,8 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LogoMark from '@/components/icons/LogoMark.vue'
+import PasswordRequirementHint from '@/components/forms/PasswordRequirementHint.vue'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
+import { fieldValidationMessage } from '@/utils/apiErrors'
+import { meetsPasswordRequirements } from '@/utils/passwordRules'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -58,6 +61,13 @@ const subtitle = computed(() => {
   return 'Entre para acompanhar seus investimentos.'
 })
 
+const registrationValid = computed(
+  () =>
+    name.value.trim().length > 0 &&
+    email.value.trim().length > 0 &&
+    meetsPasswordRequirements(password.value),
+)
+
 function toggleRegister() {
   error.value = ''
   step.value = step.value === 'register' ? 'credentials' : 'register'
@@ -95,8 +105,10 @@ async function submitRegistration() {
   try {
     await auth.register(name.value, email.value, password.value)
     await router.push({ name: 'pending-approval' })
-  } catch {
-    error.value = 'Não foi possível concluir o cadastro. Verifique os dados e tente novamente.'
+  } catch (caughtError) {
+    error.value =
+      fieldValidationMessage(caughtError) ??
+      'Não foi possível concluir o cadastro. Verifique os dados e tente novamente.'
   } finally {
     submitting.value = false
   }
@@ -236,11 +248,13 @@ async function submitGoogleLink() {
           <b-field label="Senha">
             <b-input v-model="password" type="password" placeholder="••••••••" required />
           </b-field>
+          <PasswordRequirementHint :password="password" />
           <b-button
             type="is-primary"
             expanded
             native-type="submit"
             :loading="submitting"
+            :disabled="!registrationValid"
             class="auth-submit has-text-light"
           >
             Criar conta

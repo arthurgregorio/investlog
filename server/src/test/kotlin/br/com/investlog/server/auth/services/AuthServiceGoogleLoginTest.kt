@@ -148,7 +148,7 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
 
     @Test
     fun `linking a Google account to an existing local account succeeds with the correct password`() {
-        authService.register(RegisterRequest(name = "Para Vincular", email = "vincular@example.com", password = "senha123"))
+        authService.register(RegisterRequest(name = "Para Vincular", email = "vincular@example.com", password = "Senha123"))
 
         val token = googleLinkTokenStore.issue(
             googleSub = "google-sub-link-success",
@@ -161,7 +161,7 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
         val servletResponse = MockHttpServletResponse()
 
         val session = authService.linkGoogleAccount(
-            request = GoogleAccountLinkRequest(linkToken = token, password = "senha123"),
+            request = GoogleAccountLinkRequest(linkToken = token, password = "Senha123"),
             servletRequest = servletRequest,
             servletResponse = servletResponse,
         )
@@ -176,7 +176,7 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
 
     @Test
     fun `linking rejects the wrong password`() {
-        authService.register(RegisterRequest(name = "Senha Errada", email = "senha-errada-link@example.com", password = "senha123"))
+        authService.register(RegisterRequest(name = "Senha Errada", email = "senha-errada-link@example.com", password = "Senha123"))
 
         val token = googleLinkTokenStore.issue(
             googleSub = "google-sub-link-wrong-password",
@@ -207,7 +207,7 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
 
     @Test
     fun `linking rejects a blocked account`() {
-        authService.register(RegisterRequest(name = "Bloqueada Link", email = "bloqueada-link@example.com", password = "senha123"))
+        authService.register(RegisterRequest(name = "Bloqueada Link", email = "bloqueada-link@example.com", password = "Senha123"))
         val user = userRepository.findByEmail("bloqueada-link@example.com")
             ?: error("User was not created by register")
 
@@ -233,7 +233,7 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
 
         assertFailsWith<InvalidCredentialsException> {
             authService.linkGoogleAccount(
-                request = GoogleAccountLinkRequest(linkToken = token, password = "senha123"),
+                request = GoogleAccountLinkRequest(linkToken = token, password = "Senha123"),
                 servletRequest = MockHttpServletRequest(),
                 servletResponse = MockHttpServletResponse(),
             )
