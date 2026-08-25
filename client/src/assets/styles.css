@@ -1856,6 +1856,16 @@ a {
   color: var(--text);
 }
 
+/* Programmatic dialog action buttons (dialog.confirm/prompt/alert): Buefy renders
+   these internally, so templates can't add the usual has-text-light class to them. */
+.dialog .modal-card-foot .button.is-primary,
+.dialog .modal-card-foot .button.is-success,
+.dialog .modal-card-foot .button.is-danger,
+.dialog .modal-card-foot .button.is-warning,
+.dialog .modal-card-foot .button.is-info {
+  color: var(--bulma-light);
+}
+
 /* Static prefix button (NumberInput) */
 .button.is-static {
   height: 40px;
