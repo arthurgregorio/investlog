@@ -36,6 +36,12 @@ export const useTypesListStore = defineStore('typesList', () => {
     return created
   }
 
+  async function updateStockType(id: string, name: string): Promise<AssetType> {
+    const updated = await assetTypesApi.updateStockType(id, name)
+    stockTypes.value = stockTypes.value.map((type) => (type.id === id ? updated : type))
+    return updated
+  }
+
   async function removeStockType(id: string): Promise<void> {
     await assetTypesApi.removeStockType(id)
     stockTypes.value = stockTypes.value.filter((type) => type.id !== id)
@@ -45,6 +51,12 @@ export const useTypesListStore = defineStore('typesList', () => {
     const created = await assetTypesApi.createFundType(name)
     fundTypes.value = [...fundTypes.value, created]
     return created
+  }
+
+  async function updateFundType(id: string, name: string): Promise<AssetType> {
+    const updated = await assetTypesApi.updateFundType(id, name)
+    fundTypes.value = fundTypes.value.map((type) => (type.id === id ? updated : type))
+    return updated
   }
 
   async function removeFundType(id: string): Promise<void> {
@@ -60,8 +72,10 @@ export const useTypesListStore = defineStore('typesList', () => {
     load,
     refresh,
     addStockType,
+    updateStockType,
     removeStockType,
     addFundType,
+    updateFundType,
     removeFundType,
   }
 })

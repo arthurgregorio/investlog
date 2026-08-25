@@ -70,6 +70,7 @@ export interface SeriesPoint {
 export interface AssetType {
   id: string
   name: string
+  usageCount: number
 }
 
 export interface CurrencyRate {
