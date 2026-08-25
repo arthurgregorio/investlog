@@ -21,6 +21,11 @@ class StockTypeService(
     fun create(name: String): TypeResponse = stockTypeRepository.create(name)
 
     @Transactional
+    fun update(externalId: UUID, name: String): TypeResponse =
+        stockTypeRepository.update(externalId, name)
+            ?: throw NotFoundException("Tipo de ação $externalId não encontrado")
+
+    @Transactional
     fun delete(externalId: UUID) {
         if (stockTypeRepository.deleteByExternalId(externalId) == 0) {
             throw NotFoundException("Tipo de ação $externalId não encontrado")

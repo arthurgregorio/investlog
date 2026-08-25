@@ -21,6 +21,11 @@ class FundTypeService(
     fun create(name: String): TypeResponse = fundTypeRepository.create(name)
 
     @Transactional
+    fun update(externalId: UUID, name: String): TypeResponse =
+        fundTypeRepository.update(externalId, name)
+            ?: throw NotFoundException("Tipo de fundo $externalId não encontrado")
+
+    @Transactional
     fun delete(externalId: UUID) {
         if (fundTypeRepository.deleteByExternalId(externalId) == 0) {
             throw NotFoundException("Tipo de fundo $externalId não encontrado")

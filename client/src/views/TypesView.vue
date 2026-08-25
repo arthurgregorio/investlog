@@ -1,113 +1,207 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useToast } from 'buefy'
+import { computed, onMounted, ref } from 'vue'
+import { useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
-import CardBody from '@/components/ui/CardBody.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { useTypesListStore } from '@/stores/typesList'
 import { useAuthStore } from '@/stores/auth'
+import type { AssetType } from '@/types'
 
+type TypeKind = 'stock' | 'fund'
+
+const KIND_CONFIG: Record<
+  TypeKind,
+  { label: string; description: string; addTitle: string; emptyText: string }
+> = {
+  stock: {
+    label: 'Tipos de ação',
+    description: 'Cadastrados antes de registrar uma ação (escolhidos no formulário).',
+    addTitle: 'Novo tipo de ação',
+    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar uma ação.',
+  },
+  fund: {
+    label: 'Tipos de fundo',
+    description: 'Cadastrados antes de registrar um fundo (escolhidos no formulário).',
+    addTitle: 'Novo tipo de fundo',
+    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar um fundo.',
+  },
+}
+
+const dialog = useDialog()
 const toast = useToast()
 const typesListStore = useTypesListStore()
 const auth = useAuthStore()
 
-const newStockType = ref('')
-const newFundType = ref('')
+const activeKind = ref<TypeKind>('stock')
 
 onMounted(() => {
   typesListStore.load()
 })
 
-async function addStockType() {
-  const name = newStockType.value.trim()
-  if (!name) return
-  await typesListStore.addStockType(name)
-  newStockType.value = ''
-  toast.open({ message: 'Tipo de ação adicionado.', type: 'is-success' })
+const activeTypes = computed(() =>
+  activeKind.value === 'stock' ? typesListStore.stockTypes : typesListStore.fundTypes,
+)
+
+function addType() {
+  const kind = activeKind.value
+  dialog.prompt({
+    title: KIND_CONFIG[kind].addTitle,
+    message: 'Nome:',
+    inputAttrs: { placeholder: 'Nome do tipo' },
+    confirmText: 'Criar',
+    cancelText: 'Cancelar',
+    onConfirm: async (name: string) => {
+      const trimmedName = name.trim()
+      if (!trimmedName) return
+      if (kind === 'stock') {
+        await typesListStore.addStockType(trimmedName)
+      } else {
+        await typesListStore.addFundType(trimmedName)
+      }
+      toast.open({ message: 'Tipo criado.', type: 'is-success' })
+    },
+  })
 }
 
-async function addFundType() {
-  const name = newFundType.value.trim()
-  if (!name) return
-  await typesListStore.addFundType(name)
-  newFundType.value = ''
-  toast.open({ message: 'Tipo de fundo adicionado.', type: 'is-success' })
+function renameType(type: AssetType) {
+  const kind = activeKind.value
+  dialog.prompt({
+    title: 'Renomear tipo',
+    message: 'Nome:',
+    inputAttrs: { value: type.name, placeholder: 'Nome do tipo' },
+    confirmText: 'Salvar',
+    cancelText: 'Cancelar',
+    onConfirm: async (name: string) => {
+      const trimmedName = name.trim()
+      if (!trimmedName || trimmedName === type.name) return
+      if (kind === 'stock') {
+        await typesListStore.updateStockType(type.id, trimmedName)
+      } else {
+        await typesListStore.updateFundType(type.id, trimmedName)
+      }
+      toast.open({ message: 'Tipo renomeado.', type: 'is-success' })
+    },
+  })
 }
 
-async function removeStockType(stockTypeId: string) {
-  await typesListStore.removeStockType(stockTypeId)
-  toast.open({ message: 'Tipo de ação removido.', type: 'is-success' })
-}
-
-async function removeFundType(fundTypeId: string) {
-  await typesListStore.removeFundType(fundTypeId)
-  toast.open({ message: 'Tipo de fundo removido.', type: 'is-success' })
+function confirmRemoveType(type: AssetType) {
+  const kind = activeKind.value
+  dialog.confirm({
+    title: 'Remover tipo',
+    message: `Remover <strong>${type.name}</strong>? Esta ação <strong>não pode ser desfeita</strong>.`,
+    type: 'is-danger',
+    hasIcon: true,
+    confirmText: 'Remover',
+    cancelText: 'Cancelar',
+    onConfirm: async () => {
+      if (kind === 'stock') {
+        await typesListStore.removeStockType(type.id)
+      } else {
+        await typesListStore.removeFundType(type.id)
+      }
+      toast.open({ message: 'Tipo removido.', type: 'is-success' })
+    },
+  })
 }
 </script>
 
 <template>
-  <div class="page page-narrow">
-    <div class="page-head">
-      <h1 class="page-title">Tipos</h1>
-      <p class="page-desc">Gerencie os tipos de ação e de fundo usados no cadastro.</p>
+  <div class="page">
+    <b-loading :is-full-page="false" :active="typesListStore.loading" />
+
+    <div class="page-head-row">
+      <div>
+        <h1 class="page-title">Tipos</h1>
+        <p class="page-desc">Gerencie os tipos de ação e de fundo usados no cadastro.</p>
+      </div>
     </div>
 
-    <Card>
-      <CardBody>
-        <b-loading :is-full-page="false" :active="typesListStore.loading" />
-        <div class="set-head"><h2 class="set-title">Tipos de ação</h2></div>
-        <p class="set-desc">Cadastrados antes de registrar uma ação (escolhidos no formulário).</p>
-        <div class="chip-edit">
-          <span
-            v-for="stockType in typesListStore.stockTypes"
-            :key="stockType.id"
-            class="edit-chip"
-          >
-            {{ stockType.name }}
-            <button
-              v-if="auth.isAdmin"
-              :aria-label="`Remover ${stockType.name}`"
-              @click="removeStockType(stockType.id)"
-            >
-              <b-icon icon="close" size="is-small" />
-            </button>
-          </span>
-        </div>
-        <div class="chip-add">
-          <b-input
-            v-model="newStockType"
-            placeholder="ex.: Stock, REIT…"
-            @keyup.enter="addStockType"
-          />
-          <b-button icon-left="plus" @click="addStockType">Adicionar tipo</b-button>
-        </div>
-      </CardBody>
-    </Card>
+    <div class="inv-controls">
+      <div class="seg-tabs">
+        <button
+          class="seg-tab"
+          :class="{ active: activeKind === 'stock' }"
+          @click="activeKind = 'stock'"
+        >
+          Tipos de ação
+        </button>
+        <button
+          class="seg-tab"
+          :class="{ active: activeKind === 'fund' }"
+          @click="activeKind = 'fund'"
+        >
+          Tipos de fundo
+        </button>
+      </div>
 
-    <Card>
-      <CardBody>
-        <div class="set-head"><h2 class="set-title">Tipos de fundo</h2></div>
-        <p class="set-desc">Cadastrados antes de registrar um fundo (escolhidos no formulário).</p>
-        <div class="chip-edit">
-          <span v-for="fundType in typesListStore.fundTypes" :key="fundType.id" class="edit-chip">
-            {{ fundType.name }}
-            <button
-              v-if="auth.isAdmin"
-              :aria-label="`Remover ${fundType.name}`"
-              @click="removeFundType(fundType.id)"
-            >
-              <b-icon icon="close" size="is-small" />
-            </button>
-          </span>
+      <div v-if="auth.isAdmin" class="inv-toolbar">
+        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
+          Novo tipo
+        </b-button>
+      </div>
+    </div>
+
+    <p class="set-desc">{{ KIND_CONFIG[activeKind].description }}</p>
+
+    <EmptyState
+      v-if="typesListStore.loaded && activeTypes.length === 0"
+      icon="shape-outline"
+      title="Nenhum tipo ainda"
+      :text="KIND_CONFIG[activeKind].emptyText"
+    >
+      <template v-if="auth.isAdmin" #action>
+        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
+          Novo tipo
+        </b-button>
+      </template>
+    </EmptyState>
+
+    <Card v-else class="table-card">
+      <div class="table-wrap">
+        <div class="table-scroll">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th class="c-num">Investimentos</th>
+                <th v-if="auth.isAdmin" class="c-act" style="width: 90px">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="type in activeTypes" :key="type.id">
+                <td class="cell-strong">{{ type.name }}</td>
+                <td class="c-num">{{ type.usageCount }}</td>
+                <td v-if="auth.isAdmin" class="c-act">
+                  <div style="display: flex; gap: 6px; justify-content: center">
+                    <b-button
+                      outlined
+                      type="is-primary"
+                      size="is-small"
+                      icon-left="pencil"
+                      @click="renameType(type)"
+                    />
+                    <b-tooltip
+                      v-if="type.usageCount > 0"
+                      label="Não é possível remover: tipo em uso"
+                      position="is-left"
+                    >
+                      <b-button outlined type="is-danger" size="is-small" icon-left="delete" disabled />
+                    </b-tooltip>
+                    <b-button
+                      v-else
+                      outlined
+                      type="is-danger"
+                      size="is-small"
+                      icon-left="delete"
+                      @click="confirmRemoveType(type)"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="chip-add">
-          <b-input
-            v-model="newFundType"
-            placeholder="ex.: Previdência, Cambial…"
-            @keyup.enter="addFundType"
-          />
-          <b-button icon-left="plus" @click="addFundType">Adicionar tipo</b-button>
-        </div>
-      </CardBody>
+      </div>
     </Card>
   </div>
 </template>
