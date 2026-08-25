@@ -48,7 +48,7 @@ class TrustedDeviceService(
 
         val cookie = ResponseCookie.from(COOKIE_NAME, token)
             .httpOnly(true)
-            .secure(true)
+            .secure(servletRequest.isSecure)
             .sameSite("Lax")
             .path(COOKIE_PATH)
             .maxAge(expiry)

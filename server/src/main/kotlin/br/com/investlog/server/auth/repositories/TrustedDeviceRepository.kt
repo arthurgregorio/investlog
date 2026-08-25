@@ -37,6 +37,7 @@ class TrustedDeviceRepository(private val dsl: DSLContext) {
     fun findAllByUserId(userId: Long): List<TrustedDeviceResponse> =
         dsl.selectFrom(TRUSTED_DEVICES)
             .where(TRUSTED_DEVICES.USER_ID.eq(userId))
+            .and(TRUSTED_DEVICES.EXPIRES_AT.gt(OffsetDateTime.now()))
             .orderBy(TRUSTED_DEVICES.LAST_USED_AT.desc())
             .fetch()
             .map { it.toResponse() }
