@@ -40,8 +40,8 @@ const mockFundWallet: WalletResponse = {
   createdAt: '2024-01-01T00:00:00Z',
 }
 
-const mockStockType: AssetType = { id: 'type-1', name: 'Ação Ordinária' }
-const mockFundType: AssetType = { id: 'type-fund-1', name: 'Renda Fixa' }
+const mockStockType: AssetType = { id: 'type-1', name: 'Ação Ordinária', usageCount: 0 }
+const mockFundType: AssetType = { id: 'type-fund-1', name: 'Renda Fixa', usageCount: 0 }
 
 describe('useAddInvestmentForm', () => {
   beforeEach(() => {
