@@ -2459,12 +2459,18 @@ a {
   margin-top: 50px;
 }
 
+/* Buefy bundles Bulma's `.content` typography helper, which sets its own
+   `color: var(--bulma-text-strong)` on every heading and table th/thead th —
+   and this app's own layout wrapper happens to also be named `.content`
+   (`.main > .content`, see below), so the report (nested inside it) collides
+   with Bulma's dark-mode-reactive color unless explicitly overridden here. */
 h1.report-title {
   font-size: 16px;
   font-weight: 800;
   letter-spacing: -.02em;
   margin: 0;
   white-space: normal;
+  color: var(--text);
 }
 
 .report-meta {
@@ -2521,6 +2527,7 @@ h1.report-title {
   font-weight: 700;
   margin: 0;
   flex: 1;
+  color: var(--text);
 }
 
 .report-subgroup {
@@ -2577,11 +2584,18 @@ h3.report-subgroup-title {
 }
 
 .report-table thead th {
-  color: var(--text-muted);
   font-weight: 600;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .04em;
+}
+
+/* Bulma's `.content table thead th` (see the comment on h1.report-title
+   above) is *more* specific than a same-order `.report-table thead th`
+   rule, so source order alone can't win here — the extra `.report-paper`
+   class is needed to out-specificity it. */
+.report-paper .report-table thead th {
+  color: var(--text-muted);
 }
 
 .report-subtotal-row td {
@@ -2669,7 +2683,14 @@ h3.report-subgroup-title {
   /* Force a plain white page regardless of theme — dark mode's --bg (and
      even light mode's slightly-off-white --bg) would otherwise now print
      exactly, since the color-adjust rule above stops the browser from
-     stripping it like it used to. */
+     stripping it like it used to. `html` is the one that actually mattered
+     for the stray dark block from #171: Buefy's bundled Bulma sets
+     `html { background-color: var(--bulma-body-background-color) }`
+     (near-black in dark mode), and `body`'s own height:auto below means it
+     only ever paints as tall as its content — any blank space past that on
+     the physical page (near-guaranteed on a short last page) falls through
+     to html's background, which this list never used to cover. */
+  html,
   body,
   .app-root,
   .main,
