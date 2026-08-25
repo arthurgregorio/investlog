@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import LogoMark from '@/components/icons/LogoMark.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -80,6 +80,49 @@ onMounted(load)
 function print() {
   window.print()
 }
+
+// Mirrors the `@page { size: A4; margin: 14mm 12mm }` rule in styles.css so the
+// on-screen guide lines land at the same height print pagination would break at.
+const MM_TO_PX = 96 / 25.4
+const PAGE_HEIGHT_MM = 297
+const PAGE_MARGIN_Y_MM = 14
+const PAGE_CONTENT_HEIGHT_PX = (PAGE_HEIGHT_MM - PAGE_MARGIN_Y_MM * 2) * MM_TO_PX
+const PAGE_TOP_PADDING_PX = PAGE_MARGIN_Y_MM * MM_TO_PX
+
+const reportPaperRef = ref<HTMLElement | null>(null)
+const pageBreakOffsets = ref<number[]>([])
+let paperResizeObserver: ResizeObserver | undefined
+
+function recomputePageBreaks() {
+  const paperElement = reportPaperRef.value
+  if (!paperElement) {
+    pageBreakOffsets.value = []
+    return
+  }
+  const pageCount = Math.max(
+    1,
+    Math.ceil((paperElement.scrollHeight - PAGE_TOP_PADDING_PX) / PAGE_CONTENT_HEIGHT_PX),
+  )
+  pageBreakOffsets.value = Array.from(
+    { length: pageCount - 1 },
+    (_, index) => PAGE_TOP_PADDING_PX + (index + 1) * PAGE_CONTENT_HEIGHT_PX,
+  )
+}
+
+watch(reportPaperRef, (paperElement) => {
+  paperResizeObserver?.disconnect()
+  paperResizeObserver = undefined
+  if (!paperElement) return
+  paperResizeObserver = new ResizeObserver(recomputePageBreaks)
+  paperResizeObserver.observe(paperElement)
+})
+
+watch(
+  () => [loading.value, holdings.value.length] as const,
+  () => nextTick(recomputePageBreaks),
+)
+
+onBeforeUnmount(() => paperResizeObserver?.disconnect())
 </script>
 
 <template>
@@ -102,7 +145,16 @@ function print() {
       text="Ajuste os filtros na tela de Investimentos e gere o relatório novamente."
     />
 
-    <template v-else-if="!loading">
+    <div v-else-if="!loading" ref="reportPaperRef" class="report-paper">
+      <div
+        v-for="(offset, index) in pageBreakOffsets"
+        :key="offset"
+        class="report-page-break no-print"
+        :style="{ top: `${offset}px` }"
+      >
+        <span class="report-page-break-label">Página {{ index + 2 }}</span>
+      </div>
+
       <header class="report-header">
         <div class="report-header-top">
           <div class="report-brand">
@@ -269,6 +321,6 @@ function print() {
           </div>
         </div>
       </section>
-    </template>
+    </div>
   </div>
 </template>
