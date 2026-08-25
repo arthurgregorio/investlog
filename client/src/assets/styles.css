@@ -2358,6 +2358,62 @@ a {
   justify-content: space-between;
 }
 
+/* The report is a print preview: it always renders as a light "paper" page
+   regardless of the app's active theme, so printing from dark mode never
+   depends on data-theme text/background colors (which are tuned for a dark
+   surface and turn near-invisible once forced onto white paper). */
+.report-paper {
+  width: 210mm;
+  margin: 0 auto;
+  padding: 14mm 12mm;
+  position: relative;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .08), 0 12px 32px rgba(15, 23, 42, .12);
+  border-radius: 3px;
+  /* .app-root sets `color: var(--text)` directly on itself, so its computed
+     color is resolved once from *its own* --text and inherits from there
+     unchanged — redeclaring --text down here has no effect on descendants
+     (h1.report-title, .rgt-value, table cells, ...) that read `color` only
+     by inheritance rather than their own var(--text). Re-declaring `color`
+     here re-triggers resolution using this element's own pinned --text. */
+  color: var(--text);
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f7f9fc;
+  --surface-hover: #f1f5fa;
+  --border: #e6e9ef;
+  --border-2: #eef1f6;
+  --text: #172033;
+  --text-2: #586375;
+  --text-muted: #8a96a8;
+  --chart-grid: #ecf0f5;
+  --tag-bg: #f0f3f8;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .06);
+}
+
+.report-page-break {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed var(--border);
+  pointer-events: none;
+}
+
+.report-page-break-label {
+  position: absolute;
+  top: -9px;
+  right: 12mm;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
 .report-header {
   padding-bottom: 18px;
   display: flex;
@@ -2398,17 +2454,17 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: nowrap;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 50px;
 }
 
 h1.report-title {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: -.02em;
   margin: 0;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .report-meta {
@@ -2423,31 +2479,28 @@ h1.report-title {
 
 .report-grand-total {
   display: flex;
-  gap: 24px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
 .rgt-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  white-space: nowrap;
+  gap: 1px;
+  white-space: normal;
 }
 
 .rgt-label {
-  font-size: 11px;
+  font-size: 8px;
   text-transform: uppercase;
   letter-spacing: .06em;
   color: var(--text-muted);
   font-weight: 700;
 }
 
-.rgt-value {
-  font-weight: 800;
-}
-
+.rgt-value,
 .rgt-item .gl {
-  font-size: inherit;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -2625,67 +2678,21 @@ h3.report-subgroup-title {
     background: #fff !important;
   }
 
-  /* .app-root carries its own data-theme attribute (see App.vue), so dark
-     mode's palette is redeclared on it directly — forcing the container
-     background above isn't enough, every --text/--border/--surface/--tag-bg
-     read via var(...) in the report still resolves to the dark values.
-     Force the full light-theme variable set here so the report always
-     renders with light-mode colors, regardless of the active theme. */
-  .app-root {
-    --bg: #f4f6fa !important;
-    --surface: #ffffff !important;
-    --surface-2: #f7f9fc !important;
-    --surface-hover: #f1f5fa !important;
-    --border: #e6e9ef !important;
-    --border-2: #eef1f6 !important;
-    --text: #172033 !important;
-    --text-2: #586375 !important;
-    --text-muted: #8a96a8 !important;
-    --chart-grid: #ecf0f5 !important;
-    --tag-bg: #f0f3f8 !important;
-  }
-
   .report-page {
     max-width: none;
     width: 100%;
     padding: 0;
   }
 
-  /* The title + grand-total row is tuned to fit the ~920px screen
-     container, which is wider than A4's printable area (~700px) — shrink
-     both down for print so they actually stay on one line there instead
-     of just avoiding a clip. flex-wrap/white-space stay as a last-resort
-     safety net (e.g. a very large number pushing a value wider than
-     usual), not the normal path. */
-  .report-title-row {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  h1.report-title {
-    font-size: 16px;
-  }
-
-  .report-grand-total {
-    gap: 12px;
-  }
-
-  .rgt-item {
-    gap: 1px;
-  }
-
-  .rgt-label {
-    font-size: 8px;
-  }
-
-  .rgt-value,
-  .rgt-item .gl {
-    font-size: 12px;
-  }
-
-  .report-title,
-  .rgt-item {
-    white-space: normal;
+  /* The A4 "paper" card look (shadow, rounded corner, fixed width) is a
+     screen-only preview aid — real pagination/margins come from @page, and
+     a soft shadow with no page below it to fall on would otherwise print
+     as a faint gray band past the last page's content. */
+  .report-paper {
+    width: 100%;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
   }
 
   /* report-kind-section and report-subgroup are deliberately NOT
