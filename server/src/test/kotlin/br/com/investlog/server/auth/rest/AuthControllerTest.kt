@@ -758,7 +758,10 @@ class AuthControllerTest : BaseIntegrationTest() {
                 .responseHeaders["Set-Cookie"]
                 ?: error("Login did not set any cookie")
 
-            val trustedDeviceCookiePair = setCookieHeaders.first { it.startsWith("trusted_device=") }.substringBefore(";")
+            val trustedDeviceCookiePair = setCookieHeaders
+                .firstOrNull { it.startsWith("trusted_device=") }
+                ?.substringBefore(";")
+                ?: error("No trusted_device cookie among: $setCookieHeaders")
 
             Thread.sleep(1100)
 
