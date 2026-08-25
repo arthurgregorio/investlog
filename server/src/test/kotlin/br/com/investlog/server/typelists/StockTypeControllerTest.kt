@@ -4,6 +4,7 @@ import br.com.investlog.server.BaseIntegrationTest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.typelists.rest.payloads.TypeResponse
+import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import dev.samstevens.totp.code.DefaultCodeGenerator
 import org.junit.jupiter.api.Order
 import org.springframework.beans.factory.annotation.Autowired
@@ -150,6 +151,113 @@ class StockTypeControllerTest : BaseIntegrationTest() {
             .header("Cookie", cookie)
             .exchange()
             .expectStatus().isEqualTo(403)
+    }
+
+    @Test
+    @Order(10)
+    fun `renames a stock type`() {
+        val original = restTestClient.post()
+            .uri("/private/v1/stock-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Tipo Para Renomear"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+
+        val renamed = restTestClient.put()
+            .uri("/private/v1/stock-types/${original.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Tipo Renomeado"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+
+        assertEquals(original.id, renamed.id)
+        assertEquals("Tipo Renomeado", renamed.name)
+        assertEquals(0, renamed.usageCount)
+    }
+
+    @Test
+    @Order(11)
+    fun `returns 404 when renaming an unknown id`() {
+        restTestClient.put()
+            .uri("/private/v1/stock-types/${UUID.randomUUID()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Não Importa"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+    }
+
+    @Test
+    @Order(12)
+    fun `a non-admin is forbidden from renaming a stock type`() {
+        val cookie = registerApproveAndLogin("stock-types-renamer@example.com", "Senha123")
+
+        restTestClient.put()
+            .uri("/private/v1/stock-types/$sharedTypeId")
+            .header("Cookie", cookie)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Tentativa Não Admin"}""")
+            .exchange()
+            .expectStatus().isEqualTo(403)
+    }
+
+    @Test
+    @Order(13)
+    fun `rejects deleting a stock type that is in use`() {
+        val inUseType = restTestClient.post()
+            .uri("/private/v1/stock-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Tipo Em Uso"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+
+        val walletId = restTestClient.post()
+            .uri("/private/v1/wallets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Wallet Tipo Em Uso","kind":"stocks","currency":"BRL"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<WalletResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "stockTypeId":"${inUseType.id}",
+                  "ticker":"TESTE4",
+                  "name":"Teste",
+                  "currentPrice":10.00,
+                  "lot":{"lotDate":"2024-01-15","quantity":10,"price":10.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+
+        val listResponse = restTestClient.get()
+            .uri("/private/v1/stock-types?size=200")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+
+        @Suppress("UNCHECKED_CAST")
+        val content = listResponse?.get("content") as List<Map<String, Any?>>
+        assertEquals(1, content.single { it["id"] == inUseType.id.toString() }["usageCount"])
+
+        restTestClient.delete()
+            .uri("/private/v1/stock-types/${inUseType.id}")
+            .exchange()
+            .expectStatus().isEqualTo(HttpStatus.CONFLICT)
     }
 
     private fun registerApproveAndLogin(email: String, password: String): String {
