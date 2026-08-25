@@ -6,6 +6,7 @@ import TheTopNav from '@/components/layout/TheTopNav.vue'
 import CreateWalletModal from '@/components/forms/CreateWalletModal.vue'
 import AddInvestmentModal from '@/components/forms/AddInvestmentModal.vue'
 import PasswordChangeModal from '@/components/forms/PasswordChangeModal.vue'
+import TrustedDevicesModal from '@/components/forms/TrustedDevicesModal.vue'
 import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { ModalKey } from '@/composables/useModals'
@@ -25,6 +26,7 @@ watchEffect(() => {
 const addModal = ref<{ kind: WalletKind } | null>(null)
 const walletModal = ref<{ type: WalletKind } | null>(null)
 const showPasswordChangeModal = ref(false)
+const showTrustedDevicesModal = ref(false)
 
 function openAddInvestment(kind: WalletKind = 'STOCKS') {
   addModal.value = { kind }
@@ -35,7 +37,15 @@ function openCreateWallet(type: WalletKind = 'STOCKS') {
 function openPasswordChange() {
   showPasswordChangeModal.value = true
 }
-provide(ModalKey, { openAddInvestment, openCreateWallet, openPasswordChange })
+function openTrustedDevices() {
+  showTrustedDevicesModal.value = true
+}
+provide(ModalKey, {
+  openAddInvestment,
+  openCreateWallet,
+  openPasswordChange,
+  openTrustedDevices,
+})
 </script>
 
 <template>
@@ -68,6 +78,10 @@ provide(ModalKey, { openAddInvestment, openCreateWallet, openPasswordChange })
     <PasswordChangeModal
       v-if="showPasswordChangeModal"
       @close="showPasswordChangeModal = false"
+    />
+    <TrustedDevicesModal
+      v-if="showTrustedDevicesModal"
+      @close="showTrustedDevicesModal = false"
     />
   </div>
 </template>

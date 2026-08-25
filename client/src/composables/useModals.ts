@@ -7,6 +7,7 @@ export interface ModalControls {
   openAddInvestment: (kind?: WalletKind) => void
   openCreateWallet: (type?: WalletKind) => void
   openPasswordChange: () => void
+  openTrustedDevices: () => void
 }
 
 export const ModalKey: InjectionKey<ModalControls> = Symbol('investlog.modals')
