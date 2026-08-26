@@ -35,7 +35,12 @@ describe('TrustedDevicesModal', () => {
 
   it('lists the loaded devices', async () => {
     vi.mocked(authApi.fetchTrustedDevices).mockResolvedValue([
-      { id: '1', label: 'Chrome em Windows', lastUsedAt: '2026-08-01T10:00:00Z', expiresAt: '2026-08-31T10:00:00Z' },
+      {
+        id: '1',
+        label: 'Chrome em Windows',
+        lastUsedAt: '2026-08-01T10:00:00Z',
+        expiresAt: '2026-08-31T10:00:00Z',
+      },
     ])
 
     mountModal()

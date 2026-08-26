@@ -1,6 +1,12 @@
 import { isAxiosError } from 'axios'
 import { apiClient } from './client'
-import type { AuthConfigResponse, LoginOutcome, SessionResponse, TotpEnrollResponse, TrustedDeviceResponse } from '@/types'
+import type {
+  AuthConfigResponse,
+  LoginOutcome,
+  SessionResponse,
+  TotpEnrollResponse,
+  TrustedDeviceResponse,
+} from '@/types'
 
 export const authApi = {
   async login(

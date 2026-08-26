@@ -5,9 +5,17 @@ import type { TrustedDeviceResponse } from '@/types'
 
 export const useTrustedDevicesStore = defineStore('trustedDevices', () => {
   const devices = ref<TrustedDeviceResponse[]>([])
+  const loading = ref(false)
 
+  // No `loaded` guard, unlike sibling stores — the list must always refetch on open
+  // since another device/session can change it at any time.
   async function load() {
-    devices.value = await authApi.fetchTrustedDevices()
+    loading.value = true
+    try {
+      devices.value = await authApi.fetchTrustedDevices()
+    } finally {
+      loading.value = false
+    }
   }
 
   async function revoke(id: string) {
@@ -15,5 +23,5 @@ export const useTrustedDevicesStore = defineStore('trustedDevices', () => {
     devices.value = devices.value.filter((device) => device.id !== id)
   }
 
-  return { devices, load, revoke }
+  return { devices, loading, load, revoke }
 })
