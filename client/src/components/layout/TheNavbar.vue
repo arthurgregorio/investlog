@@ -10,6 +10,7 @@ import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { useModals } from '@/composables/useModals'
 import { profileApi } from '@/api/profile'
+import { APP_VERSION } from '@/utils/appVersion'
 import type { AccentKey, ProfileResponse } from '@/types'
 
 const ratesStore = useRatesStore()
@@ -28,6 +29,9 @@ const accents: { key: AccentKey; hex: string }[] = [
 ]
 
 const profile = ref<ProfileResponse | null>(null)
+
+const demoModeEnabled = computed(() => auth.session?.demoModeEnabled === true)
+const versionLabel = computed(() => `v${APP_VERSION}${demoModeEnabled.value ? ' - demo' : ''}`)
 
 const currencyOptions = computed(() =>
   ratesStore.currencyCodes.length > 0 ? ratesStore.currencyCodes : ['BRL', 'USD'],
@@ -136,6 +140,12 @@ async function logout() {
 
         <b-dropdown-item aria-role="menuitem" @click="logout">
           <b-icon icon="logout" size="is-small" /> Sair
+        </b-dropdown-item>
+
+        <hr class="dropdown-divider" />
+
+        <b-dropdown-item custom aria-role="menuitem" class="version-item">
+          <div class="version-line">{{ versionLabel }}</div>
         </b-dropdown-item>
       </b-dropdown>
     </div>
