@@ -31,7 +31,7 @@ const accents: { key: AccentKey; hex: string }[] = [
 const profile = ref<ProfileResponse | null>(null)
 
 const demoModeEnabled = computed(() => auth.session?.demoModeEnabled === true)
-const versionLabel = computed(() => `v${APP_VERSION}${demoModeEnabled.value ? ' - demo' : ''}`)
+const versionLabel = computed(() => `${APP_VERSION}${demoModeEnabled.value ? ' - demo' : ''}`)
 
 const currencyOptions = computed(() =>
   ratesStore.currencyCodes.length > 0 ? ratesStore.currencyCodes : ['BRL', 'USD'],
