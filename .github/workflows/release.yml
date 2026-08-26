@@ -72,3 +72,5 @@ jobs:
           context: client
           push: true
           tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            VITE_APP_VERSION=${{ github.event.release.tag_name }}

@@ -49,7 +49,7 @@ class RegistrationControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"email":"nova@example.com","password":"senha123"}""")
+            .body("""{"email":"nova@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isEqualTo(202)
     }
