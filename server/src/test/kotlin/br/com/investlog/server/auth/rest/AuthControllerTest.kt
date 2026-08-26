@@ -256,14 +256,14 @@ class AuthControllerTest : BaseIntegrationTest() {
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Enum Pending","email":"enum-pending@example.com","password":"senha123"}""")
+            .body("""{"name":"Enum Pending","email":"enum-pending@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
         restTestClient.post()
             .uri("/private/v1/auth/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Enum Blocked","email":"enum-blocked@example.com","password":"senha123"}""")
+            .body("""{"name":"Enum Blocked","email":"enum-blocked@example.com","password":"Senha123"}""")
             .exchange()
             .expectStatus().isCreated()
 
@@ -320,7 +320,7 @@ class AuthControllerTest : BaseIntegrationTest() {
     @Test
     @Order(15)
     fun `a blocked account's correct password still reveals the account is blocked`() {
-        val detail = loginErrorDetail("enum-blocked@example.com", "senha123")
+        val detail = loginErrorDetail("enum-blocked@example.com", "Senha123")
 
         assertEquals("Login falhou. Entre em contato com um administrador.", detail)
     }
@@ -546,7 +546,7 @@ class AuthControllerTest : BaseIntegrationTest() {
             restTestClient.post()
                 .uri("/private/v1/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("""{"name":"Login Lockout Test","email":"login-lockout@example.com","password":"senha123"}""")
+                .body("""{"name":"Login Lockout Test","email":"login-lockout@example.com","password":"Senha123"}""")
                 .exchange()
                 .expectStatus().isCreated()
 
@@ -564,7 +564,7 @@ class AuthControllerTest : BaseIntegrationTest() {
             restTestClient.post()
                 .uri("/private/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("""{"email":"login-lockout@example.com","password":"senha123"}""")
+                .body("""{"email":"login-lockout@example.com","password":"Senha123"}""")
                 .exchange()
                 .expectStatus().isEqualTo(429)
                 .returnResult<Map<String, Any?>>()
@@ -576,7 +576,7 @@ class AuthControllerTest : BaseIntegrationTest() {
             restTestClient.post()
                 .uri("/private/v1/auth/totp/enroll")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("""{"email":"login-lockout@example.com","password":"senha123"}""")
+                .body("""{"email":"login-lockout@example.com","password":"Senha123"}""")
                 .exchange()
                 .expectStatus().isEqualTo(429)
 
@@ -585,7 +585,7 @@ class AuthControllerTest : BaseIntegrationTest() {
             restTestClient.post()
                 .uri("/private/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body("""{"email":"login-lockout@example.com","password":"senha123"}""")
+                .body("""{"email":"login-lockout@example.com","password":"Senha123"}""")
                 .exchange()
                 .expectStatus().isEqualTo(202)
         }
