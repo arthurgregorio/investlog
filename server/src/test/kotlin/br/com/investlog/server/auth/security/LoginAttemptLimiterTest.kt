@@ -23,6 +23,7 @@ class LoginAttemptLimiterTest {
                         lockoutMaxAttempts = maxAttemptsBeforeLockout,
                         lockoutBaseDuration = baseLockoutDuration,
                     ),
+                    trustedDevice = InvestlogConfigurations.Security.TrustedDevice(expiry = Duration.ofDays(30)),
                 ),
                 googleAuth = InvestlogConfigurations.GoogleAuth(
                     enabled = false,

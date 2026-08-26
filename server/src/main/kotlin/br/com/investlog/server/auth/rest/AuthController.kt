@@ -9,14 +9,19 @@ import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollmentRequiredResponse
 import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
+import br.com.investlog.server.auth.rest.payloads.TrustedDeviceResponse
 import br.com.investlog.server.auth.services.AuthService
 import br.com.investlog.server.auth.services.LoginResult
+import br.com.investlog.server.auth.services.TrustedDeviceService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
+import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -24,7 +29,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/auth")
-class AuthController(private val authService: AuthService) {
+class AuthController(
+    private val authService: AuthService,
+    private val trustedDeviceService: TrustedDeviceService,
+) {
 
     @PostMapping("/login")
     fun login(
@@ -57,6 +65,16 @@ class AuthController(private val authService: AuthService) {
     fun logout(servletRequest: HttpServletRequest): ResponseEntity<Void> {
         authService.logout(servletRequest)
         return ResponseEntity.ok().build()
+    }
+
+    @GetMapping("/trusted-devices")
+    fun trustedDevices(): ResponseEntity<List<TrustedDeviceResponse>> =
+        ResponseEntity.ok(trustedDeviceService.findAllForCurrentUser())
+
+    @DeleteMapping("/trusted-devices/{externalId}")
+    fun revokeTrustedDevice(@PathVariable externalId: UUID): ResponseEntity<Void> {
+        trustedDeviceService.revoke(externalId)
+        return ResponseEntity.noContent().build()
     }
 
     @GetMapping("/config")

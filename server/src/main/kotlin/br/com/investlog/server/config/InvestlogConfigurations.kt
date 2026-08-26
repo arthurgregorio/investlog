@@ -20,6 +20,7 @@ data class InvestlogConfigurations(
         val adminDefaultPassword: String,
         val totp: Totp,
         val login: Login,
+        val trustedDevice: TrustedDevice,
     ) {
         data class Totp(
             val enabled: Boolean,
@@ -30,6 +31,10 @@ data class InvestlogConfigurations(
         data class Login(
             val lockoutMaxAttempts: Int,
             val lockoutBaseDuration: Duration,
+        )
+
+        data class TrustedDevice(
+            val expiry: Duration,
         )
     }
 

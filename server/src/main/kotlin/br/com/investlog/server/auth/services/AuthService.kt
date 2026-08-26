@@ -43,6 +43,7 @@ class AuthService(
     private val googleLinkTokenStore: GoogleLinkTokenStore,
     private val totpAttemptLimiter: TotpAttemptLimiter,
     private val loginAttemptLimiter: LoginAttemptLimiter,
+    private val trustedDeviceService: TrustedDeviceService,
     @Value($$"${investlog.google-auth.enabled:false}")
     private val googleAuthEnabled: Boolean,
     @Value($$"${investlog.security.totp.enabled:true}")
@@ -51,6 +52,7 @@ class AuthService(
     private val demoModeEnabled: Boolean,
 ) {
 
+    @Transactional
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
 
         val user = verifyCredentials(request.email, request.password)
@@ -67,6 +69,10 @@ class AuthService(
             return LoginResult.EnrollmentRequired
         }
 
+        if (trustedDeviceService.isTrusted(user.id, servletRequest)) {
+            return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
+        }
+
         val code = request.totpCode
             ?: throw TotpRequiredException("Um código TOTP é necessário para concluir o login")
 
@@ -81,6 +87,10 @@ class AuthService(
         }
 
         totpAttemptLimiter.recordSuccess(request.email)
+
+        if (request.trustDevice) {
+            trustedDeviceService.trust(user.id, servletRequest, servletResponse)
+        }
 
         return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
     }

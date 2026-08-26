@@ -30,6 +30,8 @@ investlog:
     login:
       lockout-max-attempts: ${LOGIN_LOCKOUT_MAX_ATTEMPTS:5}
       lockout-base-duration: ${LOGIN_LOCKOUT_BASE_DURATION:60s}
+    trusted-device:
+      expiry: ${TRUSTED_DEVICE_EXPIRY:30d}
 
   google-auth:
     enabled: ${GOOGLE_AUTH_ENABLED:false}
