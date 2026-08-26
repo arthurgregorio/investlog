@@ -164,6 +164,13 @@ export interface TotpEnrollResponse {
   qrCodeDataUri: string
 }
 
+export interface TrustedDeviceResponse {
+  id: string
+  label: string
+  lastUsedAt: string
+  expiresAt: string
+}
+
 export type LoginOutcome =
   | { status: 'authenticated'; session: SessionResponse }
   | { status: 'needs_enrollment' }

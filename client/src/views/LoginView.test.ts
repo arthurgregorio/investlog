@@ -101,7 +101,30 @@ describe('LoginView', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
 
-    expect(loginSpy).toHaveBeenLastCalledWith('admin@admin.com', 'admin', '654321')
+    expect(loginSpy).toHaveBeenLastCalledWith('admin@admin.com', 'admin', '654321', false)
+  })
+
+  it('passes trustDevice: true when the checkbox is checked on the totp step', async () => {
+    const store = useAuthStore()
+    const loginSpy = vi
+      .spyOn(store, 'login')
+      .mockResolvedValueOnce('totp_required')
+      .mockResolvedValueOnce('authenticated')
+    router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    await wrapper.find('input[type="email"]').setValue('admin@admin.com')
+    await wrapper.find('input[type="password"]').setValue('admin')
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    await wrapper.find('input[maxlength="6"]').setValue('654321')
+    await wrapper.find('input[type="checkbox"]').setValue(true)
+    await wrapper.find('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(loginSpy).toHaveBeenLastCalledWith('admin@admin.com', 'admin', '654321', true)
   })
 
   it('registers a new account and navigates to the pending-approval screen', async () => {

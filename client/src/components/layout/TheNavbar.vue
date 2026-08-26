@@ -18,7 +18,7 @@ const currencyStore = useCurrencyStore()
 const overviewStore = useOverviewStore()
 const appearance = useAppearanceStore()
 const auth = useAuthStore()
-const { openPasswordChange } = useModals()
+const { openPasswordChange, openTrustedDevices } = useModals()
 const { dark } = storeToRefs(appearance)
 
 const accents: { key: AccentKey; hex: string }[] = [
@@ -133,6 +133,10 @@ async function logout() {
         <template v-if="auth.session?.authProvider === 'LOCAL'">
           <b-dropdown-item aria-role="menuitem" @click="openPasswordChange()">
             <b-icon icon="lock-reset" size="is-small" /> Alterar senha
+          </b-dropdown-item>
+
+          <b-dropdown-item aria-role="menuitem" @click="openTrustedDevices()">
+            <b-icon icon="cellphone-key" size="is-small" /> Dispositivos confiáveis
           </b-dropdown-item>
 
           <hr class="dropdown-divider" />

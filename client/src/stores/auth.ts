@@ -22,8 +22,13 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const isAdmin = computed(() => session.value?.role === 'ADMIN')
 
-  async function login(email: string, password: string, totpCode?: string): Promise<LoginStatus> {
-    const outcome = await authApi.login(email, password, totpCode)
+  async function login(
+    email: string,
+    password: string,
+    totpCode?: string,
+    trustDevice?: boolean,
+  ): Promise<LoginStatus> {
+    const outcome = await authApi.login(email, password, totpCode, trustDevice)
     if (outcome.status === 'authenticated') {
       session.value = outcome.session
       window.location.href = '/overview'

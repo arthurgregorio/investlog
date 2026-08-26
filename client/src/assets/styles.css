@@ -837,6 +837,28 @@ a {
   color: var(--primary-d);
 }
 
+.trusted-device-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.trusted-device-row:last-child {
+  border-bottom: none;
+}
+
+.trusted-device-label {
+  font-weight: 600;
+}
+
+.trusted-device-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 /* ===== Wallet cards (wallet-specific pieces built on the entity-card grid) ===== */
 .wallet-stripe {
   position: absolute;

@@ -20,6 +20,7 @@ const name = ref('')
 const email = ref('')
 const password = ref('')
 const totpCode = ref('')
+const trustDevice = ref(false)
 const qrCodeDataUri = ref('')
 const error = ref('')
 const submitting = ref(false)
@@ -130,7 +131,7 @@ async function submitTotpCode() {
   error.value = ''
   submitting.value = true
   try {
-    const status = await auth.login(email.value, password.value, totpCode.value)
+    const status = await auth.login(email.value, password.value, totpCode.value, trustDevice.value)
     if (status === 'authenticated') {
       return
     }
@@ -295,6 +296,7 @@ async function submitGoogleLink() {
           <b-field label="Código de 6 dígitos">
             <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
           </b-field>
+          <b-checkbox v-model="trustDevice">Confiar neste dispositivo por 30 dias</b-checkbox>
           <b-button
             type="is-primary"
             expanded
