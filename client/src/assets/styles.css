@@ -1718,6 +1718,13 @@ a {
   color: var(--text-muted);
 }
 
+.version-line {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ===== Appearance (accent swatches) ===== */
 .accent-item {
   display: flex;
