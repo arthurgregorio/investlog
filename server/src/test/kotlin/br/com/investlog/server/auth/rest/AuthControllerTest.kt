@@ -336,6 +336,121 @@ class AuthControllerTest : BaseIntegrationTest() {
             .responseBody
             ?.get("detail") as String?
 
+    private fun adminSessionCookie(): String =
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"admin@admin.com","password":"admin","totpCode":"${currentTotpCode(adminTotpSecret)}"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders
+            .getFirst("Set-Cookie")
+            ?.substringBefore(";")
+            ?: error("Admin login did not set a session cookie")
+
+    @Test
+    @Order(16)
+    fun `trusting a device on login lets the next login skip the totp code`() {
+        // Established the same defensive way Order(14) already does: once admin has totp enabled
+        // (Order 7), any RestTestClient call without an explicit Cookie header risks the shared
+        // AdminSessionCookieInterceptor's lazy auto-login, which only knows how to handle a
+        // not-yet-enrolled admin. Always pass a cookie explicitly from here on.
+        val adminCookie = adminSessionCookie()
+
+        val setCookieHeaders = restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Cookie", adminCookie)
+            .body("""{"email":"admin@admin.com","password":"admin","totpCode":"${currentTotpCode(adminTotpSecret)}","trustDevice":true}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders["Set-Cookie"]
+            ?: error("Login with trustDevice did not set any cookie")
+
+        val trustedDeviceCookiePair = setCookieHeaders
+            .firstOrNull { it.startsWith("trusted_device=") }
+            ?.substringBefore(";")
+            ?: error("No trusted_device cookie among: $setCookieHeaders")
+
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Cookie", trustedDeviceCookiePair)
+            .body("""{"email":"admin@admin.com","password":"admin"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseBody
+            .let { assertEquals("admin@admin.com", it?.email) }
+    }
+
+    @Test
+    @Order(17)
+    fun `revoking a trusted device requires the totp code again next time, without logging out the current session`() {
+        val adminCookie = adminSessionCookie()
+
+        val setCookieHeaders = restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Cookie", adminCookie)
+            .body("""{"email":"admin@admin.com","password":"admin","totpCode":"${currentTotpCode(adminTotpSecret)}","trustDevice":true}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders["Set-Cookie"]
+            ?: error("Login with trustDevice did not set any cookie")
+
+        val trustedDeviceCookiePair = setCookieHeaders
+            .firstOrNull { it.startsWith("trusted_device=") }
+            ?.substringBefore(";")
+            ?: error("No trusted_device cookie among: $setCookieHeaders")
+        val sessionCookiePair = setCookieHeaders
+            .firstOrNull { !it.startsWith("trusted_device=") }
+            ?.substringBefore(";")
+            ?: error("No session cookie among: $setCookieHeaders")
+
+        val devices = restTestClient.get()
+            .uri("/private/v1/auth/trusted-devices")
+            .header("Cookie", sessionCookiePair)
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<List<Map<String, Any?>>>()
+            .responseBody
+            ?: error("Trusted-devices list request returned no body")
+
+        val newestDevice = devices.first()
+        // Whatever User-Agent (if any) the test HTTP client actually sends, the label must never
+        // be blank — the exact parsed value is only meaningfully verified by Task C6's manual pass.
+        assertTrue((newestDevice["label"] as? String)?.isNotBlank() == true)
+
+        restTestClient.delete()
+            .uri("/private/v1/auth/trusted-devices/${newestDevice["id"]}")
+            .header("Cookie", sessionCookiePair)
+            .exchange()
+            .expectStatus().isNoContent()
+
+        // The revoked device's cookie no longer skips the totp challenge
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Cookie", trustedDeviceCookiePair)
+            .body("""{"email":"admin@admin.com","password":"admin"}""")
+            .exchange()
+            .expectStatus().isUnauthorized()
+
+        // The session established by the trust-creating login itself is untouched by the revoke
+        restTestClient.get()
+            .uri("/private/v1/auth/session")
+            .header("Cookie", sessionCookiePair)
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseBody
+            .let { assertEquals("admin@admin.com", it?.email) }
+    }
+
     @Nested
     @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
     @AutoConfigureRestTestClient
@@ -588,6 +703,75 @@ class AuthControllerTest : BaseIntegrationTest() {
                 .body("""{"email":"login-lockout@example.com","password":"Senha123"}""")
                 .exchange()
                 .expectStatus().isEqualTo(202)
+        }
+    }
+
+    @Nested
+    @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
+    @AutoConfigureRestTestClient
+    @ActiveProfiles("test")
+    @Import(value = [TestcontainersConfiguration::class, RestClientTestConfiguration::class])
+    @SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = ["investlog.security.trusted-device.expiry=1s"],
+    )
+    @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+    inner class WhenTrustedDeviceExpiryIsShort {
+
+        @Autowired
+        lateinit var restTestClient: RestTestClient
+
+        @Test
+        fun `an expired trusted-device cookie no longer skips the totp challenge`() {
+            restTestClient.post()
+                .uri("/private/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"name":"Expiry Test","email":"trusted-expiry@example.com","password":"Senha123"}""")
+                .exchange()
+                .expectStatus().isCreated()
+
+            val secret = restTestClient.post()
+                .uri("/private/v1/auth/totp/enroll")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"trusted-expiry@example.com","password":"Senha123"}""")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<TotpEnrollResponse>()
+                .responseBody
+                ?.secretKey
+                ?: error("Enroll did not return a secret")
+
+            restTestClient.post()
+                .uri("/private/v1/auth/totp/verify")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"trusted-expiry@example.com","password":"Senha123","code":"${currentTotpCode(secret)}"}""")
+                .exchange()
+                .expectStatus().isOk()
+
+            val setCookieHeaders = restTestClient.post()
+                .uri("/private/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"trusted-expiry@example.com","password":"Senha123","totpCode":"${currentTotpCode(secret)}","trustDevice":true}""")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<SessionResponse>()
+                .responseHeaders["Set-Cookie"]
+                ?: error("Login did not set any cookie")
+
+            val trustedDeviceCookiePair = setCookieHeaders
+                .firstOrNull { it.startsWith("trusted_device=") }
+                ?.substringBefore(";")
+                ?: error("No trusted_device cookie among: $setCookieHeaders")
+
+            Thread.sleep(1100)
+
+            restTestClient.post()
+                .uri("/private/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Cookie", trustedDeviceCookiePair)
+                .body("""{"email":"trusted-expiry@example.com","password":"Senha123"}""")
+                .exchange()
+                .expectStatus().isUnauthorized()
         }
     }
 

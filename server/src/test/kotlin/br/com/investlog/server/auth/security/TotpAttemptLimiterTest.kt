@@ -23,6 +23,7 @@ class TotpAttemptLimiterTest {
                         lockoutMaxAttempts = 5,
                         lockoutBaseDuration = Duration.ofMinutes(1),
                     ),
+                    trustedDevice = InvestlogConfigurations.Security.TrustedDevice(expiry = Duration.ofDays(30)),
                 ),
                 googleAuth = InvestlogConfigurations.GoogleAuth(
                     enabled = false,

@@ -1,14 +1,26 @@
 import { isAxiosError } from 'axios'
 import { apiClient } from './client'
-import type { AuthConfigResponse, LoginOutcome, SessionResponse, TotpEnrollResponse } from '@/types'
+import type {
+  AuthConfigResponse,
+  LoginOutcome,
+  SessionResponse,
+  TotpEnrollResponse,
+  TrustedDeviceResponse,
+} from '@/types'
 
 export const authApi = {
-  async login(email: string, password: string, totpCode?: string): Promise<LoginOutcome> {
+  async login(
+    email: string,
+    password: string,
+    totpCode?: string,
+    trustDevice?: boolean,
+  ): Promise<LoginOutcome> {
     try {
       const response = await apiClient.post<SessionResponse>('/auth/login', {
         email,
         password,
         totpCode,
+        trustDevice,
       })
       if (response.status === 202) {
         return { status: 'needs_enrollment' }
@@ -50,5 +62,13 @@ export const authApi = {
     return apiClient
       .post<SessionResponse>('/auth/google/link', { linkToken, password })
       .then((response) => response.data)
+  },
+  fetchTrustedDevices(): Promise<TrustedDeviceResponse[]> {
+    return apiClient
+      .get<TrustedDeviceResponse[]>('/auth/trusted-devices')
+      .then((response) => response.data)
+  },
+  revokeTrustedDevice(id: string): Promise<void> {
+    return apiClient.delete(`/auth/trusted-devices/${id}`).then(() => undefined)
   },
 }
