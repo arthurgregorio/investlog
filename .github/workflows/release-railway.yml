@@ -34,11 +34,26 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway redeploy --service investlog-server --environment production --yes
 
+      - name: Wait for investlog-server deployment to succeed
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          apk add --no-cache jq
+          for i in $(seq 1 60); do
+            status=$(railway deployment list --service investlog-server --environment production --json | jq -r '.[0].status')
+            echo "status: $status"
+            [ "$status" = "SUCCESS" ] && exit 0
+            if [ "$status" = "FAILED" ] || [ "$status" = "CRASHED" ]; then exit 1; fi
+            sleep 10
+          done
+          echo "timed out waiting for investlog-server deployment"
+          exit 1
+
   deploy-client:
     name: Deploy client
     runs-on: ubuntu-latest
     container: ghcr.io/railwayapp/cli:latest
-    needs: check-release
+    needs: [ check-release, deploy-server ]
     if: needs.check-release.outputs.is-prerelease == 'false'
     steps:
       - name: Redeploy investlog-client
