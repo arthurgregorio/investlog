@@ -45,18 +45,77 @@ current truth — the issue always wins.
 opening it. Prefix with the layer when the issue is one layer of a larger piece of work
 (`server: wallet detail endpoint`, `client: wallet detail view`).
 
-**Body:** exactly three sections, in this order.
+**Body:** the repo has a settled section skeleton — #204, #205, #206, #211 and #213 are good
+worked examples. Follow it; don't invent a new arrangement per issue. The single most important
+property is that an agent picking the issue up cold can **start implementing from the body alone**,
+without asking a follow-up question.
 
-1. **Objective** — what this achieves and why, in **5 lines or fewer**. No design detail here.
-2. **Points of change** — the places the software will have to change, each with its reference:
-   file paths (`server/src/main/kotlin/.../WalletRepository.kt`), package or component names, and
-   `#N` links to related or blocking issues. This is the survey, not the solution.
-3. **Implementation plan** — how it will actually be built, in the order it will be built.
+### Feature and sub-issue skeleton
 
-The implementation plan is allowed to grow. Extra context, revised approaches, findings from
-investigation and review notes go in as **issue comments** (`gh issue comment <N> --body-file
-<scratchpad>`), not by rewriting the body. The body stays the stable statement of the work; the
-comments are its history.
+```markdown
+## Motivation
+## Dependencies        <- optional; blocking or ordering-related #N issues
+## Design
+### Schema             <- only when a migration is involved
+### Server             <- only for the layers this issue actually touches
+### Client
+## Out of scope
+## Acceptance criteria
+```
+
+- **Motivation** — what this achieves and why, in **5 lines or fewer**, as prose. What's broken or
+  missing today, then what this issue changes. No design detail.
+- **Design** — the whole specification: the change points and how they behave. This is where an
+  implementer looks to know what to build, so it must **name its reference points explicitly** —
+  file paths (`client/src/views/LoginView.vue`), repositories, packages, endpoint signatures, table
+  and column names, component names. A `### Server` section that says what to build but not where
+  is not finished. Subsections mirror the layers being touched, so the reader sees the layer split
+  the sub-issues will follow.
+- **Out of scope** — what someone might reasonably assume is included and isn't, and which issue
+  owns it instead. This is what keeps a PR from sprawling.
+- **Acceptance criteria** — a checkable list of the observable outcomes that mean the issue is
+  done. Written so it can be verified from the running app or the tests, not from reading the diff.
+
+### Umbrella skeleton
+
+An umbrella issue opens with a blockquote callout naming the feature branch and where sub-PRs go,
+then:
+
+```markdown
+> **Umbrella issue.** Work happens on the long-lived `feature/<N>-<slug>` branch. Each subtask below
+> gets its own branch and its own PR **into that feature branch**, not into `main`. Once every
+> subtask has landed, the feature branch gets a single PR into `main` and merging it closes this issue.
+
+## Motivation
+## Scope
+## Subtasks                    <- checkbox list of the sub-issues, plus suggested order
+## Related, not part of this   <- optional; adjacent issues this is often confused with
+## Out of scope
+## Acceptance criteria
+```
+
+`Scope` replaces `Design` here: the umbrella states the shape of the whole feature, and each
+sub-issue carries the `Design` detail for its own layer.
+
+### Bug and maintenance skeleton
+
+Small defect and housekeeping issues use a lighter shape — don't force them through the feature
+template:
+
+```markdown
+## Problem      (or ## Summary)
+## Fix
+## Why          <- optional; only when the fix isn't self-explanatory
+```
+
+`## Failing tests` is a useful addition when a test is what surfaced the bug (see #196).
+
+### Keeping the body stable
+
+The body is the stable statement of the work. Extra context found while implementing, revised
+approaches, and review findings go in as **issue comments** (`gh issue comment <N> --body-file
+<scratchpad>`), not by rewriting the body — the body is the spec, the comments are its history.
+Rewrite the body only when the spec itself genuinely changed.
 
 **Every issue gets, at creation time:**
 
@@ -77,9 +136,9 @@ software — which is almost always, since server and client changes never share
   plan. It also **names the feature branch** where all the sub-work is integrated and tested
   together (e.g. `feature/211-wallet-relocation`).
 - Each **sub-issue** is one self-contained chunk with its own PR. The natural cut is by layer:
-  server, client, and docs/infra. Sub-issue bodies use the same three-section template, scoped to
-  that chunk, and state which branch they target: *"Subtask of #211. Targets the
-  `feature/211-wallet-relocation` branch, not `main`."*
+  server, client, and docs/infra. Sub-issue bodies use the ordinary feature skeleton, scoped to that
+  chunk, and open by stating which branch they target: *"Subtask of #211. Targets the
+  `feature/211-wallet-relocation` branch, not `main`."* (#212 and #213 are the worked examples.)
 - Sub-issue PRs target the **feature branch**, not `main`.
 - Once every sub-issue has landed on the feature branch, **one PR merges the feature branch into
   `main`, and that PR closes the umbrella issue.**
