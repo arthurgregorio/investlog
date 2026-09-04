@@ -188,6 +188,10 @@ attached as real sub-issues, each targeting the `feature/176-wallet-detail-view`
 Every branch Claude creates must be `feature/<slug>` or `fix/<slug>` and reference its issue —
 no exceptions. Only the user may bypass this rule themselves.
 
+There is no `maintenance/` prefix: **maintenance work uses `fix/`**, following the existing
+precedent (`fix/201-railway-deploy-ordering`). The slug starts with the issue number:
+`fix/214-workflow-conventions-and-toolchain-bump`.
+
 ## Pull request conventions
 
 **One issue, one PR.** A PR closes exactly one issue, and an issue is closed by exactly one PR. If
@@ -196,9 +200,11 @@ sub-issues — not to open a second PR against the same issue.
 
 **Every PR must, at creation time:**
 
-- **`Closes #N`** in the body, naming its own issue. Because of the 1:1 rule there is never a
-  reason to use `Refs #N` for the issue a PR implements; a sub-issue PR may additionally mention
-  its umbrella issue as context, but the only `Closes` is its own sub-issue.
+- **`Closes #N`** in the body, naming its own issue. Because of the 1:1 rule, a **PR body** never
+  uses `Refs #N` for the issue it implements; a sub-issue PR may additionally mention its umbrella
+  issue as context, but the only `Closes` is its own sub-issue. This applies to the PR body only —
+  individual **commit messages** still use `Refs #N` as a breadcrumb, since a single `Closes` on the
+  PR is what actually closes the issue and repeating it per commit would be noise.
 - The **same milestone as its issue** — `gh issue view <N> --json milestone` to check. `gh pr
   create` does not inherit it, so it's the easiest of these to drop.
 - The **label** matching the work (`feature`, `bug`, `documentation`, `maintenance`, …).
