@@ -3,7 +3,7 @@ import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.DirectoryResourceAccessor
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_4
 import org.jooq.codegen.gradle.CodegenPluginExtension
 import org.jooq.meta.jaxb.Jdbc
 import org.testcontainers.postgresql.PostgreSQLContainer
@@ -23,16 +23,16 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "2.3.21"
-    kotlin("plugin.spring") version "2.3.21"
+    kotlin("jvm") version "2.4.10"
+    kotlin("plugin.spring") version "2.4.10"
 
-    id("org.springframework.boot") version "4.1.0"
+    id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.jooq.jooq-codegen-gradle") version "3.21.5"
+    id("org.jooq.jooq-codegen-gradle") version "3.21.7"
 }
 
 group = "br.com.investlog"
-version = "0.3.0"
+version = "0.3.1"
 
 java {
     toolchain {
@@ -48,7 +48,7 @@ repositories {
 }
 
 val postgresDriverVersion = "42.7.11"
-val kotlinLoggingJvmVersion = "7.0.14"
+val kotlinLoggingJvmVersion = "8.0.4"
 val totpVersion = "1.7.1"
 val zxingVersion = "3.5.4"
 val wiremockSpringVersion = "4.0.9"
@@ -113,7 +113,7 @@ dependencies {
 kotlin {
     compilerOptions {
         jvmTarget.set(JVM_25)
-        languageVersion.set(KOTLIN_2_3)
+        languageVersion.set(KOTLIN_2_4)
         freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
     }
 }

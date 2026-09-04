@@ -12,57 +12,167 @@ Each subfolder's `CLAUDE.md` is the source of truth for that stack's commands, c
 conventions, and architecture — read it before making changes there. This root file only holds
 conventions that apply across the whole repo, regardless of which folder you're working in.
 
-## Pull request conventions
+## Every piece of work starts with a GitHub issue
 
-**Always split a piece of work into separate PRs by layer — never bundle them:**
+**No work happens in this repository without an issue.** Not a bugfix, not a one-line typo, not a
+docs tweak. The issue is where the work is specified, reviewed and remembered; the branch, the
+commits and the PR are just the mechanics that carry it out.
 
-- **Server PR** — any change under `server/`.
-- **Client PR** — any change under `client/`.
-- **Docs/spec PR** — any change outside both (`docs/`, `README.md`, `.env.example`, root-level
-  config, etc.), when the work also touches server and/or client.
+When the user asks for work that has no issue yet, the first step is to **create the issue** (see
+the template below), confirm it with the user, and only then branch and write code. Do not start
+editing files and open the issue afterwards to paper over it.
 
-A single feature almost always spans layers; each layer still gets its own branch and its own PR.
-Mixing server and client changes in one PR was tried once and made review painful — a reviewer
-looking at Spring Security config doesn't want to scroll past Vue components, and vice versa.
+Before starting on an existing issue, **check whether a PR already targets it** — `gh issue view
+<N>` (linked PRs show in the timeline) or `gh pr list --search "<N>"`. `gh issue list` never
+surfaces PRs, so issue-only triage silently duplicates in-flight work.
 
-When a feature is developed on a long-lived feature branch (e.g. `feature/authentication`), the
-per-layer PRs target that feature branch, not `main`; the feature branch itself gets one PR into
-`main` once all its layer PRs have landed.
+### The issue is the spec — never a file in the repo
 
-**Every PR must, at creation time:**
-- Get the `feature` label (or whatever label matches the work — `bug`, `documentation`, etc. —
-  `feature` is the default for anything adding new functionality).
-- Be assigned to `arthurgregorio`.
-- Reference its tracking issue in the body, using the issue number from the phase/feature this
-  work belongs to.
-  - **This PR is the entire fix for the issue** (e.g. a self-contained docs/spec issue, or the
-    last remaining layer of a split feature): use `Closes #N` — GitHub auto-closes the issue when
-    this PR merges. This is about whether the *work* is fully done by this PR, not about which
-    category (server/client/docs) it falls into — a docs-only issue with one PR still gets
-    `Closes #N`.
-  - **More PRs are still coming for the same issue** (the normal case for a multi-layer feature,
-    since server/client/docs are always split — see above): every one of those PRs uses `Refs #N`,
-    never `Closes #N`. Using `Closes #N` on more than one PR auto-closes the issue the moment the
-    *first* of them merges, even though the others (and the rest of the phase) are still open.
-    Close the issue manually once every PR for that phase has actually merged.
-- Carry the same milestone as its tracking issue (`gh issue view <N> --json milestone` to check,
-  `gh pr create --milestone "<name>"` or `gh pr edit <N> --milestone "<name>"` to set it). Easy to
-  drop since `gh pr create` doesn't set it from the issue automatically.
+Design specs and implementation plans are **not** committed as `.md` files anywhere in the working
+tree. The spec is the issue body; additional detail is issue comments. This overrides the default
+behaviour of the `superpowers:brainstorming` and `superpowers:writing-plans` skills, which want to
+write to `docs/superpowers/specs/` and `docs/superpowers/plans/` — do not let anything new land
+there. A scratchpad copy outside the repo is fine when a local file is genuinely needed (e.g. as a
+`--body-file` source or a `PLAN_FILE` for tooling).
 
-Use `gh pr edit <N> --add-label feature --add-assignee arthurgregorio --milestone "<name>"` right
-after `gh pr create` if any of label/assignee/milestone weren't set at creation time — don't leave
-a PR missing one of these.
+`docs/superpowers/specs/` and `docs/superpowers/plans/` already contain files from before this
+rule. They are **frozen history**: don't add to them, don't update them, and don't treat them as
+current truth — the issue always wins.
+
+## Writing an issue
+
+**Title:** short and precise. A reader scanning the issue list should know what it is without
+opening it. Prefix with the layer when the issue is one layer of a larger piece of work
+(`server: wallet detail endpoint`, `client: wallet detail view`).
+
+**Body:** exactly three sections, in this order.
+
+1. **Objective** — what this achieves and why, in **5 lines or fewer**. No design detail here.
+2. **Points of change** — the places the software will have to change, each with its reference:
+   file paths (`server/src/main/kotlin/.../WalletRepository.kt`), package or component names, and
+   `#N` links to related or blocking issues. This is the survey, not the solution.
+3. **Implementation plan** — how it will actually be built, in the order it will be built.
+
+The implementation plan is allowed to grow. Extra context, revised approaches, findings from
+investigation and review notes go in as **issue comments** (`gh issue comment <N> --body-file
+<scratchpad>`), not by rewriting the body. The body stays the stable statement of the work; the
+comments are its history.
+
+**Every issue gets, at creation time:**
+
+- A **milestone** — always, unless the user explicitly says not to link one when the issue is
+  created. Check what's open with `gh api repos/:owner/:repo/milestones --jq '.[].title'` and set
+  it with `gh issue create --milestone "<name>"`.
+- The **right label**: `feature` for new functionality, `bug` for defects, `documentation` for
+  docs, `maintenance` for refactors and housekeeping, `github_actions` for workflow changes.
+- **`arthurgregorio` as assignee.**
+
+## Umbrella issues and sub-issues
+
+An issue maps to exactly one PR (see below). When a piece of work touches several parts of the
+software — which is almost always, since server and client changes never share a PR — it does
+**not** become one issue with several PRs. It becomes an **umbrella issue** with **sub-issues**.
+
+- The **umbrella issue** holds the objective, the full survey of change points, and the overall
+  plan. It also **names the feature branch** where all the sub-work is integrated and tested
+  together (e.g. `feature/211-wallet-relocation`).
+- Each **sub-issue** is one self-contained chunk with its own PR. The natural cut is by layer:
+  server, client, and docs/infra. Sub-issue bodies use the same three-section template, scoped to
+  that chunk, and state which branch they target: *"Subtask of #211. Targets the
+  `feature/211-wallet-relocation` branch, not `main`."*
+- Sub-issue PRs target the **feature branch**, not `main`.
+- Once every sub-issue has landed on the feature branch, **one PR merges the feature branch into
+  `main`, and that PR closes the umbrella issue.**
+
+Link sub-issues to their parent with **GitHub's sub-issues feature**, not just a "Subtask of #N"
+line in the body — prose links don't show up in `gh api .../sub_issues`, don't populate the parent's
+progress bar, and don't survive anyone reorganising the text:
+
+```bash
+for n in <child> <child>; do id=$(rtk proxy gh api repos/:owner/:repo/issues/$n --jq .id); rtk proxy gh api -X POST repos/:owner/:repo/issues/<parent>/sub_issues -F sub_issue_id=$id --jq '"linked #\(.number)"'; done
+```
+
+Two traps this command works around. The endpoint wants the child's **REST database id** (`gh api
+repos/:owner/:repo/issues/<n> --jq .id`) — not its issue number, and not the GraphQL node id that
+`gh issue view --json id` returns. And that id must arrive as a JSON integer, so `-F` is required;
+`-f sub_issue_id=$id` sends a string and fails with `422 Invalid property /sub_issue_id: … is not
+of type integer`. `rtk proxy` keeps RTK's filter off the raw ids. Verify afterwards with `gh api
+repos/:owner/:repo/issues/<parent>/sub_issues --jq '.[].number'`.
+
+**Why the layer split exists:** mixing server and client changes in one PR was tried once and made
+review painful — a reviewer looking at Spring Security config doesn't want to scroll past Vue
+components, and vice versa. That's a rule about how work is *sliced into sub-issues*, and the
+one-PR-per-issue rule follows from it rather than fighting it.
+
+**Maintenance is the exception.** The layer split applies to work that *builds something* — features
+and fixes. Pure maintenance of the project's existing structure — dependency and toolchain bumps,
+build config, CI workflows, repo conventions — stays a **single issue and a single PR** even when it
+spans `server/`, `client/` and the repo root at once. The review-pain argument doesn't apply: a
+reviewer reading a version bump wants to see every version that moved in one place, not three PRs
+that only make sense together. Label these `maintenance` (plus `documentation`, `github_actions`,
+etc. as applicable) and don't build an umbrella for them.
+
+### Issues opened before these rules
+
+Some open issues predate this model and say so out loud — #211, for instance, states *"this ships as
+a server PR and a client PR, both referencing this issue"*, which the one-PR-per-issue rule now
+forbids. **The issue body does not override this file.** When you pick up an issue whose shape
+conflicts with these rules, say so and ask the user whether to restructure it before starting —
+don't silently follow the outdated instruction in the body, and don't restructure someone's issue
+unasked.
+
+#176 is the reference example of the shape to aim for: an umbrella issue with #174, #212 and #213
+attached as real sub-issues, each targeting the `feature/176-wallet-detail-view` branch.
 
 ## Branch naming
 
-Every branch Claude creates must be `feature/<slug>` or `fix/<slug>` and reference an issue —
+Every branch Claude creates must be `feature/<slug>` or `fix/<slug>` and reference its issue —
 no exceptions. Only the user may bypass this rule themselves.
+
+## Pull request conventions
+
+**One issue, one PR.** A PR closes exactly one issue, and an issue is closed by exactly one PR. If
+the work doesn't fit in a single PR, that's the signal to restructure it as an umbrella issue with
+sub-issues — not to open a second PR against the same issue.
+
+**Every PR must, at creation time:**
+
+- **`Closes #N`** in the body, naming its own issue. Because of the 1:1 rule there is never a
+  reason to use `Refs #N` for the issue a PR implements; a sub-issue PR may additionally mention
+  its umbrella issue as context, but the only `Closes` is its own sub-issue.
+- The **same milestone as its issue** — `gh issue view <N> --json milestone` to check. `gh pr
+  create` does not inherit it, so it's the easiest of these to drop.
+- The **label** matching the work (`feature`, `bug`, `documentation`, `maintenance`, …).
+- **`arthurgregorio` as assignee.**
+
+If any of these weren't set at creation time, fix it immediately:
+
+```bash
+gh pr edit <N> --add-label feature --add-assignee arthurgregorio --milestone "<name>"
+```
+
+## Writing issue and PR bodies
+
+**Never hard-wrap prose.** Write each paragraph and each list item as a single physical line, no
+matter how long. GitHub renders a single `\n` inside a paragraph as a hard line break, so every
+"tidy" wrap at 90 characters becomes a visible break and turns the issue into a narrow, choppy
+column. Structural markdown (headings, blank lines between blocks, `- ` / `1. ` markers) still
+goes on its own line as normal — only the prose *within* a block must stay unwrapped.
+
+**Pass bodies with `--body-file`**, pointing at a file in the session scratchpad, rather than an
+inline heredoc. Large bodies containing backticks and code fences have broken inline heredoc
+quoting before.
 
 ## Comments
 
-**No comments that just restate the spec or business logic**, in server or client code — only
-comment a non-obvious WHY (a framework quirk, a workaround, a hidden constraint). Applies
-everywhere in the repo, not just the folder currently being edited.
+**Code carries no comments.** If something needs a comment to be understood, the design is wrong —
+refactor it until the names and the structure say it instead. This applies to server and client
+code alike, everywhere in the repo, not just the folder currently being edited.
+
+The only surviving exception is a **non-obvious WHY that the code genuinely cannot express and the
+issue does not already record**: a framework quirk, an upstream bug being worked around, a hidden
+constraint that makes the obvious implementation wrong. Never a comment that restates the spec, the
+business rule, or what the next line does.
 
 <!-- rtk-instructions v2 -->
 # RTK (Rust Token Killer) - Token-Optimized Commands
