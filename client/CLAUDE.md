@@ -60,8 +60,11 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `overview.ts` | `GET /overview`, `GET /overview/series` |
 | `assetTypes.ts` | `GET/POST/DELETE /stock-types`, `/fund-types` |
 | `rates.ts` | `GET /currency-rates`, `PUT /currency-rates/{code}` |
-| `auth.ts` | `POST /auth/login`, `/register`, `/totp/enroll`, `/totp/verify`, `GET /auth/session`, `POST /auth/logout` |
+| `auth.ts` | `POST /auth/login`, `/register`, `/totp/enroll`, `/totp/verify`, `/google/link`, `GET /auth/session`, `/auth/config`, `POST /auth/logout`, `GET`/`DELETE /auth/trusted-devices` |
 | `usersAdmin.ts` | `GET /users`, `PATCH /users/{id}/approve`\|`block`\|`unblock`\|`role`\|`totp-reset`, `DELETE /users/{id}` (admin-only) |
+| `profile.ts` | `GET`/`PATCH /profile`, `PATCH /profile/password` |
+| `configurations.ts` | `GET /configurations`, `PATCH /configurations/{key}` (runtime feature toggles) |
+| `stockPriceSync.ts` / `cryptoPriceSync.ts` | `POST /stock-price-sync`, `POST /crypto-price-sync` (admin-only manual triggers) |
 
 ### Domain types (`src/types.ts`)
 
@@ -91,6 +94,9 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `appearance` | `localStorage` | `dark`, `accent` — persisted across sessions |
 | `auth` | `GET/POST /auth/*` | `session`, `isAdmin`, `login/register/enrollTotp/verifyTotp/logout/restoreSession` |
 | `usersAdmin` | `GET/PATCH/DELETE /users/*` | `users[]`, `approve/block/unblock/changeRole/resetTotp/remove` |
+| `configurations` | `GET/PATCH /configurations` | runtime feature toggles (price-sync switches) |
+| `currency` | `GET /currency-rates` | the display-currency selector's state |
+| `trustedDevices` | `GET/DELETE /auth/trusted-devices` | `devices[]`, `load()`, `revoke(id)` |
 
 **Pessimistic updates**: every mutation awaits the API response before updating store state.
 **Lazy loading**: each store is loaded by the view/component that needs it, in `onMounted`.
@@ -101,6 +107,13 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detailed` row
 expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion renders
 `HoldingDetailPanel` which lazy-fetches the full holding detail from the individual endpoint.
+
+### Routes and their views (`src/router/index.ts`)
+
+`/overview`, `/wallets`, `/investments` and `/investments/report` (`InvestmentReportView.vue`) are
+the main app; `/settings` redirects to `/settings/price-currencies` (`PriceCurrenciesView.vue`) and
+covers `/settings/types` and `/settings/users` — the whole `/settings/*` subtree is admin-only.
+`/login` and `/pending-approval` are the two public routes.
 
 ### App-shell modals (`src/composables/useModals.ts`)
 
@@ -125,9 +138,11 @@ user-configurable appearance setting.
 non-public route → `/login`; session with `status !== 'APPROVED'` → `/pending-approval`; non-admin
 on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` is the allow-list for routes reachable without
 (or despite) an approved session — extend it rather than adding one-off exceptions in the guard
-body. `LoginView.vue` is a single 4-step state machine (`credentials`/`register`/`enroll`/`totp`)
-driven by one `step` ref, not four separate views — Phase 4's Google button is another entry point
-into the same `credentials` step, not a new step.
+body. `LoginView.vue` is a single 5-step state machine (`credentials`/`register`/`enroll`/`totp`/`link`)
+driven by one `step` ref, not five separate views. The Google button starts from the `credentials`
+step, but `link` **is** a real step: the server redirects there with `?error=email_in_use&linkToken=…`
+when the Google account's email already belongs to a local account, and the step collects that
+account's password to attach the two.
 
 **`v-if="auth.isAdmin"` and the router's role/status redirects are presentational only — they are
 not the security boundary.** The server enforces every gate independently (`ROLE_ADMIN` on
@@ -135,6 +150,11 @@ not the security boundary.** The server enforces every gate independently (`ROLE
 `server/CLAUDE.md`). Hiding a button or redirecting a route improves the UX for a legitimate user;
 it does nothing against a client that calls the API directly. Don't reason about client-side gating
 as if it were access control.
+
+`TrustedDevicesModal.vue` (backed by the `trustedDevices` store) lists the devices allowed to skip
+TOTP and revokes them. The cookie the server sets is `HttpOnly` and scoped to `/private/v1/auth`, so
+the client can never read or clear it directly — revoking is always a server call, never a local
+cookie delete.
 
 `PendingApprovalView.vue` only branches its message on whether a session exists at all
 (unauthenticated vs. pending) — a `BLOCKED` user never reaches this screen, since `AuthService.login`
@@ -168,4 +188,5 @@ existing access, not for handling new signups (those stay on approve/delete).
 - `useFormat` — pure pt-BR formatting helpers (money, signed money, percent, quantity, date).
 - `useAddInvestmentForm` — reactive form state/validation/submit for the add-investment modal;
   uses `walletsStore` + `typesListStore`; submits directly to the API.
+- `useChartTheme` — chart colors/options derived from the active theme and accent.
 - `useModals` — app-shell modal injection.

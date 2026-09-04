@@ -41,7 +41,7 @@ This applies to both the Kotlin variable name **and** the SQL alias string passe
 annotation) goes on its own line above the `private val`/`val`. Function-signature parameters
 (not constructors) may keep the annotation inline, e.g. `fun foo(@PathVariable id: UUID)`.
 
-**`@Value` uses Kotlin 2.3's `$$` multi-dollar interpolation prefix**, not the old `"\${...}"`
+**`@Value` uses Kotlin's `$$` multi-dollar interpolation prefix**, not the old `"\${...}"`
 escape: `@Value($$"${investlog.brapi.token:}")`.
 
 **REST controllers always return `ResponseEntity<T>`, never `@ResponseStatus`** — use
@@ -94,7 +94,7 @@ it in `db.changelog-master.xml`.
 has:
 
 - `shared/security` — cross-cutting current-user resolution: `CurrentUser` (domain model, with a
-  nested `CurrentUser.Status` enum — `PENDING`/`APPROVED`/`REJECTED`), `UserRole`, `AuthProvider`,
+  nested `CurrentUser.Status` enum — `PENDING`/`APPROVED`/`BLOCKED`), `UserRole`, `AuthProvider`,
   `UserRepository` (queries/updates `system.users` via the generated jOOQ `USERS` table),
   `AdminBootstrapRunner` (seeds the admin account from `ADMIN_DEFAULT_PASSWORD` on first boot),
   and `CurrentUserProvider`/`SecurityContextCurrentUserProvider` — see **Authentication &
@@ -216,6 +216,16 @@ has:
   endpoints with WireMock, including a fixture that only returns the canonical coin for a
   collision-prone symbol, asserting the service trusts CoinGecko's resolved id rather than the raw
   ticker.
+- `usdpricesync` — no REST controller. Refreshes the USD reference rate on
+  `@Scheduled(cron = "0 0 7,18 * * *", zone = "America/Sao_Paulo")`, twice daily.
+- `configurations` — `GET /private/v1/configurations`, `PATCH /private/v1/configurations/{key}`.
+  Runtime feature toggles keyed by `ConfigurationKey`; this is what gates the price-sync jobs.
+- `wallets` — `GET`/`POST /private/v1/wallets`, `GET`/`PATCH`/`DELETE /private/v1/wallets/{id}`.
+- `stockholdings`, `cryptoholdings`, `fundholdings` — the three holding kinds, each nested under
+  `/private/v1/wallets/{walletId}/{stock|crypto|fund}-holdings` with the same CRUD shape plus a
+  child collection: `lots` for stocks and crypto, `contributions` for funds. They are separate
+  packages rather than one generic holdings package because the three kinds differ in their child
+  entity and in which fields are price-synced.
 
 ### Authentication & Authorization
 
@@ -238,6 +248,22 @@ has:
 - **`establishSession` is the only session-issuing code path** — every login flow (password,
   TOTP verify, and Phase 4's Google callback) must funnel through it rather than open-coding a
   second way to mint a session, or a gate implemented in one path silently won't apply to another.
+- **Trusted devices** (`auth/services/TrustedDeviceService.kt`) let a verified device skip the TOTP
+  step. `trust()` issues a random token, stores only its hash via `TrustedDeviceRepository`, and
+  sets a `trusted_device` cookie scoped to `path=/private/v1/auth`; `isTrusted()` re-hashes the
+  incoming cookie to look the device up. Managed through `GET`/`DELETE /auth/trusted-devices`.
+  Skipping TOTP is the whole point, so treat any change here as a change to the second factor.
+- **Google OAuth** (`auth/security/GoogleLogin{Success,Failure}Handler.kt`,
+  `GoogleLinkTokenStore.kt`). When a Google account's email already belongs to a local account, the
+  success handler does **not** log the user in — it issues a short-lived link token from the
+  in-memory `GoogleLinkTokenStore` and redirects to `/login?error=email_in_use&linkToken=…`, which
+  is the client's `link` step. `POST /auth/google/link` consumes that token with the account's
+  password and funnels through `establishSession` like every other login path. The store is
+  in-memory, so pending links do not survive a restart and do not work across instances.
+- **Attempt limiting** — `LoginAttemptLimiter` and `TotpAttemptLimiter` wrap a shared
+  `AttemptLockoutTracker` with escalating lockouts, configured under
+  `investlog.security.login.*`. Both are keyed **per account** (email), not per IP; issue #209
+  tracks the resulting gaps (no IP-level limit, and targeted lockout as a DoS vector).
 - Jackson 3 (Spring Boot 4): inject `tools.jackson.databind.json.JsonMapper`, not
   `tools.jackson.databind.ObjectMapper` — Spring auto-configures a `JsonMapper` bean as the
   concrete JSON mapper; `ObjectMapper` is now a more generic base type not meant for direct
@@ -252,7 +278,7 @@ has:
 
 The persistence schema itself is fully defined (see below).
 
-- Kotlin 2.3.21 / Spring Boot 4.1.0, JVM 25 toolchain. Root package: `br.com.investlog.server`.
+- Kotlin 2.4.10 / Spring Boot 4.1.1, JVM 25 toolchain. Root package: `br.com.investlog.server`.
 - Web: `spring-boot-starter-webmvc` (servlet MVC, not WebFlux).
 - Persistence: PostgreSQL via `spring-boot-starter-jooq` + `spring-boot-starter-liquibase`. The
   full schema — `system`/`finances` Postgres schemas, `system.users`, the `finances` portfolio
