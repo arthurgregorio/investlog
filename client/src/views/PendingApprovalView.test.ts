@@ -1,16 +1,16 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import Buefy from 'buefy'
 import PendingApprovalView from './PendingApprovalView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 describe('PendingApprovalView', () => {
   let router: ReturnType<typeof createRouter>
+  let pinia: TestingPinia
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    pinia = createTestingPinia()
     router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -24,7 +24,7 @@ describe('PendingApprovalView', () => {
     router.push('/pending-approval')
     await router.isReady()
 
-    const wrapper = mount(PendingApprovalView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(PendingApprovalView, { global: { plugins: [pinia, router] } })
 
     expect(wrapper.text()).toContain('Cadastro enviado')
   })
@@ -42,7 +42,7 @@ describe('PendingApprovalView', () => {
     router.push('/pending-approval')
     await router.isReady()
 
-    const wrapper = mount(PendingApprovalView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(PendingApprovalView, { global: { plugins: [pinia, router] } })
 
     expect(wrapper.text()).toContain('Nova Usuária')
     expect(wrapper.text()).toContain('aguardando aprovação')
@@ -58,16 +58,15 @@ describe('PendingApprovalView', () => {
       authProvider: 'LOCAL',
       demoModeEnabled: false,
     }
-    const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue()
     router.push('/pending-approval')
     await router.isReady()
 
-    const wrapper = mount(PendingApprovalView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(PendingApprovalView, { global: { plugins: [pinia, router] } })
 
     await wrapper.get('button').trigger('click')
     await flushPromises()
 
-    expect(logoutSpy).toHaveBeenCalled()
+    expect(auth.logout).toHaveBeenCalled()
   })
 })
 

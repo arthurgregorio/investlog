@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import Buefy from 'buefy'
 import PasswordChangeModal from './PasswordChangeModal.vue'
 import { profileApi } from '@/api/profile'
 
@@ -14,7 +13,6 @@ let activeWrapper: VueWrapper | undefined
 
 function mountModal() {
   activeWrapper = mount(PasswordChangeModal, {
-    global: { plugins: [Buefy] },
     attachTo: document.body,
   })
   return activeWrapper

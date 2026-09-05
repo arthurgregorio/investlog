@@ -1,8 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import { reactive } from 'vue'
-import Buefy from 'buefy'
 import AddInvestmentForm from './AddInvestmentForm.vue'
 import type { AddInvestmentForm as AddInvestmentFormState } from '@/composables/useAddInvestmentForm'
 
@@ -42,14 +41,13 @@ function buildForm(overrides: Partial<AddInvestmentFormState> = {}): AddInvestme
 
 describe('AddInvestmentForm ticker input', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    createTestingPinia()
   })
 
   it('uppercases and strips non-alphanumeric characters as the user types', async () => {
     const form = buildForm()
     const wrapper = mount(AddInvestmentForm, {
       props: { form },
-      global: { plugins: [Buefy] },
     })
 
     const input = wrapper.find('input[placeholder="PETR4"]')

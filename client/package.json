@@ -13,6 +13,8 @@
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit -p tsconfig.app.json",
     "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint . --fix",
     "format": "prettier --write src/"
   },
@@ -26,8 +28,10 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
+    "@pinia/testing": "^2.0.1",
     "@types/node": "^26.1.1",
     "@vitejs/plugin-vue": "^6.0.8",
+    "@vitest/coverage-v8": "^5.0.0",
     "@vue/eslint-config-prettier": "^10.1.0",
     "@vue/eslint-config-typescript": "^14.1.4",
     "@vue/test-utils": "^2.4.11",

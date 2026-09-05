@@ -1,13 +1,9 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import Buefy from 'buefy'
 import TheTopNav from './TheTopNav.vue'
 import { useAuthStore } from '@/stores/auth'
-import { overviewApi } from '@/api/overview'
-
-vi.mock('@/api/overview')
 
 function makeRouter() {
   return createRouter({
@@ -29,25 +25,11 @@ function makeRouter() {
 
 describe('TheTopNav', () => {
   let router: ReturnType<typeof makeRouter>
+  let pinia: TestingPinia
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.mocked(overviewApi.getSummary).mockResolvedValue({
-      totalCostBasis: 0,
-      totalCurrentValue: 0,
-      totalGain: 0,
-      totalGainPct: 0,
-      displayCurrency: 'BRL',
-      kindSummaries: [],
-    })
-    vi.mocked(overviewApi.getSeries).mockResolvedValue([])
+    pinia = createTestingPinia()
     router = makeRouter()
-  })
-
-  afterEach(() => {
-    // b-dropdown's append-to-body teleports outside the wrapper, so each mount leaves
-    // nodes behind unless we clear the body between tests.
-    document.body.innerHTML = ''
   })
 
   it('does not show a Configurações item for a non-admin', async () => {
@@ -63,7 +45,7 @@ describe('TheTopNav', () => {
     router.push('/overview')
     await router.isReady()
 
-    const wrapper = mount(TheTopNav, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(TheTopNav, { global: { plugins: [pinia, router] } })
 
     expect(wrapper.text()).not.toContain('Configurações')
   })
@@ -81,7 +63,7 @@ describe('TheTopNav', () => {
     router.push('/overview')
     await router.isReady()
 
-    mount(TheTopNav, { global: { plugins: [router, Buefy] }, attachTo: document.body })
+    mount(TheTopNav, { global: { plugins: [pinia, router] }, attachTo: document.body })
 
     // append-to-body means the dropdown panel teleports out of the component tree.
     expect(document.body.textContent).toContain('Configurações')
@@ -103,7 +85,7 @@ describe('TheTopNav', () => {
     router.push('/settings/types')
     await router.isReady()
 
-    const wrapper = mount(TheTopNav, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(TheTopNav, { global: { plugins: [pinia, router] } })
 
     const trigger = wrapper.get('.nav-item.active')
     expect(trigger.text()).toContain('Configurações')
@@ -122,7 +104,7 @@ describe('TheTopNav', () => {
     router.push('/overview')
     await router.isReady()
 
-    mount(TheTopNav, { global: { plugins: [router, Buefy] }, attachTo: document.body })
+    mount(TheTopNav, { global: { plugins: [pinia, router] }, attachTo: document.body })
 
     const usersItem = Array.from(document.body.querySelectorAll('.dropdown-item')).find((item) =>
       item.textContent?.includes('Usuários'),

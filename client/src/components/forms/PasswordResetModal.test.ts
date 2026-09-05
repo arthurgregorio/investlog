@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import Buefy from 'buefy'
+import { createTestingPinia } from '@pinia/testing'
 import PasswordResetModal from './PasswordResetModal.vue'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 
@@ -10,7 +9,6 @@ let activeWrapper: VueWrapper | undefined
 function mountModal() {
   activeWrapper = mount(PasswordResetModal, {
     props: { userId: 'user-1', userName: 'Alguém' },
-    global: { plugins: [Buefy] },
     attachTo: document.body,
   })
   return activeWrapper
@@ -18,7 +16,7 @@ function mountModal() {
 
 describe('PasswordResetModal', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    createTestingPinia()
   })
 
   afterEach(() => {
