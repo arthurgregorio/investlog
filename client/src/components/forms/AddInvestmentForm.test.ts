@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createTestingPinia } from '@pinia/testing'
+import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import { reactive } from 'vue'
 import AddInvestmentForm from './AddInvestmentForm.vue'
 import type { AddInvestmentForm as AddInvestmentFormState } from '@/composables/useAddInvestmentForm'
@@ -40,14 +40,17 @@ function buildForm(overrides: Partial<AddInvestmentFormState> = {}): AddInvestme
 }
 
 describe('AddInvestmentForm ticker input', () => {
+  let pinia: TestingPinia
+
   beforeEach(() => {
-    createTestingPinia()
+    pinia = createTestingPinia()
   })
 
   it('uppercases and strips non-alphanumeric characters as the user types', async () => {
     const form = buildForm()
     const wrapper = mount(AddInvestmentForm, {
       props: { form },
+      global: { plugins: [pinia] },
     })
 
     const input = wrapper.find('input[placeholder="PETR4"]')

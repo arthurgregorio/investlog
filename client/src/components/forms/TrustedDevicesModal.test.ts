@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { createTestingPinia } from '@pinia/testing'
+import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import TrustedDevicesModal from './TrustedDevicesModal.vue'
 import { authApi } from '@/api/auth'
 
@@ -12,9 +12,11 @@ vi.mock('@/api/auth', () => ({
 }))
 
 let activeWrapper: VueWrapper | undefined
+let pinia: TestingPinia
 
 function mountModal() {
   activeWrapper = mount(TrustedDevicesModal, {
+    global: { plugins: [pinia] },
     attachTo: document.body,
   })
   return activeWrapper
@@ -22,7 +24,7 @@ function mountModal() {
 
 describe('TrustedDevicesModal', () => {
   beforeEach(() => {
-    createTestingPinia({ stubActions: false })
+    pinia = createTestingPinia({ stubActions: false })
     vi.clearAllMocks()
   })
 
