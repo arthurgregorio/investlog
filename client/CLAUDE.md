@@ -26,6 +26,12 @@ Prettier (Settings → Languages & Frameworks → JavaScript → Prettier → se
 `tsconfig.app.json` has `strict`, `noUnusedLocals` and `noUnusedParameters` enabled,
 so unused imports/variables fail `npm run build` / `npm run type-check`.
 
+**TypeScript stays on the 6.0 line.** TS 7 is not usable here: it stopped exporting
+`typescript/lib/tsc`, which crashes `vue-tsc` 3, and typescript-eslint refuses to load under it
+(its peer range is `>=4.8.4 <6.1.0`). TS 6.0 is the line both tools support. Relatedly,
+`tsconfig.app.json` carries no `baseUrl` — TS 6 hard-errors on it (TS5101) and the `@/*` path
+alias does not need one, so don't re-add it.
+
 ## Coding Conventions
 
 **No abbreviated names** — use full descriptive names for variables, props, loop iterators,
@@ -43,8 +49,9 @@ and composable locals. Examples:
 InvestLog is a manual (PT-BR) investment logbook: stocks and FIIs, crypto and funds, entered by
 hand. Stock/FII `current_price` is auto-updated hourly server-side during B3 trading hours via
 brapi.dev; funds remain fully manual with no live market feed. Either way the manual price-edit
-flow keeps working as an override. Stack: Vue 3 `<script setup>` + TypeScript, Pinia, Vue Router 5,
-Vite 8. Path alias `@` → `src/`. Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
+flow keeps working as an override. Stack: Vue 3 `<script setup>` + TypeScript 6, Pinia 4,
+Vue Router 5, Vite 8, Vitest 5, ESLint 10. Path alias `@` → `src/`.
+Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
 proxied via `/private` by Vite dev server.
 
 The UI was ported pixel-for-pixel from a Claude Design React/Babel prototype handoff. `src/assets/styles.css`
