@@ -19,7 +19,7 @@ describe('auth store', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     delete (window as unknown as { location?: unknown }).location
-    window.location = { href: '' } as Location
+    window.location = { href: '' } as unknown as string & Location
   })
 
   it('sets the session after a successful login', async () => {
