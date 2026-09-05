@@ -71,4 +71,4 @@ jobs:
 
       - name: Test
         working-directory: client
-        run: npm run test
+        run: npm run test:run

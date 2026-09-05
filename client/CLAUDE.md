@@ -13,7 +13,9 @@ npm run dev        # dev server at http://localhost:8081
 npm run build      # vue-tsc --noEmit -p tsconfig.app.json, then vite build (fails on type errors)
 npm run preview    # preview the production build
 npm run type-check # vue-tsc --noEmit -p tsconfig.app.json only
-npm run test       # vitest (unit tests)
+npm run test       # vitest in watch mode — hangs a non-interactive shell, don't use it in scripts
+npm run test:run   # vitest run (single pass, what CI runs)
+npm run test:coverage # vitest run --coverage (v8, writes client/coverage/)
 npm run lint       # eslint . --fix
 npm run format     # prettier --write src/
 ```
@@ -31,6 +33,36 @@ so unused imports/variables fail `npm run build` / `npm run type-check`.
 (its peer range is `>=4.8.4 <6.1.0`). TS 6.0 is the line both tools support. Relatedly,
 `tsconfig.app.json` carries no `baseUrl` — TS 6 hard-errors on it (TS5101) and the `@/*` path
 alias does not need one, so don't re-add it.
+
+## Tests
+
+**Test files end in `.test.ts` — never `.spec.ts`.** `vite.config.ts` pins `test.include` to
+`src/**/*.test.ts`, so a file with any other suffix is silently never run. Tests are **co-located**
+next to the code they cover; there are no `__tests__/` directories and none should be added.
+
+`src/test/setup.ts` runs before every file (`test.setupFiles`) and does the bootstrapping no test
+should repeat: it installs Buefy into `@vue/test-utils`' global config, and clears `document.body`
+after each test because Buefy's `append-to-body` components teleport outside the wrapper. Don't
+pass `Buefy` in a mount's `global.plugins` — it is already there.
+
+Pinia has one rule that decides itself:
+
+| The test | Uses |
+|----------|------|
+| mounts a component | `createTestingPinia()` from `@pinia/testing`, passed in `global.plugins` |
+| exercises a store or composable directly | `setActivePinia(createPinia())` |
+
+`createTestingPinia()` stubs every action by default, which is what a component test wants — the
+actions become spies to assert on and no API call escapes. Pass `{ stubActions: false }` only when
+the component's behaviour under test *is* the real action running (`TrustedDevicesModal.test.ts`
+and `LoginView.test.ts` are the two cases).
+
+Assert on rendered output, emitted events and user interactions — never on `wrapper.vm` or private
+methods, which couple the test to the implementation and break on refactor. No snapshot-only tests:
+a snapshot nobody reads passes while the feature is broken.
+
+Coverage is measured (`npm run test:coverage`, v8 provider, report in `client/coverage/`) but no
+threshold is enforced and CI does not gate on it.
 
 ## Coding Conventions
 

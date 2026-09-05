@@ -1,8 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import Buefy from 'buefy'
 import LoginView from './LoginView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/auth'
@@ -22,9 +21,10 @@ vi.mock('@/api/auth', () => ({
 
 describe('LoginView', () => {
   let router: ReturnType<typeof createRouter>
+  let pinia: TestingPinia
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    pinia = createTestingPinia({ stubActions: false })
     router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -41,7 +41,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await wrapper.find('input[type="email"]').setValue('admin@admin.com')
     await wrapper.find('input[type="password"]').setValue('admin')
     await wrapper.find('form').trigger('submit.prevent')
@@ -61,7 +61,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await wrapper.find('input[type="email"]').setValue('admin@admin.com')
     await wrapper.find('input[type="password"]').setValue('admin')
     await wrapper.find('form').trigger('submit.prevent')
@@ -88,7 +88,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await wrapper.find('input[type="email"]').setValue('admin@admin.com')
     await wrapper.find('input[type="password"]').setValue('admin')
     await wrapper.find('form').trigger('submit.prevent')
@@ -113,7 +113,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await wrapper.find('input[type="email"]').setValue('admin@admin.com')
     await wrapper.find('input[type="password"]').setValue('admin')
     await wrapper.find('form').trigger('submit.prevent')
@@ -133,7 +133,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
@@ -160,7 +160,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
@@ -177,7 +177,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
@@ -211,7 +211,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     const googleButton = wrapper.find('.auth-google-button')
@@ -226,7 +226,7 @@ describe('LoginView', () => {
     router.push('/login')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     expect(wrapper.find('.auth-google-button').exists()).toBe(false)
@@ -236,7 +236,7 @@ describe('LoginView', () => {
     router.push('/login?error=email_in_use')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     expect(wrapper.text()).toContain('Já existe uma conta com este e-mail')
@@ -246,7 +246,7 @@ describe('LoginView', () => {
     router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     expect(wrapper.text()).toContain('nova@example.com')
@@ -260,7 +260,7 @@ describe('LoginView', () => {
     router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     await wrapper.find('input[type="password"]').setValue('senha123')
@@ -276,7 +276,7 @@ describe('LoginView', () => {
     router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
     await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [router, Buefy] } })
+    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
     await flushPromises()
 
     await wrapper.find('input[type="password"]').setValue('wrong')
