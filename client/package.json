@@ -1,9 +1,9 @@
 {
   "name": "investlog",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "InvestLog — manual investment logbook (Vue 3)",
+  "description": "InvestLog — the investments logbook",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit -p tsconfig.app.json && vite build",
