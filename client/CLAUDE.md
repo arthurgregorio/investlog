@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+Node 24.15 or newer is required (`engines.node` in `package.json`); `vitest` and `jsdom` refuse
+older runtimes.
+
 ```bash
 npm install
 npm run dev        # dev server at http://localhost:8081
@@ -40,8 +43,8 @@ and composable locals. Examples:
 InvestLog is a manual (PT-BR) investment logbook: stocks and FIIs, crypto and funds, entered by
 hand. Stock/FII `current_price` is auto-updated hourly server-side during B3 trading hours via
 brapi.dev; funds remain fully manual with no live market feed. Either way the manual price-edit
-flow keeps working as an override. Stack: Vue 3 `<script setup>` + TypeScript, Pinia, Vue Router 4,
-Vite 6. Path alias `@` → `src/`. Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
+flow keeps working as an override. Stack: Vue 3 `<script setup>` + TypeScript, Pinia, Vue Router 5,
+Vite 8. Path alias `@` → `src/`. Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
 proxied via `/private` by Vite dev server.
 
 The UI was ported pixel-for-pixel from a Claude Design React/Babel prototype handoff. `src/assets/styles.css`
