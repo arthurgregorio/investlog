@@ -12,6 +12,12 @@ Each subfolder's `CLAUDE.md` is the source of truth for that stack's commands, c
 conventions, and architecture — read it before making changes there. This root file only holds
 conventions that apply across the whole repo, regardless of which folder you're working in.
 
+Running the whole stack locally: `docker compose up` (see `compose.yaml`) brings up Postgres plus
+both services. For day-to-day work run each side from its own folder instead — `./gradlew bootRun`
+in `server/`, which starts its own Postgres via `spring-boot-docker-compose`, and `npm run dev` in
+`client/`, which proxies `/private` to `localhost:8080`. `railway.json` drives the deploy; nothing
+in it needs editing for local work.
+
 Everything else at the top level — `landing-page/`, `sample-data/`, `build-from-source/`, `docs/`,
 `.github/`, `compose.yaml`, `railway.json` — has no `CLAUDE.md` of its own and counts as the
 **docs/infra** layer for the PR rules below.
