@@ -90,8 +90,28 @@ it in `db.changelog-master.xml`.
 
 ## Architecture
 
-`Application.kt` is the `@SpringBootApplication` bootstrap. Beyond that, the application layer
-has:
+`Application.kt` is the `@SpringBootApplication` bootstrap. Every feature package uses the same flat
+layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `rest/payloads/`, with no
+`domain/` layer and no `rest/controllers/` subfolder.
+
+| Package | What it owns |
+|---|---|
+| `shared/security` | Current-user resolution, `system.users`, admin bootstrap — see **Authentication & Authorization** |
+| `shared/persistence` | `pagedModelOf(...)`, the one place jOOQ pages become `PagedModel<T>` |
+| `shared/exceptions` | Domain exceptions, each mapped to a `ProblemDetail` |
+| `shared/http/brapi` | `StocksClient`, the reusable brapi.dev client |
+| `config` | Web/security/scheduling/caching config and `GlobalExceptionHandler` |
+| `auth` | Login, register, TOTP, trusted devices, Google OAuth |
+| `usersadmin` | Admin-only user management under `/users` |
+| `profile` | The current user's own profile and password |
+| `wallets` | Wallet CRUD |
+| `stockholdings`, `cryptoholdings`, `fundholdings` | The three holding kinds — see **Holdings** |
+| `holdingsoverview` | `GET /holdings`, the paginated cross-kind view |
+| `overview` | Portfolio summary and the monthly invested series |
+| `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
+| `typelists`, `currencyrates`, `configurations` | Reference data and runtime feature toggles |
+
+In detail:
 
 - `shared/security` — cross-cutting current-user resolution: `CurrentUser` (domain model, with a
   nested `CurrentUser.Status` enum — `PENDING`/`APPROVED`/`BLOCKED`), `UserRole`, `AuthProvider`,
@@ -142,7 +162,24 @@ has:
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
   (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
-- `stockpricesync` — no REST controller. `StockPriceSyncScheduler` runs
+- `configurations` — `GET /private/v1/configurations`, `PATCH /private/v1/configurations/{key}`.
+  Runtime feature toggles keyed by `ConfigurationKey`; this is what gates the price-sync jobs.
+- `wallets` — `GET`/`POST /private/v1/wallets`, `GET`/`PATCH`/`DELETE /private/v1/wallets/{id}`.
+- `stockholdings`, `cryptoholdings`, `fundholdings` — the three holding kinds, each nested under
+  `/private/v1/wallets/{walletId}/{stock|crypto|fund}-holdings` with the same CRUD shape plus a
+  child collection: `lots` for stocks and crypto, `contributions` for funds. They are separate
+  packages rather than one generic holdings package because the three kinds differ in their child
+  entity and in which fields are price-synced.
+
+### Price sync
+
+Three schedulers refresh prices in place, each gated by its own `ConfigurationKey` toggle
+(`STOCK_`/`CRYPTO_`/`USD_PRICE_SYNC_ENABLED`) read through `configurations`. `stockpricesync` and
+`cryptopricesync` each expose one admin-only manual trigger; `usdpricesync` has no controller at
+all. All three share the same failure rule: a ticker that 404s, times out or otherwise fails is
+logged as a warning and skipped, keeping its last-known price, so one bad ticker never blocks a run.
+
+- `stockpricesync` — `StockPriceSyncScheduler` runs
   `@Scheduled(cron = "0 0 10-18 * * MON-FRI", zone = "America/Sao_Paulo")` (B3 trading hours only)
   and calls `StockPriceSyncService.syncPrices()`, which fetches every distinct `ticker` in
   `finances.stock_holdings` and calls the `StocksClient` HTTP service (`GET
@@ -169,6 +206,7 @@ has:
   mangled by Spring's dependency-management BOM. The manual `PATCH
   /wallets/{walletId}/stock-holdings/{holdingId}` endpoint in `stockholdings` still works as an
   override — a hand-edited price is simply overwritten again on the next scheduled run.
+
 - `cryptopricesync` — mirrors `stockpricesync`'s shape (repository/services/scheduler/rest, no
   `domain/` layer) but syncs on `@Scheduled(cron = "0 0 * * * *")`, every hour 24/7 since crypto
   markets don't close, gated the same way by `ConfigurationKey.CRYPTO_PRICE_SYNC_ENABLED` and a
@@ -216,16 +254,9 @@ has:
   endpoints with WireMock, including a fixture that only returns the canonical coin for a
   collision-prone symbol, asserting the service trusts CoinGecko's resolved id rather than the raw
   ticker.
+
 - `usdpricesync` — no REST controller. Refreshes the USD reference rate on
   `@Scheduled(cron = "0 0 7,18 * * *", zone = "America/Sao_Paulo")`, twice daily.
-- `configurations` — `GET /private/v1/configurations`, `PATCH /private/v1/configurations/{key}`.
-  Runtime feature toggles keyed by `ConfigurationKey`; this is what gates the price-sync jobs.
-- `wallets` — `GET`/`POST /private/v1/wallets`, `GET`/`PATCH`/`DELETE /private/v1/wallets/{id}`.
-- `stockholdings`, `cryptoholdings`, `fundholdings` — the three holding kinds, each nested under
-  `/private/v1/wallets/{walletId}/{stock|crypto|fund}-holdings` with the same CRUD shape plus a
-  child collection: `lots` for stocks and crypto, `contributions` for funds. They are separate
-  packages rather than one generic holdings package because the three kinds differ in their child
-  entity and in which fields are price-synced.
 
 ### Authentication & Authorization
 
@@ -276,7 +307,7 @@ has:
   (via a real login/TOTP-verify call) and pass it explicitly with `.header("Cookie", cookie)` —
   passing an explicit header is what short-circuits the auto-injection.
 
-The persistence schema itself is fully defined (see below).
+### Stack
 
 - Kotlin 2.4.10 / Spring Boot 4.1.1, JVM 25 toolchain. Root package: `br.com.investlog.server`.
 - Web: `spring-boot-starter-webmvc` (servlet MVC, not WebFlux).

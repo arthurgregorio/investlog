@@ -12,6 +12,12 @@ Each subfolder's `CLAUDE.md` is the source of truth for that stack's commands, c
 conventions, and architecture — read it before making changes there. This root file only holds
 conventions that apply across the whole repo, regardless of which folder you're working in.
 
+Running the whole stack locally: `docker compose up` (see `compose.yaml`) brings up Postgres plus
+both services. For day-to-day work run each side from its own folder instead — `./gradlew bootRun`
+in `server/`, which starts its own Postgres via `spring-boot-docker-compose`, and `npm run dev` in
+`client/`, which proxies `/private` to `localhost:8080`. `railway.json` drives the deploy; nothing
+in it needs editing for local work.
+
 Everything else at the top level — `landing-page/`, `sample-data/`, `build-from-source/`, `docs/`,
 `.github/`, `compose.yaml`, `railway.json` — has no `CLAUDE.md` of its own and counts as the
 **docs/infra** layer for the PR rules below.
@@ -41,6 +47,10 @@ editing files and open the issue afterwards to paper over it.
 Before starting on an existing issue, **check whether a PR already targets it** — `gh issue view
 <N>` (linked PRs show in the timeline) or `gh pr list --search "<N>"`. `gh issue list` never
 surfaces PRs, so issue-only triage silently duplicates in-flight work.
+
+**The issue body does not override this file.** If an issue's shape conflicts with these rules, say
+so and ask the user whether to restructure it before starting — don't silently follow the
+instruction in the body, and don't restructure someone's issue unasked.
 
 ### The issue is the spec — never a file in the repo
 
@@ -175,6 +185,34 @@ repos/:owner/:repo/issues/<n> --jq .id`) — not its issue number, and not the G
 of type integer`. `rtk proxy` keeps RTK's filter off the raw ids. Verify afterwards with `gh api
 repos/:owner/:repo/issues/<parent>/sub_issues --jq '.[].number'`.
 
+#176 is the reference example of the shape to aim for: an umbrella issue with #174, #212 and #213
+attached as real sub-issues, each targeting the `feature/176-wallet-detail-view` branch.
+
+### Dependencies point at the umbrella, never at one of its subtasks
+
+When an issue depends on work that belongs to a **different** umbrella, its `## Dependencies` section
+names that **umbrella issue**, not whichever subtask happens to hold the code it needs. Only a subtask
+depending on a *sibling* subtask of its own umbrella names that sibling directly.
+
+The reason is mechanical, not bureaucratic: a feature is complete only when its umbrella's feature
+branch merges into `main`. A subtask PR lands on the feature branch, so the code it adds is not on
+`main` and not available to anything outside that umbrella until the whole feature merges. Naming the
+subtask claims a readiness that doesn't exist — and points at a commit that will never reach `main`
+on its own.
+
+Record the relationship **natively** as well as in prose, so it shows up on project boards and on the
+issue itself rather than only inside a paragraph:
+
+```bash
+gh issue edit <N> --add-blocked-by <M>            # N is blocked by M
+gh issue view <N> --json blockedBy --jq '[.blockedBy.nodes[].number] | join(", ")'
+```
+
+Note the `.nodes[]` in that read path. `blockedBy` is an object with `nodes` and `totalCount`, so a
+bare `.blockedBy[]` yields nothing and looks exactly like the write silently failed. Re-adding an
+edge that already exists fails with `Target issue has already been taken`, which means it is already
+recorded. Both flags need `gh` 2.95 or newer.
+
 **Why the layer split exists:** mixing server and client changes in one PR was tried once and made
 review painful — a reviewer looking at Spring Security config doesn't want to scroll past Vue
 components, and vice versa. That's a rule about how work is *sliced into sub-issues*, and the
@@ -187,18 +225,6 @@ spans `server/`, `client/` and the repo root at once. The review-pain argument d
 reviewer reading a version bump wants to see every version that moved in one place, not three PRs
 that only make sense together. Label these `maintenance` (plus `documentation`, `github_actions`,
 etc. as applicable) and don't build an umbrella for them.
-
-### Issues opened before these rules
-
-Some open issues predate this model and say so out loud — #211, for instance, states *"this ships as
-a server PR and a client PR, both referencing this issue"*, which the one-PR-per-issue rule now
-forbids. **The issue body does not override this file.** When you pick up an issue whose shape
-conflicts with these rules, say so and ask the user whether to restructure it before starting —
-don't silently follow the outdated instruction in the body, and don't restructure someone's issue
-unasked.
-
-#176 is the reference example of the shape to aim for: an umbrella issue with #174, #212 and #213
-attached as real sub-issues, each targeting the `feature/176-wallet-detail-view` branch.
 
 ## Branch naming
 

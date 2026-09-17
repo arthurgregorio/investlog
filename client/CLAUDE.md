@@ -144,6 +144,20 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 **Lazy loading**: each store is loaded by the view/component that needs it, in `onMounted`.
 Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`.
 
+### Components (`src/components/`)
+
+| Directory | Holds |
+|---|---|
+| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
+| `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
+| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal` |
+| `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded |
+| `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
+| `icons/` | Inline SVG icon components (`LogoMark`) |
+
+A new component belongs in the directory matching its role, not the view that first happens to need
+it. Anything reusable and presentational goes in `ui/` rather than next to its first caller.
+
 ### Investments table (`InvestmentsView.vue`)
 
 Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detailed` row
@@ -167,6 +181,12 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 
 `WALLET_TYPES: Record<WalletKind, WalletTypeMeta>` — accent colors, labels, icons per kind.
 `badgeColor(ticker, kind)` — consistent hash-derived badge color per ticker.
+
+The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
+400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
+requirement checks `PasswordRequirementHint` renders), `reportGrouping.ts` (groups `HoldingRow[]`
+for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
+unset).
 
 ### Theming
 
