@@ -11,13 +11,15 @@ import java.time.ZoneId
 
 private val logger = KotlinLogging.logger {}
 
-private const val SCHEDULING_ZONE = "America/Sao_Paulo"
-
 @Component
 class WalletSnapshotScheduler(
     private val walletSnapshotService: WalletSnapshotService,
     private val configurationService: ConfigurationService,
 ) {
+
+    companion object {
+        private const val SCHEDULING_ZONE = "America/Sao_Paulo"
+    }
 
     @Scheduled(cron = "0 45 23 * * *", zone = SCHEDULING_ZONE)
     fun captureSnapshots() {
