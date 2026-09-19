@@ -5,6 +5,7 @@ import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountExcepti
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
+import br.com.investlog.server.shared.exceptions.InvalidWithdrawalException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
@@ -85,6 +86,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleSelfActionNotAllowed(ex: SelfActionNotAllowedException): ProblemDetail {
 
         val message = ex.message ?: "Esta ação não pode ser aplicada à sua própria conta"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidWithdrawalException::class)
+    fun handleInvalidWithdrawal(ex: InvalidWithdrawalException): ProblemDetail {
+
+        val message = ex.message ?: "Resgate inválido"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
         problemDetail.setProperty("timestamp", Instant.now())
