@@ -15,11 +15,13 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.UUID
 
-private const val COST_BASIS_SCALE = 10
-
 @Service
 @Transactional(readOnly = true)
 class WithdrawalService(private val resultRepository: ResultRepository) {
+
+    companion object {
+        private const val COST_BASIS_SCALE = 10
+    }
 
     @Transactional
     fun withdrawFromHolding(
