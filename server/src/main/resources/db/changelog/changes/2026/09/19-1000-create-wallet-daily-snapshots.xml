@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="19-1000-1" author="${claude}">
+        <comment>
+            Create finances.wallet_daily_snapshots, the end-of-day wallet value history the
+            per-wallet dashboard charts against (issue #174). Figures are stored in the wallet's
+            own currency, never converted, so a row stays reproducible regardless of how rates
+            moved after it was written.
+        </comment>
+        <sql>
+            CREATE TABLE finances.wallet_daily_snapshots (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                snapshot_date DATE NOT NULL,
+                current_value NUMERIC NOT NULL,
+                total_invested NUMERIC NOT NULL,
+                gain NUMERIC NOT NULL,
+                gain_pct NUMERIC NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                UNIQUE (wallet_id, snapshot_date)
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.wallet_daily_snapshots;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
