@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { BButton, useDialog, useToast } from 'buefy'
 import AddPositionModal from '@/components/investments/AddPositionModal.vue'
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
+import WithdrawModal from '@/components/investments/WithdrawModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import { holdingsApi } from '@/api/holdings'
 import { useCurrencyStore } from '@/stores/currency'
@@ -32,6 +33,7 @@ const detail = ref<HoldingDetail | null>(null)
 const loading = ref(false)
 const showAddPositionModal = ref(false)
 const showUpdatePriceModal = ref(false)
+const showWithdrawModal = ref(false)
 
 const isFund = computed(() => props.row.kind === 'FUNDS')
 const isStock = computed(() => props.row.kind === 'STOCKS')
@@ -81,6 +83,18 @@ async function onPositionAdded() {
 }
 
 async function onPriceUpdated() {
+  await reloadDetail()
+  emit('positionAdded')
+}
+
+// A full exit flips the holding to COMPLETED, which drops it out of GET /holdings. Reloading the
+// detail here would briefly render a holding the list is about to lose, so the panel collapses
+// through the same signal a removal uses.
+async function onWithdrawn(completed: boolean) {
+  if (completed) {
+    emit('deleted')
+    return
+  }
   await reloadDetail()
   emit('positionAdded')
 }
@@ -297,6 +311,15 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
       >
         {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
       </b-button>
+      <b-button
+        size="is-small"
+        type="is-warning"
+        outlined
+        icon-left="cash-minus"
+        @click="showWithdrawModal = true"
+      >
+        Resgatar
+      </b-button>
       <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
         Remover
       </b-button>
@@ -321,6 +344,18 @@ async function saveContributionDate(contribution: ContributionDetail, date: Date
       :initial-value="currentAmount"
       @updated="onPriceUpdated"
       @close="showUpdatePriceModal = false"
+    />
+
+    <WithdrawModal
+      v-if="showWithdrawModal"
+      :holding-id="row.id"
+      :wallet-id="row.walletId"
+      :kind="row.kind"
+      :wallet-currency="row.walletCurrency"
+      :remaining-quantity="row.quantity"
+      :current-value="row.currentValue"
+      @withdrawn="onWithdrawn"
+      @close="showWithdrawModal = false"
     />
   </div>
 </template>
