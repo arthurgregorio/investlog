@@ -246,8 +246,10 @@ sub-issues — not to open a second PR against the same issue.
 - **`Closes #N`** in the body, naming its own issue. Because of the 1:1 rule, a **PR body** never
   uses `Refs #N` for the issue it implements; a sub-issue PR may additionally mention its umbrella
   issue as context, but the only `Closes` is its own sub-issue. This applies to the PR body only —
-  individual **commit messages** still use `Refs #N` as a breadcrumb, since a single `Closes` on the
-  PR is what actually closes the issue and repeating it per commit would be noise.
+  individual **commit messages** still use `Refs #N` as a breadcrumb, since repeating the closing
+  keyword on every commit would be noise.
+- **A linked issue — verified, not assumed.** See below; on a sub-issue PR this one needs a manual
+  step and fails silently without it.
 - The **same milestone as its issue** — `gh issue view <N> --json milestone` to check. `gh pr
   create` does not inherit it, so it's the easiest of these to drop.
 - The **label** matching the work (`feature`, `bug`, `documentation`, `maintenance`, …).
@@ -258,6 +260,33 @@ If any of these weren't set at creation time, fix it immediately:
 ```bash
 gh pr edit <N> --add-label feature --add-assignee arthurgregorio --milestone "<name>"
 ```
+
+### `Closes #N` does nothing on a sub-issue PR — link it by hand
+
+GitHub honours a closing keyword **only when the PR targets the repository's default branch**. A
+sub-issue PR targets its umbrella's feature branch, so its `Closes #N` is ignored: no linked issue,
+no Development-panel entry, no contribution to the umbrella's progress. All that remains is a
+timeline cross-reference, which is a weaker relationship and does not survive anyone editing the
+body text. The `Closes #N` line still belongs in the body — it states what the PR implements — but
+it is a statement of intent, not a mechanism.
+
+So **check the link on every PR, and create it by hand when it is missing**:
+
+```bash
+gh pr view <N> --json closingIssuesReferences --jq '[.closingIssuesReferences[].number] | join(", ")'
+```
+
+An empty result means no link was created. There is no API to fix that — the only candidate GraphQL
+mutation, `createLinkedBranch`, takes a commit id and creates a *new branch*, which is the wrong
+tool. The link is made in the browser, from the **issue's** Development panel → "link a pull
+request". Worth knowing that `gh pr create` reports success either way, and a body containing
+`Closes #N` looks correct in review, so nothing surfaces this except the command above.
+
+**Sub-issues therefore never close themselves.** Merging a sub-PR into its feature branch closes
+nothing, because that branch is not the default branch; and when the feature branch later merges
+into `main`, the commits it carries say `Refs #N`, so they close nothing either. Close each
+sub-issue by hand as its PR merges. Only the umbrella's own PR into `main` — which does target the
+default branch — closes its issue automatically.
 
 CI splits client and server suites behind a "Detect changed layers" job. The server leg runs jOOQ
 codegen against a throwaway Postgres container and takes roughly five minutes, with CodeQL
