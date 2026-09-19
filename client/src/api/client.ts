@@ -34,6 +34,15 @@ function isPasswordValidationRequest(url: string | undefined): boolean {
   return url !== undefined && PASSWORD_VALIDATION_ENDPOINTS.some((pattern) => pattern.test(url))
 }
 
+// Withdrawals report their rejection inside the modal, which keeps the entered values so the user
+// can correct them. Unlike the password endpoints above, a rejected withdrawal carries only
+// `detail` and no `errors` array, so it needs its own branch rather than that array-guarded one.
+const WITHDRAWAL_ENDPOINT = /^\/wallets\/[^/]+\/(stock|crypto|fund)-holdings\/[^/]+\/withdrawals$/
+
+function isWithdrawalRequest(url: string | undefined): boolean {
+  return url !== undefined && WITHDRAWAL_ENDPOINT.test(url)
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -51,6 +60,9 @@ apiClient.interceptors.response.use(
       Array.isArray(error.response?.data?.errors) &&
       isPasswordValidationRequest(error.config?.url)
     ) {
+      return Promise.reject(error)
+    }
+    if (error.response?.status === 400 && isWithdrawalRequest(error.config?.url)) {
       return Promise.reject(error)
     }
     const message: string =
