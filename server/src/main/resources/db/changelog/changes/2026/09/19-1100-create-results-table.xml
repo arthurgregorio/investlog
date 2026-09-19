@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="19-1100-1" author="${claude}">
+        <comment>
+            holding_status marks a position as still held or fully exited; result_type separates a
+            plain withdrawal from the transfer leg introduced by issue #205, which reuses this
+            table rather than adding its own (issue #204).
+        </comment>
+        <sql>
+            CREATE TYPE finances.holding_status AS ENUM ('ACTIVE', 'COMPLETED');
+            CREATE TYPE finances.result_type AS ENUM ('WITHDRAWAL', 'TRANSFER');
+        </sql>
+        <rollback>
+            <sql>
+                DROP TYPE finances.result_type;
+                DROP TYPE finances.holding_status;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="19-1100-2" author="${claude}">
+        <comment>Every existing holding is still held, so ACTIVE is the correct backfill</comment>
+        <sql>
+            ALTER TABLE finances.stock_holdings
+                ADD COLUMN status finances.holding_status NOT NULL DEFAULT 'ACTIVE';
+            ALTER TABLE finances.crypto_holdings
+                ADD COLUMN status finances.holding_status NOT NULL DEFAULT 'ACTIVE';
+            ALTER TABLE finances.fund_holdings
+                ADD COLUMN status finances.holding_status NOT NULL DEFAULT 'ACTIVE';
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.fund_holdings DROP COLUMN status;
+                ALTER TABLE finances.crypto_holdings DROP COLUMN status;
+                ALTER TABLE finances.stock_holdings DROP COLUMN status;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="19-1100-3" author="${claude}">
+        <comment>
+            One row per exit from any of the three holding kinds. net_amount and profit are
+            generated rather than written, so no caller can store a total that disagrees with its
+            own parts. quantity is null for funds, which have no quantity to exit.
+        </comment>
+        <sql>
+            CREATE TABLE finances.results (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                stock_holding_id BIGINT NULL REFERENCES finances.stock_holdings(id) ON DELETE CASCADE,
+                crypto_holding_id BIGINT NULL REFERENCES finances.crypto_holdings(id) ON DELETE CASCADE,
+                fund_holding_id BIGINT NULL REFERENCES finances.fund_holdings(id) ON DELETE CASCADE,
+                result_type finances.result_type NOT NULL,
+                result_date DATE NOT NULL,
+                quantity NUMERIC NULL CHECK (quantity > 0),
+                gross_amount NUMERIC NOT NULL CHECK (gross_amount >= 0),
+                fees NUMERIC NOT NULL DEFAULT 0 CHECK (fees >= 0),
+                taxes NUMERIC NOT NULL DEFAULT 0 CHECK (taxes >= 0),
+                cost_basis NUMERIC NOT NULL CHECK (cost_basis >= 0),
+                net_amount NUMERIC GENERATED ALWAYS AS (gross_amount - fees - taxes) STORED,
+                profit NUMERIC GENERATED ALWAYS AS (gross_amount - fees - taxes - cost_basis) STORED,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT results_exactly_one_holding CHECK (
+                    (stock_holding_id IS NOT NULL)::INT
+                    + (crypto_holding_id IS NOT NULL)::INT
+                    + (fund_holding_id IS NOT NULL)::INT = 1
+                )
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.results;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="19-1100-4" author="${claude}">
+        <sql>
+            CREATE INDEX idx_results_stock_holding_id ON finances.results (stock_holding_id);
+            CREATE INDEX idx_results_crypto_holding_id ON finances.results (crypto_holding_id);
+            CREATE INDEX idx_results_fund_holding_id ON finances.results (fund_holding_id);
+            CREATE INDEX idx_results_result_date ON finances.results (result_date);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX finances.idx_results_result_date;
+                DROP INDEX finances.idx_results_fund_holding_id;
+                DROP INDEX finances.idx_results_crypto_holding_id;
+                DROP INDEX finances.idx_results_stock_holding_id;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="19-1100-5" author="${claude}">
+        <comment>
+            Rebuild both views so they report net of what has been withdrawn. Both are dropped and
+            recreated rather than replaced: holdings_report_rows is defined FROM holdings_overview,
+            and Postgres refuses to change a view's column list while a dependent view exists.
+
+            The withdrawn totals are read through scalar correlated subqueries, not a join. A join
+            to finances.results would multiply the existing SUM over lots by the number of result
+            rows, silently inflating quantity and cost_basis on any holding exited more than once.
+
+            Only stock and crypto subtract the withdrawn quantity from current_value, because there
+            it is derived from quantity. A fund withdrawal decrements fund_holdings.current_value
+            directly, so subtracting again would double-count; only its cost_basis is netted here.
+
+            Asymmetry worth noting: holdings_overview exposes status so consumers can filter, but
+            holdings_report_rows filters to ACTIVE itself and does not expose it. That view merges
+            rows sharing (wallet_id, kind, ticker, type_label, name), and two such holdings can
+            differ in status — adding status to the GROUP BY would split the very rows the view
+            exists to merge, while aggregating it would invent a status neither row has.
+        </comment>
+        <sql>
+            DROP VIEW finances.holdings_report_rows;
+            DROP VIEW finances.holdings_overview;
+
+            CREATE VIEW finances.holdings_overview AS
+            SELECT
+                stock_holdings.id AS holding_id,
+                stock_holdings.external_id,
+                stock_holdings.wallet_id,
+                'STOCKS'::finances.wallet_kind AS kind,
+                stock_holdings.status,
+                stock_holdings.name,
+                stock_holdings.ticker,
+                stock_types.name AS type_label,
+                stock_holdings.current_price,
+                COALESCE(SUM(stock_lots.quantity), 0) - (
+                    SELECT COALESCE(SUM(results.quantity), 0)
+                    FROM finances.results
+                    WHERE results.stock_holding_id = stock_holdings.id
+                ) AS quantity,
+                COALESCE(SUM(stock_lots.quantity * stock_lots.price), 0) - (
+                    SELECT COALESCE(SUM(results.cost_basis), 0)
+                    FROM finances.results
+                    WHERE results.stock_holding_id = stock_holdings.id
+                ) AS cost_basis,
+                stock_holdings.current_price * (
+                    COALESCE(SUM(stock_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.stock_holding_id = stock_holdings.id
+                    )
+                ) AS current_value
+            FROM finances.stock_holdings
+            JOIN finances.stock_types ON stock_types.id = stock_holdings.stock_type_id
+            LEFT JOIN finances.stock_lots ON stock_lots.stock_holding_id = stock_holdings.id
+            GROUP BY stock_holdings.id, stock_holdings.external_id, stock_holdings.wallet_id,
+                     stock_holdings.status, stock_holdings.name, stock_holdings.ticker,
+                     stock_types.name, stock_holdings.current_price
+
+            UNION ALL
+
+            SELECT
+                crypto_holdings.id AS holding_id,
+                crypto_holdings.external_id,
+                crypto_holdings.wallet_id,
+                'CRYPTO'::finances.wallet_kind AS kind,
+                crypto_holdings.status,
+                crypto_holdings.name,
+                crypto_holdings.ticker,
+                NULL::TEXT AS type_label,
+                crypto_holdings.current_price,
+                COALESCE(SUM(crypto_lots.quantity), 0) - (
+                    SELECT COALESCE(SUM(results.quantity), 0)
+                    FROM finances.results
+                    WHERE results.crypto_holding_id = crypto_holdings.id
+                ) AS quantity,
+                COALESCE(SUM(crypto_lots.quantity * crypto_lots.price), 0) - (
+                    SELECT COALESCE(SUM(results.cost_basis), 0)
+                    FROM finances.results
+                    WHERE results.crypto_holding_id = crypto_holdings.id
+                ) AS cost_basis,
+                crypto_holdings.current_price * (
+                    COALESCE(SUM(crypto_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.crypto_holding_id = crypto_holdings.id
+                    )
+                ) AS current_value
+            FROM finances.crypto_holdings
+            LEFT JOIN finances.crypto_lots ON crypto_lots.crypto_holding_id = crypto_holdings.id
+            GROUP BY crypto_holdings.id, crypto_holdings.external_id, crypto_holdings.wallet_id,
+                     crypto_holdings.status, crypto_holdings.name, crypto_holdings.ticker,
+                     crypto_holdings.current_price
+
+            UNION ALL
+
+            SELECT
+                fund_holdings.id AS holding_id,
+                fund_holdings.external_id,
+                fund_holdings.wallet_id,
+                'FUNDS'::finances.wallet_kind AS kind,
+                fund_holdings.status,
+                fund_holdings.name,
+                NULL::TEXT AS ticker,
+                fund_types.name AS type_label,
+                NULL::NUMERIC AS current_price,
+                NULL::NUMERIC AS quantity,
+                COALESCE(SUM(fund_contributions.amount), 0) - (
+                    SELECT COALESCE(SUM(results.cost_basis), 0)
+                    FROM finances.results
+                    WHERE results.fund_holding_id = fund_holdings.id
+                ) AS cost_basis,
+                fund_holdings.current_value
+            FROM finances.fund_holdings
+            JOIN finances.fund_types ON fund_types.id = fund_holdings.fund_type_id
+            LEFT JOIN finances.fund_contributions ON fund_contributions.fund_holding_id = fund_holdings.id
+            GROUP BY fund_holdings.id, fund_holdings.external_id, fund_holdings.wallet_id,
+                     fund_holdings.status, fund_holdings.name, fund_types.name,
+                     fund_holdings.current_value;
+
+            CREATE VIEW finances.holdings_report_rows AS
+            SELECT
+                MIN(external_id::TEXT)::UUID AS external_id,
+                wallet_id,
+                kind,
+                name,
+                ticker,
+                type_label,
+                CASE
+                    WHEN SUM(quantity) IS NOT NULL AND SUM(quantity) <![CDATA[<>]]> 0
+                        THEN SUM(current_value) / SUM(quantity)
+                    ELSE MAX(current_price)
+                END AS current_price,
+                SUM(quantity) AS quantity,
+                SUM(cost_basis) AS cost_basis,
+                SUM(current_value) AS current_value
+            FROM finances.holdings_overview
+            WHERE status = 'ACTIVE'
+            GROUP BY wallet_id, kind, name, ticker, type_label;
+        </sql>
+        <rollback>
+            <sql>
+                DROP VIEW finances.holdings_report_rows;
+                DROP VIEW finances.holdings_overview;
+
+                CREATE VIEW finances.holdings_overview AS
+                SELECT
+                    sh.external_id,
+                    sh.wallet_id,
+                    'STOCKS'::finances.wallet_kind AS kind,
+                    sh.name,
+                    sh.ticker,
+                    st.name AS type_label,
+                    sh.current_price,
+                    COALESCE(SUM(sl.quantity), 0) AS quantity,
+                    COALESCE(SUM(sl.quantity * sl.price), 0) AS cost_basis,
+                    sh.current_price * COALESCE(SUM(sl.quantity), 0) AS current_value
+                FROM finances.stock_holdings sh
+                JOIN finances.stock_types st ON st.id = sh.stock_type_id
+                LEFT JOIN finances.stock_lots sl ON sl.stock_holding_id = sh.id
+                GROUP BY sh.id, sh.external_id, sh.wallet_id, sh.name, sh.ticker, st.name, sh.current_price
+
+                UNION ALL
+
+                SELECT
+                    ch.external_id,
+                    ch.wallet_id,
+                    'CRYPTO'::finances.wallet_kind AS kind,
+                    ch.name,
+                    ch.ticker,
+                    NULL::TEXT AS type_label,
+                    ch.current_price,
+                    COALESCE(SUM(cl.quantity), 0) AS quantity,
+                    COALESCE(SUM(cl.quantity * cl.price), 0) AS cost_basis,
+                    ch.current_price * COALESCE(SUM(cl.quantity), 0) AS current_value
+                FROM finances.crypto_holdings ch
+                LEFT JOIN finances.crypto_lots cl ON cl.crypto_holding_id = ch.id
+                GROUP BY ch.id, ch.external_id, ch.wallet_id, ch.name, ch.ticker, ch.current_price
+
+                UNION ALL
+
+                SELECT
+                    fh.external_id,
+                    fh.wallet_id,
+                    'FUNDS'::finances.wallet_kind AS kind,
+                    fh.name,
+                    NULL::TEXT AS ticker,
+                    ft.name AS type_label,
+                    NULL::NUMERIC AS current_price,
+                    NULL::NUMERIC AS quantity,
+                    COALESCE(SUM(fc.amount), 0) AS cost_basis,
+                    fh.current_value
+                FROM finances.fund_holdings fh
+                JOIN finances.fund_types ft ON ft.id = fh.fund_type_id
+                LEFT JOIN finances.fund_contributions fc ON fc.fund_holding_id = fh.id
+                GROUP BY fh.id, fh.external_id, fh.wallet_id, fh.name, ft.name, fh.current_value;
+
+                CREATE VIEW finances.holdings_report_rows AS
+                SELECT
+                    MIN(external_id::TEXT)::UUID AS external_id,
+                    wallet_id,
+                    kind,
+                    name,
+                    ticker,
+                    type_label,
+                    CASE
+                        WHEN SUM(quantity) IS NOT NULL AND SUM(quantity) <![CDATA[<>]]> 0
+                            THEN SUM(current_value) / SUM(quantity)
+                        ELSE MAX(current_price)
+                    END AS current_price,
+                    SUM(quantity) AS quantity,
+                    SUM(cost_basis) AS cost_basis,
+                    SUM(current_value) AS current_value
+                FROM finances.holdings_overview
+                GROUP BY wallet_id, kind, name, ticker, type_label;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

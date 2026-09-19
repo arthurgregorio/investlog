@@ -5,6 +5,7 @@ import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
+import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_LOTS
@@ -41,6 +42,7 @@ class OverviewRepository(private val dsl: DSLContext) {
             .leftJoin(currencyRates)
                 .on(currencyRates.CURRENCY_CODE.eq(wallets.CURRENCY))
             .where(wallets.USER_ID.eq(userId))
+            .and(overview.STATUS.eq(HoldingStatus.ACTIVE))
             .groupBy(overview.KIND)
             .fetch { record ->
                 val totalCostBasis = record.get("total_cost_basis", BigDecimal::class.java) ?: BigDecimal.ZERO
