@@ -37,8 +37,8 @@ const tagTypeFor: Record<WalletKind, string> = {
   FUNDS: 'is-success',
 }
 
-function gotoType(kind: WalletKind, walletId: string) {
-  router.push({ name: 'investments', query: { filter: kind, walletId } })
+function openWallet(walletId: string) {
+  router.push({ name: 'wallet-detail', params: { id: walletId } })
 }
 
 const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
@@ -178,8 +178,8 @@ function renameWallet(walletId: string, currentName: string) {
             <span class="wallet-count">
               {{ wallet.holdingCount }} {{ wallet.holdingCount === 1 ? 'ativo' : 'ativos' }}
             </span>
-            <b-button type="is-ghost" size="is-small" @click="gotoType(wallet.kind, wallet.id)">
-              Ver investimentos
+            <b-button type="is-ghost" size="is-small" @click="openWallet(wallet.id)">
+              Ver carteira
             </b-button>
           </div>
         </CardBody>
