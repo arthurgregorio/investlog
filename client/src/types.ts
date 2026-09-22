@@ -122,6 +122,26 @@ export interface FundHoldingDetail {
 
 export type HoldingDetail = StockHoldingDetail | CryptoHoldingDetail | FundHoldingDetail
 
+/** One recorded exit from a position — a row of `GET /results`. */
+export interface ResultRow {
+  id: string
+  kind: WalletKind
+  resultType: 'WITHDRAWAL' | 'TRANSFER'
+  holdingName: string
+  ticker: string | null
+  walletId: string
+  walletName: string
+  walletCurrency: string
+  resultDate: string
+  quantity: number | null
+  grossAmount: number
+  fees: number
+  taxes: number
+  costBasis: number
+  netAmount: number
+  profit: number
+}
+
 export interface PagedResponse<T> {
   content: T[]
   page: {
