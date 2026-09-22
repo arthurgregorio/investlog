@@ -2915,19 +2915,6 @@ h3.report-subgroup-title {
   font-variant-numeric: tabular-nums;
 }
 
-.wd-share-track {
-  flex-grow: 1;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--tag-bg);
-  overflow: hidden;
-}
-
-.wd-share-fill {
-  display: block;
-  height: 100%;
-  background: var(--wt-crypto);
-}
 
 .wd-chart-sub {
   font-size: 12px;

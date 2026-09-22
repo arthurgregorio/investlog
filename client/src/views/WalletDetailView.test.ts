@@ -166,7 +166,6 @@ describe('WalletDetailView', () => {
 
     expect(wrapper.find('.message.is-warning').exists()).toBe(false)
     expect(wrapper.find('.wd-share-pct').text()).toBe('81,05%')
-    expect(wrapper.find('.wd-share-fill').attributes('style')).toContain('81.05%')
   })
 
   it('lists the wallet holdings and expands a row into the detail panel', async () => {
@@ -255,6 +254,6 @@ describe('WalletDetailView', () => {
     expect(wrapper.text()).toContain('Maior posição')
     expect(wrapper.text()).toContain('ITUB4')
     expect(wrapper.text()).toContain('TRXF11')
-    expect(wrapper.find('.wd-share-fill').attributes('style')).toContain('41.1%')
+    expect(wrapper.find('.wd-share-pct').text()).toBe('41,10%')
   })
 })
