@@ -2834,15 +2834,14 @@ h3.report-subgroup-title {
 }
 
 .wd-figure-value {
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -.025em;
+  font-size: 13px;
+  font-weight: 700;
   margin-top: 6px;
   font-variant-numeric: tabular-nums;
 }
 
 .wd-figure-chip {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .wd-actions {

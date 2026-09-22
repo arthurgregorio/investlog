@@ -192,15 +192,15 @@ function confirmDeleteWallet() {
 
             <div class="wd-figures">
               <div class="wd-figure">
-                <div class="kpi-label">Valor atual</div>
-                <div class="wd-figure-value">
-                  {{ fmt.money(detail.currentValue, detail.currency) }}
-                </div>
-              </div>
-              <div class="wd-figure">
                 <div class="kpi-label">Total investido</div>
                 <div class="wd-figure-value">
                   {{ fmt.money(detail.totalInvested, detail.currency) }}
+                </div>
+              </div>
+              <div class="wd-figure">
+                <div class="kpi-label">Valor atual</div>
+                <div class="wd-figure-value">
+                  {{ fmt.money(detail.currentValue, detail.currency) }}
                 </div>
               </div>
               <div class="wd-figure">
