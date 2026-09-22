@@ -18,8 +18,6 @@ import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
 import type { HoldingRow } from '@/types'
 
-const CONCENTRATION_WARNING_THRESHOLD = 50
-
 const route = useRoute()
 const router = useRouter()
 const dialog = useDialog()
@@ -39,12 +37,6 @@ const chartSeries = computed(() => ({
   data: (detail.value?.series ?? []).map((point) => point.currentValue),
   labels: (detail.value?.series ?? []).map((point) => fmt.date(point.snapshotDate)),
 }))
-
-const isConcentrated = computed(
-  () =>
-    detail.value?.largestHoldingShare != null &&
-    detail.value.largestHoldingShare > CONCENTRATION_WARNING_THRESHOLD,
-)
 
 const concentrationLabel = computed(() =>
   detail.value?.largestHoldingShare == null ? '' : fmt.pct(detail.value.largestHoldingShare),
@@ -341,11 +333,6 @@ function confirmDeleteWallet() {
           />
         </CardBody>
       </Card>
-
-      <b-message v-if="isConcentrated" type="is-warning" has-icon :closable="false">
-        <strong>{{ detail.largestHoldingName }}</strong> representa
-        {{ concentrationLabel }} desta carteira.
-      </b-message>
 
       <EmptyState
         v-if="holdingsListStore.loaded && holdingsListStore.rows.length === 0"

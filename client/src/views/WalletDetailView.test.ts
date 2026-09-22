@@ -159,26 +159,14 @@ describe('WalletDetailView', () => {
     expect(wrapper.find('canvas').exists()).toBe(true)
   })
 
-  it('warns when a single holding exceeds half the wallet', async () => {
+  it('shows the largest position share in its card, with no separate warning banner', async () => {
     const { wrapper } = await mountView(
       detailOf({ largestHoldingName: 'Petrobras', largestHoldingShare: 81.05 }),
     )
 
-    const warning = wrapper.find('.message.is-warning')
-    expect(warning.exists()).toBe(true)
-    expect(warning.text()).toContain('Petrobras')
-    expect(warning.text()).toContain('81,05%')
-  })
-
-  // The share itself still shows in the "Maior posição" card below 50% — what the threshold
-  // controls is only the warning banner.
-  it('does not warn when no holding dominates the wallet', async () => {
-    const { wrapper } = await mountView(
-      detailOf({ largestHoldingName: 'Petrobras', largestHoldingShare: 30 }),
-    )
-
     expect(wrapper.find('.message.is-warning').exists()).toBe(false)
-    expect(wrapper.text()).toContain('30,00%')
+    expect(wrapper.find('.wd-share-pct').text()).toBe('81,05%')
+    expect(wrapper.find('.wd-share-fill').attributes('style')).toContain('81.05%')
   })
 
   it('lists the wallet holdings and expands a row into the detail panel', async () => {
