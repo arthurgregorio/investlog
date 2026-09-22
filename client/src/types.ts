@@ -122,6 +122,55 @@ export interface FundHoldingDetail {
 
 export type HoldingDetail = StockHoldingDetail | CryptoHoldingDetail | FundHoldingDetail
 
+/** One end-of-day point of a wallet's value history. */
+export interface WalletSnapshotPoint {
+  snapshotDate: string
+  currentValue: number
+  totalInvested: number
+  gain: number
+  gainPct: number
+}
+
+/** The best or worst performing holding in a wallet. */
+export interface WalletPerformer {
+  id: string
+  name: string
+  ticker: string | null
+  kind: WalletKind
+  gain: number
+  gainPct: number
+}
+
+export interface WalletActivity {
+  lastTransactionDate: string | null
+  lastTransactionName: string | null
+  lastTransactionAmount: number | null
+  transactionCount: number
+  walletAgeInDays: number | null
+  investmentCount: number
+}
+
+/** Everything the wallet detail page shows, from `GET /wallets/{id}/detail`. */
+export interface WalletDetail {
+  id: string
+  name: string
+  kind: WalletKind
+  currency: string
+  currentValue: number
+  totalInvested: number
+  gain: number
+  gainPct: number | null
+  series: WalletSnapshotPoint[]
+  dayChange: number | null
+  weekChange: number | null
+  monthChange: number | null
+  bestPerformer: WalletPerformer | null
+  worstPerformer: WalletPerformer | null
+  largestHoldingName: string | null
+  largestHoldingShare: number | null
+  activity: WalletActivity
+}
+
 export interface PagedResponse<T> {
   content: T[]
   page: {
