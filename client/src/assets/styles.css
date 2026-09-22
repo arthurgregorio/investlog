@@ -2766,3 +2766,217 @@ h3.report-subgroup-title {
   }
 }
 
+/* ===== Wallet detail page ===== */
+.wd-breadcrumb {
+  margin-bottom: 2px;
+}
+
+.wd-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.wd-identity {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+}
+
+.wd-kind-mark {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.wd-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wd-name-line .page-title {
+  margin: 0;
+}
+
+.wd-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.wd-currency {
+  font-size: 12.5px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.wd-activity {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.wd-figures {
+  display: flex;
+  align-items: flex-start;
+  gap: 30px;
+  margin-left: auto;
+}
+
+.wd-figure-value {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.025em;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wd-figure-chip {
+  margin-top: 8px;
+}
+
+.wd-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 28px;
+  border-left: 1px solid var(--border);
+  align-self: center;
+}
+
+.wd-highlight {
+  height: 100%;
+}
+
+.wd-highlight-body {
+  display: flex;
+  align-items: stretch;
+  gap: 13px;
+}
+
+.wd-rail {
+  width: 3px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.wd-rail-up {
+  background: var(--up);
+}
+
+.wd-rail-down {
+  background: var(--down);
+}
+
+.wd-rail-largest {
+  background: var(--wt-crypto);
+}
+
+.wd-highlight-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.wd-highlight-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+}
+
+.wd-highlight-empty {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.wd-share {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wd-share-pct {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--wt-crypto);
+  font-variant-numeric: tabular-nums;
+}
+
+.wd-share-track {
+  flex-grow: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--tag-bg);
+  overflow: hidden;
+}
+
+.wd-share-fill {
+  display: block;
+  height: 100%;
+  background: var(--wt-crypto);
+}
+
+.wd-chart-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.wd-deltas {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.wallet-foot-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+@media (max-width: 860px) {
+  .wd-header-row {
+    align-items: flex-start;
+  }
+
+  .wd-figures {
+    margin-left: 0;
+    width: 100%;
+    gap: 24px;
+  }
+
+  .wd-actions {
+    padding-left: 0;
+    border-left: 0;
+    width: 100%;
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 680px) {
+  .wd-figures {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .wd-actions {
+    flex-wrap: wrap;
+  }
+
+  .wd-identity {
+    align-items: flex-start;
+  }
+}

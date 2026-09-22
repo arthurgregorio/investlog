@@ -41,6 +41,10 @@ function openWallet(walletId: string) {
   router.push({ name: 'wallet-detail', params: { id: walletId } })
 }
 
+function gotoType(kind: WalletKind, walletId: string) {
+  router.push({ name: 'investments', query: { filter: kind, walletId } })
+}
+
 const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
 
 function confirmDeleteWallet(walletId: string, walletName: string) {
@@ -178,9 +182,14 @@ function renameWallet(walletId: string, currentName: string) {
             <span class="wallet-count">
               {{ wallet.holdingCount }} {{ wallet.holdingCount === 1 ? 'ativo' : 'ativos' }}
             </span>
-            <b-button type="is-ghost" size="is-small" @click="openWallet(wallet.id)">
-              Ver carteira
-            </b-button>
+            <div class="wallet-foot-actions">
+              <b-button type="is-ghost" size="is-small" @click="gotoType(wallet.kind, wallet.id)">
+                Ver investimentos
+              </b-button>
+              <b-button type="is-ghost" size="is-small" @click="openWallet(wallet.id)">
+                Ver carteira
+              </b-button>
+            </div>
           </div>
         </CardBody>
       </Card>
