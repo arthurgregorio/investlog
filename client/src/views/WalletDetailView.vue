@@ -38,6 +38,14 @@ const chartSeries = computed(() => ({
   labels: (detail.value?.series ?? []).map((point) => fmt.date(point.snapshotDate)),
 }))
 
+const resultDirection = computed(() => {
+  const gain = detail.value?.gain
+  if (gain == null) return 'gl-empty'
+  if (gain > 0.0001) return 'gl-up'
+  if (gain < -0.0001) return 'gl-down'
+  return 'gl-flat'
+})
+
 const concentrationLabel = computed(() =>
   detail.value?.largestHoldingShare == null ? '' : fmt.pct(detail.value.largestHoldingShare),
 )
@@ -205,8 +213,11 @@ function confirmDeleteWallet() {
               </div>
               <div class="wd-figure">
                 <div class="kpi-label">Resultado</div>
-                <div class="wd-figure-chip">
-                  <GainChip :value="detail.gain" :pct="detail.gainPct" :cur="detail.currency" />
+                <div class="wd-figure-value" :class="resultDirection">
+                  {{ fmt.moneySigned(detail.gain, detail.currency) }}
+                  <span v-if="detail.gainPct != null" class="wd-figure-pct">{{
+                    fmt.pctSigned(detail.gainPct)
+                  }}</span>
                 </div>
               </div>
             </div>

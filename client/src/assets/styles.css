@@ -2840,8 +2840,9 @@ h3.report-subgroup-title {
   font-variant-numeric: tabular-nums;
 }
 
-.wd-figure-chip {
-  margin-top: 6px;
+.wd-figure-pct {
+  font-weight: 600;
+  opacity: .85;
 }
 
 .wd-actions {
