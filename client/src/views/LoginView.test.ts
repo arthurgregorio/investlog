@@ -4,7 +4,6 @@ import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import LoginView from './LoginView.vue'
 import { useAuthStore } from '@/stores/auth'
-import { authApi } from '@/api/auth'
 
 vi.mock('@/api/auth', () => ({
   authApi: {
@@ -19,7 +18,10 @@ vi.mock('@/api/auth', () => ({
   },
 }))
 
-describe('LoginView', () => {
+// The step components own their own fields and are covered one by one in components/auth/.
+// What is left here is what only the whole flow can show: which step follows which, and where
+// useLoginFlow's errors and query-parameter entry points surface.
+describe('LoginView flow', () => {
   let router: ReturnType<typeof createRouter>
   let pinia: TestingPinia
 
@@ -35,22 +37,32 @@ describe('LoginView', () => {
     })
   })
 
-  it('logs in on submit when already enrolled', async () => {
-    const store = useAuthStore()
-    const loginSpy = vi.spyOn(store, 'login').mockResolvedValue('authenticated')
-    router.push('/login')
+  async function openLogin(query = '') {
+    router.push(`/login${query}`)
     await router.isReady()
-
     const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
+    await flushPromises()
+    return wrapper
+  }
+
+  async function submitCredentials(wrapper: Awaited<ReturnType<typeof openLogin>>) {
     await wrapper.find('input[type="email"]').setValue('admin@admin.com')
     await wrapper.find('input[type="password"]').setValue('admin')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
+  }
+
+  it('logs in on submit when already enrolled', async () => {
+    const store = useAuthStore()
+    const loginSpy = vi.spyOn(store, 'login').mockResolvedValue('authenticated')
+
+    const wrapper = await openLogin()
+    await submitCredentials(wrapper)
 
     expect(loginSpy).toHaveBeenCalledWith('admin@admin.com', 'admin')
   })
 
-  it('shows the QR enrollment step when login needs enrollment, then verifies to log in', async () => {
+  it('moves from credentials to the enrollment step, then verifies with the code', async () => {
     const store = useAuthStore()
     vi.spyOn(store, 'login').mockResolvedValue('needs_enrollment')
     const enrollSpy = vi.spyOn(store, 'enrollTotp').mockResolvedValue({
@@ -58,19 +70,12 @@ describe('LoginView', () => {
       qrCodeDataUri: 'data:image/png;base64,abc',
     })
     const verifySpy = vi.spyOn(store, 'verifyTotp').mockResolvedValue()
-    router.push('/login')
-    await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await wrapper.find('input[type="email"]').setValue('admin@admin.com')
-    await wrapper.find('input[type="password"]').setValue('admin')
-    await wrapper.find('form').trigger('submit.prevent')
-    await flushPromises()
+    const wrapper = await openLogin()
+    await submitCredentials(wrapper)
 
     expect(enrollSpy).toHaveBeenCalledWith('admin@admin.com', 'admin')
-    const qrImage = wrapper.find('img.auth-totp-qr')
-    expect(qrImage.exists()).toBe(true)
-    expect(qrImage.attributes('src')).toBe('data:image/png;base64,abc')
+    expect(wrapper.find('img.auth-totp-qr').attributes('src')).toBe('data:image/png;base64,abc')
 
     await wrapper.find('input[maxlength="6"]').setValue('123456')
     await wrapper.find('form').trigger('submit.prevent')
@@ -79,45 +84,18 @@ describe('LoginView', () => {
     expect(verifySpy).toHaveBeenCalledWith('admin@admin.com', 'admin', '123456')
   })
 
-  it('shows the code step when login requires a totp code, then logs in with it', async () => {
+  it('moves from credentials to the code step, then logs in with the code', async () => {
     const store = useAuthStore()
     const loginSpy = vi
       .spyOn(store, 'login')
       .mockResolvedValueOnce('totp_required')
       .mockResolvedValueOnce('authenticated')
-    router.push('/login')
-    await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await wrapper.find('input[type="email"]').setValue('admin@admin.com')
-    await wrapper.find('input[type="password"]').setValue('admin')
-    await wrapper.find('form').trigger('submit.prevent')
-    await flushPromises()
+    const wrapper = await openLogin()
+    await submitCredentials(wrapper)
 
     expect(wrapper.find('img.auth-totp-qr').exists()).toBe(false)
     expect(wrapper.find('input[maxlength="6"]').exists()).toBe(true)
-
-    await wrapper.find('input[maxlength="6"]').setValue('654321')
-    await wrapper.find('form').trigger('submit.prevent')
-    await flushPromises()
-
-    expect(loginSpy).toHaveBeenLastCalledWith('admin@admin.com', 'admin', '654321', false)
-  })
-
-  it('passes trustDevice: true when the checkbox is checked on the totp step', async () => {
-    const store = useAuthStore()
-    const loginSpy = vi
-      .spyOn(store, 'login')
-      .mockResolvedValueOnce('totp_required')
-      .mockResolvedValueOnce('authenticated')
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await wrapper.find('input[type="email"]').setValue('admin@admin.com')
-    await wrapper.find('input[type="password"]').setValue('admin')
-    await wrapper.find('form').trigger('submit.prevent')
-    await flushPromises()
 
     await wrapper.find('input[maxlength="6"]').setValue('654321')
     await wrapper.find('input[type="checkbox"]').setValue(true)
@@ -130,10 +108,8 @@ describe('LoginView', () => {
   it('registers a new account and navigates to the pending-approval screen', async () => {
     const store = useAuthStore()
     const registerSpy = vi.spyOn(store, 'register').mockResolvedValue()
-    router.push('/login')
-    await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
+    const wrapper = await openLogin()
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
@@ -157,10 +133,8 @@ describe('LoginView', () => {
         data: { errors: ['password deve ter entre 8 e 128 caracteres'] },
       },
     })
-    router.push('/login')
-    await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
+    const wrapper = await openLogin()
     await wrapper.find('[data-testid="toggle-register"]').trigger('click')
     await wrapper.find('input[type="text"]').setValue('Nova Usuária')
     await wrapper.find('input[type="email"]').setValue('nova@example.com')
@@ -171,83 +145,32 @@ describe('LoginView', () => {
     expect(wrapper.find('.auth-error').text()).toBe('password deve ter entre 8 e 128 caracteres')
   })
 
-  it('disables the register button until the password meets every requirement, and shows the requirement hint', async () => {
+  it('shows the error message from a failed login attempt', async () => {
     const store = useAuthStore()
-    const registerSpy = vi.spyOn(store, 'register')
-    router.push('/login')
-    await router.isReady()
+    vi.spyOn(store, 'login').mockRejectedValue(new Error('bad credentials'))
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await wrapper.find('[data-testid="toggle-register"]').trigger('click')
-    await wrapper.find('input[type="text"]').setValue('Nova Usuária')
-    await wrapper.find('input[type="email"]').setValue('nova@example.com')
+    const wrapper = await openLogin()
+    await submitCredentials(wrapper)
 
-    await wrapper.find('input[type="password"]').setValue('teste')
-    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Mínimo de 8 caracteres')
-    expect(wrapper.text()).toContain('Ao menos uma letra maiúscula')
-    expect(wrapper.text()).toContain('Ao menos um número')
-
-    // Long enough now, but still missing an uppercase letter and a number.
-    await wrapper.find('input[type="password"]').setValue('testeteste')
-    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
-
-    // Uppercase added, still missing a number.
-    await wrapper.find('input[type="password"]').setValue('Testeteste')
-    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
-
-    // All three requirements met.
-    await wrapper.find('input[type="password"]').setValue('Senha123')
-    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
-
-    await wrapper.find('form').trigger('submit.prevent')
-    await flushPromises()
-
-    expect(registerSpy).toHaveBeenCalledWith('Nova Usuária', 'nova@example.com', 'Senha123')
-  })
-
-  it('shows the Google button when the server reports googleAuthEnabled: true', async () => {
-    vi.mocked(authApi.fetchConfig).mockResolvedValueOnce({ googleAuthEnabled: true })
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await flushPromises()
-
-    const googleButton = wrapper.find('.auth-google-button')
-    expect(googleButton.exists()).toBe(true)
-    // Must be a real anchor causing a full browser navigation, not a button/click handler —
-    // an OAuth2 authorization-code flow requires the browser to actually leave the SPA.
-    expect(googleButton.element.tagName).toBe('A')
-    expect(googleButton.attributes('href')).toBe('/private/oauth2/authorization/google')
-  })
-
-  it('hides the Google button when the server reports googleAuthEnabled: false', async () => {
-    router.push('/login')
-    await router.isReady()
-
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await flushPromises()
-
-    expect(wrapper.find('.auth-google-button').exists()).toBe(false)
+    expect(wrapper.find('.auth-error').text()).toBe('E-mail ou senha inválidos.')
   })
 
   it('shows a friendly message when redirected back with ?error=email_in_use', async () => {
-    router.push('/login?error=email_in_use')
-    await router.isReady()
-
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await flushPromises()
+    const wrapper = await openLogin('?error=email_in_use')
 
     expect(wrapper.text()).toContain('Já existe uma conta com este e-mail')
   })
 
-  it('shows the link-account step with the colliding email when redirected with a link token', async () => {
-    router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
-    await router.isReady()
+  it('shows a friendly message when redirected back with ?error=oauth_failed', async () => {
+    const wrapper = await openLogin('?error=oauth_failed')
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await flushPromises()
+    expect(wrapper.text()).toContain('Não foi possível entrar com o Google')
+  })
+
+  it('enters the link step with the colliding e-mail when redirected with a link token', async () => {
+    const wrapper = await openLogin(
+      '?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com',
+    )
 
     expect(wrapper.text()).toContain('nova@example.com')
     expect(wrapper.find('input[type="password"]').exists()).toBe(true)
@@ -257,12 +180,10 @@ describe('LoginView', () => {
   it('submits the link token and password to link the Google account', async () => {
     const store = useAuthStore()
     const linkSpy = vi.spyOn(store, 'linkGoogleAccount').mockResolvedValue()
-    router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
-    await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await flushPromises()
-
+    const wrapper = await openLogin(
+      '?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com',
+    )
     await wrapper.find('input[type="password"]').setValue('senha123')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
@@ -273,12 +194,10 @@ describe('LoginView', () => {
   it('shows an error when linking fails', async () => {
     const store = useAuthStore()
     vi.spyOn(store, 'linkGoogleAccount').mockRejectedValue(new Error('unauthorized'))
-    router.push('/login?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com')
-    await router.isReady()
 
-    const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
-    await flushPromises()
-
+    const wrapper = await openLogin(
+      '?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com',
+    )
     await wrapper.find('input[type="password"]').setValue('wrong')
     await wrapper.find('form').trigger('submit.prevent')
     await flushPromises()
