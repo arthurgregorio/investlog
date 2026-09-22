@@ -2941,12 +2941,6 @@ h3.report-subgroup-title {
   flex-wrap: wrap;
 }
 
-.wallet-foot-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
 @media (max-width: 860px) {
   .wd-header-row {
     align-items: flex-start;
