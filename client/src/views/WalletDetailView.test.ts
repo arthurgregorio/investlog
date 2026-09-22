@@ -5,9 +5,13 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import WalletDetailView from './WalletDetailView.vue'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useHoldingsListStore } from '@/stores/holdingsList'
+import { useAuthStore } from '@/stores/auth'
 import type { HoldingRow, WalletDetail } from '@/types'
 
 vi.mock('@/api/walletDetail', () => ({ walletDetailApi: { get: vi.fn() } }))
+vi.mock('@/api/wallets', () => ({
+  walletsApi: { findAll: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() },
+}))
 vi.mock('@/api/holdings', () => ({
   holdingsApi: {
     findAll: vi.fn(),
@@ -72,12 +76,14 @@ async function mountView(
   detail: WalletDetail | null,
   rows: HoldingRow[] = [mockRow],
   loaded = true,
+  isAdmin = true,
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/wallets', name: 'wallets', component: { template: '<div />' } },
       { path: '/wallets/:id', name: 'wallet-detail', component: WalletDetailView },
+      { path: '/investments', name: 'investments', component: { template: '<div />' } },
     ],
   })
   const pinia = createTestingPinia()
@@ -89,6 +95,15 @@ async function mountView(
 
   const walletDetailStore = useWalletDetailStore()
   const holdingsListStore = useHoldingsListStore()
+  const authStore = useAuthStore()
+  authStore.session = {
+    name: 'Admin',
+    email: 'admin@admin.com',
+    role: isAdmin ? 'ADMIN' : 'USER',
+    status: 'APPROVED',
+    authProvider: 'LOCAL',
+    demoModeEnabled: false,
+  }
   walletDetailStore.detail = detail
   holdingsListStore.rows = rows
   holdingsListStore.loaded = loaded
@@ -144,21 +159,14 @@ describe('WalletDetailView', () => {
     expect(wrapper.find('canvas').exists()).toBe(true)
   })
 
-  it('warns when a single holding exceeds half the wallet', async () => {
+  it('shows the largest position share in its card, with no separate warning banner', async () => {
     const { wrapper } = await mountView(
       detailOf({ largestHoldingName: 'Petrobras', largestHoldingShare: 81.05 }),
     )
 
-    expect(wrapper.text()).toContain('Petrobras')
-    expect(wrapper.text()).toContain('81,05%')
-  })
-
-  it('does not warn when no holding dominates the wallet', async () => {
-    const { wrapper } = await mountView(
-      detailOf({ largestHoldingName: 'Petrobras', largestHoldingShare: 30 }),
-    )
-
-    expect(wrapper.text()).not.toContain('30,00%')
+    expect(wrapper.find('.message.is-warning').exists()).toBe(false)
+    expect(wrapper.find('.wd-share-pct').text()).toBe('81,05%')
+    expect(wrapper.find('.wd-share-fill').attributes('style')).toContain('81.05%')
   })
 
   it('lists the wallet holdings and expands a row into the detail panel', async () => {
@@ -186,5 +194,67 @@ describe('WalletDetailView', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('wallets')
+  })
+
+  it('offers a rename button beside the wallet name', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    expect(wrapper.find('button[aria-label="Renomear carteira"]').exists()).toBe(true)
+  })
+
+  it('jumps to the holdings list filtered by this wallet', async () => {
+    const { wrapper, router } = await mountView(detailOf())
+
+    const link = wrapper.findAll('button').find((button) => button.text() === 'Ver investimentos')
+    await link!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('investments')
+    expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', walletId: 'wallet-1' })
+  })
+
+  it('offers a remove button to an admin', async () => {
+    const { wrapper } = await mountView(detailOf(), [mockRow], true, true)
+
+    expect(wrapper.findAll('button').some((button) => button.text() === 'Remover')).toBe(true)
+  })
+
+  it('hides the remove button from a non-admin', async () => {
+    const { wrapper } = await mountView(detailOf(), [mockRow], true, false)
+
+    expect(wrapper.findAll('button').some((button) => button.text() === 'Remover')).toBe(false)
+  })
+
+  it('renders best, worst and largest position as three highlight cards', async () => {
+    const { wrapper } = await mountView(
+      detailOf({
+        bestPerformer: {
+          id: 'h1',
+          name: 'Itau',
+          ticker: 'ITUB4',
+          kind: 'STOCKS',
+          gain: 3475,
+          gainPct: 39.71,
+        },
+        worstPerformer: {
+          id: 'h2',
+          name: 'TRX',
+          ticker: 'TRXF11',
+          kind: 'FUNDS',
+          gain: -110,
+          gainPct: -11.22,
+        },
+        largestHoldingName: 'Petrobras',
+        largestHoldingShare: 41.1,
+      }),
+    )
+
+    expect(wrapper.findAll('.wd-highlight')).toHaveLength(3)
+    expect(wrapper.text()).toContain('Melhor desempenho')
+    expect(wrapper.text()).toContain('Pior desempenho')
+    expect(wrapper.text()).toContain('Maior posição')
+    expect(wrapper.text()).toContain('ITUB4')
+    expect(wrapper.text()).toContain('TRXF11')
+    expect(wrapper.find('.wd-share-fill').attributes('style')).toContain('41.1%')
   })
 })
