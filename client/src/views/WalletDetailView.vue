@@ -53,9 +53,7 @@ const concentrationLabel = computed(() =>
 const largestHoldingTicker = computed(() => {
   const currentDetail = detail.value
   if (!currentDetail?.largestHoldingName) return null
-  const match = holdingsListStore.rows.find(
-    (row) => row.name === currentDetail.largestHoldingName,
-  )
+  const match = holdingsListStore.rows.find((row) => row.name === currentDetail.largestHoldingName)
   return match?.ticker ?? currentDetail.largestHoldingName
 })
 
@@ -170,7 +168,7 @@ function confirmDeleteWallet() {
         </b-button>
       </div>
 
-      <Card class="wd-header">
+      <Card class="mb-0">
         <CardBody>
           <div class="wd-header-row">
             <div class="wd-identity">
@@ -297,12 +295,6 @@ function confirmDeleteWallet() {
                     <div class="wd-highlight-name">{{ largestHoldingTicker }}</div>
                     <div class="wd-share">
                       <span class="wd-share-pct">{{ concentrationLabel }}</span>
-                      <span class="wd-share-track">
-                        <span
-                          class="wd-share-fill"
-                          :style="{ width: `${detail.largestHoldingShare ?? 0}%` }"
-                        />
-                      </span>
                     </div>
                   </template>
                   <div v-else class="wd-highlight-empty">—</div>
@@ -313,7 +305,7 @@ function confirmDeleteWallet() {
         </div>
       </div>
 
-      <Card>
+      <Card class="mb-0">
         <CardBody>
           <div class="card-title-row">
             <div>

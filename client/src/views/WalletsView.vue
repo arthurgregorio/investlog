@@ -92,7 +92,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
                   outlined
                   type="is-primary"
                   size="is-small"
-                  icon-left="magnify"
+                  icon-left="finance"
                   aria-label="Detalhes da carteira"
                   @click.stop="openWallet(wallet.id)"
                 />
