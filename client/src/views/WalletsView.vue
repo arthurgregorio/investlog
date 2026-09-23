@@ -1,29 +1,24 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { BButton, useDialog, useToast } from 'buefy'
+import { BButton } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import GainChip from '@/components/ui/GainChip.vue'
-import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
-import { useAuthStore } from '@/stores/auth'
 import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES } from '@/utils/walletTypes'
 import type { WalletKind } from '@/types'
 
-const dialog = useDialog()
-const toast = useToast()
 const walletsStore = useWalletsStore()
 const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
 const router = useRouter()
 const modals = useModals()
-const auth = useAuthStore()
 
 onMounted(() => {
   walletsStore.load()
@@ -37,44 +32,15 @@ const tagTypeFor: Record<WalletKind, string> = {
   FUNDS: 'is-success',
 }
 
+function openWallet(walletId: string) {
+  router.push({ name: 'wallet-detail', params: { id: walletId } })
+}
+
 function gotoType(kind: WalletKind, walletId: string) {
   router.push({ name: 'investments', query: { filter: kind, walletId } })
 }
 
 const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
-
-function confirmDeleteWallet(walletId: string, walletName: string) {
-  dialog.confirm({
-    title: 'Remover carteira',
-    message: `Remover <strong>${walletName}</strong> apagará todos os seus investimentos. Esta ação <strong>não pode ser desfeita</strong>.`,
-    type: 'is-danger',
-    hasIcon: true,
-    confirmText: 'Remover',
-    cancelText: 'Cancelar',
-    onConfirm: async () => {
-      await walletsApi.remove(walletId)
-      toast.open({ message: 'Carteira removida.', type: 'is-success' })
-      await walletsStore.refresh()
-    },
-  })
-}
-
-function renameWallet(walletId: string, currentName: string) {
-  dialog.prompt({
-    title: 'Renomear carteira',
-    message: 'Novo nome:',
-    inputAttrs: { value: currentName, placeholder: 'Nome da carteira' },
-    confirmText: 'Salvar',
-    cancelText: 'Cancelar',
-    onConfirm: async (newName: string) => {
-      const trimmedName = newName.trim()
-      if (!trimmedName || trimmedName === currentName) return
-      await walletsApi.update(walletId, { name: trimmedName })
-      toast.open({ message: 'Carteira renomeada.', type: 'is-success' })
-      await walletsStore.refresh()
-    },
-  })
-}
 </script>
 
 <template>
@@ -121,21 +87,16 @@ function renameWallet(walletId: string, currentName: string) {
               </div>
             </div>
             <div style="display: flex; gap: 6px; margin-left: auto">
-              <b-button
-                outlined
-                type="is-primary"
-                size="is-small"
-                icon-left="pencil"
-                @click.stop="renameWallet(wallet.id, wallet.name)"
-              />
-              <b-button
-                v-if="auth.isAdmin"
-                outlined
-                type="is-danger"
-                size="is-small"
-                icon-left="delete"
-                @click.stop="confirmDeleteWallet(wallet.id, wallet.name)"
-              />
+              <b-tooltip label="Detalhes" position="is-left">
+                <b-button
+                  outlined
+                  type="is-primary"
+                  size="is-small"
+                  icon-left="finance"
+                  aria-label="Detalhes da carteira"
+                  @click.stop="openWallet(wallet.id)"
+                />
+              </b-tooltip>
             </div>
           </div>
           <div class="wallet-invested">
