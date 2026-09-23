@@ -92,6 +92,19 @@ export interface ContributionDetail {
   amount: number
 }
 
+/** One recorded exit from a holding, embedded in its detail response. */
+export interface WithdrawalDetail {
+  id: string
+  resultDate: string // ISO yyyy-mm-dd
+  quantity: number | null
+  grossAmount: number
+  fees: number
+  taxes: number
+  costBasis: number
+  netAmount: number
+  profit: number
+}
+
 export interface StockHoldingDetail {
   id: string
   walletId: string
@@ -100,6 +113,7 @@ export interface StockHoldingDetail {
   name: string
   currentPrice: number | null
   lots: LotDetail[]
+  withdrawals: WithdrawalDetail[]
 }
 
 export interface CryptoHoldingDetail {
@@ -109,6 +123,7 @@ export interface CryptoHoldingDetail {
   name: string
   currentPrice: number | null
   lots: LotDetail[]
+  withdrawals: WithdrawalDetail[]
 }
 
 export interface FundHoldingDetail {
@@ -118,6 +133,7 @@ export interface FundHoldingDetail {
   name: string
   currentValue: number | null
   contributions: ContributionDetail[]
+  withdrawals: WithdrawalDetail[]
 }
 
 export type HoldingDetail = StockHoldingDetail | CryptoHoldingDetail | FundHoldingDetail

@@ -1399,6 +1399,62 @@ a {
   padding: 12px 2px 2px;
 }
 
+.ledger-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 2px 8px;
+}
+
+.ledger-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ledger-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--tag-bg);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ledger-tag {
+  display: inline-flex;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+
+.lt-purchase {
+  background: rgba(21, 145, 91, .12);
+  color: var(--up);
+}
+
+.lt-withdrawal {
+  background: rgba(184, 134, 11, .14);
+  color: #9c7209;
+}
+
+[data-theme="dark"] .lt-withdrawal {
+  color: #f0a821;
+}
+
+.ledger-costs-note {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
 .avg-note {
   font-size: 11px;
   color: var(--text-muted);

@@ -127,6 +127,7 @@ describe('useAddInvestmentForm', () => {
       name: '',
       currentPrice: null,
       lots: [],
+      withdrawals: [],
     })
 
     const { form, submit } = useAddInvestmentForm('STOCKS')
