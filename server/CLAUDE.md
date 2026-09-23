@@ -107,6 +107,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `wallets` | Wallet CRUD |
 | `stockholdings`, `cryptoholdings`, `fundholdings` | The three holding kinds — see **Holdings** |
 | `holdingsoverview` | `GET /holdings`, the paginated cross-kind view |
+| `walletdetail` | `GET /wallets/{id}/detail`, the per-wallet dashboard payload — see **Wallet detail** |
 | `overview` | Portfolio summary and the monthly invested series |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
 | `typelists`, `currencyrates`, `configurations` | Reference data and runtime feature toggles |
@@ -170,6 +171,20 @@ In detail:
   child collection: `lots` for stocks and crypto, `contributions` for funds. They are separate
   packages rather than one generic holdings package because the three kinds differ in their child
   entity and in which fields are price-synced.
+
+### Wallet detail
+
+`walletdetail` serves `GET /private/v1/wallets/{externalId}/detail`, the single payload behind the per-wallet dashboard (issue #212). It assembles five sections that would otherwise be five client round-trips: header figures, the snapshot series with day/week/month deltas, best and worst performer, the largest holding's share, and an activity summary.
+
+This one earns its `@Service`. `WalletDetailService` runs three repository queries and derives everything else in Kotlin, so it is not the controller-to-repository passthrough the convention tells you to skip.
+
+**The wallet's investment list is deliberately absent.** The client reuses `GET /private/v1/holdings?walletId=`, which is already paginated and already backs the investments table; duplicating it here would mean a second, unpaginated code path for the same rows.
+
+**Deltas are snapshot-to-snapshot, not snapshot-to-live.** `changeOver` compares the latest snapshot against the most recent one at or before `latest - N days`, and returns null when no such snapshot exists. A wallet gets an empty series and three null deltas until `walletsnapshots` has been collecting for long enough, which is why #174 shipped first.
+
+**`findTransactions` unions stock lots, crypto lots and fund contributions.** The three child tables have different column names for the same idea, so the union aliases them to `transaction_date`/`investment_name`/`amount` and the service reads them by alias.
+
+**Known gap, tracked on #212.** The endpoint does not yet exclude `COMPLETED` holdings, because `finances.holding_status` arrives with #204 and is not on this branch or on `main`. When `feature/176-wallet-detail-view` is rebased onto a `main` containing #204, `WalletDetailRepository.findHoldings` needs `status = 'ACTIVE'` added — the query keeps compiling without it and silently counts fully-withdrawn holdings in every current figure.
 
 ### Price sync
 

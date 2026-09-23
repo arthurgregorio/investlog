@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import OverviewView from '@/views/OverviewView.vue'
 import WalletsView from '@/views/WalletsView.vue'
+import WalletDetailView from '@/views/WalletDetailView.vue'
 import InvestmentsView from '@/views/InvestmentsView.vue'
 import InvestmentReportView from '@/views/InvestmentReportView.vue'
 import PriceCurrenciesView from '@/views/PriceCurrenciesView.vue'
@@ -19,6 +20,7 @@ export const router = createRouter({
     { path: '/pending-approval', name: 'pending-approval', component: PendingApprovalView },
     { path: '/overview', name: 'overview', component: OverviewView },
     { path: '/wallets', name: 'wallets', component: WalletsView },
+    { path: '/wallets/:id', name: 'wallet-detail', component: WalletDetailView },
     { path: '/investments', name: 'investments', component: InvestmentsView },
     {
       path: '/investments/report',

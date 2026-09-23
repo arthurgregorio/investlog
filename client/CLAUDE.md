@@ -100,6 +100,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `wallets.ts` | `GET/POST/PATCH/DELETE /wallets` |
 | `holdings.ts` | `GET /holdings`, stock/crypto/fund CRUD + lots/contributions |
 | `overview.ts` | `GET /overview`, `GET /overview/series` |
+| `walletDetail.ts` | `GET /wallets/{id}/detail` (the per-wallet dashboard payload) |
 | `assetTypes.ts` | `GET/POST/DELETE /stock-types`, `/fund-types` |
 | `rates.ts` | `GET /currency-rates`, `PUT /currency-rates/{code}` |
 | `auth.ts` | `POST /auth/login`, `/register`, `/totp/enroll`, `/totp/verify`, `/google/link`, `GET /auth/session`, `/auth/config`, `POST /auth/logout`, `GET`/`DELETE /auth/trusted-devices` |
@@ -131,6 +132,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `wallets` | `GET /wallets` | `wallets[]`, `walletById(id)`, `refresh()` |
 | `holdingsList` | `GET /holdings` | `rows[]`, `page`, `totalElements`, `loadKind(kind, page)` |
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
+| `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
 | `typesList` | `GET /stock-types` + `/fund-types` | `stockTypes[]`, `fundTypes[]`, CRUD actions |
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
 | `appearance` | `localStorage` | `dark`, `accent` — persisted across sessions |
@@ -166,10 +168,20 @@ expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion
 
 ### Routes and their views (`src/router/index.ts`)
 
-`/overview`, `/wallets`, `/investments` and `/investments/report` (`InvestmentReportView.vue`) are
-the main app; `/settings` redirects to `/settings/price-currencies` (`PriceCurrenciesView.vue`) and
+`/overview`, `/wallets`, `/wallets/:id` (`WalletDetailView.vue`), `/investments` and
+`/investments/report` (`InvestmentReportView.vue`) are the main app; `/settings` redirects to `/settings/price-currencies` (`PriceCurrenciesView.vue`) and
 covers `/settings/types` and `/settings/users` — the whole `/settings/*` subtree is admin-only.
 `/login` and `/pending-approval` are the two public routes.
+
+### Wallet detail page (`WalletDetailView.vue`)
+
+`/wallets/:id`, reached by clicking a wallet card. This **replaced** `WalletsView`'s old jump to the filtered investments list — there is deliberately only one click target on a wallet card now, because the page shows the same holdings plus everything else.
+
+It reads two stores: `walletDetail` for the header, chart, deltas, performers and concentration, and the existing `holdingsList` scoped with `{ walletId }` for the investments table. Both load in one `Promise.all`, and a `watch` on the route param reloads them when navigating between wallets without unmounting.
+
+The chart and the delta chips render only when `series` is non-empty; otherwise an `EmptyState` explains that history starts accumulating from the first snapshot job run. The concentration warning appears when `largestHoldingShare` exceeds 50.
+
+**Two sections from issue #213 are not here yet** — the Move history table and the per-investment "Mover" action, both of which need #211's endpoints and modal. The page is built so they slot in beside the investments table without restructuring.
 
 ### App-shell modals (`src/composables/useModals.ts`)
 
