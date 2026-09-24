@@ -13,6 +13,7 @@ import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.exceptions.UserNotApprovedException
+import br.com.investlog.server.shared.exceptions.WithdrawalNotDeletableException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.validation.ConstraintViolationException
 import org.springframework.context.support.DefaultMessageSourceResolvable
@@ -99,6 +100,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         val message = ex.message ?: "Resgate inválido"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(WithdrawalNotDeletableException::class)
+    fun handleWithdrawalNotDeletable(ex: WithdrawalNotDeletableException): ProblemDetail {
+
+        val message = ex.message ?: "Este resgate não pode ser desfeito"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

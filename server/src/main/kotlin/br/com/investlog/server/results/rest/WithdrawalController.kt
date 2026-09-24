@@ -8,6 +8,7 @@ import br.com.investlog.server.shared.security.CurrentUserProvider
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -59,5 +60,44 @@ class WithdrawalController(
         withdrawalService.withdrawFromFund(userId, walletId, holdingId, request)
 
         return ResponseEntity.status(HttpStatus.CREATED).build()
+    }
+
+    @DeleteMapping("/stock-holdings/{holdingId}/withdrawals/{resultId}")
+    fun deleteStockWithdrawal(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @PathVariable resultId: UUID,
+    ): ResponseEntity<Void> {
+
+        val userId = currentUserProvider.getCurrentUser().id
+        withdrawalService.deleteWithdrawal(userId, walletId, holdingId, WalletKind.STOCKS, resultId)
+
+        return ResponseEntity.noContent().build()
+    }
+
+    @DeleteMapping("/crypto-holdings/{holdingId}/withdrawals/{resultId}")
+    fun deleteCryptoWithdrawal(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @PathVariable resultId: UUID,
+    ): ResponseEntity<Void> {
+
+        val userId = currentUserProvider.getCurrentUser().id
+        withdrawalService.deleteWithdrawal(userId, walletId, holdingId, WalletKind.CRYPTO, resultId)
+
+        return ResponseEntity.noContent().build()
+    }
+
+    @DeleteMapping("/fund-holdings/{holdingId}/withdrawals/{resultId}")
+    fun deleteFundWithdrawal(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @PathVariable resultId: UUID,
+    ): ResponseEntity<Void> {
+
+        val userId = currentUserProvider.getCurrentUser().id
+        withdrawalService.deleteWithdrawal(userId, walletId, holdingId, WalletKind.FUNDS, resultId)
+
+        return ResponseEntity.noContent().build()
     }
 }

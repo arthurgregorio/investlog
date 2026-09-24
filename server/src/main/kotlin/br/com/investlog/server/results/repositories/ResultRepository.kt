@@ -100,6 +100,59 @@ class ResultRepository(private val dsl: DSLContext) {
             .execute()
     }
 
+    fun increaseFundCurrentValue(holdingId: Long, amount: BigDecimal) {
+        dsl.update(FUND_HOLDINGS)
+            .set(FUND_HOLDINGS.CURRENT_VALUE, FUND_HOLDINGS.CURRENT_VALUE.plus(amount))
+            .where(FUND_HOLDINGS.ID.eq(holdingId))
+            .execute()
+    }
+
+    fun findResult(position: HoldingPosition, externalId: UUID): ResultRecord? =
+        dsl.select(RESULTS.ID, RESULTS.RESULT_DATE, RESULTS.GROSS_AMOUNT)
+            .from(RESULTS)
+            .where(holdingColumnOf(position).eq(position.holdingId))
+            .and(RESULTS.EXTERNAL_ID.eq(externalId))
+            .fetchOne { record ->
+                ResultRecord(
+                    id = record.get(RESULTS.ID)!!,
+                    resultDate = record.get(RESULTS.RESULT_DATE)!!,
+                    grossAmount = record.get(RESULTS.GROSS_AMOUNT)!!,
+                )
+            }
+
+    fun findMostRecentResultId(position: HoldingPosition): Long? =
+        dsl.select(RESULTS.ID)
+            .from(RESULTS)
+            .where(holdingColumnOf(position).eq(position.holdingId))
+            .orderBy(RESULTS.RESULT_DATE.desc(), RESULTS.ID.desc())
+            .limit(1)
+            .fetchOne(RESULTS.ID)
+
+    fun delete(resultId: Long) {
+        dsl.deleteFrom(RESULTS)
+            .where(RESULTS.ID.eq(resultId))
+            .execute()
+    }
+
+    fun markActive(position: HoldingPosition) {
+        when (position.kind) {
+            WalletKind.STOCKS -> dsl.update(STOCK_HOLDINGS)
+                .set(STOCK_HOLDINGS.STATUS, HoldingStatus.ACTIVE)
+                .where(STOCK_HOLDINGS.ID.eq(position.holdingId))
+                .execute()
+
+            WalletKind.CRYPTO -> dsl.update(CRYPTO_HOLDINGS)
+                .set(CRYPTO_HOLDINGS.STATUS, HoldingStatus.ACTIVE)
+                .where(CRYPTO_HOLDINGS.ID.eq(position.holdingId))
+                .execute()
+
+            WalletKind.FUNDS -> dsl.update(FUND_HOLDINGS)
+                .set(FUND_HOLDINGS.STATUS, HoldingStatus.ACTIVE)
+                .where(FUND_HOLDINGS.ID.eq(position.holdingId))
+                .execute()
+        }
+    }
+
     fun findAll(userId: Long, pageable: Pageable): PagedModel<ResultResponse> {
         val results = RESULTS.`as`("results")
         val stockHoldings = STOCK_HOLDINGS.`as`("stock_holdings")
