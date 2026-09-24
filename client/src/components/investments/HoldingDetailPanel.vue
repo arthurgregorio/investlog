@@ -247,7 +247,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
               class="ledger-tag"
               :class="entry.type === 'WITHDRAWAL' ? 'lt-withdrawal' : 'lt-purchase'"
             >
-              {{ entry.type === 'WITHDRAWAL' ? 'Resgate' : isFund ? 'Aporte' : 'Compra' }}
+              {{ entry.type === 'WITHDRAWAL' ? (isFund ? 'Resgate' : 'Venda') : isFund ? 'Aporte' : 'Compra' }}
             </span>
           </td>
           <td>

@@ -120,7 +120,7 @@ describe('HoldingDetailPanel', () => {
     await flushPromises()
 
     expect(wrapper.find('th').text()).not.toBe('Tipo')
-    expect(wrapper.text()).not.toContain('Resgate')
+    expect(wrapper.text()).not.toContain('Venda')
     expect(wrapper.text()).not.toContain('Saldo')
     expect(wrapper.text()).toContain('Subtotal')
     expect(wrapper.findAll('tbody tr')).toHaveLength(1)
@@ -140,7 +140,7 @@ describe('HoldingDetailPanel', () => {
 
     expect(rows[0].text()).toContain('Compra')
     expect(rows[0].text()).toContain('+300')
-    expect(rows[2].text()).toContain('Resgate')
+    expect(rows[2].text()).toContain('Venda')
     expect(rows[2].text()).toContain('−150')
 
     // Balance ends where the outer row's own quantity already says: 300 + 200 - 150 - 150 = 200.
