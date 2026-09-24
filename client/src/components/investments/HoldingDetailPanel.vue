@@ -184,42 +184,46 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
   <div class="detail">
     <b-loading :is-full-page="false" :active="loading" />
 
-    <div v-if="detail" class="detail-foot">
-      <b-button
-        size="is-small"
-        type="is-success"
-        outlined
-        icon-left="plus"
-        @click="showAddPositionModal = true"
-      >
-        {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
-      </b-button>
-      <b-button
-        size="is-small"
-        type="is-info"
-        outlined
-        icon-left="pencil"
-        @click="showUpdatePriceModal = true"
-      >
-        {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
-      </b-button>
-      <b-button
-        size="is-small"
-        type="is-warning"
-        outlined
-        icon-left="cash-minus"
-        @click="showWithdrawModal = true"
-      >
-        Resgatar
-      </b-button>
-      <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
-        Remover
-      </b-button>
-    </div>
-
+    <!-- With withdrawals: buttons share one row with the "Movimentações" label, above the
+         table, matching the approved design. With none, the panel is untouched from before —
+         same table, same buttons below it — so the common case never moves. -->
     <div v-if="detail && hasWithdrawals" class="ledger-head">
-      <span class="ledger-title">Movimentações</span>
-      <span class="ledger-count">{{ ledgerRows.length }}</span>
+      <div class="ledger-head-info">
+        <span class="ledger-title">Movimentações</span>
+        <span class="ledger-count">{{ ledgerRows.length }}</span>
+      </div>
+      <div class="ledger-actions">
+        <b-button
+          size="is-small"
+          type="is-success"
+          outlined
+          icon-left="plus"
+          @click="showAddPositionModal = true"
+        >
+          {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
+        </b-button>
+        <b-button
+          size="is-small"
+          type="is-info"
+          outlined
+          icon-left="pencil"
+          @click="showUpdatePriceModal = true"
+        >
+          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+        </b-button>
+        <b-button
+          size="is-small"
+          type="is-warning"
+          outlined
+          icon-left="cash-minus"
+          @click="showWithdrawModal = true"
+        >
+          Resgatar
+        </b-button>
+        <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
+          Remover
+        </b-button>
+      </div>
     </div>
 
     <table v-if="detail" class="sub-table">
@@ -311,6 +315,39 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
         </tr>
       </tbody>
     </table>
+
+    <div v-if="detail && !hasWithdrawals" class="detail-foot">
+      <b-button
+        size="is-small"
+        type="is-success"
+        outlined
+        icon-left="plus"
+        @click="showAddPositionModal = true"
+      >
+        {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
+      </b-button>
+      <b-button
+        size="is-small"
+        type="is-info"
+        outlined
+        icon-left="pencil"
+        @click="showUpdatePriceModal = true"
+      >
+        {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+      </b-button>
+      <b-button
+        size="is-small"
+        type="is-warning"
+        outlined
+        icon-left="cash-minus"
+        @click="showWithdrawModal = true"
+      >
+        Resgatar
+      </b-button>
+      <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
+        Remover
+      </b-button>
+    </div>
 
     <AddPositionModal
       v-if="showAddPositionModal"

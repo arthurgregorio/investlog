@@ -1402,8 +1402,23 @@ a {
 .ledger-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 4px 2px 10px;
+}
+
+.ledger-head-info {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  margin: 14px 2px 8px;
+}
+
+.ledger-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .ledger-title {
