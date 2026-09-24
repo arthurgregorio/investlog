@@ -1328,8 +1328,10 @@ a {
   text-align: center;
 }
 
-/* expanded detail */
-.detail-row td {
+/* expanded detail. Direct-child combinator on purpose: this only colors the one wrapping cell
+   the detail panel renders into — a descendant selector here also matches every <td> inside the
+   panel's own .sub-table, painting over its white background with this same grey. */
+.detail-row > td {
   background: var(--surface-2);
 }
 
