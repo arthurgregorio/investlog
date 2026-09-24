@@ -103,7 +103,7 @@ describe('HoldingDetailPanel', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the classic purchase-only table for a holding with no withdrawals', async () => {
+  it('renders the ledger (Tipo/Custos/Resultado/Saldo included) even for a holding with no withdrawals', async () => {
     const detail: StockHoldingDetail = {
       id: 'holding-1',
       walletId: 'wallet-1',
@@ -119,11 +119,15 @@ describe('HoldingDetailPanel', () => {
     const wrapper = mountPanel(stockRow)
     await flushPromises()
 
-    expect(wrapper.find('th').text()).not.toBe('Tipo')
+    expect(wrapper.text()).toContain('Tipo')
+    expect(wrapper.text()).toContain('Saldo')
+    expect(wrapper.text()).toContain('Valor')
     expect(wrapper.text()).not.toContain('Venda')
-    expect(wrapper.text()).not.toContain('Saldo')
-    expect(wrapper.text()).toContain('Subtotal')
-    expect(wrapper.findAll('tbody tr')).toHaveLength(1)
+
+    const rows = wrapper.findAll('tbody tr')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].text()).toContain('Compra')
+    expect(rows[0].text()).toContain('+300')
   })
 
   it('merges purchases and withdrawals into one ledger with signed quantities and a running balance', async () => {
@@ -131,9 +135,6 @@ describe('HoldingDetailPanel', () => {
 
     const wrapper = mountPanel(stockRow)
     await flushPromises()
-
-    expect(wrapper.text()).toContain('Tipo')
-    expect(wrapper.text()).toContain('Saldo')
 
     const rows = wrapper.findAll('tbody tr')
     expect(rows).toHaveLength(4)

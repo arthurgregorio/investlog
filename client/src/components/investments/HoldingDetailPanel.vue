@@ -41,10 +41,8 @@ const currentAmount = computed<number | null>(() => {
 })
 
 // One merged, chronological ledger of purchases/aportes and withdrawals — see holdingLedger.ts.
-// When a holding has no withdrawals this collapses to exactly the purchase-only table the panel
-// always rendered, so the common case (most holdings) is visually unchanged.
+// This is the only view of a holding's history; there is no separate purchases-only table.
 const ledgerRows = computed(() => (detail.value ? buildLedger(detail.value, isFund.value) : []))
-const hasWithdrawals = computed(() => ledgerRows.value.some((entry) => entry.type === 'WITHDRAWAL'))
 
 function signedQty(value: number): string {
   return (value >= 0 ? '+' : '−') + fmt.qty(Math.abs(value))
@@ -184,10 +182,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
   <div class="detail">
     <b-loading :is-full-page="false" :active="loading" />
 
-    <!-- With withdrawals: buttons share one row with the "Movimentações" label, above the
-         table, matching the approved design. With none, the panel is untouched from before —
-         same table, same buttons below it — so the common case never moves. -->
-    <div v-if="detail && hasWithdrawals" class="ledger-head">
+    <div v-if="detail" class="ledger-head">
       <div class="ledger-head-info">
         <span class="ledger-title">Movimentações</span>
         <span class="ledger-count">{{ ledgerRows.length }}</span>
@@ -229,20 +224,20 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
     <table v-if="detail" class="sub-table">
       <thead>
         <tr>
-          <th v-if="hasWithdrawals">Tipo</th>
+          <th>Tipo</th>
           <th>{{ isFund ? 'Data do aporte' : 'Data da compra' }}</th>
           <th v-if="!isFund" class="c-num">Qtd.</th>
-          <th v-if="!isFund" class="c-num">{{ hasWithdrawals ? 'Preço unit.' : 'Preço' }}</th>
-          <th v-if="hasWithdrawals" class="c-num">Custos</th>
-          <th class="c-num">{{ isFund || hasWithdrawals ? 'Valor' : 'Subtotal' }}</th>
-          <th v-if="hasWithdrawals" class="c-num">Resultado</th>
-          <th v-if="hasWithdrawals && !isFund" class="c-num">Saldo</th>
+          <th v-if="!isFund" class="c-num">Preço unit.</th>
+          <th class="c-num">Custos</th>
+          <th class="c-num">Valor</th>
+          <th class="c-num">Resultado</th>
+          <th v-if="!isFund" class="c-num">Saldo</th>
           <th class="c-act"></th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="entry in ledgerRows" :key="entry.id">
-          <td v-if="hasWithdrawals">
+          <td>
             <span
               class="ledger-tag"
               :class="entry.type === 'WITHDRAWAL' ? 'lt-withdrawal' : 'lt-purchase'"
@@ -264,13 +259,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             <template v-else>{{ fmt.date(entry.date) }}</template>
           </td>
           <td v-if="!isFund" class="c-num">
-            {{
-              entry.quantity == null
-                ? '—'
-                : hasWithdrawals
-                  ? signedQty(entry.quantity)
-                  : fmt.qty(entry.quantity)
-            }}
+            {{ entry.quantity == null ? '—' : signedQty(entry.quantity) }}
           </td>
           <td v-if="!isFund" class="c-num">
             <template v-if="entry.unitPrice != null">
@@ -278,7 +267,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
-          <td v-if="hasWithdrawals" class="c-num">
+          <td class="c-num">
             <template v-if="entry.costs != null">
               {{ fmt.money(currencyStore.convert(entry.costs, row.walletCurrency), currencyStore.displayCurrency) }}
               <div class="ledger-costs-note">
@@ -291,7 +280,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           <td class="c-num">
             {{ fmt.money(currencyStore.convert(entry.amount, row.walletCurrency), currencyStore.displayCurrency) }}
           </td>
-          <td v-if="hasWithdrawals" class="c-num">
+          <td class="c-num">
             <GainChip
               v-if="entry.profit != null"
               :value="currencyStore.convert(entry.profit, row.walletCurrency)"
@@ -299,7 +288,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             />
             <span v-else class="gl-empty">—</span>
           </td>
-          <td v-if="hasWithdrawals && !isFund" class="c-num">
+          <td v-if="!isFund" class="c-num">
             {{ entry.balance == null ? '—' : fmt.qty(entry.balance) }}
           </td>
           <td class="c-act">
@@ -315,39 +304,6 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
         </tr>
       </tbody>
     </table>
-
-    <div v-if="detail && !hasWithdrawals" class="detail-foot">
-      <b-button
-        size="is-small"
-        type="is-success"
-        outlined
-        icon-left="plus"
-        @click="showAddPositionModal = true"
-      >
-        {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
-      </b-button>
-      <b-button
-        size="is-small"
-        type="is-info"
-        outlined
-        icon-left="pencil"
-        @click="showUpdatePriceModal = true"
-      >
-        {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
-      </b-button>
-      <b-button
-        size="is-small"
-        type="is-warning"
-        outlined
-        icon-left="cash-minus"
-        @click="showWithdrawModal = true"
-      >
-        Resgatar
-      </b-button>
-      <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
-        Remover
-      </b-button>
-    </div>
 
     <AddPositionModal
       v-if="showAddPositionModal"

@@ -1400,15 +1400,6 @@ a {
   color: var(--primary-d);
 }
 
-.detail-foot {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 2px 2px;
-}
-
 .ledger-head {
   display: flex;
   align-items: center;
