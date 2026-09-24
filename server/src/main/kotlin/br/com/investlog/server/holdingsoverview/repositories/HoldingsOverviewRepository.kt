@@ -1,6 +1,7 @@
 package br.com.investlog.server.holdingsoverview.repositories
 
 import br.com.investlog.server.holdingsoverview.rest.payloads.HoldingRowResponse
+import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_REPORT_ROWS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
@@ -31,7 +32,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         val wallets = WALLETS.`as`("wallets")
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
 
-        val baseCondition = wallets.USER_ID.eq(userId)
+        val baseCondition = wallets.USER_ID.eq(userId).and(overview.STATUS.eq(HoldingStatus.ACTIVE))
         val kindCondition = if (kind != null) overview.KIND.eq(kind) else DSL.noCondition()
         val typeLabelCondition = if (typeLabel != null) overview.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
         val walletIdCondition = if (walletId != null) wallets.EXTERNAL_ID.eq(walletId) else DSL.noCondition()

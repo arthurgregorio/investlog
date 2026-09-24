@@ -1,5 +1,6 @@
 package br.com.investlog.server.wallets.repositories
 
+import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.shared.utils.pagedModelOf
@@ -100,6 +101,7 @@ class WalletRepository(private val dsl: DSLContext) {
             DSL.selectCount()
                 .from(HOLDINGS_OVERVIEW)
                 .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
+                .and(HOLDINGS_OVERVIEW.STATUS.eq(HoldingStatus.ACTIVE))
         ).`as`("holding_count")
 
     private fun totalInvestedField() =
@@ -107,6 +109,7 @@ class WalletRepository(private val dsl: DSLContext) {
             DSL.select(DSL.coalesce(DSL.sum(HOLDINGS_OVERVIEW.COST_BASIS), BigDecimal.ZERO))
                 .from(HOLDINGS_OVERVIEW)
                 .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
+                .and(HOLDINGS_OVERVIEW.STATUS.eq(HoldingStatus.ACTIVE))
         ).`as`("total_invested")
 
     private fun currentValueField() =
@@ -114,6 +117,7 @@ class WalletRepository(private val dsl: DSLContext) {
             DSL.select(DSL.sum(HOLDINGS_OVERVIEW.CURRENT_VALUE))
                 .from(HOLDINGS_OVERVIEW)
                 .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
+                .and(HOLDINGS_OVERVIEW.STATUS.eq(HoldingStatus.ACTIVE))
         ).`as`("current_value")
 
     private fun Record.toResponse(): WalletResponse {

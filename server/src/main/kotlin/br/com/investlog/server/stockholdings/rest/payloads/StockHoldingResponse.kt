@@ -1,5 +1,6 @@
 package br.com.investlog.server.stockholdings.rest.payloads
 
+import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -11,4 +12,5 @@ data class StockHoldingResponse(
     val name: String,
     val currentPrice: BigDecimal?,
     val lots: List<LotResponse>,
+    val withdrawals: List<WithdrawalResponse>,
 )

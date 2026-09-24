@@ -3,7 +3,9 @@ package br.com.investlog.server.cryptoholdings.repositories
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
+import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
+import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
@@ -40,13 +42,34 @@ class CryptoHoldingRepository(
             }
         }
 
+        val withdrawalsField = DSL.multiset(
+            DSL.selectFrom(RESULTS)
+                .where(RESULTS.CRYPTO_HOLDING_ID.eq(cryptoHoldings.ID))
+                .orderBy(RESULTS.RESULT_DATE)
+        ).`as`("withdrawals").convertFrom { r ->
+            r.map { rec ->
+                WithdrawalResponse(
+                    id = rec.get(RESULTS.EXTERNAL_ID)!!,
+                    resultDate = rec.get(RESULTS.RESULT_DATE)!!,
+                    quantity = rec.get(RESULTS.QUANTITY),
+                    grossAmount = rec.get(RESULTS.GROSS_AMOUNT)!!,
+                    fees = rec.get(RESULTS.FEES)!!,
+                    taxes = rec.get(RESULTS.TAXES)!!,
+                    costBasis = rec.get(RESULTS.COST_BASIS)!!,
+                    netAmount = rec.get(RESULTS.NET_AMOUNT)!!,
+                    profit = rec.get(RESULTS.PROFIT)!!,
+                )
+            }
+        }
+
         val content = dsl.select(
             cryptoHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
             cryptoHoldings.TICKER,
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
-            lotsField
+            lotsField,
+            withdrawalsField
         )
             .from(cryptoHoldings)
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
@@ -62,6 +85,7 @@ class CryptoHoldingRepository(
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),
                     lots = rec.get(lotsField),
+                    withdrawals = rec.get(withdrawalsField),
                 )
             }
 
@@ -112,6 +136,7 @@ class CryptoHoldingRepository(
                     price = lotRec.price!!,
                 )
             ),
+            withdrawals = emptyList(),
         )
     }
 
@@ -175,13 +200,34 @@ class CryptoHoldingRepository(
             }
         }
 
+        val withdrawalsField = DSL.multiset(
+            DSL.selectFrom(RESULTS)
+                .where(RESULTS.CRYPTO_HOLDING_ID.eq(cryptoHoldings.ID))
+                .orderBy(RESULTS.RESULT_DATE)
+        ).`as`("withdrawals").convertFrom { r ->
+            r.map { rec ->
+                WithdrawalResponse(
+                    id = rec.get(RESULTS.EXTERNAL_ID)!!,
+                    resultDate = rec.get(RESULTS.RESULT_DATE)!!,
+                    quantity = rec.get(RESULTS.QUANTITY),
+                    grossAmount = rec.get(RESULTS.GROSS_AMOUNT)!!,
+                    fees = rec.get(RESULTS.FEES)!!,
+                    taxes = rec.get(RESULTS.TAXES)!!,
+                    costBasis = rec.get(RESULTS.COST_BASIS)!!,
+                    netAmount = rec.get(RESULTS.NET_AMOUNT)!!,
+                    profit = rec.get(RESULTS.PROFIT)!!,
+                )
+            }
+        }
+
         return dsl.select(
             cryptoHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
             cryptoHoldings.TICKER,
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
-            lotsField
+            lotsField,
+            withdrawalsField
         )
             .from(cryptoHoldings)
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
@@ -195,6 +241,7 @@ class CryptoHoldingRepository(
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),
                     lots = rec.get(lotsField),
+                    withdrawals = rec.get(withdrawalsField),
                 )
             }
     }

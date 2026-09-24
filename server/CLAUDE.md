@@ -107,6 +107,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `wallets` | Wallet CRUD |
 | `stockholdings`, `cryptoholdings`, `fundholdings` | The three holding kinds — see **Holdings** |
 | `holdingsoverview` | `GET /holdings`, the paginated cross-kind view |
+| `results` | Withdrawals, `finances.results`, and the average-cost exit math — see **Results and withdrawals** |
 | `walletdetail` | `GET /wallets/{id}/detail`, the per-wallet dashboard payload — see **Wallet detail** |
 | `overview` | Portfolio summary and the monthly invested series |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
@@ -171,6 +172,20 @@ In detail:
   child collection: `lots` for stocks and crypto, `contributions` for funds. They are separate
   packages rather than one generic holdings package because the three kinds differ in their child
   entity and in which fields are price-synced.
+
+### Results and withdrawals
+
+`results` owns every exit from a position. `POST /private/v1/wallets/{walletId}/{stock|crypto|fund}-holdings/{holdingId}/withdrawals` records one, and `GET /private/v1/results` reads them back cross-kind and paginated. All three write endpoints live on one `WithdrawalController` and funnel into one `WithdrawalService`, so the average-cost math exists once rather than three times.
+
+**`WithdrawalService` reads the position from `finances.holdings_overview`, not from the lot tables.** That view already reports `quantity` and `cost_basis` net of everything withdrawn so far, which makes the average price simply `cost_basis / quantity` — and keeps it correct across repeated partial exits without the service tracking anything itself. The view carries `holding_id` for exactly this reason: it is what lets one query serve all three kinds.
+
+**The withdrawn totals are subtracted in `holdings_overview` through scalar correlated subqueries, never a join.** Joining `finances.results` to a branch that already aggregates lots multiplies the `SUM` by the number of result rows, silently inflating quantity and cost basis on any holding exited more than once. Adding a second such aggregate later (issue #205's transfers reuse this table) must follow the same rule.
+
+**Only stock and crypto subtract withdrawn quantity from `current_value`.** A fund withdrawal decrements `fund_holdings.current_value` directly, so the view nets only its `cost_basis`; subtracting again would double-count.
+
+`holdings_overview` exposes `status` and each of its three consumers filters to `ACTIVE` itself (`HoldingsOverviewRepository`, `OverviewRepository`, `WalletRepository`). `holdings_report_rows` is the deliberate exception — it filters to `ACTIVE` inside the view and does not expose the column, because it merges rows sharing `(wallet_id, kind, ticker, type_label, name)` and two such holdings can differ in status; adding `status` to its `GROUP BY` would split the very rows it exists to merge.
+
+A wallet whose holdings have all been completed reports the same shape as an empty wallet — `holdingCount` 0, `totalInvested` 0, a null `currentValue` — because `WalletRepository`'s subqueries now match no rows. That is the intended outcome, and the wallets view already renders that shape.
 
 ### Wallet detail
 

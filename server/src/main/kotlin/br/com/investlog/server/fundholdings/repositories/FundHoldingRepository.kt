@@ -6,7 +6,9 @@ import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_TYPES
+import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
+import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -41,13 +43,34 @@ class FundHoldingRepository(
             }
         }
 
+        val withdrawalsField = DSL.multiset(
+            DSL.selectFrom(RESULTS)
+                .where(RESULTS.FUND_HOLDING_ID.eq(fundHoldings.ID))
+                .orderBy(RESULTS.RESULT_DATE)
+        ).`as`("withdrawals").convertFrom { r ->
+            r.map { rec ->
+                WithdrawalResponse(
+                    id = rec.get(RESULTS.EXTERNAL_ID)!!,
+                    resultDate = rec.get(RESULTS.RESULT_DATE)!!,
+                    quantity = rec.get(RESULTS.QUANTITY),
+                    grossAmount = rec.get(RESULTS.GROSS_AMOUNT)!!,
+                    fees = rec.get(RESULTS.FEES)!!,
+                    taxes = rec.get(RESULTS.TAXES)!!,
+                    costBasis = rec.get(RESULTS.COST_BASIS)!!,
+                    netAmount = rec.get(RESULTS.NET_AMOUNT)!!,
+                    profit = rec.get(RESULTS.PROFIT)!!,
+                )
+            }
+        }
+
         val content = dsl.select(
             fundHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
             fundTypes.EXTERNAL_ID,
             fundHoldings.NAME,
             fundHoldings.CURRENT_VALUE,
-            contributionsField
+            contributionsField,
+            withdrawalsField
         )
             .from(fundHoldings)
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
@@ -64,6 +87,7 @@ class FundHoldingRepository(
                     name = rec.get(fundHoldings.NAME)!!,
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     contributions = rec.get(contributionsField),
+                    withdrawals = rec.get(withdrawalsField),
                 )
             }
 
@@ -115,6 +139,7 @@ class FundHoldingRepository(
                     amount = contribRec.amount!!,
                 )
             ),
+            withdrawals = emptyList(),
         )
     }
 
@@ -183,13 +208,34 @@ class FundHoldingRepository(
             }
         }
 
+        val withdrawalsField = DSL.multiset(
+            DSL.selectFrom(RESULTS)
+                .where(RESULTS.FUND_HOLDING_ID.eq(fundHoldings.ID))
+                .orderBy(RESULTS.RESULT_DATE)
+        ).`as`("withdrawals").convertFrom { r ->
+            r.map { rec ->
+                WithdrawalResponse(
+                    id = rec.get(RESULTS.EXTERNAL_ID)!!,
+                    resultDate = rec.get(RESULTS.RESULT_DATE)!!,
+                    quantity = rec.get(RESULTS.QUANTITY),
+                    grossAmount = rec.get(RESULTS.GROSS_AMOUNT)!!,
+                    fees = rec.get(RESULTS.FEES)!!,
+                    taxes = rec.get(RESULTS.TAXES)!!,
+                    costBasis = rec.get(RESULTS.COST_BASIS)!!,
+                    netAmount = rec.get(RESULTS.NET_AMOUNT)!!,
+                    profit = rec.get(RESULTS.PROFIT)!!,
+                )
+            }
+        }
+
         return dsl.select(
             fundHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
             fundTypes.EXTERNAL_ID,
             fundHoldings.NAME,
             fundHoldings.CURRENT_VALUE,
-            contributionsField
+            contributionsField,
+            withdrawalsField
         )
             .from(fundHoldings)
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
@@ -204,6 +250,7 @@ class FundHoldingRepository(
                     name = rec.get(fundHoldings.NAME)!!,
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     contributions = rec.get(contributionsField),
+                    withdrawals = rec.get(withdrawalsField),
                 )
             }
     }
