@@ -3,6 +3,8 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import HoldingDetailPanel from './HoldingDetailPanel.vue'
 import { holdingsApi } from '@/api/holdings'
+import { resultsApi } from '@/api/results'
+import { useAuthStore } from '@/stores/auth'
 import { useCurrencyStore } from '@/stores/currency'
 import type { FundHoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
 
@@ -11,6 +13,14 @@ vi.mock('@/api/holdings', () => ({
     getStockHolding: vi.fn(),
     getCryptoHolding: vi.fn(),
     getFundHolding: vi.fn(),
+  },
+}))
+
+vi.mock('@/api/results', () => ({
+  resultsApi: {
+    deleteStockWithdrawal: vi.fn(),
+    deleteCryptoWithdrawal: vi.fn(),
+    deleteFundWithdrawal: vi.fn(),
   },
 }))
 
@@ -92,10 +102,29 @@ function mountPanel(row: HoldingRow) {
   const wrapper = mount(HoldingDetailPanel, {
     props: { row },
     global: { plugins: [pinia] },
+    attachTo: document.body,
   })
   const currencyStore = useCurrencyStore()
   vi.mocked(currencyStore.convert).mockImplementation((amount: number) => amount)
+  const authStore = useAuthStore()
+  authStore.session = {
+    name: 'Admin',
+    email: 'admin@admin.com',
+    role: 'ADMIN',
+    status: 'APPROVED',
+    authProvider: 'LOCAL',
+    demoModeEnabled: false,
+  }
   return wrapper
+}
+
+async function confirmDialog() {
+  await flushPromises()
+  const confirmButton = Array.from(document.body.querySelectorAll('button')).find((button) =>
+    button.textContent?.includes('Desfazer'),
+  )
+  confirmButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await flushPromises()
 }
 
 describe('HoldingDetailPanel', () => {
@@ -147,6 +176,39 @@ describe('HoldingDetailPanel', () => {
     // Balance ends where the outer row's own quantity already says: 300 + 200 - 150 - 150 = 200.
     const lastRowCells = rows[3].findAll('td')
     expect(lastRowCells[lastRowCells.length - 2].text()).toBe('200')
+
+    expect(rows[0].find('td.c-act button').exists()).toBe(true)
+    expect(rows[2].find('td.c-act button').exists()).toBe(true)
+  })
+
+  it('undoes the most recent withdrawal on confirm', async () => {
+    vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithWithdrawals())
+    vi.mocked(resultsApi.deleteStockWithdrawal).mockResolvedValue(undefined)
+
+    const wrapper = mountPanel(stockRow)
+    await flushPromises()
+
+    const mostRecentWithdrawalRow = wrapper.findAll('tbody tr')[3]
+    await mostRecentWithdrawalRow.find('td.c-act button').trigger('click')
+    await confirmDialog()
+
+    expect(resultsApi.deleteStockWithdrawal).toHaveBeenCalledWith('wallet-1', 'holding-1', 'w-2')
+    expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(2)
+  })
+
+  it('lets the server reject undoing a withdrawal that is not the most recent, without reloading', async () => {
+    vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithWithdrawals())
+    vi.mocked(resultsApi.deleteStockWithdrawal).mockRejectedValue(new Error('409 Conflict'))
+
+    const wrapper = mountPanel(stockRow)
+    await flushPromises()
+
+    const olderWithdrawalRow = wrapper.findAll('tbody tr')[2]
+    await olderWithdrawalRow.find('td.c-act button').trigger('click')
+    await confirmDialog()
+
+    expect(resultsApi.deleteStockWithdrawal).toHaveBeenCalledWith('wallet-1', 'holding-1', 'w-1')
+    expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(1)
   })
 
   it('skips the quantity/price/balance columns for a fund and tags its rows as Aporte', async () => {
