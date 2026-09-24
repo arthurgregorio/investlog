@@ -1166,7 +1166,11 @@ a {
   font-size: 13.5px;
 }
 
-.inv-table thead th {
+/* Direct-child combinators throughout this block on purpose: .inv-table's rows nest
+   HoldingDetailPanel's own .sub-table inside the detail row's cell, and a plain descendant
+   selector here (".inv-table td") also matches every <td> of that nested table, forcing this
+   outer table's padding/border onto the inner one's cells. */
+.inv-table > thead > tr > th {
   text-align: left;
   font-size: 11.5px;
   font-weight: 600;
@@ -1178,21 +1182,21 @@ a {
   white-space: nowrap;
 }
 
-.inv-table th.c-num {
+.inv-table > thead > tr > th.c-num {
   text-align: right !important;
 }
 
-.inv-table td.c-num {
+.inv-table > tbody > tr > td.c-num {
   text-align: right;
 }
 
-.inv-table td {
+.inv-table > tbody > tr > td {
   padding: 13px 16px !important;
   border-bottom: 1px solid var(--border-2);
   vertical-align: middle !important;
 }
 
-[data-density="compact"] .inv-table td {
+[data-density="compact"] .inv-table > tbody > tr > td {
   padding: 9px 16px;
 }
 
@@ -1209,7 +1213,7 @@ a {
   background: var(--surface-2);
 }
 
-.inv-table tbody tr:last-child td {
+.inv-table > tbody > tr:last-child > td {
   border-bottom: none;
 }
 
@@ -1328,8 +1332,10 @@ a {
   text-align: center;
 }
 
-/* expanded detail */
-.detail-row td {
+/* expanded detail. Direct-child combinator on purpose: this only colors the one wrapping cell
+   the detail panel renders into — a descendant selector here also matches every <td> inside the
+   panel's own .sub-table, painting over its white background with this same grey. */
+.detail-row > td {
   background: var(--surface-2);
 }
 
@@ -1348,6 +1354,10 @@ a {
   margin-bottom: 0 !important;
 }
 
+/* !important throughout: Buefy/Bulma ship a base table-cell reset (padding, border-color) that
+   targets bare <td>/<th> regardless of class, at equal-or-higher priority than a plain
+   ".sub-table td" rule can win on source order alone — the same fight ".inv-table td" above
+   already had to win the same way. */
 .sub-table th {
   text-align: left;
   font-size: 11px;
@@ -1355,8 +1365,8 @@ a {
   text-transform: uppercase;
   letter-spacing: .03em;
   color: var(--text-muted);
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--border-2) !important;
 }
 
 .sub-table th.c-num, .sub-table td.c-num {
@@ -1364,15 +1374,15 @@ a {
 }
 
 .sub-table td {
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--border-2) !important;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
   vertical-align: middle !important;
 }
 
 .sub-table tbody tr:last-child td {
-  border-bottom: none;
+  border-bottom: none !important;
 }
 
 .date-edit {
@@ -1390,13 +1400,75 @@ a {
   color: var(--primary-d);
 }
 
-.detail-foot {
+.ledger-head {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 4px 2px 10px;
+}
+
+.ledger-head-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ledger-actions {
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 2px 2px;
+}
+
+.ledger-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ledger-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--tag-bg);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ledger-tag {
+  display: inline-flex;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+
+.lt-purchase {
+  background: rgba(21, 145, 91, .12);
+  color: var(--up);
+}
+
+.lt-withdrawal {
+  background: rgba(184, 134, 11, .14);
+  color: #9c7209;
+}
+
+[data-theme="dark"] .lt-withdrawal {
+  color: #f0a821;
+}
+
+.ledger-costs-note {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
 }
 
 .avg-note {
