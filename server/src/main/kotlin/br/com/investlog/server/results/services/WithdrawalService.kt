@@ -9,6 +9,7 @@ import br.com.investlog.server.results.rest.payloads.FundWithdrawalRequest
 import br.com.investlog.server.results.rest.payloads.HoldingWithdrawalRequest
 import br.com.investlog.server.shared.exceptions.InvalidWithdrawalException
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import br.com.investlog.server.shared.exceptions.WithdrawalNotDeletableException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -100,6 +101,40 @@ class WithdrawalService(private val resultRepository: ResultRepository) {
 
         if (amount.compareTo(currentValue) == 0) {
             resultRepository.markCompleted(position)
+        }
+    }
+
+    @Transactional
+    fun deleteWithdrawal(
+        userId: Long,
+        walletId: UUID,
+        holdingId: UUID,
+        kind: WalletKind,
+        resultId: UUID,
+    ) {
+        val position = resultRepository.findPosition(userId, walletId, holdingId)
+            ?: throw NotFoundException("Investimento não encontrado")
+
+        if (position.kind != kind) {
+            throw NotFoundException("Investimento não encontrado")
+        }
+
+        val result = resultRepository.findResult(position, resultId)
+            ?: throw NotFoundException("Resgate não encontrado")
+
+        val mostRecentResultId = resultRepository.findMostRecentResultId(position)
+        if (mostRecentResultId != result.id) {
+            throw WithdrawalNotDeletableException("Apenas o resgate mais recente pode ser desfeito.")
+        }
+
+        resultRepository.delete(result.id)
+
+        if (position.status == HoldingStatus.COMPLETED) {
+            resultRepository.markActive(position)
+        }
+
+        if (position.kind == WalletKind.FUNDS) {
+            resultRepository.increaseFundCurrentValue(position.holdingId, result.grossAmount)
         }
     }
 

@@ -50,4 +50,22 @@ export const resultsApi = {
       .post(`/wallets/${walletId}/fund-holdings/${holdingId}/withdrawals`, payload)
       .then(() => undefined)
   },
+
+  deleteStockWithdrawal(walletId: string, holdingId: string, resultId: string): Promise<void> {
+    return apiClient
+      .delete(`/wallets/${walletId}/stock-holdings/${holdingId}/withdrawals/${resultId}`)
+      .then(() => undefined)
+  },
+
+  deleteCryptoWithdrawal(walletId: string, holdingId: string, resultId: string): Promise<void> {
+    return apiClient
+      .delete(`/wallets/${walletId}/crypto-holdings/${holdingId}/withdrawals/${resultId}`)
+      .then(() => undefined)
+  },
+
+  deleteFundWithdrawal(walletId: string, holdingId: string, resultId: string): Promise<void> {
+    return apiClient
+      .delete(`/wallets/${walletId}/fund-holdings/${holdingId}/withdrawals/${resultId}`)
+      .then(() => undefined)
+  },
 }

@@ -7,6 +7,7 @@ import WithdrawModal from '@/components/investments/WithdrawModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import { holdingsApi } from '@/api/holdings'
+import { resultsApi } from '@/api/results'
 import { useCurrencyStore } from '@/stores/currency'
 import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
@@ -137,6 +138,36 @@ function confirmDeletePurchase(purchaseId: string) {
       }
       await reloadDetail()
       emit('positionAdded')
+    },
+  })
+}
+
+function confirmDeleteWithdrawal(resultId: string) {
+  dialog.confirm({
+    title: isFund.value ? 'Desfazer resgate' : 'Desfazer venda',
+    message: 'Esta ação <strong>não pode ser desfeita</strong>.',
+    type: 'is-danger',
+    hasIcon: true,
+    confirmText: 'Desfazer',
+    cancelText: 'Cancelar',
+    onConfirm: async () => {
+      try {
+        if (isFund.value) {
+          await resultsApi.deleteFundWithdrawal(props.row.walletId, props.row.id, resultId)
+          toast.open({ message: 'Resgate desfeito.', type: 'is-success' })
+        } else if (isStock.value) {
+          await resultsApi.deleteStockWithdrawal(props.row.walletId, props.row.id, resultId)
+          toast.open({ message: 'Venda desfeita.', type: 'is-success' })
+        } else {
+          await resultsApi.deleteCryptoWithdrawal(props.row.walletId, props.row.id, resultId)
+          toast.open({ message: 'Venda desfeita.', type: 'is-success' })
+        }
+        await reloadDetail()
+        emit('positionAdded')
+      } catch {
+        // The api client's response interceptor already shows the server's rejection as a
+        // toast (e.g. "Apenas o resgate mais recente pode ser desfeito.") — nothing else to do.
+      }
     },
   })
 }
@@ -293,12 +324,16 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           </td>
           <td class="c-act">
             <b-button
-              v-if="entry.type === 'PURCHASE' && auth.isAdmin"
+              v-if="auth.isAdmin"
               outlined
               type="is-danger"
               size="is-small"
               icon-left="delete"
-              @click.stop="confirmDeletePurchase(entry.id)"
+              @click.stop="
+                entry.type === 'PURCHASE'
+                  ? confirmDeletePurchase(entry.id)
+                  : confirmDeleteWithdrawal(entry.id)
+              "
             />
           </td>
         </tr>

@@ -126,6 +126,14 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
         .body(body)
         .exchange()
 
+    private fun deleteStockWithdrawal(holdingId: UUID, resultId: UUID) = restTestClient.delete()
+        .uri("/private/v1/wallets/$stocksWalletId/stock-holdings/$holdingId/withdrawals/$resultId")
+        .exchange()
+
+    private fun deleteFundWithdrawal(holdingId: UUID, resultId: UUID) = restTestClient.delete()
+        .uri("/private/v1/wallets/$fundsWalletId/fund-holdings/$holdingId/withdrawals/$resultId")
+        .exchange()
+
     private fun countResults(): Int = dsl.fetchCount(dsl.selectFrom(RESULTS))
 
     private fun latestResult() = dsl.selectFrom(RESULTS).orderBy(RESULTS.ID.desc()).limit(1).fetchSingle()
@@ -365,5 +373,116 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
             .jsonPath("$.withdrawals.length()").isEqualTo(1)
             .jsonPath("$.withdrawals[0].grossAmount").isEqualTo(1000.0)
             .jsonPath("$.withdrawals[0].netAmount").isEqualTo(985.0)
+    }
+
+    @Test
+    @Order(13)
+    fun `deleting a holding's most recent withdrawal reverses its quantity and cost basis`() {
+
+        val holdingId = createStockHolding("RENT3", "50", "20.00", "22.00")
+
+        withdrawFromStock(
+            holdingId,
+            """{"resultDate":"2026-09-19","quantity":20,"unitPrice":22.00}""",
+        ).expectStatus().isCreated()
+
+        val resultId = latestResult().externalId!!
+        val resultsBefore = countResults()
+
+        deleteStockWithdrawal(holdingId, resultId).expectStatus().isNoContent()
+
+        assertEquals(resultsBefore - 1, countResults())
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$stocksWalletId&search=RENT3")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].quantity").isEqualTo(50)
+            .jsonPath("$.content[0].costBasis").isEqualTo(1000.0)
+    }
+
+    @Test
+    @Order(14)
+    fun `deleting the withdrawal that fully closed a position reactivates the holding`() {
+
+        val holdingId = createStockHolding("CPLE6", "15", "10.00", "11.00")
+
+        withdrawFromStock(
+            holdingId,
+            """{"resultDate":"2026-09-19","quantity":15,"unitPrice":11.00}""",
+        ).expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$stocksWalletId&search=CPLE6")
+            .exchange()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(0)
+
+        val resultId = latestResult().externalId!!
+
+        deleteStockWithdrawal(holdingId, resultId).expectStatus().isNoContent()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$stocksWalletId&search=CPLE6")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].quantity").isEqualTo(15)
+    }
+
+    @Test
+    @Order(15)
+    fun `deleting a fund withdrawal restores the withdrawn amount to the current value`() {
+
+        val holdingId = createFundHolding("Fundo Cambial", "3000.00", "3000.00")
+
+        withdrawFromFund(holdingId, """{"resultDate":"2026-09-19","amount":800.00}""")
+            .expectStatus().isCreated()
+
+        val resultId = latestResult().externalId!!
+
+        deleteFundWithdrawal(holdingId, resultId).expectStatus().isNoContent()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$fundsWalletId/fund-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.currentValue").isEqualTo(3000.0)
+    }
+
+    @Test
+    @Order(16)
+    fun `deleting any withdrawal other than the most recent is rejected and deletes nothing`() {
+
+        val holdingId = createStockHolding("EGIE3", "30", "40.00", "42.00")
+
+        withdrawFromStock(
+            holdingId,
+            """{"resultDate":"2026-09-10","quantity":10,"unitPrice":42.00}""",
+        ).expectStatus().isCreated()
+        val firstResultId = latestResult().externalId!!
+
+        withdrawFromStock(
+            holdingId,
+            """{"resultDate":"2026-09-19","quantity":10,"unitPrice":42.00}""",
+        ).expectStatus().isCreated()
+
+        val resultsBefore = countResults()
+
+        deleteStockWithdrawal(holdingId, firstResultId).expectStatus().isEqualTo(409)
+
+        assertEquals(resultsBefore, countResults())
+    }
+
+    @Test
+    @Order(17)
+    fun `deleting a withdrawal that doesn't belong to the holding responds 404`() {
+
+        val holdingId = createStockHolding("SBSP3", "5", "60.00", "65.00")
+
+        deleteStockWithdrawal(holdingId, UUID.randomUUID()).expectStatus().isNotFound()
     }
 }
