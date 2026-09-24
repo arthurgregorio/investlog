@@ -307,4 +307,63 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
             .jsonPath("$.content[0].walletName").exists()
             .jsonPath("$.content[0].resultType").isEqualTo("WITHDRAWAL")
     }
+
+    @Test
+    @Order(10)
+    fun `a stock holding's detail response lists its withdrawals alongside its lots`() {
+
+        val holdingId = createStockHolding("WEGE3", "20", "40.00", "45.00")
+
+        withdrawFromStock(
+            holdingId,
+            """{"resultDate":"2026-09-19","quantity":8,"unitPrice":45.00,"fees":1,"taxes":2}""",
+        ).expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$stocksWalletId/stock-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.lots.length()").isEqualTo(1)
+            .jsonPath("$.withdrawals.length()").isEqualTo(1)
+            .jsonPath("$.withdrawals[0].quantity").isEqualTo(8)
+            .jsonPath("$.withdrawals[0].grossAmount").isEqualTo(360.0)
+            .jsonPath("$.withdrawals[0].fees").isEqualTo(1.0)
+            .jsonPath("$.withdrawals[0].taxes").isEqualTo(2.0)
+            .jsonPath("$.withdrawals[0].netAmount").isEqualTo(357.0)
+    }
+
+    @Test
+    @Order(11)
+    fun `a stock holding with no withdrawals returns an empty withdrawals list`() {
+
+        val holdingId = createStockHolding("TAEE11", "5", "30.00", "32.00")
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$stocksWalletId/stock-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.withdrawals.length()").isEqualTo(0)
+    }
+
+    @Test
+    @Order(12)
+    fun `a fund holding's detail response lists its withdrawals alongside its contributions`() {
+
+        val holdingId = createFundHolding("Fundo Multimercado", "4000.00", "4000.00")
+
+        withdrawFromFund(holdingId, """{"resultDate":"2026-09-19","amount":1000.00,"fees":5,"taxes":10}""")
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$fundsWalletId/fund-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.contributions.length()").isEqualTo(1)
+            .jsonPath("$.withdrawals.length()").isEqualTo(1)
+            .jsonPath("$.withdrawals[0].grossAmount").isEqualTo(1000.0)
+            .jsonPath("$.withdrawals[0].netAmount").isEqualTo(985.0)
+    }
 }
