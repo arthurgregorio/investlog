@@ -1166,7 +1166,11 @@ a {
   font-size: 13.5px;
 }
 
-.inv-table thead th {
+/* Direct-child combinators throughout this block on purpose: .inv-table's rows nest
+   HoldingDetailPanel's own .sub-table inside the detail row's cell, and a plain descendant
+   selector here (".inv-table td") also matches every <td> of that nested table, forcing this
+   outer table's padding/border onto the inner one's cells. */
+.inv-table > thead > tr > th {
   text-align: left;
   font-size: 11.5px;
   font-weight: 600;
@@ -1178,21 +1182,21 @@ a {
   white-space: nowrap;
 }
 
-.inv-table th.c-num {
+.inv-table > thead > tr > th.c-num {
   text-align: right !important;
 }
 
-.inv-table td.c-num {
+.inv-table > tbody > tr > td.c-num {
   text-align: right;
 }
 
-.inv-table td {
+.inv-table > tbody > tr > td {
   padding: 13px 16px !important;
   border-bottom: 1px solid var(--border-2);
   vertical-align: middle !important;
 }
 
-[data-density="compact"] .inv-table td {
+[data-density="compact"] .inv-table > tbody > tr > td {
   padding: 9px 16px;
 }
 
@@ -1209,7 +1213,7 @@ a {
   background: var(--surface-2);
 }
 
-.inv-table tbody tr:last-child td {
+.inv-table > tbody > tr:last-child > td {
   border-bottom: none;
 }
 
@@ -1350,6 +1354,10 @@ a {
   margin-bottom: 0 !important;
 }
 
+/* !important throughout: Buefy/Bulma ship a base table-cell reset (padding, border-color) that
+   targets bare <td>/<th> regardless of class, at equal-or-higher priority than a plain
+   ".sub-table td" rule can win on source order alone — the same fight ".inv-table td" above
+   already had to win the same way. */
 .sub-table th {
   text-align: left;
   font-size: 11px;
@@ -1357,8 +1365,8 @@ a {
   text-transform: uppercase;
   letter-spacing: .03em;
   color: var(--text-muted);
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--border-2) !important;
 }
 
 .sub-table th.c-num, .sub-table td.c-num {
@@ -1366,15 +1374,15 @@ a {
 }
 
 .sub-table td {
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
+  padding: 9px 12px !important;
+  border-bottom: 1px solid var(--border-2) !important;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
   vertical-align: middle !important;
 }
 
 .sub-table tbody tr:last-child td {
-  border-bottom: none;
+  border-bottom: none !important;
 }
 
 .date-edit {
