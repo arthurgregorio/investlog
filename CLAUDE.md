@@ -110,7 +110,8 @@ then:
 ```markdown
 > **Umbrella issue.** Work happens on the long-lived `feature/<N>-<slug>` branch. Each subtask below
 > gets its own branch and its own PR **into that feature branch**, not into `main`. Once every
-> subtask has landed, the feature branch gets a single PR into `main` and merging it closes this issue.
+> subtask has landed, the feature branch gets a single PR into `main`, and merging it closes this issue
+> and every subtask.
 
 ## Motivation
 ## Scope
