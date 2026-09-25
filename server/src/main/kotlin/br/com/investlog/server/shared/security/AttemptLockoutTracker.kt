@@ -1,5 +1,6 @@
 package br.com.investlog.server.shared.security
 
+import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -7,13 +8,14 @@ import java.util.concurrent.ConcurrentHashMap
 class AttemptLockoutTracker(
     private val maxAttempts: Int,
     private val baseDuration: Duration,
+    private val clock: Clock,
 ) {
 
     private val attemptStateByKey = ConcurrentHashMap<String, AttemptState>()
 
     fun lockedUntil(key: String): Instant? {
         val lockedUntil = attemptStateByKey[key]?.lockedUntil ?: return null
-        return lockedUntil.takeIf { Instant.now().isBefore(it) }
+        return lockedUntil.takeIf { clock.instant().isBefore(it) }
     }
 
     fun recordFailure(key: String) {
@@ -30,7 +32,7 @@ class AttemptLockoutTracker(
                 AttemptState(
                     failureCount = 0,
                     lockoutCount = lockoutCount,
-                    lockedUntil = Instant.now().plus(baseDuration.multipliedBy(backoffMultiplier)),
+                    lockedUntil = clock.instant().plus(baseDuration.multipliedBy(backoffMultiplier)),
                 )
             }
         }
