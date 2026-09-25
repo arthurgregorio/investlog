@@ -3033,3 +3033,79 @@ h3.report-subgroup-title {
     align-items: flex-start;
   }
 }
+
+/* ---- Move holdings modal and move history ---- */
+.move-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.move-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 8px;
+}
+
+.move-list {
+  position: relative;
+  min-height: 60px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.move-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-2);
+}
+
+.move-item:last-child {
+  border-bottom: 0;
+}
+
+.move-item.is-selected {
+  background: var(--surface-2);
+}
+
+.move-item .checkbox {
+  margin-right: 0;
+}
+
+.move-item-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.move-item-quantity {
+  width: 150px;
+  margin-bottom: 0 !important;
+}
+
+.move-direction {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.move-direction.is-in {
+  color: var(--up);
+}
+
+.move-direction.is-out {
+  color: var(--text-2);
+}
+
+.move-history-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+}

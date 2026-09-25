@@ -101,6 +101,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `holdings.ts` | `GET /holdings`, stock/crypto/fund CRUD + lots/contributions |
 | `overview.ts` | `GET /overview`, `GET /overview/series` |
 | `walletDetail.ts` | `GET /wallets/{id}/detail` (the per-wallet dashboard payload) |
+| `walletMoves.ts` | `POST /wallets/{id}/moves` (relocate holdings), `GET /wallets/{id}/moves` (move history) |
 | `assetTypes.ts` | `GET/POST/DELETE /stock-types`, `/fund-types` |
 | `rates.ts` | `GET /currency-rates`, `PUT /currency-rates/{code}` |
 | `auth.ts` | `POST /auth/login`, `/register`, `/totp/enroll`, `/totp/verify`, `/google/link`, `GET /auth/session`, `/auth/config`, `POST /auth/logout`, `GET`/`DELETE /auth/trusted-devices` |
@@ -133,6 +134,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `holdingsList` | `GET /holdings` | `rows[]`, `page`, `totalElements`, `loadKind(kind, page)` |
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
 | `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
+| `walletMoves` | `GET/POST /wallets/{id}/moves` | `rows[]` for one wallet, `load(walletId, page)`, `move(originWalletId, payload)` |
 | `typesList` | `GET /stock-types` + `/fund-types` | `stockTypes[]`, `fundTypes[]`, CRUD actions |
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
 | `appearance` | `localStorage` | `dark`, `accent` — persisted across sessions |
@@ -181,7 +183,11 @@ It reads two stores: `walletDetail` for the header, chart, deltas, performers an
 
 The chart and the delta chips render only when `series` is non-empty; otherwise an `EmptyState` explains that history starts accumulating from the first snapshot job run. The concentration warning appears when `largestHoldingShare` exceeds 50.
 
-**Two sections from issue #213 are not here yet** — the Move history table and the per-investment "Mover" action, both of which need #211's endpoints and modal. The page is built so they slot in beside the investments table without restructuring.
+It also carries #211's two move pieces: a per-investment "Mover" row action (and a header "Mover" button) opening `MoveHoldingsModal` with this wallet as a fixed origin, and a **Movimentações** table below the investments listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
+
+### Moving holdings (`MoveHoldingsModal.vue`)
+
+Opened from the wallets view's "Mover" button with no origin, or from the wallet detail page with `originWalletId` (which hides the origin picker) and optionally `preselectedHoldingId`. The destination picker only lists wallets matching the origin's kind and currency, and the movable list comes from `GET /holdings?walletId=`, which already excludes `COMPLETED` holdings. Funds show no quantity field; for stocks and crypto an empty quantity means the whole position. "Mover tudo" sends every listed holding in one call. A 400 lands inline via `problemDetailMessage` and the modal stays open with the selection intact.
 
 ### App-shell modals (`src/composables/useModals.ts`)
 
