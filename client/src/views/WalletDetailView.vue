@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDialog, useToast } from 'buefy'
 import AreaChart from '@/components/charts/AreaChart.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
+import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -14,9 +15,10 @@ import { useHoldingsListStore } from '@/stores/holdingsList'
 import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useWalletDetailStore } from '@/stores/walletDetail'
+import { useWalletMovesStore } from '@/stores/walletMoves'
 import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
-import type { HoldingRow } from '@/types'
+import type { HoldingRow, WalletMoveRow } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -26,10 +28,13 @@ const auth = useAuthStore()
 const walletDetailStore = useWalletDetailStore()
 const walletsStore = useWalletsStore()
 const holdingsListStore = useHoldingsListStore()
+const walletMovesStore = useWalletMovesStore()
 
 const walletId = computed(() => route.params.id as string)
 const detail = computed(() => walletDetailStore.detail)
 const openedDetails = ref<string[]>([])
+const moveModalOpen = ref(false)
+const holdingToMove = ref<string | undefined>(undefined)
 
 const currency = computed(() => detail.value?.currency ?? 'BRL')
 
@@ -77,6 +82,7 @@ async function loadAll() {
   await Promise.all([
     walletDetailStore.load(walletId.value),
     holdingsListStore.loadKind('all', 0, { walletId: walletId.value }),
+    walletMovesStore.load(walletId.value, 0),
   ])
 }
 
@@ -102,6 +108,25 @@ async function onPageChange(page: number) {
 async function onHoldingChanged() {
   openedDetails.value = []
   await loadAll()
+}
+
+function openMove(row?: HoldingRow) {
+  holdingToMove.value = row?.id
+  moveModalOpen.value = true
+}
+
+async function onMoved() {
+  openedDetails.value = []
+  await Promise.all([loadAll(), walletsStore.refresh()])
+}
+
+async function onMovesPageChange(page: number) {
+  await walletMovesStore.load(walletId.value, page - 1)
+}
+
+function moveCounterpart(move: WalletMoveRow): string {
+  const walletName = move.direction === 'OUT' ? move.destinationWalletName : move.originWalletName
+  return walletName ?? 'Carteira removida'
 }
 
 function goToWallets() {
@@ -223,6 +248,14 @@ function confirmDeleteWallet() {
             <div class="wd-actions">
               <b-button size="is-small" icon-left="format-list-bulleted" @click="goToHoldings">
                 Ver investimentos
+              </b-button>
+              <b-button
+                size="is-small"
+                icon-left="swap-horizontal"
+                data-testid="wallet-move"
+                @click="openMove()"
+              >
+                Mover
               </b-button>
               <b-button
                 v-if="auth.isAdmin"
@@ -406,6 +439,16 @@ function confirmDeleteWallet() {
                       />
                     </td>
                     <td class="c-act">
+                      <b-tooltip label="Mover" position="is-left">
+                        <b-button
+                          type="is-ghost"
+                          size="is-small"
+                          icon-left="swap-horizontal"
+                          aria-label="Mover investimento"
+                          data-testid="row-move"
+                          @click.stop="openMove(row)"
+                        />
+                      </b-tooltip>
                       <span class="chev">
                         <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
                       </span>
@@ -436,6 +479,77 @@ function confirmDeleteWallet() {
           </div>
         </div>
       </Card>
+
+      <Card class="table-card" data-testid="move-history">
+        <div class="move-history-title">
+          <div class="chart-title">Movimentações</div>
+          <div class="wd-chart-sub">Investimentos movidos de e para esta carteira</div>
+        </div>
+        <div v-if="walletMovesStore.rows.length > 0" class="table-wrap">
+          <b-loading :is-full-page="false" :active="walletMovesStore.loading" />
+          <div class="table-scroll">
+            <table class="inv-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Investimento</th>
+                  <th>Direção</th>
+                  <th>Carteira</th>
+                  <th class="c-num">Qtd.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="move in walletMovesStore.rows" :key="move.id" data-testid="move-row">
+                  <td>{{ fmt.date(move.movedAt) }}</td>
+                  <td>
+                    <span class="t-ticker">{{ move.ticker ?? move.holdingName }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="move-direction"
+                      :class="move.direction === 'IN' ? 'is-in' : 'is-out'"
+                    >
+                      <b-icon
+                        :icon="move.direction === 'IN' ? 'arrow-bottom-left' : 'arrow-top-right'"
+                        size="is-small"
+                      />
+                      {{ move.direction === 'IN' ? 'Entrada' : 'Saída' }}
+                    </span>
+                  </td>
+                  <td>{{ moveCounterpart(move) }}</td>
+                  <td class="c-num">
+                    {{ move.quantity == null ? 'Tudo' : fmt.qty(move.quantity) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-if="walletMovesStore.totalPages > 1" class="table-foot">
+            <b-pagination
+              :model-value="walletMovesStore.page + 1"
+              :total="walletMovesStore.totalElements"
+              :per-page="walletMovesStore.pageSize"
+              order="is-right"
+              simple
+              @change="onMovesPageChange"
+            />
+          </div>
+        </div>
+        <EmptyState
+          v-else-if="walletMovesStore.loaded"
+          icon="swap-horizontal"
+          title="Nenhuma movimentação"
+          text="Investimentos movidos entre carteiras aparecem aqui."
+        />
+      </Card>
+
+      <MoveHoldingsModal
+        v-if="moveModalOpen"
+        :origin-wallet-id="detail.id"
+        :preselected-holding-id="holdingToMove"
+        @moved="onMoved"
+        @close="moveModalOpen = false"
+      />
     </template>
   </div>
 </template>

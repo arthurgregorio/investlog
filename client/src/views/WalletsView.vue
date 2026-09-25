@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { BButton } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import GainChip from '@/components/ui/GainChip.vue'
+import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
@@ -19,6 +20,7 @@ const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
 const router = useRouter()
 const modals = useModals()
+const moveModalOpen = ref(false)
 
 onMounted(() => {
   walletsStore.load()
@@ -41,6 +43,10 @@ function gotoType(kind: WalletKind, walletId: string) {
 }
 
 const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
+
+async function onMoved() {
+  await walletsStore.refresh()
+}
 </script>
 
 <template>
@@ -52,6 +58,13 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
         <h1 class="page-title">Carteiras</h1>
         <p class="page-desc">Carteiras podem ter tipos e moedas distintas</p>
       </div>
+      <b-button
+        v-if="walletsStore.wallets.length > 1"
+        icon-left="swap-horizontal"
+        data-testid="open-move"
+        @click="moveModalOpen = true"
+        >Mover</b-button
+      >
     </div>
 
     <EmptyState
@@ -150,5 +163,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
         <b-icon icon="plus-circle-outline" size="is-medium" /><span>Nova carteira</span>
       </button>
     </div>
+
+    <MoveHoldingsModal v-if="moveModalOpen" @moved="onMoved" @close="moveModalOpen = false" />
   </div>
 </template>
