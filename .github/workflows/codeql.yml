@@ -8,10 +8,14 @@ on:
   schedule:
     - cron: "30 3 * * 1"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   changes:
     name: Detect changed layers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       server: ${{ steps.filter.outputs.server }}
       client: ${{ steps.filter.outputs.client }}
@@ -23,14 +27,16 @@ jobs:
           filters: |
             server:
               - 'server/**'
+              - '.github/workflows/codeql.yml'
             client:
               - 'client/**'
+              - '.github/workflows/codeql.yml'
 
   analyze-server:
     name: Analyze (java-kotlin)
     needs: changes
     if: needs.changes.outputs.server == 'true' || github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       security-events: write
       packages: read
@@ -44,6 +50,15 @@ jobs:
           distribution: "liberica"
           java-version: "25"
 
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Generate jOOQ sources before tracing
+        working-directory: server
+        run: |
+          ./gradlew jooqCodegen --no-daemon \
+            -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g" \
+            -Dkotlin.compiler.execution.strategy=in-process
+
       - uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
@@ -52,7 +67,7 @@ jobs:
       - name: Build server
         working-directory: server
         run: |
-          ./gradlew clean testClasses --no-daemon \
+          ./gradlew testClasses --no-daemon --no-build-cache \
             -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g" \
             -Dkotlin.compiler.execution.strategy=in-process
 
@@ -64,7 +79,7 @@ jobs:
     name: Analyze (javascript-typescript)
     needs: changes
     if: needs.changes.outputs.client == 'true' || github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       security-events: write
       packages: read
