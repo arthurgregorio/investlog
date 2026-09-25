@@ -6,8 +6,12 @@ import WalletDetailView from './WalletDetailView.vue'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useAuthStore } from '@/stores/auth'
-import type { HoldingRow, WalletDetail } from '@/types'
+import { useWalletMovesStore } from '@/stores/walletMoves'
+import { useWalletsStore } from '@/stores/wallets'
+import { holdingsApi } from '@/api/holdings'
+import type { HoldingRow, WalletDetail, WalletMoveRow, WalletResponse } from '@/types'
 
+vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { findAll: vi.fn(), move: vi.fn() } }))
 vi.mock('@/api/walletDetail', () => ({ walletDetailApi: { get: vi.fn() } }))
 vi.mock('@/api/wallets', () => ({
   walletsApi: { findAll: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() },
@@ -77,6 +81,7 @@ async function mountView(
   rows: HoldingRow[] = [mockRow],
   loaded = true,
   isAdmin = true,
+  moves: WalletMoveRow[] = [],
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -107,14 +112,102 @@ async function mountView(
   walletDetailStore.detail = detail
   holdingsListStore.rows = rows
   holdingsListStore.loaded = loaded
+  const walletMovesStore = useWalletMovesStore()
+  walletMovesStore.rows = moves
+  walletMovesStore.loaded = true
 
   await flushPromises()
-  return { wrapper, router, walletDetailStore, holdingsListStore }
+  return { wrapper, router, walletDetailStore, holdingsListStore, walletMovesStore }
 }
 
 describe('WalletDetailView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  it('loads the wallet move history on mount', async () => {
+    const { walletMovesStore } = await mountView(detailOf())
+
+    expect(walletMovesStore.load).toHaveBeenCalledWith('wallet-1', 0)
+  })
+
+  it('lists relocations into and out of the wallet', async () => {
+    const { wrapper } = await mountView(detailOf(), [mockRow], true, true, [
+      {
+        id: 'move-out',
+        movedAt: '2026-09-20',
+        direction: 'OUT',
+        kind: 'STOCKS',
+        holdingName: 'Vale',
+        ticker: 'VALE3',
+        quantity: 10,
+        originWalletId: 'wallet-1',
+        originWalletName: 'Detail Wallet',
+        destinationWalletId: 'wallet-2',
+        destinationWalletName: 'Outra carteira',
+      },
+      {
+        id: 'move-in',
+        movedAt: '2026-09-21',
+        direction: 'IN',
+        kind: 'STOCKS',
+        holdingName: 'Itaú',
+        ticker: 'ITUB4',
+        quantity: null,
+        originWalletId: null,
+        originWalletName: null,
+        destinationWalletId: 'wallet-1',
+        destinationWalletName: 'Detail Wallet',
+      },
+    ])
+
+    const rows = wrapper.findAll('[data-testid="move-row"]')
+    expect(rows).toHaveLength(2)
+    expect(rows[0].text()).toContain('VALE3')
+    expect(rows[0].text()).toContain('Saída')
+    expect(rows[0].text()).toContain('Outra carteira')
+    expect(rows[1].text()).toContain('Entrada')
+    expect(rows[1].text()).toContain('Carteira removida')
+    expect(rows[1].text()).toContain('Tudo')
+  })
+
+  it('shows an empty move history when nothing was moved', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    expect(wrapper.find('[data-testid="move-history"]').text()).toContain('Nenhuma movimentação')
+  })
+
+  it('opens the move modal from a row with this wallet as the fixed origin', async () => {
+    vi.mocked(holdingsApi.findAll).mockResolvedValue({
+      content: [mockRow],
+      page: { size: 500, number: 0, totalElements: 1, totalPages: 1 },
+    })
+    const { wrapper } = await mountView(detailOf())
+    const walletsStore = useWalletsStore()
+    const wallet: WalletResponse = {
+      id: 'wallet-1',
+      name: 'Detail Wallet',
+      kind: 'STOCKS',
+      currency: 'BRL',
+      holdingCount: 1,
+      totalInvested: 4500,
+      currentValue: 4750,
+      gain: 250,
+      gainPct: 5.5556,
+      createdAt: '2026-01-01T00:00:00Z',
+    }
+    walletsStore.wallets = [wallet]
+    walletsStore.walletById = (id: string) => (id === wallet.id ? wallet : undefined)
+
+    await wrapper.find('[data-testid="row-move"]').trigger('click')
+    await flushPromises()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Mover investimentos')
+    expect(wrapper.find('[data-testid="move-origin"]').exists()).toBe(false)
+    expect(holdingsApi.findAll).toHaveBeenCalledWith({ walletId: 'wallet-1', size: 500 })
+    expect(wrapper.find('.move-item.is-selected').exists()).toBe(true)
+    expect(wrapper.find('tr.detail-row').exists()).toBe(false)
   })
 
   it('loads the detail and the wallet-scoped holdings on mount', async () => {
