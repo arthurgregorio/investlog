@@ -8,7 +8,7 @@ on:
 jobs:
   check-release:
     name: Check release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     if: github.event.workflow_run.conclusion == 'success'
     outputs:
       is-prerelease: ${{ steps.release.outputs.is-prerelease }}
@@ -24,34 +24,49 @@ jobs:
 
   deploy-server:
     name: Deploy server
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container: ghcr.io/railwayapp/cli:latest
     needs: check-release
     if: needs.check-release.outputs.is-prerelease == 'false'
     steps:
+      - name: Install jq
+        run: apk add --no-cache jq
+
       - name: Redeploy investlog-server
+        id: redeploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway redeploy --service investlog-server --environment production --yes
+        run: |
+          redeploy_output=$(railway redeploy --service investlog-server --environment production --yes --json)
+          deployment_id=$(printf '%s' "$redeploy_output" | jq -r '.id // empty')
+          if [ -z "$deployment_id" ]; then
+            echo "railway redeploy returned no deployment id: $redeploy_output"
+            exit 1
+          fi
+          echo "deployment: $deployment_id"
+          echo "deployment-id=$deployment_id" >> "$GITHUB_OUTPUT"
 
       - name: Wait for investlog-server deployment to succeed
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOYMENT_ID: ${{ steps.redeploy.outputs.deployment-id }}
         run: |
-          apk add --no-cache jq
-          for i in $(seq 1 60); do
-            status=$(railway deployment list --service investlog-server --environment production --json | jq -r '.[0].status')
-            echo "status: $status"
-            [ "$status" = "SUCCESS" ] && exit 0
-            if [ "$status" = "FAILED" ] || [ "$status" = "CRASHED" ]; then exit 1; fi
+          for attempt in $(seq 1 60); do
+            status=$(railway deployment list --service investlog-server --environment production --json \
+              | jq -r --arg id "$DEPLOYMENT_ID" '.[] | select(.id == $id) | .status') || status=""
+            echo "status: ${status:-not listed yet}"
+            case "$status" in
+              SUCCESS) exit 0 ;;
+              FAILED|CRASHED|REMOVED|SKIPPED) exit 1 ;;
+            esac
             sleep 10
           done
-          echo "timed out waiting for investlog-server deployment"
+          echo "timed out waiting for investlog-server deployment $DEPLOYMENT_ID"
           exit 1
 
   deploy-client:
     name: Deploy client
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     container: ghcr.io/railwayapp/cli:latest
     needs: [ check-release, deploy-server ]
     if: needs.check-release.outputs.is-prerelease == 'false'

@@ -5,10 +5,14 @@ on:
   push:
     branches: [ "main" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   changes:
     name: Detect changed layers
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       server: ${{ steps.filter.outputs.server }}
       client: ${{ steps.filter.outputs.client }}
@@ -20,14 +24,16 @@ jobs:
           filters: |
             server:
               - 'server/**'
+              - '.github/workflows/ci.yml'
             client:
               - 'client/**'
+              - '.github/workflows/ci.yml'
 
   test-server:
     name: Test server
     needs: changes
     if: needs.changes.outputs.server == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
@@ -35,6 +41,8 @@ jobs:
         with:
           distribution: "liberica"
           java-version: "25"
+
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Run server tests
         working-directory: server
@@ -47,7 +55,7 @@ jobs:
     name: Test client
     needs: changes
     if: needs.changes.outputs.client == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
 
