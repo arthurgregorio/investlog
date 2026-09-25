@@ -166,9 +166,13 @@ does **not** become one issue with several PRs. It becomes an **umbrella issue**
   server, client, and docs/infra. Sub-issue bodies use the ordinary feature skeleton, scoped to that
   chunk, and open by stating which branch they target: *"Subtask of #211. Targets the
   `feature/211-wallet-relocation` branch, not `main`."* (#212 and #213 are the worked examples.)
-- Sub-issue PRs target the **feature branch**, not `main`.
+- Sub-issue PRs target the **umbrella's feature branch** — never `main`, and never another
+  sub-issue's branch. A sub-issue that builds on a sibling waits for the sibling to land on the
+  feature branch and branches from there; stacking one sub-PR on another (as #274 did on #273) hides
+  it from every check that looks at the feature branch.
 - Once every sub-issue has landed on the feature branch, **one PR merges the feature branch into
-  `main`, and that PR closes the umbrella issue.**
+  `main`, and that PR closes the umbrella issue and every one of its sub-issues** — see
+  [Closing sub-issues](#closing-sub-issues-the-umbrella-pr-does-it).
 
 Link sub-issues to their parent with **GitHub's sub-issues feature**, not just a "Subtask of #N"
 line in the body — prose links don't show up in `gh api .../sub_issues`, don't populate the parent's
@@ -237,17 +241,20 @@ precedent (`fix/201-railway-deploy-ordering`). The slug starts with the issue nu
 
 ## Pull request conventions
 
-**One issue, one PR.** A PR closes exactly one issue, and an issue is closed by exactly one PR. If
-the work doesn't fit in a single PR, that's the signal to restructure it as an umbrella issue with
-sub-issues — not to open a second PR against the same issue.
+**One issue, one PR.** A PR implements exactly one issue, and an issue is implemented by exactly
+one PR. If the work doesn't fit in a single PR, that's the signal to restructure it as an umbrella
+issue with sub-issues — not to open a second PR against the same issue. The single exception to
+"closes exactly one issue" is the umbrella PR into `main`, which also closes the sub-issues it
+carries (see below).
 
 **Every PR must, at creation time:**
 
 - **`Closes #N`** in the body, naming its own issue. Because of the 1:1 rule, a **PR body** never
   uses `Refs #N` for the issue it implements; a sub-issue PR may additionally mention its umbrella
-  issue as context, but the only `Closes` is its own sub-issue. This applies to the PR body only —
-  individual **commit messages** still use `Refs #N` as a breadcrumb, since repeating the closing
-  keyword on every commit would be noise.
+  issue as context, but the only `Closes` is its own sub-issue. An **umbrella PR into `main`** has
+  one `Closes #N` line for the umbrella and one for each of its sub-issues. This applies to the PR
+  body only — individual **commit messages** still use `Refs #N` as a breadcrumb, since repeating
+  the closing keyword on every commit would be noise.
 - **A linked issue — verified, not assumed.** See below; on a sub-issue PR this one needs a manual
   step and fails silently without it.
 - The **same milestone as its issue** — `gh issue view <N> --json milestone` to check. `gh pr
@@ -282,11 +289,40 @@ tool. The link is made in the browser, from the **issue's** Development panel �
 request". Worth knowing that `gh pr create` reports success either way, and a body containing
 `Closes #N` looks correct in review, so nothing surfaces this except the command above.
 
-**Sub-issues therefore never close themselves.** Merging a sub-PR into its feature branch closes
-nothing, because that branch is not the default branch; and when the feature branch later merges
-into `main`, the commits it carries say `Refs #N`, so they close nothing either. Close each
-sub-issue by hand as its PR merges. Only the umbrella's own PR into `main` — which does target the
-default branch — closes its issue automatically.
+### Closing sub-issues: the umbrella PR does it
+
+**Sub-issues never close themselves.** Merging a sub-PR into its feature branch closes nothing,
+because that branch is not the default branch. Sub-PRs are squash-merged with a blank message, so
+their body's `Closes #N` never makes it into a commit either, and the branch commits say `Refs #N`.
+A "close it by hand after merging" step has no owner once the merge happens in the browser, and it
+was skipped: #265, #269 and #270 sat open in their milestone long after their code reached `main`.
+
+So the **umbrella PR into `main` is the mechanism**. It targets the default branch, so GitHub honours
+every closing keyword in its body. When opening it:
+
+1. List the umbrella's sub-issues and write a `Closes #N` line for each, plus the umbrella's own:
+
+   ```bash
+   rtk proxy gh api repos/:owner/:repo/issues/<umbrella>/sub_issues --jq '.[] | "#\(.number) \(.state) \(.title)"'
+   ```
+
+2. **Before handing the PR over for merge**, confirm that GitHub linked every one of them. Any open
+   sub-issue missing from the output below is a blocker. Fix the body; don't merge around it:
+
+   ```bash
+   comm -23 <(rtk proxy gh api repos/:owner/:repo/issues/<umbrella>/sub_issues --jq '.[] | select(.state=="open") | .number' | sort) <(rtk proxy gh pr view <PR> --json closingIssuesReferences --jq '.closingIssuesReferences[].number' | sort)
+   ```
+
+   Empty output means every open sub-issue is linked.
+
+3. **After the merge**, confirm nothing was left open. The output must be empty:
+
+   ```bash
+   rtk proxy gh api repos/:owner/:repo/issues/<umbrella>/sub_issues --jq '.[] | select(.state=="open") | "#\(.number) \(.title)"'
+   ```
+
+A sub-issue may still be closed by hand as soon as its PR merges into the feature branch, but that's
+a courtesy. The umbrella PR is what guarantees it.
 
 CI splits client and server suites behind a "Detect changed layers" job. The server leg runs jOOQ
 codegen against a throwaway Postgres container and takes roughly five minutes, with CodeQL
