@@ -53,7 +53,7 @@ jobs:
         run: |
           for attempt in $(seq 1 60); do
             status=$(railway deployment list --service investlog-server --environment production --json \
-              | jq -r --arg id "$DEPLOYMENT_ID" '.[] | select(.id == $id) | .status')
+              | jq -r --arg id "$DEPLOYMENT_ID" '.[] | select(.id == $id) | .status') || status=""
             echo "status: ${status:-not listed yet}"
             case "$status" in
               SUCCESS) exit 0 ;;
