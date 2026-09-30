@@ -189,6 +189,8 @@ In detail:
 
 A wallet whose holdings have all been completed reports the same shape as an empty wallet — `holdingCount` 0, `totalInvested` 0, a null `currentValue` — because `WalletRepository`'s subqueries now match no rows. That is the intended outcome, and the wallets view already renders that shape.
 
+`GET /private/v1/results/summary` sums every `finances.results` row, reinvestments included, into totals in the user's preferred currency, optionally restricted to a `from`/`to` range on `result_date`. Conversion goes through `CurrencyRateRepository.findRateOrAnchor`, the same lookup `OverviewRepository` uses, and the controller calls `ResultRepository` directly because there is no work to do between the query and the response.
+
 ### Wallet moves
 
 `walletmoves` relocates holdings between two wallets of the same kind and currency (issue #245). `POST /private/v1/wallets/{originWalletId}/moves` takes a destination and a list of holdings, each with an optional `quantity`; `GET /private/v1/wallets/{walletId}/moves` pages the audit rows in and out of a wallet. A move is not an exit: it writes no `finances.results` row and works entirely through the lot, contribution and holding tables, so neither view needs to know about it.
