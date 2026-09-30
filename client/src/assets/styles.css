@@ -3016,6 +3016,7 @@ h3.report-subgroup-title {
     border-left: 0;
     width: 100%;
     align-self: flex-start;
+    justify-content: flex-end;
   }
 }
 
@@ -3039,6 +3040,40 @@ h3.report-subgroup-title {
   color: var(--text-muted);
   font-size: 13px;
   margin: 8px 0;
+}
+
+.reinvest-fields {
+  margin-top: 14px;
+}
+
+.reinvest-summary {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.reinvest-summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.reinvest-summary-line + .reinvest-summary-line {
+  margin-top: 4px;
+}
+
+.reinvest-summary-line strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.reinvest-summary-note {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
 }
 
 .move-list-head {

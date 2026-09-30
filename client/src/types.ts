@@ -93,8 +93,11 @@ export interface ContributionDetail {
 }
 
 /** One recorded exit from a holding, embedded in its detail response. */
+export type ResultType = 'WITHDRAWAL' | 'REINVESTMENT'
+
 export interface WithdrawalDetail {
   id: string
+  resultType: ResultType
   resultDate: string // ISO yyyy-mm-dd
   quantity: number | null
   grossAmount: number
@@ -142,7 +145,7 @@ export type HoldingDetail = StockHoldingDetail | CryptoHoldingDetail | FundHoldi
 export interface ResultRow {
   id: string
   kind: WalletKind
-  resultType: 'WITHDRAWAL' | 'TRANSFER'
+  resultType: ResultType
   holdingName: string
   ticker: string | null
   walletId: string
@@ -155,6 +158,31 @@ export interface ResultRow {
   taxes: number
   costBasis: number
   netAmount: number
+  profit: number
+}
+
+/** One end of a reinvestment: the holding it left or the holding it landed in. */
+export interface ReinvestmentSide {
+  holdingId: string
+  kind: WalletKind
+  name: string
+  ticker: string | null
+  walletId: string
+  walletName: string
+}
+
+/** One recorded reinvestment — a row of `GET /reinvestments`. */
+export interface ReinvestmentRow {
+  id: string
+  reinvestmentDate: string
+  currency: string
+  source: ReinvestmentSide
+  destination: ReinvestmentSide
+  quantity: number | null
+  grossAmount: number
+  fees: number
+  taxes: number
+  amount: number
   profit: number
 }
 

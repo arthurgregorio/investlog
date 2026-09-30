@@ -5,6 +5,7 @@ import { useDialog, useToast } from 'buefy'
 import AreaChart from '@/components/charts/AreaChart.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
+import ReinvestModal from '@/components/investments/ReinvestModal.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -35,6 +36,8 @@ const detail = computed(() => walletDetailStore.detail)
 const openedDetails = ref<string[]>([])
 const moveModalOpen = ref(false)
 const holdingToMove = ref<string | undefined>(undefined)
+const reinvestModalOpen = ref(false)
+const holdingToReinvest = ref<string | undefined>(undefined)
 
 const currency = computed(() => detail.value?.currency ?? 'BRL')
 
@@ -115,9 +118,14 @@ function openMove(row?: HoldingRow) {
   moveModalOpen.value = true
 }
 
-async function onMoved() {
+async function onPositionsChanged() {
   openedDetails.value = []
   await Promise.all([loadAll(), walletsStore.refresh()])
+}
+
+function openReinvest(row?: HoldingRow) {
+  holdingToReinvest.value = row?.id
+  reinvestModalOpen.value = true
 }
 
 async function onMovesPageChange(page: number) {
@@ -246,27 +254,36 @@ function confirmDeleteWallet() {
             </div>
 
             <div class="wd-actions">
-              <b-button size="is-small" icon-left="format-list-bulleted" @click="goToHoldings">
-                Ver investimentos
-              </b-button>
-              <b-button
-                size="is-small"
-                icon-left="swap-horizontal"
-                data-testid="wallet-move"
-                @click="openMove()"
-              >
-                Mover
-              </b-button>
-              <b-button
-                v-if="auth.isAdmin"
-                size="is-small"
-                type="is-danger"
-                outlined
-                icon-left="delete"
-                @click="confirmDeleteWallet"
-              >
-                Remover
-              </b-button>
+              <b-dropdown aria-role="list" position="is-bottom-left" data-testid="wallet-actions">
+                <template #trigger>
+                  <b-button size="is-small" icon-right="menu-down">Ações</b-button>
+                </template>
+
+                <b-dropdown-item aria-role="listitem" @click="goToHoldings">
+                  <b-icon icon="format-list-bulleted" size="is-small" /> Ver investimentos
+                </b-dropdown-item>
+                <b-dropdown-item aria-role="listitem" data-testid="wallet-move" @click="openMove()">
+                  <b-icon icon="swap-horizontal" size="is-small" /> Mover
+                </b-dropdown-item>
+                <b-dropdown-item
+                  aria-role="listitem"
+                  data-testid="wallet-reinvest"
+                  @click="openReinvest()"
+                >
+                  <b-icon icon="autorenew" size="is-small" /> Reinvestir
+                </b-dropdown-item>
+                <template v-if="auth.isAdmin">
+                  <hr class="dropdown-divider" />
+                  <b-dropdown-item
+                    aria-role="listitem"
+                    class="has-text-danger"
+                    data-testid="wallet-remove"
+                    @click="confirmDeleteWallet"
+                  >
+                    <b-icon icon="delete" size="is-small" /> Remover
+                  </b-dropdown-item>
+                </template>
+              </b-dropdown>
             </div>
           </div>
         </CardBody>
@@ -439,6 +456,16 @@ function confirmDeleteWallet() {
                       />
                     </td>
                     <td class="c-act">
+                      <b-tooltip label="Reinvestir" position="is-left">
+                        <b-button
+                          type="is-ghost"
+                          size="is-small"
+                          icon-left="autorenew"
+                          aria-label="Reinvestir investimento"
+                          data-testid="row-reinvest"
+                          @click.stop="openReinvest(row)"
+                        />
+                      </b-tooltip>
                       <b-tooltip label="Mover" position="is-left">
                         <b-button
                           type="is-ghost"
@@ -547,8 +574,16 @@ function confirmDeleteWallet() {
         v-if="moveModalOpen"
         :origin-wallet-id="detail.id"
         :preselected-holding-id="holdingToMove"
-        @moved="onMoved"
+        @moved="onPositionsChanged"
         @close="moveModalOpen = false"
+      />
+
+      <ReinvestModal
+        v-if="reinvestModalOpen"
+        :wallet-id="detail.id"
+        :preselected-holding-id="holdingToReinvest"
+        @reinvested="onPositionsChanged"
+        @close="reinvestModalOpen = false"
       />
     </template>
   </div>

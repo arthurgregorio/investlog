@@ -73,6 +73,7 @@ function stockDetailWithWithdrawals(): StockHoldingDetail {
     withdrawals: [
       {
         id: 'w-1',
+        resultType: 'WITHDRAWAL',
         resultDate: '2026-05-10',
         quantity: 150,
         grossAmount: 4575,
@@ -84,6 +85,7 @@ function stockDetailWithWithdrawals(): StockHoldingDetail {
       },
       {
         id: 'w-2',
+        resultType: 'WITHDRAWAL',
         resultDate: '2026-06-18',
         quantity: 150,
         grossAmount: 4815,
@@ -196,6 +198,20 @@ describe('HoldingDetailPanel', () => {
     expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(2)
   })
 
+  it('tags a reinvestment row as Reinvestimento and offers no undo for it', async () => {
+    const detail = stockDetailWithWithdrawals()
+    detail.withdrawals[1] = { ...detail.withdrawals[1], resultType: 'REINVESTMENT' }
+    vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(detail)
+
+    const wrapper = mountPanel(stockRow)
+    await flushPromises()
+
+    const reinvestmentRow = wrapper.findAll('tbody tr')[3]
+    expect(reinvestmentRow.text()).toContain('Reinvestimento')
+    expect(reinvestmentRow.find('td.c-act button').exists()).toBe(false)
+    expect(wrapper.findAll('tbody tr')[2].find('td.c-act button').exists()).toBe(true)
+  })
+
   it('lets the server reject undoing a withdrawal that is not the most recent, without reloading', async () => {
     vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithWithdrawals())
     vi.mocked(resultsApi.deleteStockWithdrawal).mockRejectedValue(new Error('409 Conflict'))
@@ -222,6 +238,7 @@ describe('HoldingDetailPanel', () => {
       withdrawals: [
         {
           id: 'w-1',
+          resultType: 'WITHDRAWAL',
           resultDate: '2026-05-10',
           quantity: null,
           grossAmount: 1000,

@@ -1,6 +1,11 @@
-import type { HoldingDetail, StockHoldingDetail, CryptoHoldingDetail, FundHoldingDetail } from '@/types'
+import type {
+  HoldingDetail,
+  StockHoldingDetail,
+  CryptoHoldingDetail,
+  FundHoldingDetail,
+} from '@/types'
 
-export type LedgerMovementType = 'PURCHASE' | 'WITHDRAWAL'
+export type LedgerMovementType = 'PURCHASE' | 'WITHDRAWAL' | 'REINVESTMENT'
 
 export interface LedgerRow {
   type: LedgerMovementType
@@ -53,7 +58,7 @@ export function buildLedger(detail: HoldingDetail, isFund: boolean): LedgerRow[]
       }))
 
   const withdrawalRows: LedgerRow[] = detail.withdrawals.map((withdrawal) => ({
-    type: 'WITHDRAWAL',
+    type: withdrawal.resultType,
     id: withdrawal.id,
     date: withdrawal.resultDate,
     quantity: withdrawal.quantity == null ? null : -withdrawal.quantity,
