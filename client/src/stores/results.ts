@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { resultsApi } from '@/api/results'
-import type { ResultRow } from '@/types'
+import type { ResultRow, ResultSummary } from '@/types'
 
 export const useResultsStore = defineStore('results', () => {
   const rows = ref<ResultRow[]>([])
@@ -11,6 +11,8 @@ export const useResultsStore = defineStore('results', () => {
   const totalPages = ref(0)
   const loading = ref(false)
   const loaded = ref(false)
+  const summary = ref<ResultSummary | null>(null)
+  const summaryLoading = ref(false)
 
   async function load(pageNumber = 0) {
     loading.value = true
@@ -26,6 +28,15 @@ export const useResultsStore = defineStore('results', () => {
     }
   }
 
+  async function loadSummary() {
+    summaryLoading.value = true
+    try {
+      summary.value = await resultsApi.getSummary()
+    } finally {
+      summaryLoading.value = false
+    }
+  }
+
   async function refresh() {
     await load(page.value)
   }
@@ -38,7 +49,10 @@ export const useResultsStore = defineStore('results', () => {
     totalPages,
     loading,
     loaded,
+    summary,
+    summaryLoading,
     load,
+    loadSummary,
     refresh,
   }
 })

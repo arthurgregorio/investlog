@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { PagedResponse, ResultRow } from '@/types'
+import type { PagedResponse, ResultRow, ResultSummary } from '@/types'
 
 export interface HoldingWithdrawalPayload {
   resultDate: string
@@ -19,6 +19,10 @@ export interface FundWithdrawalPayload {
 export const resultsApi = {
   findAll(params: { page?: number; size?: number } = {}): Promise<PagedResponse<ResultRow>> {
     return apiClient.get<PagedResponse<ResultRow>>('/results', { params }).then((r) => r.data)
+  },
+
+  getSummary(): Promise<ResultSummary> {
+    return apiClient.get<ResultSummary>('/results/summary').then((r) => r.data)
   },
 
   withdrawFromStockHolding(

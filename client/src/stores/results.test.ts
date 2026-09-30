@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useResultsStore } from './results'
 import { resultsApi } from '@/api/results'
-import type { ResultRow } from '@/types'
+import type { ResultRow, ResultSummary } from '@/types'
 
 vi.mock('@/api/results', () => ({
   resultsApi: {
     findAll: vi.fn(),
+    getSummary: vi.fn(),
     withdrawFromStockHolding: vi.fn(),
     withdrawFromCryptoHolding: vi.fn(),
     withdrawFromFundHolding: vi.fn(),
@@ -97,5 +98,34 @@ describe('useResultsStore', () => {
 
     expect(store.loading).toBe(false)
     expect(store.loaded).toBe(true)
+  })
+
+  it('loadSummary() stores the realised totals', async () => {
+    const summary: ResultSummary = {
+      displayCurrency: 'BRL',
+      totalWithdrawn: 800,
+      totalNetReceived: 790,
+      totalProfit: 190,
+      totalFees: 7,
+      totalTaxes: 3,
+      exitCount: 2,
+    }
+    vi.mocked(resultsApi.getSummary).mockResolvedValue(summary)
+    const store = useResultsStore()
+
+    await store.loadSummary()
+
+    expect(store.summary).toEqual(summary)
+    expect(store.summaryLoading).toBe(false)
+  })
+
+  it('loadSummary() clears loading when the request fails', async () => {
+    vi.mocked(resultsApi.getSummary).mockRejectedValue(new Error('boom'))
+    const store = useResultsStore()
+
+    await expect(store.loadSummary()).rejects.toThrow('boom')
+
+    expect(store.summaryLoading).toBe(false)
+    expect(store.summary).toBeNull()
   })
 })

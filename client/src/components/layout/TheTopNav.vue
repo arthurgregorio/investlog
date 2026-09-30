@@ -10,6 +10,7 @@ interface NavItem {
   label: string
   icon: string
   children?: NavItem[]
+  activeNames?: string[]
 }
 
 const overviewStore = useOverviewStore()
@@ -23,7 +24,15 @@ onMounted(() => {
 
 const nav = computed<NavItem[]>(() => {
   const items: NavItem[] = [
-    { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
+    {
+      label: 'Visão geral',
+      icon: 'view-dashboard-outline',
+      activeNames: ['overview-reinvestments'],
+      children: [
+        { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
+        { name: 'overview-results', label: 'Resultados', icon: 'cash-multiple' },
+      ],
+    },
     { name: 'wallets', label: 'Carteiras', icon: 'wallet-outline' },
     { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
   ]
@@ -43,6 +52,7 @@ const nav = computed<NavItem[]>(() => {
 
 function isActive(item: NavItem): boolean {
   if (item.name === route.name) return true
+  if (item.activeNames?.includes(route.name as string)) return true
   return item.children?.some((child) => child.name === route.name) ?? false
 }
 </script>
