@@ -109,6 +109,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `holdingsoverview` | `GET /holdings`, the paginated cross-kind view |
 | `results` | Withdrawals, `finances.results`, and the average-cost exit math — see **Results and withdrawals** |
 | `walletmoves` | Relocating holdings between wallets and `finances.wallet_moves` — see **Wallet moves** |
+| `reinvestments` | Exiting one holding into another and `finances.reinvestments` — see **Reinvestments** |
 | `walletdetail` | `GET /wallets/{id}/detail`, the per-wallet dashboard payload — see **Wallet detail** |
 | `overview` | Portfolio summary and the monthly invested series |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
@@ -176,11 +177,11 @@ In detail:
 
 ### Results and withdrawals
 
-`results` owns every exit from a position. `POST /private/v1/wallets/{walletId}/{stock|crypto|fund}-holdings/{holdingId}/withdrawals` records one, and `GET /private/v1/results` reads them back cross-kind and paginated. All three write endpoints live on one `WithdrawalController` and funnel into one `WithdrawalService`, so the average-cost math exists once rather than three times.
+`results` owns every exit from a position. `POST /private/v1/wallets/{walletId}/{stock|crypto|fund}-holdings/{holdingId}/withdrawals` records one, and `GET /private/v1/results` reads them back cross-kind and paginated. The average-cost math and the result write live once, in `PositionExitService`, which both `WithdrawalService` and `ReinvestmentService` call with their own `result_type`.
 
 **`WithdrawalService` reads the position from `finances.holdings_overview`, not from the lot tables.** That view already reports `quantity` and `cost_basis` net of everything withdrawn so far, which makes the average price simply `cost_basis / quantity` — and keeps it correct across repeated partial exits without the service tracking anything itself. The view carries `holding_id` for exactly this reason: it is what lets one query serve all three kinds.
 
-**The withdrawn totals are subtracted in `holdings_overview` through scalar correlated subqueries, never a join.** Joining `finances.results` to a branch that already aggregates lots multiplies the `SUM` by the number of result rows, silently inflating quantity and cost basis on any holding exited more than once. Adding a second such aggregate later (issue #205's transfers reuse this table) must follow the same rule.
+**The withdrawn totals are subtracted in `holdings_overview` through scalar correlated subqueries, never a join.** Joining `finances.results` to a branch that already aggregates lots multiplies the `SUM` by the number of result rows, silently inflating quantity and cost basis on any holding exited more than once. Adding a second such aggregate later must follow the same rule.
 
 **Only stock and crypto subtract withdrawn quantity from `current_value`.** A fund withdrawal decrements `fund_holdings.current_value` directly, so the view nets only its `cost_basis`; subtracting again would double-count.
 
@@ -195,6 +196,16 @@ A wallet whose holdings have all been completed reports the same shape as an emp
 **A holding that has withdrawals is never deleted by a move.** `finances.results` cascades on holding delete, so the spec's merge (reattach the lots, delete the origin) is only used when the origin has no results. Otherwise `WalletMoveService` takes the moved quantity out at the net average from `holdings_overview` — shrinking the origin's lots and rescaling their prices so the cost drops by exactly `average × moved` — and a fully-moved origin is marked `COMPLETED` in place. The decision and its reasoning are on #245.
 
 `finances.wallet_moves` stores the holdings by external id with no FK and snapshots their name and ticker, because a merge deletes the origin holding; its wallet FKs are `SET NULL`, so deleting an emptied origin wallet keeps the move in the destination's history.
+
+### Reinvestments
+
+`reinvestments` exits part or all of one holding and lands the net proceeds in another, atomically (issue #205, called "Reinvestir" in the UI). `POST /private/v1/reinvestments` writes a `REINVESTMENT` result for the source through `PositionExitService`, then an ordinary lot or contribution on the destination, then a `finances.reinvestments` row linking the result to the destination holding. `GET /private/v1/reinvestments` pages the history newest first with both sides labelled. Because the money arrives as a normal lot or contribution, the views, the Overview and the monthly series need nothing special.
+
+A stock or crypto destination buys at its own `current_price`, so one without a price is rejected; a fund destination gets a contribution and its `current_value` rises by the same amount. Both wallets must share a currency.
+
+**A reinvestment cannot be undone.** `WithdrawalService.deleteWithdrawal` rejects `REINVESTMENT` results with 409, since deleting the result would leave the destination's lot or contribution behind.
+
+**A wallet move that merges and deletes a holding repoints its reinvestments first.** `MovableHoldingRepository.reattachChildren` moves `reinvestments.destination_*_holding_id` to the matched holding along with the lots, because the destination FKs cascade and a holding that only received a reinvestment has no results to stop the delete.
 
 ### Wallet detail
 

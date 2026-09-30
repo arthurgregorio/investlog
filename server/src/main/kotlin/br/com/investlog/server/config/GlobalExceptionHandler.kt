@@ -3,6 +3,7 @@ package br.com.investlog.server.config
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
+import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.InvalidWalletMoveException
@@ -110,6 +111,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidWalletMove(ex: InvalidWalletMoveException): ProblemDetail {
 
         val message = ex.message ?: "Movimentação inválida"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidReinvestmentException::class)
+    fun handleInvalidReinvestment(ex: InvalidReinvestmentException): ProblemDetail {
+
+        val message = ex.message ?: "Reinvestimento inválido"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
         problemDetail.setProperty("timestamp", Instant.now())
