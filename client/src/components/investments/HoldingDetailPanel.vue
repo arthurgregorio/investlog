@@ -11,7 +11,7 @@ import { resultsApi } from '@/api/results'
 import { useCurrencyStore } from '@/stores/currency'
 import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
-import { buildLedger } from '@/utils/holdingLedger'
+import { buildLedger, type LedgerMovementType } from '@/utils/holdingLedger'
 import type { FundHoldingDetail, HoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
 
 const props = defineProps<{ row: HoldingRow }>()
@@ -142,6 +142,12 @@ function confirmDeletePurchase(purchaseId: string) {
   })
 }
 
+function movementLabel(type: LedgerMovementType): string {
+  if (type === 'REINVESTMENT') return 'Reinvestimento'
+  if (type === 'WITHDRAWAL') return isFund.value ? 'Resgate' : 'Venda'
+  return isFund.value ? 'Aporte' : 'Compra'
+}
+
 function confirmDeleteWithdrawal(resultId: string) {
   dialog.confirm({
     title: isFund.value ? 'Desfazer resgate' : 'Desfazer venda',
@@ -246,7 +252,14 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
         >
           Resgatar
         </b-button>
-        <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
+        <b-button
+          v-if="auth.isAdmin"
+          outlined
+          type="is-danger"
+          size="is-small"
+          icon-left="delete"
+          @click="confirmRemove"
+        >
           Remover
         </b-button>
       </div>
@@ -271,9 +284,9 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           <td>
             <span
               class="ledger-tag"
-              :class="entry.type === 'WITHDRAWAL' ? 'lt-withdrawal' : 'lt-purchase'"
+              :class="entry.type === 'PURCHASE' ? 'lt-purchase' : 'lt-withdrawal'"
             >
-              {{ entry.type === 'WITHDRAWAL' ? (isFund ? 'Resgate' : 'Venda') : isFund ? 'Aporte' : 'Compra' }}
+              {{ movementLabel(entry.type) }}
             </span>
           </td>
           <td>
@@ -294,22 +307,49 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           </td>
           <td v-if="!isFund" class="c-num">
             <template v-if="entry.unitPrice != null">
-              {{ fmt.money(currencyStore.convert(entry.unitPrice, row.walletCurrency), currencyStore.displayCurrency) }}
+              {{
+                fmt.money(
+                  currencyStore.convert(entry.unitPrice, row.walletCurrency),
+                  currencyStore.displayCurrency,
+                )
+              }}
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
           <td class="c-num">
             <template v-if="entry.costs != null">
-              {{ fmt.money(currencyStore.convert(entry.costs, row.walletCurrency), currencyStore.displayCurrency) }}
+              {{
+                fmt.money(
+                  currencyStore.convert(entry.costs, row.walletCurrency),
+                  currencyStore.displayCurrency,
+                )
+              }}
               <div class="ledger-costs-note">
-                taxa {{ fmt.money(currencyStore.convert(entry.fees ?? 0, row.walletCurrency), currencyStore.displayCurrency) }}
-                + imp. {{ fmt.money(currencyStore.convert(entry.taxes ?? 0, row.walletCurrency), currencyStore.displayCurrency) }}
+                taxa
+                {{
+                  fmt.money(
+                    currencyStore.convert(entry.fees ?? 0, row.walletCurrency),
+                    currencyStore.displayCurrency,
+                  )
+                }}
+                + imp.
+                {{
+                  fmt.money(
+                    currencyStore.convert(entry.taxes ?? 0, row.walletCurrency),
+                    currencyStore.displayCurrency,
+                  )
+                }}
               </div>
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
           <td class="c-num">
-            {{ fmt.money(currencyStore.convert(entry.amount, row.walletCurrency), currencyStore.displayCurrency) }}
+            {{
+              fmt.money(
+                currencyStore.convert(entry.amount, row.walletCurrency),
+                currencyStore.displayCurrency,
+              )
+            }}
           </td>
           <td class="c-num">
             <GainChip
@@ -324,7 +364,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           </td>
           <td class="c-act">
             <b-button
-              v-if="auth.isAdmin"
+              v-if="auth.isAdmin && entry.type !== 'REINVESTMENT'"
               outlined
               type="is-danger"
               size="is-small"
