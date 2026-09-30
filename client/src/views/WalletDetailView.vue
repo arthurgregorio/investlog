@@ -377,7 +377,7 @@ function confirmDeleteWallet() {
         text="Adicione um investimento para começar a acompanhar esta carteira."
       />
 
-      <Card v-else class="table-card">
+      <Card v-else class="table-card mb-0">
         <div class="table-wrap">
           <b-loading :is-full-page="false" :active="holdingsListStore.loading" />
           <div class="table-scroll">

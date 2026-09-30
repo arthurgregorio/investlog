@@ -3104,8 +3104,5 @@ h3.report-subgroup-title {
 }
 
 .move-history-title {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   padding: 16px 20px 0;
 }
