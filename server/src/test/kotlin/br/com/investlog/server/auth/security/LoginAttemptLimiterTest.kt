@@ -2,11 +2,15 @@ package br.com.investlog.server.auth.security
 
 import br.com.investlog.server.config.InvestlogConfigurations
 import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
+import br.com.investlog.server.shared.security.MutableClock
 import java.time.Duration
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
 class LoginAttemptLimiterTest {
+
+    private val clock = MutableClock(Instant.parse("2026-01-01T00:00:00Z"))
 
     private fun limiterWith(maxAttemptsBeforeLockout: Int, baseLockoutDuration: Duration): LoginAttemptLimiter =
         LoginAttemptLimiter(
@@ -34,7 +38,8 @@ class LoginAttemptLimiterTest {
                 brApi = InvestlogConfigurations.BrApi(baseUrl = "", token = ""),
                 coinGecko = InvestlogConfigurations.CoinGecko(baseUrl = "", apiKey = "", apiKeyHeader = ""),
                 awesomeApi = InvestlogConfigurations.AwesomeApi(baseUrl = ""),
-            )
+            ),
+            clock,
         )
 
     @Test
@@ -59,12 +64,12 @@ class LoginAttemptLimiterTest {
 
     @Test
     fun `unlocks once the lockout window elapses`() {
-        val limiter = limiterWith(maxAttemptsBeforeLockout = 3, baseLockoutDuration = Duration.ofMillis(150))
+        val limiter = limiterWith(maxAttemptsBeforeLockout = 3, baseLockoutDuration = Duration.ofMinutes(1))
 
         repeat(3) { limiter.recordFailure("someone@example.com") }
         assertFailsWith<TooManyLoginAttemptsException> { limiter.checkNotLocked("someone@example.com") }
 
-        Thread.sleep(200)
+        clock.advance(Duration.ofMinutes(1))
 
         limiter.checkNotLocked("someone@example.com")
     }
@@ -83,15 +88,18 @@ class LoginAttemptLimiterTest {
 
     @Test
     fun `repeated lockouts back off exponentially`() {
-        val limiter = limiterWith(maxAttemptsBeforeLockout = 1, baseLockoutDuration = Duration.ofMillis(150))
+        val limiter = limiterWith(maxAttemptsBeforeLockout = 1, baseLockoutDuration = Duration.ofMinutes(1))
 
         limiter.recordFailure("someone@example.com")
-        Thread.sleep(200)
+        assertFailsWith<TooManyLoginAttemptsException> { limiter.checkNotLocked("someone@example.com") }
+        clock.advance(Duration.ofMinutes(1))
         limiter.checkNotLocked("someone@example.com")
 
         limiter.recordFailure("someone@example.com")
-        Thread.sleep(200)
+        clock.advance(Duration.ofMinutes(1))
         assertFailsWith<TooManyLoginAttemptsException> { limiter.checkNotLocked("someone@example.com") }
+        clock.advance(Duration.ofMinutes(1))
+        limiter.checkNotLocked("someone@example.com")
     }
 
     @Test
