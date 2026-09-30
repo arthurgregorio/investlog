@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="24-1200-1" author="${claude}">
+        <comment>
+            Audit trail of holdings relocated between wallets (issue #245). History only: nothing
+            in the app's totals derives from it.
+
+            The holdings are stored by external id with no foreign key, and name and ticker are
+            snapshotted, because a merge deletes the origin holding and the row must outlive it.
+            The wallet references are SET NULL rather than CASCADE so deleting an emptied origin
+            wallet does not erase the move from the destination's history.
+        </comment>
+        <sql>
+            CREATE TABLE finances.wallet_moves (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                origin_wallet_id BIGINT NULL REFERENCES finances.wallets(id) ON DELETE SET NULL,
+                destination_wallet_id BIGINT NULL REFERENCES finances.wallets(id) ON DELETE SET NULL,
+                kind finances.wallet_kind NOT NULL,
+                origin_holding_external_id UUID NOT NULL,
+                destination_holding_external_id UUID NOT NULL,
+                holding_name TEXT NOT NULL,
+                ticker TEXT NULL,
+                quantity NUMERIC NULL CHECK (quantity > 0),
+                moved_at DATE NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.wallet_moves;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1200-2" author="${claude}">
+        <sql>
+            CREATE INDEX idx_wallet_moves_origin_wallet_id ON finances.wallet_moves (origin_wallet_id);
+            CREATE INDEX idx_wallet_moves_destination_wallet_id ON finances.wallet_moves (destination_wallet_id);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX finances.idx_wallet_moves_destination_wallet_id;
+                DROP INDEX finances.idx_wallet_moves_origin_wallet_id;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

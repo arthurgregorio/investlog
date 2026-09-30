@@ -5,6 +5,7 @@ import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountExcepti
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
+import br.com.investlog.server.shared.exceptions.InvalidWalletMoveException
 import br.com.investlog.server.shared.exceptions.InvalidWithdrawalException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
@@ -98,6 +99,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidWithdrawal(ex: InvalidWithdrawalException): ProblemDetail {
 
         val message = ex.message ?: "Resgate inválido"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidWalletMoveException::class)
+    fun handleInvalidWalletMove(ex: InvalidWalletMoveException): ProblemDetail {
+
+        val message = ex.message ?: "Movimentação inválida"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
         problemDetail.setProperty("timestamp", Instant.now())

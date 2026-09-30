@@ -33,5 +33,6 @@
     <include file="db/changelog/changes/2026/09/19-1000-create-wallet-daily-snapshots.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/09/19-1010-seed-wallet-snapshot-enabled.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/09/19-1100-create-results-table.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/09/24-1200-create-wallet-moves-table.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

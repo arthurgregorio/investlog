@@ -108,6 +108,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `stockholdings`, `cryptoholdings`, `fundholdings` | The three holding kinds — see **Holdings** |
 | `holdingsoverview` | `GET /holdings`, the paginated cross-kind view |
 | `results` | Withdrawals, `finances.results`, and the average-cost exit math — see **Results and withdrawals** |
+| `walletmoves` | Relocating holdings between wallets and `finances.wallet_moves` — see **Wallet moves** |
 | `walletdetail` | `GET /wallets/{id}/detail`, the per-wallet dashboard payload — see **Wallet detail** |
 | `overview` | Portfolio summary and the monthly invested series |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
@@ -186,6 +187,14 @@ In detail:
 `holdings_overview` exposes `status` and each of its three consumers filters to `ACTIVE` itself (`HoldingsOverviewRepository`, `OverviewRepository`, `WalletRepository`). `holdings_report_rows` is the deliberate exception — it filters to `ACTIVE` inside the view and does not expose the column, because it merges rows sharing `(wallet_id, kind, ticker, type_label, name)` and two such holdings can differ in status; adding `status` to its `GROUP BY` would split the very rows it exists to merge.
 
 A wallet whose holdings have all been completed reports the same shape as an empty wallet — `holdingCount` 0, `totalInvested` 0, a null `currentValue` — because `WalletRepository`'s subqueries now match no rows. That is the intended outcome, and the wallets view already renders that shape.
+
+### Wallet moves
+
+`walletmoves` relocates holdings between two wallets of the same kind and currency (issue #245). `POST /private/v1/wallets/{originWalletId}/moves` takes a destination and a list of holdings, each with an optional `quantity`; `GET /private/v1/wallets/{walletId}/moves` pages the audit rows in and out of a wallet. A move is not an exit: it writes no `finances.results` row and works entirely through the lot, contribution and holding tables, so neither view needs to know about it.
+
+**A holding that has withdrawals is never deleted by a move.** `finances.results` cascades on holding delete, so the spec's merge (reattach the lots, delete the origin) is only used when the origin has no results. Otherwise `WalletMoveService` takes the moved quantity out at the net average from `holdings_overview` — shrinking the origin's lots and rescaling their prices so the cost drops by exactly `average × moved` — and a fully-moved origin is marked `COMPLETED` in place. The decision and its reasoning are on #245.
+
+`finances.wallet_moves` stores the holdings by external id with no FK and snapshots their name and ticker, because a merge deletes the origin holding; its wallet FKs are `SET NULL`, so deleting an emptied origin wallet keeps the move in the destination's history.
 
 ### Wallet detail
 

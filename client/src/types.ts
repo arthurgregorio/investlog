@@ -280,3 +280,18 @@ export interface ConfigurationResponse {
   value: string
   updatedAt: string
 }
+
+/** One relocation of a holding between two wallets — a row of `GET /wallets/{id}/moves`. */
+export interface WalletMoveRow {
+  id: string
+  movedAt: string
+  direction: 'IN' | 'OUT'
+  kind: WalletKind
+  holdingName: string
+  ticker: string | null
+  quantity: number | null
+  originWalletId: string | null
+  originWalletName: string | null
+  destinationWalletId: string | null
+  destinationWalletName: string | null
+}
