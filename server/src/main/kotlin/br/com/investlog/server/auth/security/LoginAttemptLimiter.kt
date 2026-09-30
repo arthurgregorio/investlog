@@ -4,13 +4,15 @@ import br.com.investlog.server.config.InvestlogConfigurations
 import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
 import br.com.investlog.server.shared.security.AttemptLockoutTracker
 import org.springframework.stereotype.Component
+import java.time.Clock
 
 @Component
-class LoginAttemptLimiter(investlogConfigurations: InvestlogConfigurations) {
+class LoginAttemptLimiter(investlogConfigurations: InvestlogConfigurations, clock: Clock) {
 
     private val tracker = AttemptLockoutTracker(
         maxAttempts = investlogConfigurations.security.login.lockoutMaxAttempts,
         baseDuration = investlogConfigurations.security.login.lockoutBaseDuration,
+        clock = clock,
     )
 
     fun checkNotLocked(email: String) {
