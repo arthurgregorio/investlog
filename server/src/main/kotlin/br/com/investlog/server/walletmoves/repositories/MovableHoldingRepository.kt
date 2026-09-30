@@ -7,6 +7,7 @@ import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
+import br.com.investlog.server.jooq.finances.tables.references.REINVESTMENTS
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_LOTS
@@ -145,6 +146,12 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
                     .execute()
             }
         }
+
+        val reinvestmentDestination = reinvestmentDestinationColumnOf(holding.kind)
+        dsl.update(REINVESTMENTS)
+            .set(reinvestmentDestination, target.id)
+            .where(reinvestmentDestination.eq(holding.id))
+            .execute()
     }
 
     fun delete(holding: MovableHolding) {
@@ -294,6 +301,12 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
         )
 
         WalletKind.FUNDS -> throw IllegalArgumentException("Fund holdings have contributions, not lots")
+    }
+
+    private fun reinvestmentDestinationColumnOf(kind: WalletKind) = when (kind) {
+        WalletKind.STOCKS -> REINVESTMENTS.DESTINATION_STOCK_HOLDING_ID
+        WalletKind.CRYPTO -> REINVESTMENTS.DESTINATION_CRYPTO_HOLDING_ID
+        WalletKind.FUNDS -> REINVESTMENTS.DESTINATION_FUND_HOLDING_ID
     }
 
     private fun resultHoldingColumnOf(kind: WalletKind) = when (kind) {

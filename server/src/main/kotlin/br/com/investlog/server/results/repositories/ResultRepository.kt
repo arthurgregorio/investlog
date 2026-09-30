@@ -61,7 +61,7 @@ class ResultRepository(private val dsl: DSLContext) {
         fees: BigDecimal,
         taxes: BigDecimal,
         costBasis: BigDecimal,
-    ) {
+    ): RecordedResult =
         dsl.insertInto(RESULTS)
             .set(holdingColumnOf(position), position.holdingId)
             .set(RESULTS.RESULT_TYPE, resultType)
@@ -71,8 +71,8 @@ class ResultRepository(private val dsl: DSLContext) {
             .set(RESULTS.FEES, fees)
             .set(RESULTS.TAXES, taxes)
             .set(RESULTS.COST_BASIS, costBasis)
-            .execute()
-    }
+            .returning(RESULTS.ID, RESULTS.NET_AMOUNT)
+            .fetchSingle { record -> RecordedResult(record.id!!, record.netAmount!!) }
 
     fun markCompleted(position: HoldingPosition) {
         when (position.kind) {
@@ -108,13 +108,14 @@ class ResultRepository(private val dsl: DSLContext) {
     }
 
     fun findResult(position: HoldingPosition, externalId: UUID): ResultRecord? =
-        dsl.select(RESULTS.ID, RESULTS.RESULT_DATE, RESULTS.GROSS_AMOUNT)
+        dsl.select(RESULTS.ID, RESULTS.RESULT_TYPE, RESULTS.RESULT_DATE, RESULTS.GROSS_AMOUNT)
             .from(RESULTS)
             .where(holdingColumnOf(position).eq(position.holdingId))
             .and(RESULTS.EXTERNAL_ID.eq(externalId))
             .fetchOne { record ->
                 ResultRecord(
                     id = record.get(RESULTS.ID)!!,
+                    resultType = record.get(RESULTS.RESULT_TYPE)!!,
                     resultDate = record.get(RESULTS.RESULT_DATE)!!,
                     grossAmount = record.get(RESULTS.GROSS_AMOUNT)!!,
                 )

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="30-1000-1" author="${claude}">
+        <comment>The operation #204 reserved as TRANSFER shipped as "reinvestment" (issue #205); no row uses the value yet</comment>
+        <sql>
+            ALTER TYPE finances.result_type RENAME VALUE 'TRANSFER' TO 'REINVESTMENT';
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TYPE finances.result_type RENAME VALUE 'REINVESTMENT' TO 'TRANSFER';
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="30-1000-2" author="${claude}">
+        <comment>
+            Links the source's REINVESTMENT result to the holding that received its net amount. The
+            source holding, quantity, gross, fees, taxes, cost basis and profit all live on the
+            result row, so none of that is repeated here.
+        </comment>
+        <sql>
+            CREATE TABLE finances.reinvestments (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                result_id BIGINT NOT NULL UNIQUE REFERENCES finances.results(id) ON DELETE CASCADE,
+                destination_stock_holding_id BIGINT NULL REFERENCES finances.stock_holdings(id) ON DELETE CASCADE,
+                destination_crypto_holding_id BIGINT NULL REFERENCES finances.crypto_holdings(id) ON DELETE CASCADE,
+                destination_fund_holding_id BIGINT NULL REFERENCES finances.fund_holdings(id) ON DELETE CASCADE,
+                amount NUMERIC NOT NULL CHECK (amount > 0),
+                reinvestment_date DATE NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT reinvestments_exactly_one_destination CHECK (
+                    (destination_stock_holding_id IS NOT NULL)::INT
+                    + (destination_crypto_holding_id IS NOT NULL)::INT
+                    + (destination_fund_holding_id IS NOT NULL)::INT = 1
+                )
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.reinvestments;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="30-1000-3" author="${claude}">
+        <sql>
+            CREATE INDEX idx_reinvestments_result_id ON finances.reinvestments (result_id);
+            CREATE INDEX idx_reinvestments_destination_stock_holding_id ON finances.reinvestments (destination_stock_holding_id);
+            CREATE INDEX idx_reinvestments_destination_crypto_holding_id ON finances.reinvestments (destination_crypto_holding_id);
+            CREATE INDEX idx_reinvestments_destination_fund_holding_id ON finances.reinvestments (destination_fund_holding_id);
+            CREATE INDEX idx_reinvestments_reinvestment_date ON finances.reinvestments (reinvestment_date);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX finances.idx_reinvestments_reinvestment_date;
+                DROP INDEX finances.idx_reinvestments_destination_fund_holding_id;
+                DROP INDEX finances.idx_reinvestments_destination_crypto_holding_id;
+                DROP INDEX finances.idx_reinvestments_destination_stock_holding_id;
+                DROP INDEX finances.idx_reinvestments_result_id;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
