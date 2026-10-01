@@ -52,6 +52,12 @@ class CurrencyRateRepository(private val dsl: DSLContext) {
             .toResponse()
     }
 
+    fun findRateOrAnchor(currencyCode: String): BigDecimal =
+        dsl.select(CURRENCY_RATES.RATE)
+            .from(CURRENCY_RATES)
+            .where(CURRENCY_RATES.CURRENCY_CODE.eq(currencyCode))
+            .fetchOne(CURRENCY_RATES.RATE) ?: BigDecimal.ONE
+
     private fun CurrencyRatesRecord.toResponse() = CurrencyRateResponse(
         currencyCode = CurrencyCode.fromText(currencyCode),
         rate = rate!!,

@@ -1,5 +1,6 @@
 package br.com.investlog.server.overview.repositories
 
+import br.com.investlog.server.currencyrates.repositories.CurrencyRateRepository
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
@@ -21,14 +22,17 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 @Repository
-class OverviewRepository(private val dsl: DSLContext) {
+class OverviewRepository(
+    private val dsl: DSLContext,
+    private val currencyRateRepository: CurrencyRateRepository,
+) {
 
     fun findSummary(userId: Long, displayCurrency: String): PortfolioSummaryResponse {
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
         val wallets = WALLETS.`as`("wallets")
         val currencyRates = CURRENCY_RATES.`as`("currency_rates")
 
-        val displayCurrencyRate = displayCurrencyRate(displayCurrency)
+        val displayCurrencyRate = currencyRateRepository.findRateOrAnchor(displayCurrency)
         val appliedRate = DSL.coalesce(currencyRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)
 
         val kindSummaries = dsl.select(
@@ -81,7 +85,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         val cryptoWallets = WALLETS.`as`("crypto_wallets")
         val fundWallets = WALLETS.`as`("fund_wallets")
 
-        val displayCurrencyRate = displayCurrencyRate(displayCurrency)
+        val displayCurrencyRate = currencyRateRepository.findRateOrAnchor(displayCurrency)
 
         data class MonthAmount(val month: String, val amount: BigDecimal)
 
@@ -135,16 +139,6 @@ class OverviewRepository(private val dsl: DSLContext) {
             SeriesPointResponse(month = month, totalInvested = cumulative)
         }
     }
-
-    /**
-     * Rate of [displayCurrency] relative to the rates-anchor currency (1 if it has no configured row, e.g. it IS the
-     * anchor — the anchor's own row always stores rate=1).
-     */
-    private fun displayCurrencyRate(displayCurrency: String): BigDecimal =
-        dsl.select(CURRENCY_RATES.RATE)
-            .from(CURRENCY_RATES)
-            .where(CURRENCY_RATES.CURRENCY_CODE.eq(displayCurrency))
-            .fetchOne(CURRENCY_RATES.RATE) ?: BigDecimal.ONE
 
     private fun gainPct(gain: BigDecimal, costBasis: BigDecimal): BigDecimal? =
         if (costBasis.signum() != 0) gain.divide(costBasis, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))

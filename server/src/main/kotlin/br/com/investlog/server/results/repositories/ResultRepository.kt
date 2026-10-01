@@ -1,15 +1,18 @@
 package br.com.investlog.server.results.repositories
 
+import br.com.investlog.server.currencyrates.repositories.CurrencyRateRepository
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.enums.ResultType
 import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
+import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.results.rest.payloads.ResultResponse
+import br.com.investlog.server.results.rest.payloads.ResultSummaryResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
 import org.jooq.DSLContext
 import org.jooq.impl.DSL
@@ -21,7 +24,10 @@ import java.time.LocalDate
 import java.util.UUID
 
 @Repository
-class ResultRepository(private val dsl: DSLContext) {
+class ResultRepository(
+    private val dsl: DSLContext,
+    private val currencyRateRepository: CurrencyRateRepository,
+) {
 
     fun findPosition(userId: Long, walletId: UUID, holdingId: UUID): HoldingPosition? {
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
@@ -228,6 +234,53 @@ class ResultRepository(private val dsl: DSLContext) {
         )
 
         return pagedModelOf(content, pageable, total.toLong())
+    }
+
+    fun findSummary(userId: Long, displayCurrency: String, from: LocalDate?, to: LocalDate?): ResultSummaryResponse {
+        val results = RESULTS.`as`("results")
+        val stockHoldings = STOCK_HOLDINGS.`as`("stock_holdings")
+        val cryptoHoldings = CRYPTO_HOLDINGS.`as`("crypto_holdings")
+        val fundHoldings = FUND_HOLDINGS.`as`("fund_holdings")
+        val wallets = WALLETS.`as`("wallets")
+        val currencyRates = CURRENCY_RATES.`as`("currency_rates")
+
+        val walletId = DSL.coalesce(stockHoldings.WALLET_ID, cryptoHoldings.WALLET_ID, fundHoldings.WALLET_ID)
+        val displayCurrencyRate = currencyRateRepository.findRateOrAnchor(displayCurrency)
+        val appliedRate = DSL.coalesce(currencyRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)
+
+        val dateRange = listOfNotNull(
+            from?.let { results.RESULT_DATE.ge(it) },
+            to?.let { results.RESULT_DATE.le(it) },
+        )
+
+        return dsl.select(
+            DSL.coalesce(DSL.sum(results.GROSS_AMOUNT.mul(appliedRate)), BigDecimal.ZERO),
+            DSL.coalesce(DSL.sum(results.NET_AMOUNT.mul(appliedRate)), BigDecimal.ZERO),
+            DSL.coalesce(DSL.sum(results.PROFIT.mul(appliedRate)), BigDecimal.ZERO),
+            DSL.coalesce(DSL.sum(results.FEES.mul(appliedRate)), BigDecimal.ZERO),
+            DSL.coalesce(DSL.sum(results.TAXES.mul(appliedRate)), BigDecimal.ZERO),
+            DSL.count(),
+        )
+            .from(results)
+            .leftJoin(stockHoldings).on(stockHoldings.ID.eq(results.STOCK_HOLDING_ID))
+            .leftJoin(cryptoHoldings).on(cryptoHoldings.ID.eq(results.CRYPTO_HOLDING_ID))
+            .leftJoin(fundHoldings).on(fundHoldings.ID.eq(results.FUND_HOLDING_ID))
+            .join(wallets).on(wallets.ID.eq(walletId))
+            .leftJoin(currencyRates).on(currencyRates.CURRENCY_CODE.eq(wallets.CURRENCY))
+            .where(wallets.USER_ID.eq(userId))
+            .and(DSL.and(dateRange))
+            .fetchSingle()
+            .let { record ->
+                ResultSummaryResponse(
+                    displayCurrency = displayCurrency,
+                    totalWithdrawn = record.value1(),
+                    totalNetReceived = record.value2(),
+                    totalProfit = record.value3(),
+                    totalFees = record.value4(),
+                    totalTaxes = record.value5(),
+                    exitCount = record.value6(),
+                )
+            }
     }
 
     private fun holdingColumnOf(position: HoldingPosition) = when (position.kind) {
