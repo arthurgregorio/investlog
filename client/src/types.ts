@@ -161,6 +161,17 @@ export interface ResultRow {
   profit: number
 }
 
+/** Realised totals over every recorded result, in the user's display currency — `GET /results/summary`. */
+export interface ResultSummary {
+  displayCurrency: string
+  totalWithdrawn: number
+  totalNetReceived: number
+  totalProfit: number
+  totalFees: number
+  totalTaxes: number
+  exitCount: number
+}
+
 /** One end of a reinvestment: the holding it left or the holding it landed in. */
 export interface ReinvestmentSide {
   holdingId: string

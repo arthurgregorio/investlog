@@ -3141,3 +3141,10 @@ h3.report-subgroup-title {
 .move-history-title {
   padding: 16px 20px 0;
 }
+
+.results-recent-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}

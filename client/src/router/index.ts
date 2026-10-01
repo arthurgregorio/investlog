@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import OverviewView from '@/views/OverviewView.vue'
+import ResultsDashboardView from '@/views/ResultsDashboardView.vue'
+import ReinvestmentsHistoryView from '@/views/ReinvestmentsHistoryView.vue'
 import WalletsView from '@/views/WalletsView.vue'
 import WalletDetailView from '@/views/WalletDetailView.vue'
 import InvestmentsView from '@/views/InvestmentsView.vue'
@@ -19,6 +21,12 @@ export const router = createRouter({
     { path: '/login', name: 'login', component: LoginView },
     { path: '/pending-approval', name: 'pending-approval', component: PendingApprovalView },
     { path: '/overview', name: 'overview', component: OverviewView },
+    { path: '/overview/resultados', name: 'overview-results', component: ResultsDashboardView },
+    {
+      path: '/overview/reinvestimentos',
+      name: 'overview-reinvestments',
+      component: ReinvestmentsHistoryView,
+    },
     { path: '/wallets', name: 'wallets', component: WalletsView },
     { path: '/wallets/:id', name: 'wallet-detail', component: WalletDetailView },
     { path: '/investments', name: 'investments', component: InvestmentsView },
