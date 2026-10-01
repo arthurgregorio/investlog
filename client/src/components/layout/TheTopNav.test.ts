@@ -11,6 +11,7 @@ function makeRouter() {
     routes: [
       { path: '/overview', name: 'overview', component: { template: '<div />' } },
       { path: '/wallets', name: 'wallets', component: { template: '<div />' } },
+      { path: '/wallets/:id', name: 'wallet-detail', component: { template: '<div />' } },
       { path: '/investments', name: 'investments', component: { template: '<div />' } },
       {
         path: '/settings/price-currencies',
@@ -89,6 +90,17 @@ describe('TheTopNav', () => {
 
     const trigger = wrapper.get('.nav-item.active')
     expect(trigger.text()).toContain('Configurações')
+  })
+
+  it('keeps Carteiras active on the wallet detail route', async () => {
+    router.push('/wallets/7')
+    await router.isReady()
+
+    const wrapper = mount(TheTopNav, { global: { plugins: [pinia, router] } })
+
+    const activeItems = wrapper.findAll('.nav-item.active')
+    expect(activeItems).toHaveLength(1)
+    expect(activeItems[0].text()).toContain('Carteiras')
   })
 
   it('navigates to the picked child route when a dropdown item is clicked', async () => {
