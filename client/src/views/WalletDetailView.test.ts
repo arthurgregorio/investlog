@@ -174,7 +174,10 @@ describe('WalletDetailView', () => {
   it('shows an empty move history when nothing was moved', async () => {
     const { wrapper } = await mountView(detailOf())
 
-    expect(wrapper.find('[data-testid="move-history"]').text()).toContain('Nenhuma movimentação')
+    const emptyState = wrapper.find(
+      '[data-testid="move-history"] [data-testid="move-history-empty"]',
+    )
+    expect(emptyState.text()).toContain('Nenhuma movimentação')
   })
 
   it('opens the move modal from a row with this wallet as the fixed origin', async () => {
