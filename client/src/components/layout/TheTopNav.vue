@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 
 interface NavItem {
   name?: string
+  activeFor?: string[]
   label: string
   icon: string
   children?: NavItem[]
@@ -24,7 +25,12 @@ onMounted(() => {
 const nav = computed<NavItem[]>(() => {
   const items: NavItem[] = [
     { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
-    { name: 'wallets', label: 'Carteiras', icon: 'wallet-outline' },
+    {
+      name: 'wallets',
+      activeFor: ['wallet-detail'],
+      label: 'Carteiras',
+      icon: 'wallet-outline',
+    },
     { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
   ]
   if (auth.isAdmin) {
@@ -43,6 +49,7 @@ const nav = computed<NavItem[]>(() => {
 
 function isActive(item: NavItem): boolean {
   if (item.name === route.name) return true
+  if (item.activeFor?.includes(route.name as string)) return true
   return item.children?.some((child) => child.name === route.name) ?? false
 }
 </script>
