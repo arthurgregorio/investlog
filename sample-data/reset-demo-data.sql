@@ -25,17 +25,18 @@ DELETE FROM finances.wallets;
 DELETE FROM finances.stock_types;
 DELETE FROM finances.fund_types;
 
--- 3. Global currency rates, reseeded to the same defaults Liquibase seeds on a fresh install
---    (24-1200-make-settings-global.xml, changeset 24-1200-9).
+-- 3. Global currency rates. BRL is the base; USD is pinned to the rate the seeded USD wallets and
+--    crypto lots were priced against, instead of Liquibase's default (24-1200-make-settings-global.xml,
+--    changeset 24-1200-9).
 DELETE FROM finances.currency_rates;
 INSERT INTO finances.currency_rates (currency_code, rate, is_base)
-VALUES ('BRL', 1, true), ('USD', 5, false);
+VALUES ('BRL', 1, true), ('USD', 5.18, false);
 
 -- 4. Every non-admin account. Safe now that all non-admin wallets are already gone —
 --    deleting a user with a remaining wallet would otherwise violate wallets.user_id's FK.
 DELETE FROM system.users WHERE email <> 'admin@admin.com';
 
--- 5. Recreate admin's three sample wallets, holdings, and lots. \ir resolves relative to this
+-- 5. Recreate admin's sample wallets, holdings, lots, and snapshot history. \ir resolves relative to this
 --    script's own location rather than psql's working directory.
 \ir sample-data.sql
 
