@@ -377,7 +377,7 @@ function confirmDeleteWallet() {
         text="Adicione um investimento para começar a acompanhar esta carteira."
       />
 
-      <Card v-else class="table-card mb-0">
+      <Card v-else class="table-card">
         <div class="table-wrap">
           <b-loading :is-full-page="false" :active="holdingsListStore.loading" />
           <div class="table-scroll">
@@ -480,7 +480,7 @@ function confirmDeleteWallet() {
         </div>
       </Card>
 
-      <Card class="table-card" data-testid="move-history">
+      <Card class="table-card mb-0" data-testid="move-history">
         <div class="move-history-title">
           <div class="chart-title">Movimentações</div>
           <div class="wd-chart-sub">Investimentos movidos de e para esta carteira</div>
