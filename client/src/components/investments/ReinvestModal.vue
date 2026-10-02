@@ -256,39 +256,43 @@ async function submit() {
           data-testid="reinvest-amount"
         />
       </b-field>
-      <b-field v-else grouped>
-        <b-field
-          label="Quantidade"
-          expanded
-          :type="exceedsRemaining ? 'is-danger' : ''"
-          :message="exceedsRemaining ? 'Maior que o disponível' : ''"
-        >
-          <NumberInput
-            v-model="quantity"
-            :placeholder="`Até ${fmt.qty(source.quantity ?? 0)}`"
-            min="0"
-            data-testid="reinvest-quantity"
-          />
-        </b-field>
-        <b-field label="Preço unitário de venda" expanded>
-          <NumberInput
-            v-model="unitPrice"
-            :prefix="symbol"
-            placeholder="0,00"
-            min="0"
-            data-testid="reinvest-unit-price"
-          />
-        </b-field>
-      </b-field>
+      <div v-else class="fixed-grid has-2-cols mb-3">
+        <div class="grid">
+          <b-field
+            class="mb-0"
+            label="Quantidade"
+            :type="exceedsRemaining ? 'is-danger' : ''"
+            :message="exceedsRemaining ? 'Maior que o disponível' : ''"
+          >
+            <NumberInput
+              v-model="quantity"
+              :placeholder="`Até ${fmt.qty(source.quantity ?? 0)}`"
+              min="0"
+              data-testid="reinvest-quantity"
+            />
+          </b-field>
+          <b-field label="Preço unitário de venda">
+            <NumberInput
+              v-model="unitPrice"
+              :prefix="symbol"
+              placeholder="0,00"
+              min="0"
+              data-testid="reinvest-unit-price"
+            />
+          </b-field>
+        </div>
+      </div>
 
-      <b-field grouped>
-        <b-field label="Taxas (opcional)" expanded>
-          <NumberInput v-model="fees" :prefix="symbol" placeholder="0,00" min="0" />
-        </b-field>
-        <b-field label="Impostos (opcional)" expanded>
-          <NumberInput v-model="taxes" :prefix="symbol" placeholder="0,00" min="0" />
-        </b-field>
-      </b-field>
+      <div class="fixed-grid has-2-cols mb-3">
+        <div class="grid">
+          <b-field label="Taxas (opcional)" class="mb-0">
+            <NumberInput v-model="fees" :prefix="symbol" placeholder="0,00" min="0" />
+          </b-field>
+          <b-field label="Impostos (opcional)">
+            <NumberInput v-model="taxes" :prefix="symbol" placeholder="0,00" min="0" />
+          </b-field>
+        </div>
+      </div>
 
       <div class="notification is-size-7 mb-0" data-testid="reinvest-summary">
         <div class="is-flex is-justify-content-space-between">

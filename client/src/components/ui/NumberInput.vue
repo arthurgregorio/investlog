@@ -1,8 +1,14 @@
 <script setup lang="ts">
 defineOptions({ inheritAttrs: false })
 withDefaults(
-  defineProps<{ modelValue: number | ''; placeholder?: string; prefix?: string; step?: string; min?: string }>(),
-  { placeholder: '', prefix: '', step: 'any', min: undefined }
+  defineProps<{
+    modelValue: number | ''
+    placeholder?: string
+    prefix?: string
+    step?: string
+    min?: string
+  }>(),
+  { placeholder: '', prefix: '', step: 'any', min: undefined },
 )
 const emit = defineEmits<{ 'update:modelValue': [number | ''] }>()
 function onInput(v: string) {
@@ -11,7 +17,9 @@ function onInput(v: string) {
 </script>
 <template>
   <div v-if="prefix" class="field has-addons mb-0">
-    <p class="control"><span class="button is-static">{{ prefix }}</span></p>
+    <div class="control">
+      <span class="button is-static">{{ prefix }}</span>
+    </div>
     <b-input
       type="number"
       :model-value="modelValue === '' ? '' : String(modelValue)"
