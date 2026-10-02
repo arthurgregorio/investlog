@@ -285,12 +285,12 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
         <tr>
           <th>Tipo</th>
           <th>{{ isFund ? 'Data do aporte' : 'Data da compra' }}</th>
-          <th v-if="!isFund" class="c-num">Qtd.</th>
-          <th v-if="!isFund" class="c-num">Preço unit.</th>
-          <th class="c-num">Custos</th>
-          <th class="c-num">Valor</th>
-          <th class="c-num">Resultado</th>
-          <th v-if="!isFund" class="c-num">Saldo</th>
+          <th v-if="!isFund" class="c-num has-text-right">Qtd.</th>
+          <th v-if="!isFund" class="c-num has-text-right">Preço unit.</th>
+          <th class="c-num has-text-right">Custos</th>
+          <th class="c-num has-text-right">Valor</th>
+          <th class="c-num has-text-right">Resultado</th>
+          <th v-if="!isFund" class="c-num has-text-right">Saldo</th>
           <th class="c-act"></th>
         </tr>
       </thead>
