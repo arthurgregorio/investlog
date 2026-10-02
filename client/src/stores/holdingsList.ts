@@ -10,7 +10,10 @@ export interface HoldingsListOptions {
   walletId?: string
   search?: string
   sort?: string
+  size?: number
 }
+
+const DEFAULT_PAGE_SIZE = 20
 
 export const useHoldingsListStore = defineStore('holdingsList', () => {
   const rows = ref<HoldingRow[]>([])
@@ -20,7 +23,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
   const currentSearch = ref<string | undefined>(undefined)
   const currentSort = ref<string | undefined>(undefined)
   const page = ref(0)
-  const pageSize = ref(20)
+  const pageSize = ref(DEFAULT_PAGE_SIZE)
   const totalElements = ref(0)
   const totalPages = ref(0)
   const loading = ref(false)
@@ -34,6 +37,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
     currentSearch.value = options.search
     currentSort.value = options.sort
     page.value = pageNumber
+    pageSize.value = options.size ?? DEFAULT_PAGE_SIZE
     try {
       const result = await holdingsApi.findAll({
         kind: kind === 'all' ? undefined : kind,
@@ -59,6 +63,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
       walletId: currentWalletId.value,
       search: currentSearch.value,
       sort: currentSort.value,
+      size: pageSize.value,
     })
   }
 

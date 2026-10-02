@@ -132,7 +132,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | Store | Loads from | Exposes |
 |-------|------------|---------|
 | `wallets` | `GET /wallets` | `wallets[]`, `walletById(id)`, `refresh()` |
-| `holdingsList` | `GET /holdings` | `rows[]`, `page`, `totalElements`, `loadKind(kind, page)` |
+| `holdingsList` | `GET /holdings` | `rows[]`, `page`, `totalElements`, `loadKind(kind, page, { size })` — `size` defaults to 20 and `refresh()` keeps it |
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
 | `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
 | `walletMoves` | `GET/POST /wallets/{id}/moves` | `rows[]` for one wallet, `load(walletId, page)`, `move(originWalletId, payload)` |
@@ -170,6 +170,8 @@ Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detail
 expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion renders
 `HoldingDetailPanel` which lazy-fetches the full holding detail from the individual endpoint.
 
+**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, resgatar, reinvestir, mover and, for admins, remover. Closed rows carry no action buttons. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
+
 ### Routes and their views (`src/router/index.ts`)
 
 `/overview`, `/wallets`, `/wallets/:id` (`WalletDetailView.vue`), `/investments` and
@@ -181,17 +183,19 @@ covers `/settings/types` and `/settings/users` — the whole `/settings/*` subtr
 
 `/wallets/:id`, reached by clicking a wallet card. This **replaced** `WalletsView`'s old jump to the filtered investments list — there is deliberately only one click target on a wallet card now, because the page shows the same holdings plus everything else.
 
-It reads two stores: `walletDetail` for the header, chart, deltas, performers and concentration, and the existing `holdingsList` scoped with `{ walletId }` for the investments table. Both load in one `Promise.all`, and a `watch` on the route param reloads them when navigating between wallets without unmounting.
+It reads two stores: `walletDetail` for the header, chart, deltas, performers and concentration, and the existing `holdingsList` scoped with `{ walletId, size: 10 }` for the investments table, which pages 10 rows at a time. Both load in one `Promise.all`, and a `watch` on the route param reloads them when navigating between wallets without unmounting.
 
 The chart and the delta chips render only when `series` is non-empty; otherwise an `EmptyState` explains that history starts accumulating from the first snapshot job run. The concentration warning appears when `largestHoldingShare` exceeds 50.
 
-The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover". Each investment row carries two icon actions, "Reinvestir" and "Mover", which open the same modals with that holding preselected.
+Sections run header → highlight cards → Desempenho chart → **Movimentações** → investments, since the page is read for its history first.
 
-It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fixed origin, and a **Movimentações** table below the investments listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
+The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the expanded row's own dropdown (see the investments table above).
+
+It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fixed origin, and the **Movimentações** table listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
 
 ### Reinvesting (`ReinvestModal.vue`)
 
-"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened only from the wallet detail page, with `walletId` as the source wallet and optionally `preselectedHoldingId`; without one it shows a source picker over that wallet's holdings. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
+"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
 
 ### Moving holdings (`MoveHoldingsModal.vue`)
 
