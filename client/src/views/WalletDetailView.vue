@@ -562,12 +562,17 @@ function confirmDeleteWallet() {
             />
           </div>
         </div>
-        <EmptyState
+        <div
           v-else-if="walletMovesStore.loaded"
-          icon="swap-horizontal"
-          title="Nenhuma movimentação"
-          text="Investimentos movidos entre carteiras aparecem aqui."
-        />
+          class="move-history-empty"
+          data-testid="move-history-empty"
+        >
+          <EmptyState
+            icon="swap-horizontal"
+            title="Nenhuma movimentação"
+            text="Investimentos movidos entre carteiras aparecem aqui."
+          />
+        </div>
       </Card>
 
       <MoveHoldingsModal
