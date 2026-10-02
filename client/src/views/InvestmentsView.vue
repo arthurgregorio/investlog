@@ -482,6 +482,7 @@ function openReport() {
                       :row="row"
                       @deleted="onHoldingDeleted"
                       @position-added="holdingsListStore.refresh()"
+                      @relocated="onHoldingDeleted"
                     />
                   </td>
                 </tr>
