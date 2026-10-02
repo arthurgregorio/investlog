@@ -141,4 +141,30 @@ describe('useHoldingsListStore', () => {
       size: 20,
     })
   })
+
+  it('loadKind asks for a custom page size and refresh keeps it', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
+
+    const store = useHoldingsListStore()
+    await store.loadKind('all', 1, { walletId: 'wallet-1', size: 10 })
+    await store.refresh()
+
+    expect(store.pageSize).toBe(10)
+    expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({
+      walletId: 'wallet-1',
+      page: 1,
+      size: 10,
+    })
+  })
+
+  it('loadKind without a size falls back to the default page size', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
+
+    const store = useHoldingsListStore()
+    await store.loadKind('all', 0, { walletId: 'wallet-1', size: 10 })
+    await store.loadKind('all', 0)
+
+    expect(store.pageSize).toBe(20)
+    expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({ page: 0, size: 20 })
+  })
 })

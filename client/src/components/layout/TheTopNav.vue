@@ -7,10 +7,10 @@ import { useAuthStore } from '@/stores/auth'
 
 interface NavItem {
   name?: string
+  activeFor?: string[]
   label: string
   icon: string
   children?: NavItem[]
-  activeNames?: string[]
 }
 
 const overviewStore = useOverviewStore()
@@ -27,13 +27,18 @@ const nav = computed<NavItem[]>(() => {
     {
       label: 'Visão geral',
       icon: 'view-dashboard-outline',
-      activeNames: ['overview-reinvestments'],
+      activeFor: ['overview-reinvestments'],
       children: [
         { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
         { name: 'overview-results', label: 'Resultados', icon: 'cash-multiple' },
       ],
     },
-    { name: 'wallets', label: 'Carteiras', icon: 'wallet-outline' },
+    {
+      name: 'wallets',
+      activeFor: ['wallet-detail'],
+      label: 'Carteiras',
+      icon: 'wallet-outline',
+    },
     { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
   ]
   if (auth.isAdmin) {
@@ -52,7 +57,7 @@ const nav = computed<NavItem[]>(() => {
 
 function isActive(item: NavItem): boolean {
   if (item.name === route.name) return true
-  if (item.activeNames?.includes(route.name as string)) return true
+  if (item.activeFor?.includes(route.name as string)) return true
   return item.children?.some((child) => child.name === route.name) ?? false
 }
 </script>

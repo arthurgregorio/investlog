@@ -21,6 +21,8 @@ import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
 import type { HoldingRow, WalletMoveRow } from '@/types'
 
+const HOLDINGS_PAGE_SIZE = 10
+
 const route = useRoute()
 const router = useRouter()
 const dialog = useDialog()
@@ -35,9 +37,7 @@ const walletId = computed(() => route.params.id as string)
 const detail = computed(() => walletDetailStore.detail)
 const openedDetails = ref<string[]>([])
 const moveModalOpen = ref(false)
-const holdingToMove = ref<string | undefined>(undefined)
 const reinvestModalOpen = ref(false)
-const holdingToReinvest = ref<string | undefined>(undefined)
 
 const currency = computed(() => detail.value?.currency ?? 'BRL')
 
@@ -84,7 +84,7 @@ async function loadAll() {
   openedDetails.value = []
   await Promise.all([
     walletDetailStore.load(walletId.value),
-    holdingsListStore.loadKind('all', 0, { walletId: walletId.value }),
+    holdingsListStore.loadKind('all', 0, { walletId: walletId.value, size: HOLDINGS_PAGE_SIZE }),
     walletMovesStore.load(walletId.value, 0),
   ])
 }
@@ -105,7 +105,10 @@ function displayName(row: HoldingRow): string {
 }
 
 async function onPageChange(page: number) {
-  await holdingsListStore.loadKind('all', page - 1, { walletId: walletId.value })
+  await holdingsListStore.loadKind('all', page - 1, {
+    walletId: walletId.value,
+    size: HOLDINGS_PAGE_SIZE,
+  })
 }
 
 async function onHoldingChanged() {
@@ -113,8 +116,7 @@ async function onHoldingChanged() {
   await loadAll()
 }
 
-function openMove(row?: HoldingRow) {
-  holdingToMove.value = row?.id
+function openMove() {
   moveModalOpen.value = true
 }
 
@@ -123,8 +125,7 @@ async function onPositionsChanged() {
   await Promise.all([loadAll(), walletsStore.refresh()])
 }
 
-function openReinvest(row?: HoldingRow) {
-  holdingToReinvest.value = row?.id
+function openReinvest() {
   reinvestModalOpen.value = true
 }
 
@@ -387,6 +388,74 @@ function confirmDeleteWallet() {
         </CardBody>
       </Card>
 
+      <Card class="table-card" data-testid="move-history">
+        <div class="move-history-title">
+          <div class="chart-title">Movimentações</div>
+          <div class="wd-chart-sub">Investimentos movidos de e para esta carteira</div>
+        </div>
+        <div v-if="walletMovesStore.rows.length > 0" class="table-wrap">
+          <b-loading :is-full-page="false" :active="walletMovesStore.loading" />
+          <div class="table-scroll">
+            <table class="inv-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Investimento</th>
+                  <th>Direção</th>
+                  <th>Carteira</th>
+                  <th class="c-num">Qtd.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="move in walletMovesStore.rows" :key="move.id" data-testid="move-row">
+                  <td>{{ fmt.date(move.movedAt) }}</td>
+                  <td>
+                    <span class="t-ticker">{{ move.ticker ?? move.holdingName }}</span>
+                  </td>
+                  <td>
+                    <span
+                      class="move-direction"
+                      :class="move.direction === 'IN' ? 'is-in' : 'is-out'"
+                    >
+                      <b-icon
+                        :icon="move.direction === 'IN' ? 'arrow-bottom-left' : 'arrow-top-right'"
+                        size="is-small"
+                      />
+                      {{ move.direction === 'IN' ? 'Entrada' : 'Saída' }}
+                    </span>
+                  </td>
+                  <td>{{ moveCounterpart(move) }}</td>
+                  <td class="c-num">
+                    {{ move.quantity == null ? 'Tudo' : fmt.qty(move.quantity) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-if="walletMovesStore.totalPages > 1" class="table-foot">
+            <b-pagination
+              :model-value="walletMovesStore.page + 1"
+              :total="walletMovesStore.totalElements"
+              :per-page="walletMovesStore.pageSize"
+              order="is-right"
+              simple
+              @change="onMovesPageChange"
+            />
+          </div>
+        </div>
+        <div
+          v-else-if="walletMovesStore.loaded"
+          class="move-history-empty"
+          data-testid="move-history-empty"
+        >
+          <EmptyState
+            icon="swap-horizontal"
+            title="Nenhuma movimentação"
+            text="Investimentos movidos entre carteiras aparecem aqui."
+          />
+        </div>
+      </Card>
+
       <EmptyState
         v-if="holdingsListStore.loaded && holdingsListStore.rows.length === 0"
         icon="wallet-outline"
@@ -456,26 +525,6 @@ function confirmDeleteWallet() {
                       />
                     </td>
                     <td class="c-act">
-                      <b-tooltip label="Reinvestir" position="is-left">
-                        <b-button
-                          type="is-ghost"
-                          size="is-small"
-                          icon-left="autorenew"
-                          aria-label="Reinvestir investimento"
-                          data-testid="row-reinvest"
-                          @click.stop="openReinvest(row)"
-                        />
-                      </b-tooltip>
-                      <b-tooltip label="Mover" position="is-left">
-                        <b-button
-                          type="is-ghost"
-                          size="is-small"
-                          icon-left="swap-horizontal"
-                          aria-label="Mover investimento"
-                          data-testid="row-move"
-                          @click.stop="openMove(row)"
-                        />
-                      </b-tooltip>
                       <span class="chev">
                         <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
                       </span>
@@ -487,6 +536,7 @@ function confirmDeleteWallet() {
                         :row="row"
                         @deleted="onHoldingChanged"
                         @position-added="onHoldingChanged"
+                        @relocated="onPositionsChanged"
                       />
                     </td>
                   </tr>
@@ -507,73 +557,9 @@ function confirmDeleteWallet() {
         </div>
       </Card>
 
-      <Card class="table-card" data-testid="move-history">
-        <div class="move-history-title">
-          <div class="chart-title">Movimentações</div>
-          <div class="wd-chart-sub">Investimentos movidos de e para esta carteira</div>
-        </div>
-        <div v-if="walletMovesStore.rows.length > 0" class="table-wrap">
-          <b-loading :is-full-page="false" :active="walletMovesStore.loading" />
-          <div class="table-scroll">
-            <table class="inv-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Investimento</th>
-                  <th>Direção</th>
-                  <th>Carteira</th>
-                  <th class="c-num">Qtd.</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="move in walletMovesStore.rows" :key="move.id" data-testid="move-row">
-                  <td>{{ fmt.date(move.movedAt) }}</td>
-                  <td>
-                    <span class="t-ticker">{{ move.ticker ?? move.holdingName }}</span>
-                  </td>
-                  <td>
-                    <span
-                      class="move-direction"
-                      :class="move.direction === 'IN' ? 'is-in' : 'is-out'"
-                    >
-                      <b-icon
-                        :icon="move.direction === 'IN' ? 'arrow-bottom-left' : 'arrow-top-right'"
-                        size="is-small"
-                      />
-                      {{ move.direction === 'IN' ? 'Entrada' : 'Saída' }}
-                    </span>
-                  </td>
-                  <td>{{ moveCounterpart(move) }}</td>
-                  <td class="c-num">
-                    {{ move.quantity == null ? 'Tudo' : fmt.qty(move.quantity) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-if="walletMovesStore.totalPages > 1" class="table-foot">
-            <b-pagination
-              :model-value="walletMovesStore.page + 1"
-              :total="walletMovesStore.totalElements"
-              :per-page="walletMovesStore.pageSize"
-              order="is-right"
-              simple
-              @change="onMovesPageChange"
-            />
-          </div>
-        </div>
-        <EmptyState
-          v-else-if="walletMovesStore.loaded"
-          icon="swap-horizontal"
-          title="Nenhuma movimentação"
-          text="Investimentos movidos entre carteiras aparecem aqui."
-        />
-      </Card>
-
       <MoveHoldingsModal
         v-if="moveModalOpen"
         :origin-wallet-id="detail.id"
-        :preselected-holding-id="holdingToMove"
         @moved="onPositionsChanged"
         @close="moveModalOpen = false"
       />
@@ -581,7 +567,6 @@ function confirmDeleteWallet() {
       <ReinvestModal
         v-if="reinvestModalOpen"
         :wallet-id="detail.id"
-        :preselected-holding-id="holdingToReinvest"
         @reinvested="onPositionsChanged"
         @close="reinvestModalOpen = false"
       />

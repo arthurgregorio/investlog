@@ -82,6 +82,16 @@ const netAmount = computed(
   () => grossAmount.value - Number(fees.value || 0) - Number(taxes.value || 0),
 )
 
+const destinationMessage = computed(() => {
+  if (source.value && destinations.value.length === 0) {
+    return `Nenhum outro investimento ativo em carteiras de ${currency.value} para receber o reinvestimento.`
+  }
+  if (destinationUnpriced.value) {
+    return `${displayName(destination.value!)} não tem preço atual. Defina o preço atual do investimento de destino antes de reinvestir nele.`
+  }
+  return ''
+})
+
 const destinationQuantity = computed(() => {
   const currentDestination = destination.value
   if (!currentDestination || currentDestination.kind === 'FUNDS' || destinationUnpriced.value) {
@@ -186,60 +196,55 @@ async function submit() {
     @close="emit('close')"
   >
     <b-loading :is-full-page="false" :active="loading" />
-    <p v-if="error" class="auth-error" data-testid="reinvest-error">{{ error }}</p>
+    <b-message v-if="error" type="is-danger" size="is-small" data-testid="reinvest-error">
+      {{ error }}
+    </b-message>
 
-    <div class="form-grid">
-      <b-field label="Investimento de origem" style="grid-column: 1/-1">
-        <b-select
-          v-model="sourceId"
-          placeholder="Selecione o investimento"
-          expanded
-          data-testid="reinvest-source"
+    <b-field label="Investimento de origem">
+      <b-select
+        v-model="sourceId"
+        placeholder="Selecione o investimento"
+        expanded
+        data-testid="reinvest-source"
+      >
+        <option v-for="holding in sources" :key="holding.id" :value="holding.id">
+          {{ displayName(holding) }} · {{ availableLabel(holding) }}
+        </option>
+      </b-select>
+    </b-field>
+
+    <b-field
+      label="Investimento de destino"
+      :type="destinationUnpriced ? 'is-danger' : ''"
+      :message="destinationMessage"
+    >
+      <b-select
+        v-model="destinationId"
+        placeholder="Selecione o investimento"
+        expanded
+        :disabled="!source"
+        data-testid="reinvest-destination"
+      >
+        <optgroup
+          v-for="group in destinationGroups"
+          :key="group.walletName"
+          :label="group.walletName"
         >
-          <option v-for="holding in sources" :key="holding.id" :value="holding.id">
-            {{ displayName(holding) }} · {{ availableLabel(holding) }}
+          <option v-for="holding in group.holdings" :key="holding.id" :value="holding.id">
+            {{ displayName(holding) }}
           </option>
-        </b-select>
-      </b-field>
+        </optgroup>
+      </b-select>
+    </b-field>
 
-      <b-field label="Investimento de destino" style="grid-column: 1/-1">
-        <b-select
-          v-model="destinationId"
-          placeholder="Selecione o investimento"
-          expanded
-          :disabled="!source"
-          data-testid="reinvest-destination"
-        >
-          <optgroup
-            v-for="group in destinationGroups"
-            :key="group.walletName"
-            :label="group.walletName"
-          >
-            <option v-for="holding in group.holdings" :key="holding.id" :value="holding.id">
-              {{ displayName(holding) }}
-            </option>
-          </optgroup>
-        </b-select>
-      </b-field>
-    </div>
-
-    <p v-if="source && destinations.length === 0" class="move-hint">
-      Nenhum outro investimento ativo em carteiras de {{ currency }} para receber o reinvestimento.
-    </p>
-    <p v-if="destinationUnpriced" class="auth-error" data-testid="reinvest-unpriced">
-      {{ destination?.ticker ?? destination?.name }} não tem preço atual. Defina o preço atual do
-      investimento de destino antes de reinvestir nele.
-    </p>
-
-    <div v-if="source" class="form-grid reinvest-fields">
-      <b-field label="Data" style="grid-column: 1/-1">
+    <template v-if="source">
+      <b-field label="Data">
         <DateInput v-model="date" />
       </b-field>
 
       <b-field
         v-if="isFundSource"
         label="Valor reinvestido"
-        style="grid-column: 1/-1"
         :type="exceedsRemaining ? 'is-danger' : ''"
         :message="exceedsRemaining ? 'Maior que o valor atual do fundo' : ''"
       >
@@ -251,57 +256,64 @@ async function submit() {
           data-testid="reinvest-amount"
         />
       </b-field>
-      <template v-else>
-        <b-field
-          label="Quantidade"
-          :type="exceedsRemaining ? 'is-danger' : ''"
-          :message="exceedsRemaining ? 'Maior que o disponível' : ''"
-        >
-          <NumberInput
-            v-model="quantity"
-            :placeholder="`Até ${fmt.qty(source.quantity ?? 0)}`"
-            min="0"
-            data-testid="reinvest-quantity"
-          />
-        </b-field>
-        <b-field label="Preço unitário de venda" message="Preenchido com o último preço conhecido">
-          <NumberInput
-            v-model="unitPrice"
-            :prefix="symbol"
-            placeholder="0,00"
-            min="0"
-            data-testid="reinvest-unit-price"
-          />
-        </b-field>
-      </template>
+      <div v-else class="fixed-grid has-2-cols mb-3">
+        <div class="grid">
+          <b-field
+            class="mb-0"
+            label="Quantidade"
+            :type="exceedsRemaining ? 'is-danger' : ''"
+            :message="exceedsRemaining ? 'Maior que o disponível' : ''"
+          >
+            <NumberInput
+              v-model="quantity"
+              :placeholder="`Até ${fmt.qty(source.quantity ?? 0)}`"
+              min="0"
+              data-testid="reinvest-quantity"
+            />
+          </b-field>
+          <b-field label="Preço unitário de venda">
+            <NumberInput
+              v-model="unitPrice"
+              :prefix="symbol"
+              placeholder="0,00"
+              min="0"
+              data-testid="reinvest-unit-price"
+            />
+          </b-field>
+        </div>
+      </div>
 
-      <b-field label="Taxas (opcional)">
-        <NumberInput v-model="fees" :prefix="symbol" placeholder="0,00" min="0" />
-      </b-field>
-      <b-field label="Impostos (opcional)">
-        <NumberInput v-model="taxes" :prefix="symbol" placeholder="0,00" min="0" />
-      </b-field>
-    </div>
+      <div class="fixed-grid has-2-cols mb-3">
+        <div class="grid">
+          <b-field label="Taxas (opcional)" class="mb-0">
+            <NumberInput v-model="fees" :prefix="symbol" placeholder="0,00" min="0" />
+          </b-field>
+          <b-field label="Impostos (opcional)">
+            <NumberInput v-model="taxes" :prefix="symbol" placeholder="0,00" min="0" />
+          </b-field>
+        </div>
+      </div>
 
-    <div v-if="source" class="reinvest-summary" data-testid="reinvest-summary">
-      <div class="reinvest-summary-line">
-        <span>Valor bruto</span>
-        <strong>{{ fmt.money(grossAmount, currency) }}</strong>
+      <div class="notification is-size-7 mb-0" data-testid="reinvest-summary">
+        <div class="is-flex is-justify-content-space-between">
+          <span>Valor bruto</span>
+          <strong>{{ fmt.money(grossAmount, currency) }}</strong>
+        </div>
+        <div class="is-flex is-justify-content-space-between mt-1">
+          <span>Valor líquido reinvestido</span>
+          <strong :class="{ 'has-text-danger': costsExceedGross }">{{
+            fmt.money(netAmount, currency)
+          }}</strong>
+        </div>
+        <p v-if="destination && destinationQuantity != null" class="mt-2">
+          Compra de ≈ {{ fmt.qty(destinationQuantity) }} {{ displayName(destination) }} a
+          {{ fmt.money(Number(destination.currentPrice), currency) }}
+        </p>
+        <p v-if="costsExceedGross" class="has-text-danger mt-2">
+          Taxas e impostos não podem consumir todo o valor reinvestido.
+        </p>
       </div>
-      <div class="reinvest-summary-line">
-        <span>Valor líquido reinvestido</span>
-        <strong :class="{ 'gl-down': costsExceedGross }">{{
-          fmt.money(netAmount, currency)
-        }}</strong>
-      </div>
-      <div v-if="destination && destinationQuantity != null" class="reinvest-summary-note">
-        Compra de ≈ {{ fmt.qty(destinationQuantity) }} {{ displayName(destination) }} a
-        {{ fmt.money(Number(destination.currentPrice), currency) }}
-      </div>
-      <div v-if="costsExceedGross" class="reinvest-summary-note gl-down">
-        Taxas e impostos não podem consumir todo o valor reinvestido.
-      </div>
-    </div>
+    </template>
 
     <template #footer>
       <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"
