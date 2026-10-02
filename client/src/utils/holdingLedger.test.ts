@@ -56,6 +56,7 @@ describe('buildLedger', () => {
       withdrawals: [
         {
           id: 'w-1',
+          resultType: 'WITHDRAWAL',
           resultDate: '2026-05-10',
           quantity: 150,
           grossAmount: 4575,
@@ -67,6 +68,7 @@ describe('buildLedger', () => {
         },
         {
           id: 'w-2',
+          resultType: 'WITHDRAWAL',
           resultDate: '2026-06-18',
           quantity: 150,
           grossAmount: 4815,
@@ -99,6 +101,7 @@ describe('buildLedger', () => {
       withdrawals: [
         {
           id: 'w-1',
+          resultType: 'WITHDRAWAL',
           resultDate: '2026-05-10',
           quantity: null,
           grossAmount: 2500,

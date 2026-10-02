@@ -13,16 +13,14 @@ import br.com.investlog.server.shared.exceptions.WithdrawalNotDeletableException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
-class WithdrawalService(private val resultRepository: ResultRepository) {
-
-    companion object {
-        private const val COST_BASIS_SCALE = 10
-    }
+class WithdrawalService(
+    private val resultRepository: ResultRepository,
+    private val positionExitService: PositionExitService,
+) {
 
     @Transactional
     fun withdrawFromHolding(
@@ -43,25 +41,15 @@ class WithdrawalService(private val resultRepository: ResultRepository) {
             )
         }
 
-        val grossAmount = quantity.multiply(request.unitPrice!!)
-        val costBasis = position.costBasis
-            .divide(remainingQuantity, COST_BASIS_SCALE, RoundingMode.HALF_UP)
-            .multiply(quantity)
-
-        resultRepository.insert(
+        positionExitService.exitHolding(
             position = position,
             resultType = ResultType.WITHDRAWAL,
             resultDate = request.resultDate!!,
             quantity = quantity,
-            grossAmount = grossAmount,
+            unitPrice = request.unitPrice!!,
             fees = request.fees ?: BigDecimal.ZERO,
             taxes = request.taxes ?: BigDecimal.ZERO,
-            costBasis = costBasis,
         )
-
-        if (quantity.compareTo(remainingQuantity) == 0) {
-            resultRepository.markCompleted(position)
-        }
     }
 
     @Transactional
@@ -82,26 +70,14 @@ class WithdrawalService(private val resultRepository: ResultRepository) {
             )
         }
 
-        val costBasis = position.costBasis
-            .multiply(amount)
-            .divide(currentValue, COST_BASIS_SCALE, RoundingMode.HALF_UP)
-
-        resultRepository.insert(
+        positionExitService.exitFund(
             position = position,
             resultType = ResultType.WITHDRAWAL,
             resultDate = request.resultDate!!,
-            quantity = null,
-            grossAmount = amount,
+            amount = amount,
             fees = request.fees ?: BigDecimal.ZERO,
             taxes = request.taxes ?: BigDecimal.ZERO,
-            costBasis = costBasis,
         )
-
-        resultRepository.reduceFundCurrentValue(position.holdingId, amount)
-
-        if (amount.compareTo(currentValue) == 0) {
-            resultRepository.markCompleted(position)
-        }
     }
 
     @Transactional
@@ -121,6 +97,10 @@ class WithdrawalService(private val resultRepository: ResultRepository) {
 
         val result = resultRepository.findResult(position, resultId)
             ?: throw NotFoundException("Resgate não encontrado")
+
+        if (result.resultType == ResultType.REINVESTMENT) {
+            throw WithdrawalNotDeletableException("Um reinvestimento não pode ser desfeito.")
+        }
 
         val mostRecentResultId = resultRepository.findMostRecentResultId(position)
         if (mostRecentResultId != result.id) {

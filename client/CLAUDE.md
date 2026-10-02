@@ -102,6 +102,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `overview.ts` | `GET /overview`, `GET /overview/series` |
 | `walletDetail.ts` | `GET /wallets/{id}/detail` (the per-wallet dashboard payload) |
 | `walletMoves.ts` | `POST /wallets/{id}/moves` (relocate holdings), `GET /wallets/{id}/moves` (move history) |
+| `reinvestments.ts` | `POST /reinvestments` (exit one holding into another), `GET /reinvestments` (history) |
 | `assetTypes.ts` | `GET/POST/DELETE /stock-types`, `/fund-types` |
 | `rates.ts` | `GET /currency-rates`, `PUT /currency-rates/{code}` |
 | `auth.ts` | `POST /auth/login`, `/register`, `/totp/enroll`, `/totp/verify`, `/google/link`, `GET /auth/session`, `/auth/config`, `POST /auth/logout`, `GET`/`DELETE /auth/trusted-devices` |
@@ -131,10 +132,11 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | Store | Loads from | Exposes |
 |-------|------------|---------|
 | `wallets` | `GET /wallets` | `wallets[]`, `walletById(id)`, `refresh()` |
-| `holdingsList` | `GET /holdings` | `rows[]`, `page`, `totalElements`, `loadKind(kind, page)` |
+| `holdingsList` | `GET /holdings` | `rows[]`, `page`, `totalElements`, `loadKind(kind, page, { size })` — `size` defaults to 20 and `refresh()` keeps it |
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
 | `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
 | `walletMoves` | `GET/POST /wallets/{id}/moves` | `rows[]` for one wallet, `load(walletId, page)`, `move(originWalletId, payload)` |
+| `reinvestments` | `GET/POST /reinvestments` | `rows[]`, `load(page, size)` — a small `size` serves a recent list, the default the full history — and `reinvest(payload)` |
 | `typesList` | `GET /stock-types` + `/fund-types` | `stockTypes[]`, `fundTypes[]`, CRUD actions |
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
 | `appearance` | `localStorage` | `dark`, `accent` — persisted across sessions |
@@ -154,7 +156,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 |---|---|
 | `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
-| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal` |
+| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
@@ -168,6 +170,8 @@ Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detail
 expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion renders
 `HoldingDetailPanel` which lazy-fetches the full holding detail from the individual endpoint.
 
+**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, resgatar, reinvestir, mover and, for admins, remover. Closed rows carry no action buttons. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
+
 ### Routes and their views (`src/router/index.ts`)
 
 `/overview`, `/wallets`, `/wallets/:id` (`WalletDetailView.vue`), `/investments` and
@@ -179,11 +183,19 @@ covers `/settings/types` and `/settings/users` — the whole `/settings/*` subtr
 
 `/wallets/:id`, reached by clicking a wallet card. This **replaced** `WalletsView`'s old jump to the filtered investments list — there is deliberately only one click target on a wallet card now, because the page shows the same holdings plus everything else.
 
-It reads two stores: `walletDetail` for the header, chart, deltas, performers and concentration, and the existing `holdingsList` scoped with `{ walletId }` for the investments table. Both load in one `Promise.all`, and a `watch` on the route param reloads them when navigating between wallets without unmounting.
+It reads two stores: `walletDetail` for the header, chart, deltas, performers and concentration, and the existing `holdingsList` scoped with `{ walletId, size: 10 }` for the investments table, which pages 10 rows at a time. Both load in one `Promise.all`, and a `watch` on the route param reloads them when navigating between wallets without unmounting.
 
 The chart and the delta chips render only when `series` is non-empty; otherwise an `EmptyState` explains that history starts accumulating from the first snapshot job run. The concentration warning appears when `largestHoldingShare` exceeds 50.
 
-It also carries #211's two move pieces: a per-investment "Mover" row action (and a header "Mover" button) opening `MoveHoldingsModal` with this wallet as a fixed origin, and a **Movimentações** table below the investments listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
+Sections run header → highlight cards → Desempenho chart → **Movimentações** → investments, since the page is read for its history first.
+
+The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the expanded row's own dropdown (see the investments table above).
+
+It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fixed origin, and the **Movimentações** table listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
+
+### Reinvesting (`ReinvestModal.vue`)
+
+"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
 
 ### Moving holdings (`MoveHoldingsModal.vue`)
 

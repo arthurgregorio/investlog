@@ -8,10 +8,14 @@ import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useAuthStore } from '@/stores/auth'
 import { useWalletMovesStore } from '@/stores/walletMoves'
 import { useWalletsStore } from '@/stores/wallets'
+import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { holdingsApi } from '@/api/holdings'
 import type { HoldingRow, WalletDetail, WalletMoveRow, WalletResponse } from '@/types'
 
 vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { findAll: vi.fn(), move: vi.fn() } }))
+vi.mock('@/api/reinvestments', () => ({
+  reinvestmentsApi: { findAll: vi.fn(), reinvest: vi.fn() },
+}))
 vi.mock('@/api/walletDetail', () => ({ walletDetailApi: { get: vi.fn() } }))
 vi.mock('@/api/wallets', () => ({
   walletsApi: { findAll: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() },
@@ -70,6 +74,13 @@ const mockRow: HoldingRow = {
   currentValue: 3850,
   gain: 350,
   gainPct: 10,
+}
+
+function control(wrapper: ReturnType<typeof mount>, testId: string) {
+  const element = wrapper.find(`[data-testid="${testId}"]`)
+  return ['INPUT', 'SELECT'].includes(element.element.tagName)
+    ? element
+    : element.find('input, select')
 }
 
 function flushPromises() {
@@ -180,7 +191,7 @@ describe('WalletDetailView', () => {
     expect(emptyState.text()).toContain('Nenhuma movimentação')
   })
 
-  it('opens the move modal from a row with this wallet as the fixed origin', async () => {
+  it('opens the move modal from the Ações dropdown with this wallet as the fixed origin', async () => {
     vi.mocked(holdingsApi.findAll).mockResolvedValue({
       content: [mockRow],
       page: { size: 500, number: 0, totalElements: 1, totalPages: 1 },
@@ -202,22 +213,40 @@ describe('WalletDetailView', () => {
     walletsStore.wallets = [wallet]
     walletsStore.walletById = (id: string) => (id === wallet.id ? wallet : undefined)
 
-    await wrapper.find('[data-testid="row-move"]').trigger('click')
+    await wrapper.find('[data-testid="wallet-move"]').trigger('click')
     await flushPromises()
     await flushPromises()
 
     expect(wrapper.text()).toContain('Mover investimentos')
     expect(wrapper.find('[data-testid="move-origin"]').exists()).toBe(false)
     expect(holdingsApi.findAll).toHaveBeenCalledWith({ walletId: 'wallet-1', size: 500 })
-    expect(wrapper.find('.move-item.is-selected').exists()).toBe(true)
-    expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+    expect(wrapper.find('.move-item.is-selected').exists()).toBe(false)
+  })
+
+  it('keeps a closed holding row free of action buttons', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    const row = wrapper.find('tr.inv-row')
+    expect(row.findAll('button')).toHaveLength(0)
+    expect(row.find('.chev').exists()).toBe(true)
+  })
+
+  it('shows the move history above the investments listing', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    const html = wrapper.html()
+    expect(html.indexOf('data-testid="move-history"')).toBeGreaterThan(-1)
+    expect(html.indexOf('data-testid="move-history"')).toBeLessThan(html.indexOf('inv-table'))
   })
 
   it('loads the detail and the wallet-scoped holdings on mount', async () => {
     const { walletDetailStore, holdingsListStore } = await mountView(detailOf())
 
     expect(walletDetailStore.load).toHaveBeenCalledWith('wallet-1')
-    expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, { walletId: 'wallet-1' })
+    expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, {
+      walletId: 'wallet-1',
+      size: 10,
+    })
   })
 
   it('shows the wallet header figures', async () => {
@@ -300,24 +329,86 @@ describe('WalletDetailView', () => {
   it('jumps to the holdings list filtered by this wallet', async () => {
     const { wrapper, router } = await mountView(detailOf())
 
-    const link = wrapper.findAll('button').find((button) => button.text() === 'Ver investimentos')
-    await link!.trigger('click')
+    const item = wrapper
+      .findAll('[data-testid="wallet-actions"] .dropdown-item')
+      .find((element) => element.text() === 'Ver investimentos')
+    await item!.trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('investments')
     expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', walletId: 'wallet-1' })
   })
 
-  it('offers a remove button to an admin', async () => {
+  it('groups the wallet actions under one Ações dropdown instead of separate buttons', async () => {
     const { wrapper } = await mountView(detailOf(), [mockRow], true, true)
 
-    expect(wrapper.findAll('button').some((button) => button.text() === 'Remover')).toBe(true)
+    const actions = wrapper.find('[data-testid="wallet-actions"]')
+    expect(actions.find('button').text()).toBe('Ações')
+    expect(actions.findAll('.dropdown-item').map((item) => item.text())).toEqual([
+      'Ver investimentos',
+      'Mover',
+      'Reinvestir',
+      'Remover',
+    ])
+    expect(wrapper.findAll('button').some((button) => button.text() === 'Mover')).toBe(false)
   })
 
-  it('hides the remove button from a non-admin', async () => {
+  it('hides the remove action from a non-admin', async () => {
     const { wrapper } = await mountView(detailOf(), [mockRow], true, false)
 
-    expect(wrapper.findAll('button').some((button) => button.text() === 'Remover')).toBe(false)
+    expect(wrapper.find('[data-testid="wallet-remove"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="wallet-reinvest"]').exists()).toBe(true)
+  })
+
+  it('opens the reinvest modal from the Ações dropdown with a source picker', async () => {
+    vi.mocked(holdingsApi.findAll).mockResolvedValue({
+      content: [mockRow],
+      page: { size: 500, number: 0, totalElements: 1, totalPages: 1 },
+    })
+    const { wrapper } = await mountView(detailOf())
+
+    await wrapper.find('[data-testid="wallet-reinvest"]').trigger('click')
+    await flushPromises()
+    await flushPromises()
+
+    const source = control(wrapper, 'reinvest-source')
+    expect((source.element as HTMLSelectElement).value).toBe('')
+    expect(holdingsApi.findAll).toHaveBeenCalledWith({ walletId: 'wallet-1', size: 500 })
+  })
+
+  it('reloads the wallet after a reinvestment so a fully reinvested holding drops out', async () => {
+    const reinvestedWholeRow: HoldingRow = { ...mockRow, id: 'holding-2', ticker: 'VALE3' }
+    vi.mocked(holdingsApi.findAll).mockImplementation(async (params) => {
+      const content = params.walletId ? [mockRow] : [mockRow, reinvestedWholeRow]
+      return {
+        content,
+        page: { size: 500, number: 0, totalElements: content.length, totalPages: 1 },
+      }
+    })
+    const { wrapper, walletDetailStore, holdingsListStore } = await mountView(detailOf())
+    const walletsStore = useWalletsStore()
+    const reinvestmentsStore = useReinvestmentsStore()
+    vi.mocked(reinvestmentsStore.reinvest).mockResolvedValue(undefined)
+    vi.mocked(holdingsListStore.loadKind).mockClear()
+    vi.mocked(walletDetailStore.load).mockClear()
+
+    await wrapper.find('[data-testid="wallet-reinvest"]').trigger('click')
+    await flushPromises()
+    await flushPromises()
+    await control(wrapper, 'reinvest-source').setValue('holding-1')
+    await control(wrapper, 'reinvest-destination').setValue('holding-2')
+    await control(wrapper, 'reinvest-quantity').setValue('100')
+    await wrapper.find('[data-testid="reinvest-submit"]').trigger('click')
+    await flushPromises()
+
+    expect(reinvestmentsStore.reinvest).toHaveBeenCalledTimes(1)
+    expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, {
+      walletId: 'wallet-1',
+      size: 10,
+    })
+    expect(walletDetailStore.load).toHaveBeenCalledWith('wallet-1')
+    expect(walletsStore.refresh).toHaveBeenCalled()
+    expect(wrapper.text()).not.toContain('Venda parte ou toda a posição e reinvista')
   })
 
   it('renders best, worst and largest position as three highlight cards', async () => {

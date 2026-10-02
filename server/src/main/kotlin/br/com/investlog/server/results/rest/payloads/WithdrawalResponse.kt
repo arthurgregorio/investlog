@@ -6,6 +6,7 @@ import java.util.UUID
 
 data class WithdrawalResponse(
     val id: UUID,
+    val resultType: String,
     val resultDate: LocalDate,
     val quantity: BigDecimal?,
     val grossAmount: BigDecimal,

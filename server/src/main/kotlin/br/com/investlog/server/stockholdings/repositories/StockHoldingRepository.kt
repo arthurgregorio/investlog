@@ -52,6 +52,7 @@ class StockHoldingRepository(
             r.map { rec ->
                 WithdrawalResponse(
                     id = rec.get(RESULTS.EXTERNAL_ID)!!,
+                    resultType = rec.get(RESULTS.RESULT_TYPE)!!.literal,
                     resultDate = rec.get(RESULTS.RESULT_DATE)!!,
                     quantity = rec.get(RESULTS.QUANTITY),
                     grossAmount = rec.get(RESULTS.GROSS_AMOUNT)!!,
@@ -227,6 +228,7 @@ class StockHoldingRepository(
             r.map { rec ->
                 WithdrawalResponse(
                     id = rec.get(RESULTS.EXTERNAL_ID)!!,
+                    resultType = rec.get(RESULTS.RESULT_TYPE)!!.literal,
                     resultDate = rec.get(RESULTS.RESULT_DATE)!!,
                     quantity = rec.get(RESULTS.QUANTITY),
                     grossAmount = rec.get(RESULTS.GROSS_AMOUNT)!!,

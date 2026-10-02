@@ -6,15 +6,24 @@ import { holdingsApi } from '@/api/holdings'
 import { resultsApi } from '@/api/results'
 import { useAuthStore } from '@/stores/auth'
 import { useCurrencyStore } from '@/stores/currency'
-import type { FundHoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
+import { useReinvestmentsStore } from '@/stores/reinvestments'
+import { useWalletsStore } from '@/stores/wallets'
+import type { FundHoldingDetail, HoldingRow, StockHoldingDetail, WalletResponse } from '@/types'
 
 vi.mock('@/api/holdings', () => ({
   holdingsApi: {
     getStockHolding: vi.fn(),
     getCryptoHolding: vi.fn(),
     getFundHolding: vi.fn(),
+    findAll: vi.fn(),
   },
 }))
+
+vi.mock('@/api/reinvestments', () => ({
+  reinvestmentsApi: { findAll: vi.fn(), reinvest: vi.fn() },
+}))
+vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { findAll: vi.fn(), move: vi.fn() } }))
+vi.mock('@/api/wallets', () => ({ walletsApi: { findAll: vi.fn() } }))
 
 vi.mock('@/api/results', () => ({
   resultsApi: {
@@ -73,6 +82,7 @@ function stockDetailWithWithdrawals(): StockHoldingDetail {
     withdrawals: [
       {
         id: 'w-1',
+        resultType: 'WITHDRAWAL',
         resultDate: '2026-05-10',
         quantity: 150,
         grossAmount: 4575,
@@ -84,6 +94,7 @@ function stockDetailWithWithdrawals(): StockHoldingDetail {
       },
       {
         id: 'w-2',
+        resultType: 'WITHDRAWAL',
         resultDate: '2026-06-18',
         quantity: 150,
         grossAmount: 4815,
@@ -196,6 +207,20 @@ describe('HoldingDetailPanel', () => {
     expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(2)
   })
 
+  it('tags a reinvestment row as Reinvestimento and offers no undo for it', async () => {
+    const detail = stockDetailWithWithdrawals()
+    detail.withdrawals[1] = { ...detail.withdrawals[1], resultType: 'REINVESTMENT' }
+    vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(detail)
+
+    const wrapper = mountPanel(stockRow)
+    await flushPromises()
+
+    const reinvestmentRow = wrapper.findAll('tbody tr')[3]
+    expect(reinvestmentRow.text()).toContain('Reinvestimento')
+    expect(reinvestmentRow.find('td.c-act button').exists()).toBe(false)
+    expect(wrapper.findAll('tbody tr')[2].find('td.c-act button').exists()).toBe(true)
+  })
+
   it('lets the server reject undoing a withdrawal that is not the most recent, without reloading', async () => {
     vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithWithdrawals())
     vi.mocked(resultsApi.deleteStockWithdrawal).mockRejectedValue(new Error('409 Conflict'))
@@ -222,6 +247,7 @@ describe('HoldingDetailPanel', () => {
       withdrawals: [
         {
           id: 'w-1',
+          resultType: 'WITHDRAWAL',
           resultDate: '2026-05-10',
           quantity: null,
           grossAmount: 1000,
@@ -244,5 +270,130 @@ describe('HoldingDetailPanel', () => {
     expect(wrapper.text()).not.toContain('Saldo')
     expect(wrapper.text()).toContain('Custos')
     expect(wrapper.text()).toContain('Resultado')
+  })
+
+  describe('Ações dropdown', () => {
+    function actionLabels() {
+      return Array.from(document.body.querySelectorAll('.dropdown-item')).map(
+        (item) => item.textContent?.trim() ?? '',
+      )
+    }
+
+    async function chooseAction(testId: string) {
+      document.body
+        .querySelector(`[data-testid="${testId}"]`)
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushPromises()
+    }
+
+    function control(wrapper: ReturnType<typeof mountPanel>, testId: string) {
+      const element = wrapper.find(`[data-testid="${testId}"]`)
+      return ['INPUT', 'SELECT'].includes(element.element.tagName)
+        ? element
+        : element.find('input, select')
+    }
+
+    beforeEach(() => {
+      vi.mocked(holdingsApi.findAll).mockResolvedValue({
+        content: [stockRow],
+        page: { size: 500, number: 0, totalElements: 1, totalPages: 1 },
+      })
+    })
+
+    it('replaces the separate buttons with one dropdown listing every holding action in order', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithWithdrawals())
+
+      const wrapper = mountPanel(stockRow)
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="holding-actions"] button').text()).toBe('Ações')
+      expect(actionLabels()).toEqual([
+        'Registrar nova compra',
+        'Atualizar preço',
+        'Resgatar',
+        'Reinvestir',
+        'Mover',
+        'Remover',
+      ])
+      expect(wrapper.find('.ledger-actions').findAll(':scope > button')).toHaveLength(0)
+    })
+
+    it('uses the fund wording and hides Remover from a non-admin', async () => {
+      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue({
+        id: 'holding-2',
+        walletId: 'wallet-2',
+        fundTypeId: 'type-2',
+        name: 'Tesouro IPCA+',
+        currentValue: 3000,
+        contributions: [{ id: 'c-1', contributionDate: '2026-01-10', amount: 3000 }],
+        withdrawals: [],
+      })
+
+      mountPanel(fundRow)
+      useAuthStore().session!.role = 'USER'
+      await flushPromises()
+
+      expect(actionLabels()).toEqual([
+        'Registrar novo aporte',
+        'Atualizar valor atual',
+        'Resgatar',
+        'Reinvestir',
+        'Mover',
+      ])
+    })
+
+    it('opens Reinvestir with this holding as the source and reports the relocation', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithWithdrawals())
+      const wrapper = mountPanel(stockRow)
+      await flushPromises()
+      const reinvestmentsStore = useReinvestmentsStore()
+      vi.mocked(reinvestmentsStore.reinvest).mockResolvedValue(undefined)
+      vi.mocked(holdingsApi.findAll).mockResolvedValue({
+        content: [stockRow, { ...stockRow, id: 'holding-9', ticker: 'VALE3' }],
+        page: { size: 500, number: 0, totalElements: 2, totalPages: 1 },
+      })
+
+      await chooseAction('holding-reinvest')
+
+      expect((control(wrapper, 'reinvest-source').element as HTMLSelectElement).value).toBe(
+        'holding-1',
+      )
+
+      await control(wrapper, 'reinvest-destination').setValue('holding-9')
+      await control(wrapper, 'reinvest-quantity').setValue('10')
+      await wrapper.find('[data-testid="reinvest-submit"]').trigger('click')
+      await flushPromises()
+
+      expect(reinvestmentsStore.reinvest).toHaveBeenCalledTimes(1)
+      expect(wrapper.emitted('relocated')).toHaveLength(1)
+    })
+
+    it('opens Mover with this holding preselected in its own wallet', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithWithdrawals())
+      const wrapper = mountPanel(stockRow)
+      await flushPromises()
+      const wallet: WalletResponse = {
+        id: 'wallet-1',
+        name: 'Carteira B3',
+        kind: 'STOCKS',
+        currency: 'BRL',
+        holdingCount: 1,
+        totalInvested: 5652,
+        currentValue: 6960,
+        gain: 1308,
+        gainPct: 23.1,
+        createdAt: '2026-01-01T00:00:00Z',
+      }
+      const walletsStore = useWalletsStore()
+      walletsStore.wallets = [wallet]
+      walletsStore.walletById = (id: string) => (id === wallet.id ? wallet : undefined)
+
+      await chooseAction('holding-move')
+
+      expect(wrapper.text()).toContain('Mover investimentos')
+      expect(wrapper.find('[data-testid="move-origin"]').exists()).toBe(false)
+      expect(holdingsApi.findAll).toHaveBeenCalledWith({ walletId: 'wallet-1', size: 500 })
+      expect(wrapper.find('.move-item.is-selected').exists()).toBe(true)
+    })
   })
 })

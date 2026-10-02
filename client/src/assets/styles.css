@@ -3016,6 +3016,7 @@ h3.report-subgroup-title {
     border-left: 0;
     width: 100%;
     align-self: flex-start;
+    justify-content: flex-end;
   }
 }
 

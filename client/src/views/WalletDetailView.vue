@@ -5,6 +5,7 @@ import { useDialog, useToast } from 'buefy'
 import AreaChart from '@/components/charts/AreaChart.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
+import ReinvestModal from '@/components/investments/ReinvestModal.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -20,6 +21,8 @@ import { fmt } from '@/composables/useFormat'
 import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
 import type { HoldingRow, WalletMoveRow } from '@/types'
 
+const HOLDINGS_PAGE_SIZE = 10
+
 const route = useRoute()
 const router = useRouter()
 const dialog = useDialog()
@@ -34,7 +37,7 @@ const walletId = computed(() => route.params.id as string)
 const detail = computed(() => walletDetailStore.detail)
 const openedDetails = ref<string[]>([])
 const moveModalOpen = ref(false)
-const holdingToMove = ref<string | undefined>(undefined)
+const reinvestModalOpen = ref(false)
 
 const currency = computed(() => detail.value?.currency ?? 'BRL')
 
@@ -81,7 +84,7 @@ async function loadAll() {
   openedDetails.value = []
   await Promise.all([
     walletDetailStore.load(walletId.value),
-    holdingsListStore.loadKind('all', 0, { walletId: walletId.value }),
+    holdingsListStore.loadKind('all', 0, { walletId: walletId.value, size: HOLDINGS_PAGE_SIZE }),
     walletMovesStore.load(walletId.value, 0),
   ])
 }
@@ -102,7 +105,10 @@ function displayName(row: HoldingRow): string {
 }
 
 async function onPageChange(page: number) {
-  await holdingsListStore.loadKind('all', page - 1, { walletId: walletId.value })
+  await holdingsListStore.loadKind('all', page - 1, {
+    walletId: walletId.value,
+    size: HOLDINGS_PAGE_SIZE,
+  })
 }
 
 async function onHoldingChanged() {
@@ -110,14 +116,17 @@ async function onHoldingChanged() {
   await loadAll()
 }
 
-function openMove(row?: HoldingRow) {
-  holdingToMove.value = row?.id
+function openMove() {
   moveModalOpen.value = true
 }
 
-async function onMoved() {
+async function onPositionsChanged() {
   openedDetails.value = []
   await Promise.all([loadAll(), walletsStore.refresh()])
+}
+
+function openReinvest() {
+  reinvestModalOpen.value = true
 }
 
 async function onMovesPageChange(page: number) {
@@ -246,27 +255,36 @@ function confirmDeleteWallet() {
             </div>
 
             <div class="wd-actions">
-              <b-button size="is-small" icon-left="format-list-bulleted" @click="goToHoldings">
-                Ver investimentos
-              </b-button>
-              <b-button
-                size="is-small"
-                icon-left="swap-horizontal"
-                data-testid="wallet-move"
-                @click="openMove()"
-              >
-                Mover
-              </b-button>
-              <b-button
-                v-if="auth.isAdmin"
-                size="is-small"
-                type="is-danger"
-                outlined
-                icon-left="delete"
-                @click="confirmDeleteWallet"
-              >
-                Remover
-              </b-button>
+              <b-dropdown aria-role="list" position="is-bottom-left" data-testid="wallet-actions">
+                <template #trigger>
+                  <b-button size="is-small" icon-right="menu-down">Ações</b-button>
+                </template>
+
+                <b-dropdown-item aria-role="listitem" @click="goToHoldings">
+                  <b-icon icon="format-list-bulleted" size="is-small" /> Ver investimentos
+                </b-dropdown-item>
+                <b-dropdown-item aria-role="listitem" data-testid="wallet-move" @click="openMove()">
+                  <b-icon icon="swap-horizontal" size="is-small" /> Mover
+                </b-dropdown-item>
+                <b-dropdown-item
+                  aria-role="listitem"
+                  data-testid="wallet-reinvest"
+                  @click="openReinvest()"
+                >
+                  <b-icon icon="autorenew" size="is-small" /> Reinvestir
+                </b-dropdown-item>
+                <template v-if="auth.isAdmin">
+                  <hr class="dropdown-divider" />
+                  <b-dropdown-item
+                    aria-role="listitem"
+                    class="has-text-danger"
+                    data-testid="wallet-remove"
+                    @click="confirmDeleteWallet"
+                  >
+                    <b-icon icon="delete" size="is-small" /> Remover
+                  </b-dropdown-item>
+                </template>
+              </b-dropdown>
             </div>
           </div>
         </CardBody>
@@ -370,117 +388,7 @@ function confirmDeleteWallet() {
         </CardBody>
       </Card>
 
-      <EmptyState
-        v-if="holdingsListStore.loaded && holdingsListStore.rows.length === 0"
-        icon="wallet-outline"
-        title="Nenhum investimento nesta carteira"
-        text="Adicione um investimento para começar a acompanhar esta carteira."
-      />
-
-      <Card v-else class="table-card">
-        <div class="table-wrap">
-          <b-loading :is-full-page="false" :active="holdingsListStore.loading" />
-          <div class="table-scroll">
-            <table class="inv-table">
-              <thead>
-                <tr>
-                  <th>Investimento</th>
-                  <th class="c-num">Qtd.</th>
-                  <th class="c-num">Preço atual</th>
-                  <th class="c-num">Investido</th>
-                  <th class="c-num">Valor atual</th>
-                  <th class="c-num">Resultado</th>
-                  <th class="c-act"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="row in holdingsListStore.rows" :key="row.id">
-                  <tr class="inv-row" :class="{ 'is-open': isOpen(row) }" @click="toggleRow(row)">
-                    <td>
-                      <div class="name-cell">
-                        <TickerBadge
-                          :ticker="displayName(row)"
-                          :color="badgeColor(row.ticker, row.kind)"
-                        />
-                        <div class="name-meta">
-                          <div class="name-line">
-                            <span class="t-ticker">{{ displayName(row) }}</span>
-                          </div>
-                          <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
-                            {{ row.name }}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
-                    <td class="c-num">
-                      <span v-if="row.currentPrice == null" class="gl-empty">—</span>
-                      <template v-else>{{
-                        fmt.money(row.currentPrice, row.walletCurrency)
-                      }}</template>
-                    </td>
-                    <td class="c-num">
-                      <div class="cell-strong">
-                        {{ fmt.money(row.costBasis, row.walletCurrency) }}
-                      </div>
-                    </td>
-                    <td class="c-num">
-                      <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                      <template v-else>{{
-                        fmt.money(row.currentValue, row.walletCurrency)
-                      }}</template>
-                    </td>
-                    <td class="c-num">
-                      <GainChip
-                        :value="row.gain"
-                        :pct="row.gainPct"
-                        :cur="row.walletCurrency"
-                        stacked
-                      />
-                    </td>
-                    <td class="c-act">
-                      <b-tooltip label="Mover" position="is-left">
-                        <b-button
-                          type="is-ghost"
-                          size="is-small"
-                          icon-left="swap-horizontal"
-                          aria-label="Mover investimento"
-                          data-testid="row-move"
-                          @click.stop="openMove(row)"
-                        />
-                      </b-tooltip>
-                      <span class="chev">
-                        <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
-                      </span>
-                    </td>
-                  </tr>
-                  <tr v-if="isOpen(row)" class="detail-row">
-                    <td colspan="7">
-                      <HoldingDetailPanel
-                        :row="row"
-                        @deleted="onHoldingChanged"
-                        @position-added="onHoldingChanged"
-                      />
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-          <div v-if="holdingsListStore.totalPages > 1" class="table-foot">
-            <b-pagination
-              :model-value="holdingsListStore.page + 1"
-              :total="holdingsListStore.totalElements"
-              :per-page="holdingsListStore.pageSize"
-              order="is-right"
-              simple
-              @change="onPageChange"
-            />
-          </div>
-        </div>
-      </Card>
-
-      <Card class="table-card mb-0" data-testid="move-history">
+      <Card class="table-card" data-testid="move-history">
         <div class="move-history-title">
           <div class="chart-title">Movimentações</div>
           <div class="wd-chart-sub">Investimentos movidos de e para esta carteira</div>
@@ -548,12 +456,119 @@ function confirmDeleteWallet() {
         </div>
       </Card>
 
+      <EmptyState
+        v-if="holdingsListStore.loaded && holdingsListStore.rows.length === 0"
+        icon="wallet-outline"
+        title="Nenhum investimento nesta carteira"
+        text="Adicione um investimento para começar a acompanhar esta carteira."
+      />
+
+      <Card v-else class="table-card mb-0">
+        <div class="table-wrap">
+          <b-loading :is-full-page="false" :active="holdingsListStore.loading" />
+          <div class="table-scroll">
+            <table class="inv-table">
+              <thead>
+                <tr>
+                  <th>Investimento</th>
+                  <th class="c-num">Qtd.</th>
+                  <th class="c-num">Preço atual</th>
+                  <th class="c-num">Investido</th>
+                  <th class="c-num">Valor atual</th>
+                  <th class="c-num">Resultado</th>
+                  <th class="c-act"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="row in holdingsListStore.rows" :key="row.id">
+                  <tr class="inv-row" :class="{ 'is-open': isOpen(row) }" @click="toggleRow(row)">
+                    <td>
+                      <div class="name-cell">
+                        <TickerBadge
+                          :ticker="displayName(row)"
+                          :color="badgeColor(row.ticker, row.kind)"
+                        />
+                        <div class="name-meta">
+                          <div class="name-line">
+                            <span class="t-ticker">{{ displayName(row) }}</span>
+                          </div>
+                          <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
+                            {{ row.name }}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
+                    <td class="c-num">
+                      <span v-if="row.currentPrice == null" class="gl-empty">—</span>
+                      <template v-else>{{
+                        fmt.money(row.currentPrice, row.walletCurrency)
+                      }}</template>
+                    </td>
+                    <td class="c-num">
+                      <div class="cell-strong">
+                        {{ fmt.money(row.costBasis, row.walletCurrency) }}
+                      </div>
+                    </td>
+                    <td class="c-num">
+                      <span v-if="row.currentValue == null" class="gl-empty">—</span>
+                      <template v-else>{{
+                        fmt.money(row.currentValue, row.walletCurrency)
+                      }}</template>
+                    </td>
+                    <td class="c-num">
+                      <GainChip
+                        :value="row.gain"
+                        :pct="row.gainPct"
+                        :cur="row.walletCurrency"
+                        stacked
+                      />
+                    </td>
+                    <td class="c-act">
+                      <span class="chev">
+                        <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
+                      </span>
+                    </td>
+                  </tr>
+                  <tr v-if="isOpen(row)" class="detail-row">
+                    <td colspan="7">
+                      <HoldingDetailPanel
+                        :row="row"
+                        @deleted="onHoldingChanged"
+                        @position-added="onHoldingChanged"
+                        @relocated="onPositionsChanged"
+                      />
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div v-if="holdingsListStore.totalPages > 1" class="table-foot">
+            <b-pagination
+              :model-value="holdingsListStore.page + 1"
+              :total="holdingsListStore.totalElements"
+              :per-page="holdingsListStore.pageSize"
+              order="is-right"
+              simple
+              @change="onPageChange"
+            />
+          </div>
+        </div>
+      </Card>
+
       <MoveHoldingsModal
         v-if="moveModalOpen"
         :origin-wallet-id="detail.id"
-        :preselected-holding-id="holdingToMove"
-        @moved="onMoved"
+        @moved="onPositionsChanged"
         @close="moveModalOpen = false"
+      />
+
+      <ReinvestModal
+        v-if="reinvestModalOpen"
+        :wallet-id="detail.id"
+        @reinvested="onPositionsChanged"
+        @close="reinvestModalOpen = false"
       />
     </template>
   </div>

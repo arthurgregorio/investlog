@@ -4,6 +4,8 @@ import { BButton, useDialog, useToast } from 'buefy'
 import AddPositionModal from '@/components/investments/AddPositionModal.vue'
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import WithdrawModal from '@/components/investments/WithdrawModal.vue'
+import ReinvestModal from '@/components/investments/ReinvestModal.vue'
+import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import { holdingsApi } from '@/api/holdings'
@@ -11,13 +13,14 @@ import { resultsApi } from '@/api/results'
 import { useCurrencyStore } from '@/stores/currency'
 import { useAuthStore } from '@/stores/auth'
 import { fmt } from '@/composables/useFormat'
-import { buildLedger } from '@/utils/holdingLedger'
+import { buildLedger, type LedgerMovementType } from '@/utils/holdingLedger'
 import type { FundHoldingDetail, HoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
 
 const props = defineProps<{ row: HoldingRow }>()
 const emit = defineEmits<{
   deleted: []
   positionAdded: []
+  relocated: []
 }>()
 
 const dialog = useDialog()
@@ -30,6 +33,8 @@ const loading = ref(false)
 const showAddPositionModal = ref(false)
 const showUpdatePriceModal = ref(false)
 const showWithdrawModal = ref(false)
+const showReinvestModal = ref(false)
+const showMoveModal = ref(false)
 
 const isFund = computed(() => props.row.kind === 'FUNDS')
 const isStock = computed(() => props.row.kind === 'STOCKS')
@@ -142,6 +147,12 @@ function confirmDeletePurchase(purchaseId: string) {
   })
 }
 
+function movementLabel(type: LedgerMovementType): string {
+  if (type === 'REINVESTMENT') return 'Reinvestimento'
+  if (type === 'WITHDRAWAL') return isFund.value ? 'Resgate' : 'Venda'
+  return isFund.value ? 'Aporte' : 'Compra'
+}
+
 function confirmDeleteWithdrawal(resultId: string) {
   dialog.confirm({
     title: isFund.value ? 'Desfazer resgate' : 'Desfazer venda',
@@ -219,36 +230,53 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
         <span class="ledger-count">{{ ledgerRows.length }}</span>
       </div>
       <div class="ledger-actions">
-        <b-button
-          size="is-small"
-          type="is-success"
-          outlined
-          icon-left="plus"
-          @click="showAddPositionModal = true"
+        <b-dropdown
+          aria-role="list"
+          position="is-bottom-left"
+          append-to-body
+          data-testid="holding-actions"
         >
-          {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
-        </b-button>
-        <b-button
-          size="is-small"
-          type="is-info"
-          outlined
-          icon-left="pencil"
-          @click="showUpdatePriceModal = true"
-        >
-          {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
-        </b-button>
-        <b-button
-          size="is-small"
-          type="is-warning"
-          outlined
-          icon-left="cash-minus"
-          @click="showWithdrawModal = true"
-        >
-          Resgatar
-        </b-button>
-        <b-button v-if="auth.isAdmin" outlined type="is-danger" size="is-small" icon-left="delete" @click="confirmRemove">
-          Remover
-        </b-button>
+          <template #trigger>
+            <b-button size="is-small" icon-right="menu-down">Ações</b-button>
+          </template>
+
+          <b-dropdown-item aria-role="listitem" @click="showAddPositionModal = true">
+            <b-icon icon="plus" size="is-small" />
+            {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
+          </b-dropdown-item>
+          <b-dropdown-item aria-role="listitem" @click="showUpdatePriceModal = true">
+            <b-icon icon="pencil" size="is-small" />
+            {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+          </b-dropdown-item>
+          <b-dropdown-item aria-role="listitem" @click="showWithdrawModal = true">
+            <b-icon icon="cash-minus" size="is-small" /> Resgatar
+          </b-dropdown-item>
+          <b-dropdown-item
+            aria-role="listitem"
+            data-testid="holding-reinvest"
+            @click="showReinvestModal = true"
+          >
+            <b-icon icon="autorenew" size="is-small" /> Reinvestir
+          </b-dropdown-item>
+          <b-dropdown-item
+            aria-role="listitem"
+            data-testid="holding-move"
+            @click="showMoveModal = true"
+          >
+            <b-icon icon="swap-horizontal" size="is-small" /> Mover
+          </b-dropdown-item>
+          <template v-if="auth.isAdmin">
+            <hr class="dropdown-divider" />
+            <b-dropdown-item
+              aria-role="listitem"
+              class="has-text-danger"
+              data-testid="holding-remove"
+              @click="confirmRemove"
+            >
+              <b-icon icon="delete" size="is-small" /> Remover
+            </b-dropdown-item>
+          </template>
+        </b-dropdown>
       </div>
     </div>
 
@@ -257,12 +285,12 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
         <tr>
           <th>Tipo</th>
           <th>{{ isFund ? 'Data do aporte' : 'Data da compra' }}</th>
-          <th v-if="!isFund" class="c-num">Qtd.</th>
-          <th v-if="!isFund" class="c-num">Preço unit.</th>
-          <th class="c-num">Custos</th>
-          <th class="c-num">Valor</th>
-          <th class="c-num">Resultado</th>
-          <th v-if="!isFund" class="c-num">Saldo</th>
+          <th v-if="!isFund" class="c-num has-text-right">Qtd.</th>
+          <th v-if="!isFund" class="c-num has-text-right">Preço unit.</th>
+          <th class="c-num has-text-right">Custos</th>
+          <th class="c-num has-text-right">Valor</th>
+          <th class="c-num has-text-right">Resultado</th>
+          <th v-if="!isFund" class="c-num has-text-right">Saldo</th>
           <th class="c-act"></th>
         </tr>
       </thead>
@@ -271,9 +299,9 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           <td>
             <span
               class="ledger-tag"
-              :class="entry.type === 'WITHDRAWAL' ? 'lt-withdrawal' : 'lt-purchase'"
+              :class="entry.type === 'PURCHASE' ? 'lt-purchase' : 'lt-withdrawal'"
             >
-              {{ entry.type === 'WITHDRAWAL' ? (isFund ? 'Resgate' : 'Venda') : isFund ? 'Aporte' : 'Compra' }}
+              {{ movementLabel(entry.type) }}
             </span>
           </td>
           <td>
@@ -294,22 +322,49 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           </td>
           <td v-if="!isFund" class="c-num">
             <template v-if="entry.unitPrice != null">
-              {{ fmt.money(currencyStore.convert(entry.unitPrice, row.walletCurrency), currencyStore.displayCurrency) }}
+              {{
+                fmt.money(
+                  currencyStore.convert(entry.unitPrice, row.walletCurrency),
+                  currencyStore.displayCurrency,
+                )
+              }}
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
           <td class="c-num">
             <template v-if="entry.costs != null">
-              {{ fmt.money(currencyStore.convert(entry.costs, row.walletCurrency), currencyStore.displayCurrency) }}
+              {{
+                fmt.money(
+                  currencyStore.convert(entry.costs, row.walletCurrency),
+                  currencyStore.displayCurrency,
+                )
+              }}
               <div class="ledger-costs-note">
-                taxa {{ fmt.money(currencyStore.convert(entry.fees ?? 0, row.walletCurrency), currencyStore.displayCurrency) }}
-                + imp. {{ fmt.money(currencyStore.convert(entry.taxes ?? 0, row.walletCurrency), currencyStore.displayCurrency) }}
+                taxa
+                {{
+                  fmt.money(
+                    currencyStore.convert(entry.fees ?? 0, row.walletCurrency),
+                    currencyStore.displayCurrency,
+                  )
+                }}
+                + imp.
+                {{
+                  fmt.money(
+                    currencyStore.convert(entry.taxes ?? 0, row.walletCurrency),
+                    currencyStore.displayCurrency,
+                  )
+                }}
               </div>
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
           <td class="c-num">
-            {{ fmt.money(currencyStore.convert(entry.amount, row.walletCurrency), currencyStore.displayCurrency) }}
+            {{
+              fmt.money(
+                currencyStore.convert(entry.amount, row.walletCurrency),
+                currencyStore.displayCurrency,
+              )
+            }}
           </td>
           <td class="c-num">
             <GainChip
@@ -324,7 +379,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           </td>
           <td class="c-act">
             <b-button
-              v-if="auth.isAdmin"
+              v-if="auth.isAdmin && entry.type !== 'REINVESTMENT'"
               outlined
               type="is-danger"
               size="is-small"
@@ -371,6 +426,22 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
       :current-value="row.currentValue"
       @withdrawn="onWithdrawn"
       @close="showWithdrawModal = false"
+    />
+
+    <ReinvestModal
+      v-if="showReinvestModal"
+      :wallet-id="row.walletId"
+      :preselected-holding-id="row.id"
+      @reinvested="emit('relocated')"
+      @close="showReinvestModal = false"
+    />
+
+    <MoveHoldingsModal
+      v-if="showMoveModal"
+      :origin-wallet-id="row.walletId"
+      :preselected-holding-id="row.id"
+      @moved="emit('relocated')"
+      @close="showMoveModal = false"
     />
   </div>
 </template>
