@@ -264,7 +264,7 @@ async function submit() {
             data-testid="reinvest-quantity"
           />
         </b-field>
-        <b-field label="Preço unitário de venda" message="Preenchido com o último preço conhecido">
+        <b-field label="Preço unitário de venda">
           <NumberInput
             v-model="unitPrice"
             :prefix="symbol"
