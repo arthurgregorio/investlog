@@ -216,9 +216,7 @@ describe('ReinvestModal', () => {
     await control(wrapper, 'reinvest-destination').setValue('holding-btc')
     await control(wrapper, 'reinvest-quantity').setValue('10')
 
-    expect(wrapper.find('[data-testid="reinvest-unpriced"]').text()).toContain(
-      'BTC não tem preço atual',
-    )
+    expect(wrapper.find('.help.is-danger').text()).toContain('BTC não tem preço atual')
     expect(wrapper.find('[data-testid="reinvest-submit"]').attributes('disabled')).toBeDefined()
   })
 

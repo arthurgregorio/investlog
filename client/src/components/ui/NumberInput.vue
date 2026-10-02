@@ -10,7 +10,7 @@ function onInput(v: string) {
 }
 </script>
 <template>
-  <div v-if="prefix" class="field has-addons">
+  <div v-if="prefix" class="field has-addons mb-0">
     <p class="control"><span class="button is-static">{{ prefix }}</span></p>
     <b-input
       type="number"
