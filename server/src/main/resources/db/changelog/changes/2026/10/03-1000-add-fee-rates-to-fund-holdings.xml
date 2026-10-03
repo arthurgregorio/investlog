@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="03-1000-1" author="${claude}">
+        <sql>
+            ALTER TABLE finances.fund_holdings
+                ADD COLUMN administration_fee_rate NUMERIC CHECK (administration_fee_rate >= 0),
+                ADD COLUMN performance_fee_rate NUMERIC CHECK (performance_fee_rate >= 0);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.fund_holdings
+                    DROP COLUMN administration_fee_rate,
+                    DROP COLUMN performance_fee_rate;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

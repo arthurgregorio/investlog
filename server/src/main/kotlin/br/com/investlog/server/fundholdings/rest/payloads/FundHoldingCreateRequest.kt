@@ -15,5 +15,9 @@ data class FundHoldingCreateRequest(
     @field:Valid @field:NotNull
     val contribution: ContributionCreateRequest,
     @field:PositiveOrZero
-    val currentValue: BigDecimal? = null
+    val currentValue: BigDecimal? = null,
+    @field:PositiveOrZero
+    val administrationFeeRate: BigDecimal? = null,
+    @field:PositiveOrZero
+    val performanceFeeRate: BigDecimal? = null
 )
