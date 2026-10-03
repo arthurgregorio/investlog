@@ -70,6 +70,8 @@ class FundHoldingRepository(
             fundTypes.EXTERNAL_ID,
             fundHoldings.NAME,
             fundHoldings.CURRENT_VALUE,
+            fundHoldings.ADMINISTRATION_FEE_RATE,
+            fundHoldings.PERFORMANCE_FEE_RATE,
             contributionsField,
             withdrawalsField
         )
@@ -87,6 +89,8 @@ class FundHoldingRepository(
                     fundTypeId = rec.get(fundTypes.EXTERNAL_ID)!!,
                     name = rec.get(fundHoldings.NAME)!!,
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
+                    administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),
+                    performanceFeeRate = rec.get(fundHoldings.PERFORMANCE_FEE_RATE),
                     contributions = rec.get(contributionsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
@@ -104,6 +108,8 @@ class FundHoldingRepository(
         fundTypeInternalId: Long,
         name: String,
         currentValue: BigDecimal?,
+        administrationFeeRate: BigDecimal?,
+        performanceFeeRate: BigDecimal?,
         contribution: ContributionCreateRequest
     ): FundHoldingResponse {
         val holding = dsl.insertInto(FUND_HOLDINGS)
@@ -111,6 +117,8 @@ class FundHoldingRepository(
             .set(FUND_HOLDINGS.FUND_TYPE_ID, fundTypeInternalId)
             .set(FUND_HOLDINGS.NAME, name)
             .set(FUND_HOLDINGS.CURRENT_VALUE, currentValue)
+            .set(FUND_HOLDINGS.ADMINISTRATION_FEE_RATE, administrationFeeRate)
+            .set(FUND_HOLDINGS.PERFORMANCE_FEE_RATE, performanceFeeRate)
             .returning()
             .fetchSingle()
 
@@ -133,6 +141,8 @@ class FundHoldingRepository(
             fundTypeId = fundTypeExternalId,
             name = holding.name!!,
             currentValue = holding.currentValue,
+            administrationFeeRate = holding.administrationFeeRate,
+            performanceFeeRate = holding.performanceFeeRate,
             contributions = listOf(
                 ContributionResponse(
                     id = contribRec.externalId!!,
@@ -166,7 +176,9 @@ class FundHoldingRepository(
         externalId: UUID,
         fundTypeInternalId: Long?,
         name: String?,
-        currentValue: BigDecimal?
+        currentValue: BigDecimal?,
+        administrationFeeRate: BigDecimal?,
+        performanceFeeRate: BigDecimal?
     ): FundHoldingResponse? {
         val existing = dsl.selectFrom(FUND_HOLDINGS)
             .where(FUND_HOLDINGS.WALLET_ID.eq(walletInternalId))
@@ -177,6 +189,8 @@ class FundHoldingRepository(
             .set(FUND_HOLDINGS.FUND_TYPE_ID, fundTypeInternalId ?: existing.fundTypeId!!)
             .set(FUND_HOLDINGS.NAME, name ?: existing.name!!)
             .set(FUND_HOLDINGS.CURRENT_VALUE, currentValue ?: existing.currentValue)
+            .set(FUND_HOLDINGS.ADMINISTRATION_FEE_RATE, administrationFeeRate ?: existing.administrationFeeRate)
+            .set(FUND_HOLDINGS.PERFORMANCE_FEE_RATE, performanceFeeRate ?: existing.performanceFeeRate)
             .set(FUND_HOLDINGS.UPDATED_AT, OffsetDateTime.now())
             .where(FUND_HOLDINGS.ID.eq(existing.id))
             .execute()
@@ -236,6 +250,8 @@ class FundHoldingRepository(
             fundTypes.EXTERNAL_ID,
             fundHoldings.NAME,
             fundHoldings.CURRENT_VALUE,
+            fundHoldings.ADMINISTRATION_FEE_RATE,
+            fundHoldings.PERFORMANCE_FEE_RATE,
             contributionsField,
             withdrawalsField
         )
@@ -251,6 +267,8 @@ class FundHoldingRepository(
                     fundTypeId = rec.get(fundTypes.EXTERNAL_ID)!!,
                     name = rec.get(fundHoldings.NAME)!!,
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
+                    administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),
+                    performanceFeeRate = rec.get(fundHoldings.PERFORMANCE_FEE_RATE),
                     contributions = rec.get(contributionsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
