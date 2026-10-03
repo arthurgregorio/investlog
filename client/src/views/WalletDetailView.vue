@@ -18,7 +18,7 @@ import { useWalletsStore } from '@/stores/wallets'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useWalletMovesStore } from '@/stores/walletMoves'
 import { fmt } from '@/composables/useFormat'
-import { WALLET_TYPES, badgeColor } from '@/utils/walletTypes'
+import { badgeColor, WALLET_TYPES } from '@/utils/walletTypes'
 import type { HoldingRow, WalletMoveRow } from '@/types'
 
 const HOLDINGS_PAGE_SIZE = 10
