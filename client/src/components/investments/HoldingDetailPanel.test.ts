@@ -179,13 +179,15 @@ function cryptoDetail(): CryptoHoldingDetail {
   }
 }
 
-function fundDetail(): FundHoldingDetail {
+function fundDetail(overrides: Partial<FundHoldingDetail> = {}): FundHoldingDetail {
   return {
     id: 'holding-2',
     walletId: 'wallet-2',
     fundTypeId: 'type-2',
     name: 'Tesouro IPCA+',
     currentValue: 3000,
+    administrationFeeRate: null,
+    performanceFeeRate: null,
     contributions: [{ id: 'c-1', contributionDate: '2026-01-10', amount: 4000 }],
     withdrawals: [
       withdrawalOf({
@@ -200,6 +202,7 @@ function fundDetail(): FundHoldingDetail {
         profit: -15,
       }),
     ],
+    ...overrides,
   }
 }
 
@@ -562,6 +565,89 @@ describe('HoldingDetailPanel', () => {
     })
   })
 
+  describe('fund fee rates', () => {
+    function feeRateText(wrapper: VueWrapper, testId: string) {
+      return wrapper.find(`[data-testid="${testId}"]`).text()
+    }
+
+    it.each(kindCases)(
+      'shows the fee rates block only for a fund, not for a $label holding',
+      async ({ row, detail }) => {
+        const wrapper = await mountLoadedPanel(row, detail())
+
+        expect(wrapper.find('[data-testid="fund-fees"]').exists()).toBe(row.kind === 'FUNDS')
+      },
+    )
+
+    it('labels both rates with their units', async () => {
+      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+
+      const block = wrapper.find('[data-testid="fund-fees"]')
+      expect(block.text()).toContain('Taxa de administração (% a.a.)')
+      expect(block.text()).toContain('Taxa de performance (%)')
+    })
+
+    it('shows an em dash for each rate that is null', async () => {
+      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+
+      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('—')
+      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('—')
+    })
+
+    it('shows both rates as percentages', async () => {
+      const wrapper = await mountLoadedPanel(
+        fundRow,
+        fundDetail({ administrationFeeRate: 1.5, performanceFeeRate: 20 }),
+      )
+
+      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('1,50%')
+      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('20,00%')
+    })
+
+    it('shows a rate of zero as 0,00% rather than a dash', async () => {
+      const wrapper = await mountLoadedPanel(
+        fundRow,
+        fundDetail({ administrationFeeRate: 0, performanceFeeRate: null }),
+      )
+
+      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('0,00%')
+      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('—')
+    })
+
+    it('shows only one rate when the other is null', async () => {
+      const wrapper = await mountLoadedPanel(
+        fundRow,
+        fundDetail({ administrationFeeRate: null, performanceFeeRate: 15.5 }),
+      )
+
+      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('—')
+      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('15,50%')
+    })
+
+    it('reflects the rates saved from the update modal after the detail reloads', async () => {
+      vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue(fundDetail())
+      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue(
+        fundDetail({ administrationFeeRate: 2, performanceFeeRate: 10 }),
+      )
+
+      await chooseAction('Atualizar valor atual')
+      const [, administrationInput, performanceInput] = modalNumberInputs(wrapper)
+      await administrationInput.setValue('2')
+      await performanceInput.setValue('10')
+      await modalButton(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith('wallet-2', 'holding-2', {
+        currentValue: 3000,
+        administrationFeeRate: 2,
+        performanceFeeRate: 10,
+      })
+      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('2,00%')
+      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('10,00%')
+    })
+  })
+
   describe('purchase removal', () => {
     it.each(kindCases)(
       'removes a $label entry on confirm, reloads the detail and reports the change',
@@ -889,6 +975,29 @@ describe('HoldingDetailPanel', () => {
           currentValue: 3300,
         })
         expect(holdingsApi.getFundHolding).toHaveBeenCalledTimes(2)
+      })
+
+      it('pre-fills the stored rates of a fund in the update modal', async () => {
+        const wrapper = await mountLoadedPanel(
+          fundRow,
+          fundDetail({ administrationFeeRate: 1.5, performanceFeeRate: 20 }),
+        )
+
+        await chooseAction('Atualizar valor atual')
+        const [, administrationInput, performanceInput] = modalNumberInputs(wrapper)
+
+        expect(document.body.textContent).toContain('Atualizar fundo')
+        expect((administrationInput.element as HTMLInputElement).value).toBe('1.5')
+        expect((performanceInput.element as HTMLInputElement).value).toBe('20')
+      })
+
+      it('offers no fee rate fields in the update modal of a stock', async () => {
+        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+
+        await chooseAction('Atualizar preço')
+
+        expect(modalNumberInputs(wrapper)).toHaveLength(1)
+        expect(document.body.textContent).not.toContain('Taxa de administração')
       })
     })
 
