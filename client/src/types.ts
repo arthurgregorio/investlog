@@ -42,6 +42,7 @@ export interface HoldingRow {
   currentValue: number | null
   gain: number | null
   gainPct: number | null
+  frozen: boolean
 }
 
 export interface KindSummary {
@@ -116,6 +117,7 @@ export interface StockHoldingDetail {
   name: string
   currentPrice: number | null
   lots: LotDetail[]
+  frozen: boolean
   withdrawals: WithdrawalDetail[]
 }
 
@@ -126,6 +128,7 @@ export interface CryptoHoldingDetail {
   name: string
   currentPrice: number | null
   lots: LotDetail[]
+  frozen: boolean
   withdrawals: WithdrawalDetail[]
 }
 
@@ -138,6 +141,7 @@ export interface FundHoldingDetail {
   administrationFeeRate: number | null
   performanceFeeRate: number | null
   contributions: ContributionDetail[]
+  frozen: boolean
   withdrawals: WithdrawalDetail[]
 }
 

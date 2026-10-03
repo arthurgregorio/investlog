@@ -21,6 +21,7 @@ vi.mock('@/api/holdings', () => ({
     getFundHolding: vi.fn(),
     deleteStockLot: vi.fn(),
     deleteStockHolding: vi.fn(),
+    updateStockHolding: vi.fn(),
   },
 }))
 vi.mock('@/api/results', () => ({ resultsApi: {} }))
@@ -42,6 +43,7 @@ const stockRow: HoldingRow = {
   currentValue: 6960,
   gain: 1308,
   gainPct: 23.1,
+  frozen: false,
 }
 
 const cryptoRow: HoldingRow = {
@@ -59,6 +61,7 @@ const cryptoRow: HoldingRow = {
   currentValue: 90000,
   gain: -10000,
   gainPct: -10,
+  frozen: false,
 }
 
 const fundRow: HoldingRow = {
@@ -76,6 +79,7 @@ const fundRow: HoldingRow = {
   currentValue: 3300,
   gain: 300,
   gainPct: 10,
+  frozen: false,
 }
 
 const unpricedRow: HoldingRow = {
@@ -99,6 +103,7 @@ const stockDetail: StockHoldingDetail = {
   name: 'Petróleo Brasileiro',
   currentPrice: 34.8,
   lots: [{ id: 'lot-1', lotDate: '2026-01-12', quantity: 200, price: 28.26 }],
+  frozen: false,
   withdrawals: [],
 }
 
@@ -345,6 +350,20 @@ describe('InvestmentsView', () => {
       expect(cells[6].text()).toBe('—')
     })
 
+    it('tags a frozen holding as Congelado without expanding its row, and leaves open ones untagged', async () => {
+      const { wrapper } = await mountView({ rows: [{ ...stockRow, frozen: true }, cryptoRow] })
+
+      const rows = bodyRows(wrapper)
+      expect(rows[0].find('[data-testid="frozen-tag"]').text()).toBe('Congelado')
+      expect(rows[1].find('[data-testid="frozen-tag"]').exists()).toBe(false)
+      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+    })
+
+    it('tags a frozen fund too', async () => {
+      const { wrapper } = await mountView({ rows: [{ ...fundRow, frozen: true }] })
+
+      expect(bodyRows(wrapper)[0].find('[data-testid="frozen-tag"]').text()).toBe('Congelado')
+    })
     it('labels a fund and a stock without a type with a generic tag', async () => {
       const { wrapper } = await mountView({
         rows: [
@@ -836,6 +855,7 @@ describe('InvestmentsView', () => {
         name: 'Bitcoin',
         currentPrice: 180000,
         lots: [],
+        frozen: false,
         withdrawals: [],
       })
       vi.mocked(holdingsApi.getFundHolding).mockResolvedValue({
@@ -847,6 +867,7 @@ describe('InvestmentsView', () => {
         administrationFeeRate: null,
         performanceFeeRate: null,
         contributions: [],
+        frozen: false,
         withdrawals: [],
       })
       const { wrapper } = await mountView()
@@ -895,6 +916,7 @@ describe('InvestmentsView', () => {
         administrationFeeRate: null,
         performanceFeeRate: null,
         contributions: [],
+        frozen: false,
         withdrawals: [],
       })
       const { wrapper } = await mountView()
@@ -971,6 +993,29 @@ describe('InvestmentsView', () => {
       expect(wrapper.find('tr.detail-row').exists()).toBe(false)
     })
 
+    it('freezes the holding from the panel and shows the new state once the list reloads', async () => {
+      vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue({ ...stockDetail, frozen: true })
+      const { wrapper, holdingsListStore } = await openStockPanel()
+      vi.mocked(holdingsListStore.refresh).mockImplementation(async () => {
+        holdingsListStore.rows = [{ ...stockRow, frozen: true }]
+      })
+      expect(wrapper.find('[data-testid="frozen-tag"]').exists()).toBe(false)
+
+      document.body
+        .querySelector<HTMLElement>('[data-testid="holding-freeze"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushPromises()
+
+      expect(holdingsApi.updateStockHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
+        frozen: true,
+      })
+      expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
+      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+      expect(wrapper.findAll('[data-testid="frozen-tag"]')).toHaveLength(2)
+      expect(document.body.querySelector('[data-testid="holding-freeze"]')!.textContent).toContain(
+        'Descongelar',
+      )
+    })
     it('refreshes the list but keeps the panel open after a position changes', async () => {
       vi.mocked(holdingsApi.deleteStockLot).mockResolvedValue(undefined)
       const { wrapper, holdingsListStore } = await openStockPanel()

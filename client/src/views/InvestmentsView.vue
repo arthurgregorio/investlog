@@ -392,6 +392,9 @@ function openReport() {
                           <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
                             subLabel(row)
                           }}</span>
+                          <span v-if="row.frozen" class="type-tag tt-frozen" data-testid="frozen-tag"
+                            >Congelado</span
+                          >
                         </div>
                         <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
                           {{ row.name }}

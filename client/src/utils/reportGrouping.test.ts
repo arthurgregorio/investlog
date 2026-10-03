@@ -18,6 +18,7 @@ function holdingRow(overrides: Partial<HoldingRow>): HoldingRow {
     currentValue: 1200,
     gain: 200,
     gainPct: 20,
+    frozen: false,
     ...overrides,
   }
 }

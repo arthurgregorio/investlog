@@ -396,6 +396,7 @@ describe('useAddInvestmentForm', () => {
       name: '',
       currentPrice: null,
       lots: [],
+      frozen: false,
       withdrawals: [],
     })
 

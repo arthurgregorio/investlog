@@ -74,6 +74,7 @@ const mockRow: HoldingRow = {
   currentValue: 3850,
   gain: 350,
   gainPct: 10,
+  frozen: false,
 }
 
 function control(wrapper: ReturnType<typeof mount>, testId: string) {
@@ -302,6 +303,17 @@ describe('WalletDetailView', () => {
     await flushPromises()
 
     expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+  })
+
+  it('tags a frozen holding as Congelado in the investments table', async () => {
+    const { wrapper } = await mountView(detailOf(), [
+      { ...mockRow, frozen: true },
+      { ...mockRow, id: 'holding-2', ticker: 'VALE3' },
+    ])
+
+    const rows = wrapper.findAll('tr.inv-row')
+    expect(rows[0].find('[data-testid="frozen-tag"]').text()).toBe('Congelado')
+    expect(rows[1].find('[data-testid="frozen-tag"]').exists()).toBe(false)
   })
 
   it('shows an empty state when the wallet has no investments', async () => {
