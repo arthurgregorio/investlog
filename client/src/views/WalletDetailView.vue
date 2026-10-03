@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDialog, useToast } from 'buefy'
+import AllocationDonut from '@/components/charts/AllocationDonut.vue'
 import AreaChart from '@/components/charts/AreaChart.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
@@ -13,6 +14,7 @@ import GainChip from '@/components/ui/GainChip.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useHoldingsListStore } from '@/stores/holdingsList'
+import { holdingsApi } from '@/api/holdings'
 import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
 import { useWalletDetailStore } from '@/stores/walletDetail'
@@ -38,6 +40,7 @@ const detail = computed(() => walletDetailStore.detail)
 const openedDetails = ref<string[]>([])
 const moveModalOpen = ref(false)
 const reinvestModalOpen = ref(false)
+const allocationRows = ref<HoldingRow[]>([])
 
 const currency = computed(() => detail.value?.currency ?? 'BRL')
 
@@ -80,9 +83,16 @@ function fmtY(value: number) {
   return fmt.money(value, currency.value, { compact: true })
 }
 
+async function loadAllocationRows() {
+  const requestedWalletId = walletId.value
+  const rows = await holdingsApi.findAllForReport({ walletId: requestedWalletId })
+  if (requestedWalletId === walletId.value) allocationRows.value = rows
+}
+
 async function loadAll() {
   openedDetails.value = []
   await Promise.all([
+    loadAllocationRows(),
     walletDetailStore.load(walletId.value),
     holdingsListStore.loadKind('all', 0, { walletId: walletId.value, size: HOLDINGS_PAGE_SIZE }),
     walletMovesStore.load(walletId.value, 0),
@@ -385,6 +395,14 @@ function confirmDeleteWallet() {
             title="Ainda sem histórico"
             text="O histórico diário começa a ser registrado a partir da primeira execução do job de snapshot."
           />
+        </CardBody>
+      </Card>
+
+      <Card class="mb-0" data-testid="allocation-card">
+        <CardBody>
+          <div class="chart-title">Distribuição</div>
+          <div class="wd-chart-sub">Participação de cada investimento na carteira</div>
+          <AllocationDonut :rows="allocationRows" :kind="detail.kind" :currency="detail.currency" />
         </CardBody>
       </Card>
 

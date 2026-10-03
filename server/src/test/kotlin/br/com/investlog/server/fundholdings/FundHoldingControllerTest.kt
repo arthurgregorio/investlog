@@ -188,6 +188,144 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .expectStatus().isNotFound()
     }
 
+    @Test
+    @Order(10)
+    fun `returns 404 with the holding id when fetching an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$unknownHoldingId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de fundo não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(11)
+    fun `returns 404 with the type id when creating a holding with an unknown fund type`() {
+        val unknownTypeId = UUID.randomUUID()
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "fundTypeId":"$unknownTypeId",
+                  "name":"Fundo Fantasma",
+                  "currentValue":5500.00,
+                  "contribution":{"contributionDate":"2024-01-10","amount":5000.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo de fundo não encontrado: $unknownTypeId")
+    }
+
+    @Test
+    @Order(12)
+    fun `returns 404 with the type id when updating a holding to an unknown fund type`() {
+        val holding = createHolding("Fundo Tipo Inexistente")
+        val unknownTypeId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"fundTypeId":"$unknownTypeId"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo de fundo não encontrado: $unknownTypeId")
+    }
+
+    @Test
+    @Order(13)
+    fun `returns 404 with the holding id when updating an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$unknownHoldingId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"currentValue":6000.00}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de fundo não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(14)
+    fun `returns 404 with the holding id when deleting an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$unknownHoldingId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de fundo não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(15)
+    fun `returns 404 with the holding id when adding a contribution to an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$unknownHoldingId/contributions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"contributionDate":"2024-03-10","amount":1000.00}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de fundo não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(16)
+    fun `returns 404 with the holding id when deleting a contribution of an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$unknownHoldingId/contributions/${UUID.randomUUID()}")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de fundo não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(17)
+    fun `returns 404 with the contribution id when deleting an unknown contribution`() {
+        val holding = createHolding("Fundo Aporte Inexistente")
+        val unknownContributionId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${holding.id}/contributions/$unknownContributionId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Aporte não encontrado: $unknownContributionId")
+    }
+
+    @Test
+    @Order(18)
+    fun `returns 404 with the holding id when updating the contribution date of an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$unknownHoldingId/contributions/${UUID.randomUUID()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"contributionDate":"2024-05-20"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de fundo não encontrada: $unknownHoldingId")
+    }
+
     private fun createHoldingWithRates(administrationFeeRate: String, performanceFeeRate: String): FundHoldingResponse =
         restTestClient.post()
             .uri("/private/v1/wallets/$walletId/fund-holdings")
@@ -208,7 +346,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .responseBody!!
 
     @Test
-    @Order(10)
+    @Order(19)
     fun `creates a fund holding with both fee rates and returns them on the next get`() {
         val holding = createHoldingWithRates("1.5", "20")
 
@@ -222,7 +360,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(11)
+    @Order(20)
     fun `creates a fund holding without fee rates and stores null for both`() {
         val holding = createHolding("Fundo Sem Taxas")
         assertNull(holding.administrationFeeRate)
@@ -238,7 +376,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(12)
+    @Order(21)
     fun `creates a fund holding with only one fee rate`() {
         val holding = restTestClient.post()
             .uri("/private/v1/wallets/$walletId/fund-holdings")
@@ -261,7 +399,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(13)
+    @Order(22)
     fun `lists fee rates on fund holdings`() {
         val holding = createHoldingWithRates("2", "10")
 
@@ -278,7 +416,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(14)
+    @Order(23)
     fun `patching only the administration fee rate leaves everything else alone`() {
         val holding = createHoldingWithRates("1.5", "20")
 
@@ -297,7 +435,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(15)
+    @Order(24)
     fun `patching only the performance fee rate leaves the administration fee rate alone`() {
         val holding = createHoldingWithRates("1.5", "20")
 
@@ -313,7 +451,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(16)
+    @Order(25)
     fun `patching the current value keeps the stored fee rates`() {
         val holding = createHoldingWithRates("1.5", "20")
 
@@ -330,7 +468,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(17)
+    @Order(26)
     fun `sets a fee rate on a fund holding that had none`() {
         val holding = createHolding("Fundo Legado")
 
@@ -346,7 +484,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(18)
+    @Order(27)
     fun `rejects a negative administration fee rate on create`() {
         restTestClient.post()
             .uri("/private/v1/wallets/$walletId/fund-holdings")
@@ -364,7 +502,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(19)
+    @Order(28)
     fun `rejects a negative performance fee rate on create`() {
         restTestClient.post()
             .uri("/private/v1/wallets/$walletId/fund-holdings")
@@ -382,7 +520,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(20)
+    @Order(29)
     fun `rejects a negative fee rate on update`() {
         val holding = createHoldingWithRates("1.5", "20")
 

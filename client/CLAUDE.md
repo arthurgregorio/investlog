@@ -176,7 +176,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 | `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
 | `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
-| `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded |
+| `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
 
@@ -206,7 +206,9 @@ It reads two stores: `walletDetail` for the header, chart, deltas, performers an
 
 The chart and the delta chips render only when `series` is non-empty; otherwise an `EmptyState` explains that history starts accumulating from the first snapshot job run. The concentration warning appears when `largestHoldingShare` exceeds 50.
 
-Sections run header → highlight cards → Desempenho chart → **Movimentações** → investments, since the page is read for its history first.
+Sections run header → highlight cards → Desempenho chart → **Distribuição** → **Movimentações** → investments, since the page is read for its history first.
+
+**Distribuição** (#240) is `AllocationDonut`, fed by `holdingsApi.findAllForReport({ walletId })` — the unpaginated, ticker-merged report endpoint, not the paged `holdingsList` store. The math lives in `utils/allocation.ts` (`computeAllocation`): a Valor atual / Investido toggle recomputes shares from the same rows with no refetch, holdings with a null `currentValue` are left out of Valor atual and counted in an on-screen note, and every holding under `OTHERS_SHARE_CUTOFF` (3%) collapses into a single "Outros" entry that is always last in the legend. Segment colours are `accentShades` steps of the wallet kind accent, darkest for the largest share.
 
 The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the expanded row's own dropdown (see the investments table above).
 
