@@ -1,6 +1,7 @@
 package br.com.investlog.server.walletmoves
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
@@ -124,6 +125,35 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
             .returnResult<FundHoldingResponse>()
             .responseBody!!
             .id
+
+    private fun createCryptoHolding(walletId: UUID, ticker: String, quantity: String, price: String): UUID =
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "ticker":"$ticker",
+                  "name":"Holding $ticker",
+                  "currentPrice":150,
+                  "lot":{"lotDate":"2024-01-15","quantity":$quantity,"price":$price}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<CryptoHoldingResponse>()
+            .responseBody!!
+            .id
+
+    private fun withdrawFromFund(walletId: UUID, holdingId: UUID, amount: String) {
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$holdingId/withdrawals")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"resultDate":"2024-06-01","amount":$amount}""")
+            .exchange()
+            .expectStatus().isCreated()
+    }
 
     private fun move(originWalletId: UUID, body: String) = restTestClient.post()
         .uri("/private/v1/wallets/$originWalletId/moves")
@@ -445,5 +475,102 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
             .fetchSingle()
         assertNull(recorded.originWalletId)
         assertNull(recorded.quantity)
+    }
+
+    @Test
+    @Order(14)
+    fun `moves involving an unknown wallet, an unknown holding or a repeated holding are rejected and write nothing`() {
+        val origin = createWallet("Origem 14", "stocks")
+        val destination = createWallet("Destino 14", "stocks")
+        val holdingId = createStockHolding(origin, "CMIG4", "10", "8")
+        val movesBefore = countRows(WALLET_MOVES)
+
+        move(UUID.randomUUID(), """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId"}]}""")
+            .expectStatus().isNotFound()
+        move(origin, """{"destinationWalletId":"${UUID.randomUUID()}","items":[{"holdingId":"$holdingId"}]}""")
+            .expectStatus().isNotFound()
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"${UUID.randomUUID()}"}]}""")
+            .expectStatus().isNotFound()
+        move(
+            origin,
+            """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId"},{"holdingId":"$holdingId"}]}""",
+        ).expectStatus().isBadRequest()
+
+        assertEquals(movesBefore, countRows(WALLET_MOVES))
+        assertAmount("10", activePosition(origin, "Holding CMIG4").quantity)
+    }
+
+    @Test
+    @Order(15)
+    fun `listing the moves of an unknown wallet responds 404`() {
+        restTestClient.get()
+            .uri("/private/v1/wallets/${UUID.randomUUID()}/moves")
+            .exchange()
+            .expectStatus().isNotFound()
+    }
+
+    @Test
+    @Order(16)
+    fun `a partial crypto move into an empty wallet copies the holding and splits the cost`() {
+        val origin = createWallet("Cripto Origem 16", "crypto")
+        val destination = createWallet("Cripto Destino 16", "crypto")
+        val holdingId = createCryptoHolding(origin, "BTC", "10", "100")
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId","quantity":4}]}""")
+            .expectStatus().isCreated()
+
+        val kept = activePosition(origin, "Holding BTC")
+        val moved = activePosition(destination, "Holding BTC")
+
+        assertAmount("6", kept.quantity)
+        assertAmount("600", kept.costBasis)
+        assertAmount("4", moved.quantity)
+        assertAmount("400", moved.costBasis)
+    }
+
+    @Test
+    @Order(17)
+    fun `moving a whole crypto holding into a wallet holding the same ticker merges the lots and drops the origin`() {
+        val origin = createWallet("Cripto Origem 17", "crypto")
+        val destination = createWallet("Cripto Destino 17", "crypto")
+        val holdingId = createCryptoHolding(origin, "ETH", "10", "100")
+        createCryptoHolding(destination, "eth", "5", "200")
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId"}]}""")
+            .expectStatus().isCreated()
+
+        assertEquals(0, positions(origin, "Holding ETH").size)
+        val merged = positions(destination, "Holding eth").single()
+        assertAmount("15", merged.quantity)
+        assertAmount("2000", merged.costBasis)
+    }
+
+    @Test
+    @Order(18)
+    fun `merging a fund that has withdrawals keeps its history and moves only the remaining cost and value`() {
+        val origin = createWallet("Fundos Origem 18", "funds")
+        val destination = createWallet("Fundos Destino 18", "funds")
+        val holdingId = createFundHolding(origin, "XPML11", "1000", "1200")
+        withdrawFromFund(origin, holdingId, "600")
+        createFundHolding(destination, "XPML11", "500", "550")
+        val resultsBefore = countRows(RESULTS)
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId"}]}""")
+            .expectStatus().isCreated()
+
+        val origins = positions(origin, "XPML11")
+        assertEquals(1, origins.size)
+        assertEquals(HoldingStatus.COMPLETED, origins.single().status)
+        assertAmount("0", origins.single().costBasis)
+
+        assertAmount("1000", activePosition(destination, "XPML11").costBasis)
+        assertEquals(resultsBefore, countRows(RESULTS))
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$destination")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].currentValue").isEqualTo(1150)
     }
 }

@@ -47,7 +47,7 @@ jobs:
       - name: Run server tests
         working-directory: server
         run: |
-          ./gradlew test --no-daemon \
+          ./gradlew koverXmlReport koverVerify --no-daemon \
             -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g" \
             -Dkotlin.compiler.execution.strategy=in-process
 
