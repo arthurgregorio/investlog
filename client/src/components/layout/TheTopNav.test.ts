@@ -10,6 +10,11 @@ function makeRouter() {
     history: createMemoryHistory(),
     routes: [
       { path: '/overview', name: 'overview', component: { template: '<div />' } },
+      {
+        path: '/overview/resultados',
+        name: 'overview-results',
+        component: { template: '<div />' },
+      },
       { path: '/wallets', name: 'wallets', component: { template: '<div />' } },
       { path: '/wallets/:id', name: 'wallet-detail', component: { template: '<div />' } },
       { path: '/investments', name: 'investments', component: { template: '<div />' } },
@@ -125,6 +130,54 @@ describe('TheTopNav', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('settings-users')
+  })
+
+  it('turns the first item into a Dashboards dropdown holding Visão geral and Resultados', async () => {
+    router.push('/wallets')
+    await router.isReady()
+
+    mount(TheTopNav, { global: { plugins: [pinia, router] }, attachTo: document.body })
+
+    const labels = Array.from(document.body.querySelectorAll('.dropdown-item')).map((item) =>
+      item.textContent?.trim(),
+    )
+    expect(labels).toEqual(['Visão geral', 'Resultados'])
+  })
+
+  it.each(['/overview', '/overview/resultados'])(
+    'marks Dashboards as active on %s',
+    async (path) => {
+      router.push(path)
+      await router.isReady()
+
+      const wrapper = mount(TheTopNav, { global: { plugins: [pinia, router] } })
+
+      expect(wrapper.get('.nav-item.active').text()).toContain('Dashboards')
+    },
+  )
+
+  it('does not mark Dashboards as active on another page', async () => {
+    router.push('/wallets')
+    await router.isReady()
+
+    const wrapper = mount(TheTopNav, { global: { plugins: [pinia, router] } })
+
+    expect(wrapper.get('.nav-item.active').text()).toContain('Carteiras')
+  })
+
+  it('navigates to the Resultados dashboard from the dropdown', async () => {
+    router.push('/overview')
+    await router.isReady()
+
+    mount(TheTopNav, { global: { plugins: [pinia, router] }, attachTo: document.body })
+
+    const resultsItem = Array.from(document.body.querySelectorAll('.dropdown-item')).find((item) =>
+      item.textContent?.includes('Resultados'),
+    )
+    resultsItem?.dispatchEvent(new Event('click', { bubbles: true }))
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('overview-results')
   })
 })
 

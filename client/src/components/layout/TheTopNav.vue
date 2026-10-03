@@ -24,7 +24,14 @@ onMounted(() => {
 
 const nav = computed<NavItem[]>(() => {
   const items: NavItem[] = [
-    { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
+    {
+      label: 'Dashboards',
+      icon: 'view-dashboard-outline',
+      children: [
+        { name: 'overview', label: 'Visão geral', icon: 'piggy-bank-outline' },
+        { name: 'overview-results', label: 'Resultados', icon: 'cash-multiple' },
+      ],
+    },
     {
       name: 'wallets',
       activeFor: ['wallet-detail'],

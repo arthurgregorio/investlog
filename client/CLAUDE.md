@@ -102,6 +102,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `overview.ts` | `GET /overview`, `GET /overview/series` |
 | `walletDetail.ts` | `GET /wallets/{id}/detail` (the per-wallet dashboard payload) |
 | `walletMoves.ts` | `POST /wallets/{id}/moves` (relocate holdings), `GET /wallets/{id}/moves` (move history) |
+| `results.ts` | `GET /results` (paginated), `GET /results/summary` (realised totals), withdrawal `POST`/`DELETE` |
 | `reinvestments.ts` | `POST /reinvestments` (exit one holding into another), `GET /reinvestments` (history) |
 | `assetTypes.ts` | `GET/POST/DELETE /stock-types`, `/fund-types` |
 | `rates.ts` | `GET /currency-rates`, `PUT /currency-rates/{code}` |
@@ -136,6 +137,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
 | `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
 | `walletMoves` | `GET/POST /wallets/{id}/moves` | `rows[]` for one wallet, `load(walletId, page)`, `move(originWalletId, payload)` |
+| `results` | `GET /results`, `GET /results/summary` | `rows[]`, `summary`, `load(page)`, `loadSummary()` |
 | `reinvestments` | `GET/POST /reinvestments` | `rows[]`, `load(page, size)` — a small `size` serves a recent list, the default the full history — and `reinvest(payload)` |
 | `typesList` | `GET /stock-types` + `/fund-types` | `stockTypes[]`, `fundTypes[]`, CRUD actions |
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
@@ -174,7 +176,7 @@ expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion
 
 ### Routes and their views (`src/router/index.ts`)
 
-`/overview`, `/wallets`, `/wallets/:id` (`WalletDetailView.vue`), `/investments` and
+`/overview`, `/overview/resultados` (`ResultsDashboardView.vue`), `/wallets`, `/wallets/:id` (`WalletDetailView.vue`), `/investments` and
 `/investments/report` (`InvestmentReportView.vue`) are the main app; `/settings` redirects to `/settings/price-currencies` (`PriceCurrenciesView.vue`) and
 covers `/settings/types` and `/settings/users` — the whole `/settings/*` subtree is admin-only.
 `/login` and `/pending-approval` are the two public routes.
@@ -192,6 +194,10 @@ Sections run header → highlight cards → Desempenho chart → **Movimentaçõ
 The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the expanded row's own dropdown (see the investments table above).
 
 It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fixed origin, and the **Movimentações** table listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
+
+### Results dashboard (`ResultsDashboardView.vue`)
+
+"Dashboards" in `TheTopNav` (sack icon) is a dropdown holding "Visão geral", the existing overview at `/overview` that is still the landing page, and "Resultados" at `/overview/resultados`. The dashboard shows four KPI cards from `GET /results/summary` (withdrawn, realised profit, fees, taxes, in the user's display currency) and a paginated table of reinvestments (ten per page, newest first) from the `reinvestments` store, rendered through `ReinvestmentsTable`. A user with no recorded results sees one `EmptyState` instead of zeroed cards; a user with withdrawals but no reinvestments sees the cards and an empty reinvestments card. Wallet moves never appear here, since they realise nothing.
 
 ### Reinvesting (`ReinvestModal.vue`)
 
