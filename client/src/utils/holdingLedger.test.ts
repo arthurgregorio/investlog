@@ -11,6 +11,7 @@ function stockDetail(overrides: Partial<StockHoldingDetail> = {}): StockHoldingD
     name: 'Petróleo Brasileiro',
     currentPrice: 34.8,
     lots: [],
+    frozen: false,
     withdrawals: [],
     ...overrides,
   }
@@ -23,7 +24,10 @@ function fundDetail(overrides: Partial<FundHoldingDetail> = {}): FundHoldingDeta
     fundTypeId: 'type-2',
     name: 'Tesouro IPCA+',
     currentValue: 4000,
+    administrationFeeRate: null,
+    performanceFeeRate: null,
     contributions: [],
+    frozen: false,
     withdrawals: [],
     ...overrides,
   }

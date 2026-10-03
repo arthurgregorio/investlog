@@ -13,6 +13,8 @@ const props = defineProps<{
   kind: WalletKind
   walletCurrency: string
   initialValue: number | null
+  initialAdministrationFeeRate?: number | null
+  initialPerformanceFeeRate?: number | null
 }>()
 
 const emit = defineEmits<{ updated: []; close: [] }>()
@@ -23,9 +25,19 @@ const isStock = computed(() => props.kind === 'STOCKS')
 const sym = computed(() => fmt.sym(props.walletCurrency))
 
 const priceInput = ref<number | ''>(props.initialValue ?? '')
+const administrationFeeRateInput = ref<number | ''>(props.initialAdministrationFeeRate ?? '')
+const performanceFeeRateInput = ref<number | ''>(props.initialPerformanceFeeRate ?? '')
 const submitting = ref(false)
 
-const valid = computed(() => priceInput.value !== '' && Number(priceInput.value) >= 0)
+const valid = computed(() => {
+  if (!isFund.value) return priceInput.value !== '' && Number(priceInput.value) >= 0
+  const filledFields = [
+    priceInput.value,
+    administrationFeeRateInput.value,
+    performanceFeeRateInput.value,
+  ].filter((field) => field !== '')
+  return filledFields.length > 0 && filledFields.every((field) => Number(field) >= 0)
+})
 
 async function submit() {
   if (!valid.value) return
@@ -41,7 +53,15 @@ async function submit() {
         currentPrice: amount,
       })
     } else {
-      await holdingsApi.updateFundHolding(props.walletId, props.holdingId, { currentValue: amount })
+      await holdingsApi.updateFundHolding(props.walletId, props.holdingId, {
+        ...(priceInput.value !== '' && { currentValue: amount }),
+        ...(administrationFeeRateInput.value !== '' && {
+          administrationFeeRate: Number(administrationFeeRateInput.value),
+        }),
+        ...(performanceFeeRateInput.value !== '' && {
+          performanceFeeRate: Number(performanceFeeRateInput.value),
+        }),
+      })
     }
     toast.open({
       message: isFund.value ? 'Valor atual atualizado.' : 'Preço atualizado.',
@@ -57,14 +77,24 @@ async function submit() {
 
 <template>
   <AppModal
-    :title="isFund ? 'Atualizar valor atual' : 'Atualizar preço'"
-    :subtitle="isFund ? 'Informe o valor atual do fundo.' : 'Informe o preço atual do ativo.'"
+    :title="isFund ? 'Atualizar fundo' : 'Atualizar preço'"
+    :subtitle="
+      isFund ? 'Informe o valor atual e as taxas do fundo.' : 'Informe o preço atual do ativo.'
+    "
     @close="emit('close')"
   >
     <div class="form-grid">
       <b-field :label="isFund ? 'Valor atual' : 'Preço atual'" style="grid-column: 1/-1">
         <NumberInput v-model="priceInput" :prefix="sym" placeholder="0,00" min="0" />
       </b-field>
+      <template v-if="isFund">
+        <b-field label="Taxa de administração (% a.a.)">
+          <NumberInput v-model="administrationFeeRateInput" placeholder="0,00" min="0" />
+        </b-field>
+        <b-field label="Taxa de performance (%)">
+          <NumberInput v-model="performanceFeeRateInput" placeholder="0,00" min="0" />
+        </b-field>
+      </template>
     </div>
     <template #footer>
       <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"

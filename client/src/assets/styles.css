@@ -1297,6 +1297,15 @@ a {
   color: #f0a821;
 }
 
+.tt-frozen {
+  background: rgba(14, 116, 144, .14);
+  color: #0e7490;
+}
+
+[data-theme="dark"] .tt-frozen {
+  color: #38bdf8;
+}
+
 .cell-strong {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1398,6 +1407,30 @@ a {
 .date-edit:hover {
   border-bottom-color: var(--primary);
   color: var(--primary-d);
+}
+
+.fund-fees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 4px 2px 12px;
+}
+
+.fund-fee {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fund-fee-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.fund-fee-value {
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .ledger-head {

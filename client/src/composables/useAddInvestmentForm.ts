@@ -20,6 +20,8 @@ interface AddInvestmentFormState {
   currentPrice: number | ''
   amount: number | ''
   currentValue: number | ''
+  administrationFeeRate: number | ''
+  performanceFeeRate: number | ''
   submitting: boolean
   walletsOfKind: WalletResponse[]
   valid: boolean
@@ -46,6 +48,8 @@ export function useAddInvestmentForm(
     currentPrice: '' as number | '',
     amount: '' as number | '',
     currentValue: '' as number | '',
+    administrationFeeRate: '' as number | '',
+    performanceFeeRate: '' as number | '',
     submitting: false,
 
     walletsOfKind: computed(() =>
@@ -129,6 +133,12 @@ export function useAddInvestmentForm(
           fundTypeId: form.fundTypeId,
           name: form.name.trim(),
           currentValue: currentValueNum,
+          ...(form.administrationFeeRate !== '' && {
+            administrationFeeRate: Number(form.administrationFeeRate),
+          }),
+          ...(form.performanceFeeRate !== '' && {
+            performanceFeeRate: Number(form.performanceFeeRate),
+          }),
           contribution: { contributionDate: dateStr, amount: Number(form.amount) },
         })
       }
