@@ -72,6 +72,7 @@ class StockHoldingRepository(
             stockHoldings.TICKER,
             stockHoldings.NAME,
             stockHoldings.CURRENT_PRICE,
+            stockHoldings.FROZEN,
             lotsField,
             withdrawalsField
         )
@@ -90,6 +91,7 @@ class StockHoldingRepository(
                     ticker = rec.get(stockHoldings.TICKER)!!,
                     name = rec.get(stockHoldings.NAME)!!,
                     currentPrice = rec.get(stockHoldings.CURRENT_PRICE),
+                    frozen = rec.get(stockHoldings.FROZEN)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
@@ -140,6 +142,7 @@ class StockHoldingRepository(
             ticker = holding.ticker!!,
             name = holding.name!!,
             currentPrice = holding.currentPrice,
+            frozen = holding.frozen!!,
             lots = listOf(
                 LotResponse(
                     id = lotRec.externalId!!,
@@ -164,6 +167,12 @@ class StockHoldingRepository(
             .and(STOCK_HOLDINGS.EXTERNAL_ID.eq(externalId))
             .fetchOne(STOCK_HOLDINGS.ID)
 
+    fun isFrozen(internalId: Long): Boolean =
+        dsl.select(STOCK_HOLDINGS.FROZEN)
+            .from(STOCK_HOLDINGS)
+            .where(STOCK_HOLDINGS.ID.eq(internalId))
+            .fetchSingle(STOCK_HOLDINGS.FROZEN)!!
+
     fun findStockTypeInternalId(externalId: UUID): Long? =
         dsl.select(STOCK_TYPES.ID).from(STOCK_TYPES)
             .where(STOCK_TYPES.EXTERNAL_ID.eq(externalId))
@@ -176,6 +185,7 @@ class StockHoldingRepository(
         ticker: String?,
         name: String?,
         currentPrice: BigDecimal?,
+        frozen: Boolean?,
     ): StockHoldingResponse? {
         val existing = dsl.selectFrom(STOCK_HOLDINGS)
             .where(STOCK_HOLDINGS.WALLET_ID.eq(walletInternalId))
@@ -187,6 +197,7 @@ class StockHoldingRepository(
             .set(STOCK_HOLDINGS.TICKER, (ticker ?: existing.ticker!!).uppercase())
             .set(STOCK_HOLDINGS.NAME, name ?: existing.name!!)
             .set(STOCK_HOLDINGS.CURRENT_PRICE, currentPrice ?: existing.currentPrice)
+            .set(STOCK_HOLDINGS.FROZEN, frozen ?: existing.frozen!!)
             .set(STOCK_HOLDINGS.UPDATED_AT, OffsetDateTime.now())
             .where(STOCK_HOLDINGS.ID.eq(existing.id))
             .execute()
@@ -248,6 +259,7 @@ class StockHoldingRepository(
             stockHoldings.TICKER,
             stockHoldings.NAME,
             stockHoldings.CURRENT_PRICE,
+            stockHoldings.FROZEN,
             lotsField,
             withdrawalsField
         )
@@ -264,6 +276,7 @@ class StockHoldingRepository(
                     ticker = rec.get(stockHoldings.TICKER)!!,
                     name = rec.get(stockHoldings.NAME)!!,
                     currentPrice = rec.get(stockHoldings.CURRENT_PRICE),
+                    frozen = rec.get(stockHoldings.FROZEN)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )

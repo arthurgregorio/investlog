@@ -72,6 +72,7 @@ class FundHoldingRepository(
             fundHoldings.CURRENT_VALUE,
             fundHoldings.ADMINISTRATION_FEE_RATE,
             fundHoldings.PERFORMANCE_FEE_RATE,
+            fundHoldings.FROZEN,
             contributionsField,
             withdrawalsField
         )
@@ -91,6 +92,7 @@ class FundHoldingRepository(
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),
                     performanceFeeRate = rec.get(fundHoldings.PERFORMANCE_FEE_RATE),
+                    frozen = rec.get(fundHoldings.FROZEN)!!,
                     contributions = rec.get(contributionsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
@@ -143,6 +145,7 @@ class FundHoldingRepository(
             currentValue = holding.currentValue,
             administrationFeeRate = holding.administrationFeeRate,
             performanceFeeRate = holding.performanceFeeRate,
+            frozen = holding.frozen!!,
             contributions = listOf(
                 ContributionResponse(
                     id = contribRec.externalId!!,
@@ -171,6 +174,12 @@ class FundHoldingRepository(
             .and(FUND_HOLDINGS.EXTERNAL_ID.eq(externalId))
             .fetchOne(FUND_HOLDINGS.ID)
 
+    fun isFrozen(internalId: Long): Boolean =
+        dsl.select(FUND_HOLDINGS.FROZEN)
+            .from(FUND_HOLDINGS)
+            .where(FUND_HOLDINGS.ID.eq(internalId))
+            .fetchSingle(FUND_HOLDINGS.FROZEN)!!
+
     fun update(
         walletInternalId: Long,
         externalId: UUID,
@@ -178,7 +187,8 @@ class FundHoldingRepository(
         name: String?,
         currentValue: BigDecimal?,
         administrationFeeRate: BigDecimal?,
-        performanceFeeRate: BigDecimal?
+        performanceFeeRate: BigDecimal?,
+        frozen: Boolean?,
     ): FundHoldingResponse? {
         val existing = dsl.selectFrom(FUND_HOLDINGS)
             .where(FUND_HOLDINGS.WALLET_ID.eq(walletInternalId))
@@ -191,6 +201,7 @@ class FundHoldingRepository(
             .set(FUND_HOLDINGS.CURRENT_VALUE, currentValue ?: existing.currentValue)
             .set(FUND_HOLDINGS.ADMINISTRATION_FEE_RATE, administrationFeeRate ?: existing.administrationFeeRate)
             .set(FUND_HOLDINGS.PERFORMANCE_FEE_RATE, performanceFeeRate ?: existing.performanceFeeRate)
+            .set(FUND_HOLDINGS.FROZEN, frozen ?: existing.frozen!!)
             .set(FUND_HOLDINGS.UPDATED_AT, OffsetDateTime.now())
             .where(FUND_HOLDINGS.ID.eq(existing.id))
             .execute()
@@ -252,6 +263,7 @@ class FundHoldingRepository(
             fundHoldings.CURRENT_VALUE,
             fundHoldings.ADMINISTRATION_FEE_RATE,
             fundHoldings.PERFORMANCE_FEE_RATE,
+            fundHoldings.FROZEN,
             contributionsField,
             withdrawalsField
         )
@@ -269,6 +281,7 @@ class FundHoldingRepository(
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),
                     performanceFeeRate = rec.get(fundHoldings.PERFORMANCE_FEE_RATE),
+                    frozen = rec.get(fundHoldings.FROZEN)!!,
                     contributions = rec.get(contributionsField),
                     withdrawals = rec.get(withdrawalsField),
                 )

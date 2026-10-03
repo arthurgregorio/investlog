@@ -2,6 +2,7 @@ package br.com.investlog.server.config
 
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountException
+import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
@@ -133,6 +134,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleWithdrawalNotDeletable(ex: WithdrawalNotDeletableException): ProblemDetail {
 
         val message = ex.message ?: "Este resgate não pode ser desfeito"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(FrozenHoldingException::class)
+    fun handleFrozenHolding(ex: FrozenHoldingException): ProblemDetail {
+
+        val message = ex.message ?: "Esta posição está congelada"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
         problemDetail.setProperty("timestamp", Instant.now())

@@ -479,4 +479,57 @@ class ReinvestmentControllerTest : BaseIntegrationTest() {
         val reinvestment = dsl.selectFrom(REINVESTMENTS).where(REINVESTMENTS.ID.eq(reinvestmentId)).fetchSingle()
         assertEquals(stockHoldingInternalId(matchId), reinvestment.destinationStockHoldingId)
     }
+
+    private fun freeze(uri: String) {
+        restTestClient.patch()
+            .uri(uri)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"frozen":true}""")
+            .exchange()
+            .expectStatus().isOk()
+    }
+
+    @Test
+    @Order(14)
+    fun `reinvesting into a frozen stock is rejected with 409 and writes nothing`() {
+
+        val sourceId = createStockHolding(stocksWalletId, "CMIG4", "10", "10.00", "12.00")
+        val frozenId = createStockHolding(stocksWalletId, "CPLE6", "10", "10.00", "12.00")
+        freeze("/private/v1/wallets/$stocksWalletId/stock-holdings/$frozenId")
+
+        assertNothingWritten {
+            stockReinvestment(sourceId, "STOCKS", frozenId, "5", "12.00").expectStatus().isEqualTo(409)
+        }
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$stocksWalletId&search=CMIG4")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].quantity").isEqualTo(10)
+    }
+
+    @Test
+    @Order(15)
+    fun `reinvesting into a frozen fund is rejected with 409 and writes nothing`() {
+
+        val sourceId = createStockHolding(stocksWalletId, "TAEE11", "10", "10.00", "12.00")
+        val frozenFundId = createFundHolding("Fundo Congelado", "100", "100")
+        freeze("/private/v1/wallets/$fundsWalletId/fund-holdings/$frozenFundId")
+
+        assertNothingWritten {
+            stockReinvestment(sourceId, "FUNDS", frozenFundId, "5", "12.00").expectStatus().isEqualTo(409)
+        }
+    }
+
+    @Test
+    @Order(16)
+    fun `a frozen holding can still be the source of a reinvestment`() {
+
+        val frozenSourceId = createStockHolding(stocksWalletId, "EGIE3", "10", "10.00", "12.00")
+        val destinationId = createStockHolding(stocksWalletId, "CSMG3", "10", "10.00", "12.00")
+        freeze("/private/v1/wallets/$stocksWalletId/stock-holdings/$frozenSourceId")
+
+        stockReinvestment(frozenSourceId, "STOCKS", destinationId, "5", "12.00").expectStatus().isCreated()
+    }
 }
