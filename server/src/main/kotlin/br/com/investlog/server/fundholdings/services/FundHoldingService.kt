@@ -8,6 +8,7 @@ import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequ
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingUpdateRequest
+import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.wallets.services.WalletService
 import org.springframework.data.domain.Pageable
@@ -65,6 +66,7 @@ class FundHoldingService(
             currentValue = request.currentValue,
             administrationFeeRate = request.administrationFeeRate,
             performanceFeeRate = request.performanceFeeRate,
+            frozen = request.frozen,
         ) ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
     }
 
@@ -81,6 +83,9 @@ class FundHoldingService(
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
             ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
+        if (holdingRepo.isFrozen(holdingId)) {
+            throw FrozenHoldingException("Esta posição está congelada e não aceita novos aportes")
+        }
         return contributionRepo.addContribution(holdingId, request)
     }
 

@@ -67,6 +67,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             overview.COST_BASIS,
             overview.CURRENT_PRICE,
             overview.CURRENT_VALUE,
+            overview.FROZEN,
         )
             .from(overview)
             .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
@@ -94,6 +95,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     quantity = record.get(overview.QUANTITY),
                     costBasis = costBasis,
                     currentPrice = record.get(overview.CURRENT_PRICE),
+                    frozen = record.get(overview.FROZEN)!!,
                     currentValue = currentValue,
                     gain = gain,
                     gainPct = gainPct,
@@ -143,6 +145,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             reportRows.COST_BASIS,
             reportRows.CURRENT_PRICE,
             reportRows.CURRENT_VALUE,
+            reportRows.FROZEN,
         )
             .from(reportRows)
             .join(wallets).on(wallets.ID.eq(reportRows.WALLET_ID))
@@ -168,6 +171,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     quantity = record.get(reportRows.QUANTITY),
                     costBasis = costBasis,
                     currentPrice = record.get(reportRows.CURRENT_PRICE),
+                    frozen = record.get(reportRows.FROZEN)!!,
                     currentValue = currentValue,
                     gain = gain,
                     gainPct = gainPct,

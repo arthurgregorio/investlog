@@ -8,4 +8,5 @@ data class ReinvestmentHolding(
     val name: String,
     val walletCurrency: String,
     val currentPrice: BigDecimal?,
+    val frozen: Boolean,
 )

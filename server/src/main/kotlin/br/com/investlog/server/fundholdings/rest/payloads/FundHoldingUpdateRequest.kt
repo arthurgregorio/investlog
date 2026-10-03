@@ -12,5 +12,6 @@ data class FundHoldingUpdateRequest(
     @field:PositiveOrZero
     val administrationFeeRate: BigDecimal?,
     @field:PositiveOrZero
-    val performanceFeeRate: BigDecimal?
+    val performanceFeeRate: BigDecimal?,
+    val frozen: Boolean? = null,
 )
