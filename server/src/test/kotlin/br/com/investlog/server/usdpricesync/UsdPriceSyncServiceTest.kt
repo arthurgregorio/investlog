@@ -72,6 +72,19 @@ class UsdPriceSyncServiceTest : BaseIntegrationTest() {
         assertEquals(0, usdRate().compareTo(BigDecimal("5.35")))
     }
 
+    @Test
+    @Order(3)
+    fun `keeps the last-known rate when the AwesomeAPI response has no USDBRL entry`() {
+        wireMockServer.stubFor(
+            get(urlPathEqualTo("/json/last/USD-BRL"))
+                .willReturn(okJson("""{"EURBRL":{"code":"EUR","codein":"BRL","bid":"6.10"}}"""))
+        )
+
+        usdPriceSyncService.syncRate()
+
+        assertEquals(0, usdRate().compareTo(BigDecimal("5.35")))
+    }
+
     companion object {
         private val wireMockServer = WireMockServer(wireMockConfig().dynamicPort())
 

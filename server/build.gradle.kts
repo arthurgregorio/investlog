@@ -3,6 +3,10 @@ import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.DirectoryResourceAccessor
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
+import kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit.INSTRUCTION
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_4
 import org.jooq.codegen.gradle.CodegenPluginExtension
 import org.jooq.meta.jaxb.Jdbc
@@ -29,6 +33,7 @@ plugins {
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.jooq.jooq-codegen-gradle") version "3.21.7"
+    id("org.jetbrains.kotlinx.kover") version "0.9.9"
 }
 
 group = "br.com.investlog"
@@ -139,6 +144,36 @@ jooq {
             target {
                 packageName = "br.com.investlog.server.jooq"
                 directory = "build/generated-sources/jooq/main"
+            }
+        }
+    }
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                packages("br.com.investlog.server.jooq")
+            }
+        }
+
+        verify {
+            rule {
+                bound {
+                    coverageUnits = LINE
+                    aggregationForGroup = COVERED_PERCENTAGE
+                    minValue = 98
+                }
+                bound {
+                    coverageUnits = INSTRUCTION
+                    aggregationForGroup = COVERED_PERCENTAGE
+                    minValue = 97
+                }
+                bound {
+                    coverageUnits = BRANCH
+                    aggregationForGroup = COVERED_PERCENTAGE
+                    minValue = 80
+                }
             }
         }
     }

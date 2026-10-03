@@ -1,6 +1,7 @@
 package br.com.investlog.server.results
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
@@ -118,6 +119,36 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
         .uri("/private/v1/wallets/$stocksWalletId/stock-holdings/$holdingId/withdrawals")
         .contentType(MediaType.APPLICATION_JSON)
         .body(body)
+        .exchange()
+
+    private fun createCryptoHolding(walletId: UUID, ticker: String, quantity: String, price: String): UUID =
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "ticker":"$ticker",
+                  "name":"Holding $ticker",
+                  "currentPrice":$price,
+                  "lot":{"lotDate":"2024-01-15","quantity":$quantity,"price":$price}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<CryptoHoldingResponse>()
+            .responseBody!!
+            .id
+
+    private fun withdrawFromCrypto(walletId: UUID, holdingId: UUID, body: String) = restTestClient.post()
+        .uri("/private/v1/wallets/$walletId/crypto-holdings/$holdingId/withdrawals")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(body)
+        .exchange()
+
+    private fun deleteCryptoWithdrawal(walletId: UUID, holdingId: UUID, resultId: UUID) = restTestClient.delete()
+        .uri("/private/v1/wallets/$walletId/crypto-holdings/$holdingId/withdrawals/$resultId")
         .exchange()
 
     private fun withdrawFromFund(holdingId: UUID, body: String) = restTestClient.post()
@@ -484,5 +515,227 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
         val holdingId = createStockHolding("SBSP3", "5", "60.00", "65.00")
 
         deleteStockWithdrawal(holdingId, UUID.randomUUID()).expectStatus().isNotFound()
+    }
+
+    @Test
+    @Order(18)
+    fun `a partial crypto withdrawal is listed with the holding in both its detail and its list`() {
+
+        val cryptoWalletId = createWallet("Crypto Wallet 18", "crypto")
+        val holdingId = createCryptoHolding(cryptoWalletId, "BTC", "2", "100.00")
+
+        withdrawFromCrypto(
+            cryptoWalletId,
+            holdingId,
+            """{"resultDate":"2026-09-19","quantity":0.5,"unitPrice":150.00,"fees":1,"taxes":2}""",
+        ).expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$cryptoWalletId/crypto-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.withdrawals.length()").isEqualTo(1)
+            .jsonPath("$.withdrawals[0].quantity").isEqualTo(0.5)
+            .jsonPath("$.withdrawals[0].grossAmount").isEqualTo(75.0)
+            .jsonPath("$.withdrawals[0].netAmount").isEqualTo(72.0)
+            .jsonPath("$.withdrawals[0].profit").isEqualTo(22.0)
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$cryptoWalletId/crypto-holdings")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].withdrawals.length()").isEqualTo(1)
+            .jsonPath("$.content[0].withdrawals[0].resultType").isEqualTo("WITHDRAWAL")
+    }
+
+    @Test
+    @Order(19)
+    fun `withdrawing a whole crypto position completes it and deleting that withdrawal reactivates it`() {
+
+        val cryptoWalletId = createWallet("Crypto Wallet 19", "crypto")
+        val holdingId = createCryptoHolding(cryptoWalletId, "ETH", "4", "50.00")
+
+        withdrawFromCrypto(
+            cryptoWalletId,
+            holdingId,
+            """{"resultDate":"2026-09-19","quantity":4,"unitPrice":60.00}""",
+        ).expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$cryptoWalletId")
+            .exchange()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(0)
+
+        withdrawFromCrypto(
+            cryptoWalletId,
+            holdingId,
+            """{"resultDate":"2026-09-19","quantity":1,"unitPrice":60.00}""",
+        ).expectStatus().isBadRequest()
+
+        val resultId = latestResult().externalId!!
+
+        deleteCryptoWithdrawal(cryptoWalletId, holdingId, resultId).expectStatus().isNoContent()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$cryptoWalletId")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].quantity").isEqualTo(4)
+    }
+
+    @Test
+    @Order(20)
+    fun `a stock withdrawal is listed with the holding in the list endpoint`() {
+
+        val listedWalletId = createWallet("Stocks Wallet 20", "stocks")
+        val holdingId = restTestClient.post()
+            .uri("/private/v1/wallets/$listedWalletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "stockTypeId":"$stockTypeId",
+                  "ticker":"LREN3",
+                  "name":"Holding LREN3",
+                  "currentPrice":20.00,
+                  "lot":{"lotDate":"2024-01-15","quantity":10,"price":10.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<StockHoldingResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$listedWalletId/stock-holdings/$holdingId/withdrawals")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"resultDate":"2026-09-19","quantity":4,"unitPrice":20.00,"fees":1,"taxes":2}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$listedWalletId/stock-holdings")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].withdrawals.length()").isEqualTo(1)
+            .jsonPath("$.content[0].withdrawals[0].quantity").isEqualTo(4)
+            .jsonPath("$.content[0].withdrawals[0].netAmount").isEqualTo(77.0)
+            .jsonPath("$.content[0].withdrawals[0].profit").isEqualTo(37.0)
+    }
+
+    @Test
+    @Order(21)
+    fun `a fund withdrawal is listed with the holding in the list endpoint`() {
+
+        val listedWalletId = createWallet("Funds Wallet 21", "funds")
+        restTestClient.post()
+            .uri("/private/v1/wallets/$listedWalletId/fund-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "fundTypeId":"$fundTypeId",
+                  "name":"Fundo Listado",
+                  "currentValue":2000.00,
+                  "contribution":{"contributionDate":"2024-01-10","amount":1000.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+        val holdingId = restTestClient.get()
+            .uri("/private/v1/wallets/$listedWalletId/fund-holdings")
+            .exchange()
+            .returnResult<Map<String, Any?>>()
+            .responseBody!!
+            .let { page -> ((page["content"] as List<*>).single() as Map<*, *>)["id"] as String }
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$listedWalletId/fund-holdings/$holdingId/withdrawals")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"resultDate":"2026-09-19","amount":500.00,"fees":5,"taxes":10}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$listedWalletId/fund-holdings")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].withdrawals.length()").isEqualTo(1)
+            .jsonPath("$.content[0].withdrawals[0].grossAmount").isEqualTo(500.0)
+            .jsonPath("$.content[0].withdrawals[0].netAmount").isEqualTo(485.0)
+    }
+
+    @Test
+    @Order(22)
+    fun `withdrawing a whole fund completes it and deleting that withdrawal reactivates it`() {
+
+        val holdingId = createFundHolding("Fundo Resgate Total", "1000.00", "1500.00")
+
+        withdrawFromFund(holdingId, """{"resultDate":"2026-09-19","amount":1500.00}""")
+            .expectStatus().isCreated()
+
+        withdrawFromFund(holdingId, """{"resultDate":"2026-09-19","amount":1.00}""")
+            .expectStatus().isBadRequest()
+
+        deleteFundWithdrawal(holdingId, latestResult().externalId!!).expectStatus().isNoContent()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$fundsWalletId/fund-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.currentValue").isEqualTo(1500.0)
+
+        withdrawFromFund(holdingId, """{"resultDate":"2026-09-20","amount":100.00}""")
+            .expectStatus().isCreated()
+    }
+
+    @Test
+    @Order(23)
+    fun `withdrawing from or deleting a withdrawal of an unknown holding responds 404`() {
+
+        val unknownHoldingId = UUID.randomUUID()
+
+        withdrawFromStock(
+            unknownHoldingId,
+            """{"resultDate":"2026-09-19","quantity":1,"unitPrice":10.00}""",
+        ).expectStatus().isNotFound()
+
+        deleteStockWithdrawal(unknownHoldingId, UUID.randomUUID()).expectStatus().isNotFound()
+    }
+
+    @Test
+    @Order(24)
+    fun `a holding of another kind is not found through the wrong kind's withdrawal routes`() {
+
+        val stockHoldingId = createStockHolding("CMIG4", "10", "10.00", "11.00")
+        val cryptoWalletId = createWallet("Crypto Wallet 24", "crypto")
+
+        withdrawFromCrypto(
+            stocksWalletId,
+            stockHoldingId,
+            """{"resultDate":"2026-09-19","quantity":1,"unitPrice":10.00}""",
+        ).expectStatus().isNotFound()
+
+        withdrawFromStock(
+            stockHoldingId,
+            """{"resultDate":"2026-09-19","quantity":1,"unitPrice":10.00}""",
+        ).expectStatus().isCreated()
+        val resultId = latestResult().externalId!!
+
+        deleteCryptoWithdrawal(stocksWalletId, stockHoldingId, resultId).expectStatus().isNotFound()
+        deleteFundWithdrawal(stockHoldingId, resultId).expectStatus().isNotFound()
+        withdrawFromCrypto(cryptoWalletId, stockHoldingId, """{"resultDate":"2026-09-19","quantity":1,"unitPrice":10.00}""")
+            .expectStatus().isNotFound()
     }
 }
