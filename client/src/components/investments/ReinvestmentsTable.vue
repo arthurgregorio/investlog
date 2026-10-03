@@ -25,15 +25,18 @@ function sideLabel(side: ReinvestmentSide): string {
         <tr v-for="reinvestment in rows" :key="reinvestment.id" data-testid="reinvestment-row">
           <td>{{ fmt.date(reinvestment.reinvestmentDate) }}</td>
           <td>
-            <div class="t-ticker">{{ sideLabel(reinvestment.source) }}</div>
-            <div class="t-name">{{ reinvestment.source.walletName }}</div>
+            <div class="has-text-weight-bold">{{ sideLabel(reinvestment.source) }}</div>
+            <div class="is-size-7 has-text-grey">{{ reinvestment.source.walletName }}</div>
           </td>
           <td>
-            <div class="t-ticker">{{ sideLabel(reinvestment.destination) }}</div>
-            <div class="t-name">{{ reinvestment.destination.walletName }}</div>
+            <div class="has-text-weight-bold">{{ sideLabel(reinvestment.destination) }}</div>
+            <div class="is-size-7 has-text-grey">{{ reinvestment.destination.walletName }}</div>
           </td>
           <td class="c-num">{{ fmt.money(reinvestment.amount, reinvestment.currency) }}</td>
-          <td class="c-num" :class="reinvestment.profit >= 0 ? 'gl-up' : 'gl-down'">
+          <td
+            class="c-num"
+            :class="reinvestment.profit >= 0 ? 'has-text-success' : 'has-text-danger'"
+          >
             {{ fmt.moneySigned(reinvestment.profit, reinvestment.currency) }}
           </td>
         </tr>

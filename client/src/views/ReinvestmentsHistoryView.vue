@@ -49,12 +49,13 @@ function onPageChange(page: number) {
           />
         </div>
       </div>
-      <EmptyState
-        v-else-if="reinvestmentsStore.loaded"
-        icon="swap-horizontal"
-        title="Nenhum reinvestimento"
-        text="Reinvestimentos de um investimento em outro aparecem aqui."
-      />
+      <div v-else-if="reinvestmentsStore.loaded" class="p-4">
+        <EmptyState
+          icon="swap-horizontal"
+          title="Nenhum reinvestimento"
+          text="Reinvestimentos de um investimento em outro aparecem aqui."
+        />
+      </div>
     </Card>
   </div>
 </template>

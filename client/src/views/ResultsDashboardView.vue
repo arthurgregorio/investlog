@@ -36,20 +36,22 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
 
     <template v-if="summary">
       <Card v-if="!hasResults" data-testid="results-empty">
-        <EmptyState
-          icon="cash-multiple"
-          title="Nenhum resultado realizado ainda"
-          text="Resgates e reinvestimentos aparecem aqui depois de registrados."
-        >
-          <template #action>
-            <b-button
-              type="is-primary"
-              class="has-text-light"
-              @click="router.push({ name: 'wallets' })"
-              >Ir para as carteiras</b-button
-            >
-          </template>
-        </EmptyState>
+        <div class="p-4">
+          <EmptyState
+            icon="cash-multiple"
+            title="Nenhum resultado realizado ainda"
+            text="Resgates e reinvestimentos aparecem aqui depois de registrados."
+          >
+            <template #action>
+              <b-button
+                type="is-primary"
+                class="has-text-light"
+                @click="router.push({ name: 'wallets' })"
+                >Ir para as carteiras</b-button
+              >
+            </template>
+          </EmptyState>
+        </div>
       </Card>
 
       <template v-else>
@@ -75,7 +77,7 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
                   <div class="kpi-label">Lucro realizado</div>
                   <div
                     class="kpi-value"
-                    :class="summary.totalProfit >= 0 ? 'gl-up' : 'gl-down'"
+                    :class="summary.totalProfit >= 0 ? 'has-text-success' : 'has-text-danger'"
                     data-testid="kpi-profit"
                   >
                     {{ fmt.moneySigned(summary.totalProfit, currency, { compact: true }) }}
@@ -121,10 +123,12 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
         </div>
 
         <Card class="table-card" data-testid="recent-reinvestments">
-          <div class="move-history-title results-recent-head">
+          <div class="is-flex is-justify-content-space-between is-align-items-flex-start px-5 pt-4">
             <div>
               <div class="chart-title">Últimos reinvestimentos</div>
-              <div class="wd-chart-sub">Os {{ RECENT_REINVESTMENTS }} mais recentes</div>
+              <div class="is-size-7 has-text-grey mt-1">
+                Os {{ RECENT_REINVESTMENTS }} mais recentes
+              </div>
             </div>
             <b-button
               v-if="reinvestmentsStore.totalElements > 0"
@@ -139,12 +143,13 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
           <div v-if="reinvestmentsStore.rows.length > 0" class="table-wrap">
             <ReinvestmentsTable :rows="reinvestmentsStore.rows" />
           </div>
-          <EmptyState
-            v-else-if="reinvestmentsStore.loaded"
-            icon="swap-horizontal"
-            title="Nenhum reinvestimento"
-            text="Reinvestimentos de um investimento em outro aparecem aqui."
-          />
+          <div v-else-if="reinvestmentsStore.loaded" class="p-4">
+            <EmptyState
+              icon="swap-horizontal"
+              title="Nenhum reinvestimento"
+              text="Reinvestimentos de um investimento em outro aparecem aqui."
+            />
+          </div>
         </Card>
       </template>
     </template>

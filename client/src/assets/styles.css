@@ -3108,13 +3108,6 @@ h3.report-subgroup-title {
   padding: 16px 20px 0;
 }
 
-.results-recent-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
 .move-history-empty {
   padding: 16px 20px 20px;
 }
