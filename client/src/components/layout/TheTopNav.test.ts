@@ -137,7 +137,7 @@ describe('TheTopNav', () => {
     expect(router.currentRoute.value.name).toBe('settings-users')
   })
 
-  it('turns Visão geral into a dropdown holding the overview and the Resultados dashboard', async () => {
+  it('turns the first item into a Dashboards dropdown holding Visão geral and Resultados', async () => {
     router.push('/wallets')
     await router.isReady()
 
@@ -150,18 +150,18 @@ describe('TheTopNav', () => {
   })
 
   it.each(['/overview', '/overview/resultados', '/overview/reinvestimentos'])(
-    'marks Visão geral as active on %s',
+    'marks Dashboards as active on %s',
     async (path) => {
       router.push(path)
       await router.isReady()
 
       const wrapper = mount(TheTopNav, { global: { plugins: [pinia, router] } })
 
-      expect(wrapper.get('.nav-item.active').text()).toContain('Visão geral')
+      expect(wrapper.get('.nav-item.active').text()).toContain('Dashboards')
     },
   )
 
-  it('does not mark Visão geral as active on another page', async () => {
+  it('does not mark Dashboards as active on another page', async () => {
     router.push('/wallets')
     await router.isReady()
 

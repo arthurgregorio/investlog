@@ -25,8 +25,8 @@ onMounted(() => {
 const nav = computed<NavItem[]>(() => {
   const items: NavItem[] = [
     {
-      label: 'Visão geral',
-      icon: 'view-dashboard-outline',
+      label: 'Dashboards',
+      icon: 'sack-outline',
       activeFor: ['overview-reinvestments'],
       children: [
         { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },

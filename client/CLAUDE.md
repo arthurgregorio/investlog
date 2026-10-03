@@ -197,7 +197,7 @@ It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fi
 
 ### Results dashboard (`ResultsDashboardView.vue`)
 
-"Visão geral" in `TheTopNav` is a dropdown: the existing overview at `/overview` (still the landing page) and "Resultados" at `/overview/resultados`. The dashboard shows four KPI cards from `GET /results/summary` (withdrawn, realised profit, fees, taxes, in the user's display currency) and the five most recent reinvestments from the `reinvestments` store, with a link to `/overview/reinvestimentos`, the full paginated history (`ReinvestmentsHistoryView.vue`). Both lists render through `ReinvestmentsTable`. A user with no recorded results sees one `EmptyState` instead of zeroed cards; a user with withdrawals but no reinvestments sees the cards and an empty reinvestments card. Wallet moves never appear here, since they realise nothing.
+"Dashboards" in `TheTopNav` (sack icon) is a dropdown holding "Visão geral", the existing overview at `/overview` that is still the landing page, and "Resultados" at `/overview/resultados`. The dashboard shows four KPI cards from `GET /results/summary` (withdrawn, realised profit, fees, taxes, in the user's display currency) and the five most recent reinvestments from the `reinvestments` store, with a link to `/overview/reinvestimentos`, the full paginated history (`ReinvestmentsHistoryView.vue`). Both lists render through `ReinvestmentsTable`. A user with no recorded results sees one `EmptyState` instead of zeroed cards; a user with withdrawals but no reinvestments sees the cards and an empty reinvestments card. Wallet moves never appear here, since they realise nothing.
 
 ### Reinvesting (`ReinvestModal.vue`)
 
