@@ -142,6 +142,8 @@ export const holdingsApi = {
       fundTypeId: string
       name: string
       currentValue?: number
+      administrationFeeRate?: number
+      performanceFeeRate?: number
       contribution: { contributionDate: string; amount: number }
     },
   ): Promise<FundHoldingDetail> {
@@ -157,7 +159,11 @@ export const holdingsApi = {
   updateFundHolding(
     walletId: string,
     holdingId: string,
-    payload: { currentValue?: number },
+    payload: {
+      currentValue?: number
+      administrationFeeRate?: number
+      performanceFeeRate?: number
+    },
   ): Promise<FundHoldingDetail> {
     return apiClient
       .patch<FundHoldingDetail>(`/wallets/${walletId}/fund-holdings/${holdingId}`, payload)
