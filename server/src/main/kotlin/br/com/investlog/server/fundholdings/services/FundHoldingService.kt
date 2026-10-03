@@ -45,6 +45,8 @@ class FundHoldingService(
             fundTypeInternalId = fundTypeId,
             name = request.name,
             currentValue = request.currentValue,
+            administrationFeeRate = request.administrationFeeRate,
+            performanceFeeRate = request.performanceFeeRate,
             contribution = request.contribution,
         )
     }
@@ -61,6 +63,8 @@ class FundHoldingService(
             fundTypeInternalId = fundTypeId,
             name = request.name,
             currentValue = request.currentValue,
+            administrationFeeRate = request.administrationFeeRate,
+            performanceFeeRate = request.performanceFeeRate,
         ) ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
     }
 

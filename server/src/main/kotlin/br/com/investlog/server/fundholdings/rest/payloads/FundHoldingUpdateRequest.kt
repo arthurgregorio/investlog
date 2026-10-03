@@ -8,5 +8,9 @@ data class FundHoldingUpdateRequest(
     val fundTypeId: UUID?,
     val name: String?,
     @field:PositiveOrZero
-    val currentValue: BigDecimal?
+    val currentValue: BigDecimal?,
+    @field:PositiveOrZero
+    val administrationFeeRate: BigDecimal?,
+    @field:PositiveOrZero
+    val performanceFeeRate: BigDecimal?
 )
