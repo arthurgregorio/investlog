@@ -39,12 +39,20 @@ const showMoveModal = ref(false)
 const isFund = computed(() => props.row.kind === 'FUNDS')
 const isStock = computed(() => props.row.kind === 'STOCKS')
 
+const fundDetail = computed(() =>
+  isFund.value && detail.value ? (detail.value as FundHoldingDetail) : null,
+)
+
 const currentAmount = computed<number | null>(() => {
   if (!detail.value) return null
-  return isFund.value
-    ? (detail.value as FundHoldingDetail).currentValue
+  return fundDetail.value
+    ? fundDetail.value.currentValue
     : (detail.value as StockHoldingDetail).currentPrice
 })
+
+function formatFeeRate(rate: number | null): string {
+  return rate == null ? '—' : fmt.pct(rate)
+}
 
 // One merged, chronological ledger of purchases/aportes and withdrawals — see holdingLedger.ts.
 // This is the only view of a holding's history; there is no separate purchases-only table.
@@ -223,6 +231,21 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
 <template>
   <div class="detail">
     <b-loading :is-full-page="false" :active="loading" />
+
+    <div v-if="fundDetail" class="fund-fees" data-testid="fund-fees">
+      <div class="fund-fee">
+        <span class="fund-fee-label">Taxa de administração (% a.a.)</span>
+        <span class="fund-fee-value" data-testid="administration-fee-rate">{{
+          formatFeeRate(fundDetail.administrationFeeRate)
+        }}</span>
+      </div>
+      <div class="fund-fee">
+        <span class="fund-fee-label">Taxa de performance (%)</span>
+        <span class="fund-fee-value" data-testid="performance-fee-rate">{{
+          formatFeeRate(fundDetail.performanceFeeRate)
+        }}</span>
+      </div>
+    </div>
 
     <div v-if="detail" class="ledger-head">
       <div class="ledger-head-info">
@@ -412,6 +435,8 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
       :kind="row.kind"
       :wallet-currency="row.walletCurrency"
       :initial-value="currentAmount"
+      :initial-administration-fee-rate="fundDetail?.administrationFeeRate ?? null"
+      :initial-performance-fee-rate="fundDetail?.performanceFeeRate ?? null"
       @updated="onPriceUpdated"
       @close="showUpdatePriceModal = false"
     />

@@ -23,6 +23,8 @@ function fundDetail(overrides: Partial<FundHoldingDetail> = {}): FundHoldingDeta
     fundTypeId: 'type-2',
     name: 'Tesouro IPCA+',
     currentValue: 4000,
+    administrationFeeRate: null,
+    performanceFeeRate: null,
     contributions: [],
     withdrawals: [],
     ...overrides,

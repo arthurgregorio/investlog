@@ -151,6 +151,12 @@ const kindLabelPt = computed(() =>
         >
           <NumberInput v-model="form.currentValue" placeholder="0,00" :prefix="sym" min="0" />
         </b-field>
+        <b-field label="Taxa de administração (% a.a.)">
+          <NumberInput v-model="form.administrationFeeRate" placeholder="0,00" min="0" />
+        </b-field>
+        <b-field label="Taxa de performance (%)">
+          <NumberInput v-model="form.performanceFeeRate" placeholder="0,00" min="0" />
+        </b-field>
       </template>
     </div>
   </div>

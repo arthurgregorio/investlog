@@ -61,8 +61,22 @@ Assert on rendered output, emitted events and user interactions — never on `wr
 methods, which couple the test to the implementation and break on refactor. No snapshot-only tests:
 a snapshot nobody reads passes while the feature is broken.
 
-Coverage is measured (`npm run test:coverage`, v8 provider, report in `client/coverage/`) but no
-threshold is enforced and CI does not gate on it.
+Coverage is measured with `npm run test:coverage` (v8 provider, report in `client/coverage/`) and
+**enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
+functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
+drops any of the four below its floor fails the build.
+
+`src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
+branching, already exercised through the store tests that mock it, so measuring it only drags the
+global number down without saying whether the client works. The other exclusions are test files,
+`src/test/**`, `src/main.ts` and `src/types.ts`.
+
+**The ratchet:** a PR that adds tests sets each threshold to the whole-percent value (rounded
+down) its own `npm run test:coverage` run reports; a PR that changes nothing about coverage leaves
+the numbers alone. The numbers only ever go up, and a PR never lowers one to make a regression
+pass. The final target is 80 for statements, lines and functions and a lower branches floor
+(Vue templates are dense with defensive `?.` and `?? 0` fallbacks that v8 counts as branches and
+no realistic test drives both sides of), set to whatever the suite actually reaches.
 
 ## Coding Conventions
 

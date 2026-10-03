@@ -101,6 +101,69 @@ describe('PasswordResetModal', () => {
     expect(document.body.querySelectorAll('.help.is-danger')).toHaveLength(0)
     expect(wrapper.emitted('close')).toBeFalsy()
   })
+
+  it('resets the password of the given user and closes the modal', async () => {
+    const store = useUsersAdminStore()
+    const resetSpy = vi.spyOn(store, 'resetPassword').mockResolvedValue()
+
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+    await passwordInputs[0].setValue('SenhaNova123')
+    await passwordInputs[1].setValue('SenhaNova123')
+    await wrapper.find('.button.is-success').trigger('click')
+    await flushPromises()
+
+    expect(resetSpy).toHaveBeenCalledWith('user-1', 'SenhaNova123')
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('names the user in the title', () => {
+    mountModal()
+
+    expect(document.body.textContent).toContain('Redefinir senha de Alguém')
+  })
+
+  it('flags a confirmation that does not match and keeps the submit button disabled', async () => {
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+    await passwordInputs[0].setValue('SenhaNova123')
+    await passwordInputs[1].setValue('SenhaNova124')
+
+    expect(document.body.textContent).toContain('As senhas não coincidem.')
+    expect(wrapper.find('.button.is-success').attributes('disabled')).toBeDefined()
+  })
+
+  it('clears the server message as soon as the user edits the password again', async () => {
+    const store = useUsersAdminStore()
+    vi.spyOn(store, 'resetPassword').mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 400, data: { errors: ['newPassword inválida'] } },
+    })
+
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+    await passwordInputs[0].setValue('SenhaNova123')
+    await passwordInputs[1].setValue('SenhaNova123')
+    await wrapper.find('.button.is-success').trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('newPassword inválida')
+
+    await passwordInputs[0].setValue('SenhaNova1234')
+
+    expect(document.body.textContent).not.toContain('newPassword inválida')
+  })
+
+  it('closes without resetting anything when cancelled', async () => {
+    const store = useUsersAdminStore()
+    const resetSpy = vi.spyOn(store, 'resetPassword')
+
+    const wrapper = mountModal()
+    const cancelButton = wrapper.findAll('button').find((button) => button.text() === 'Cancelar')!
+    await cancelButton.trigger('click')
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(resetSpy).not.toHaveBeenCalled()
+  })
 })
 
 function flushPromises() {

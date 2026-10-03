@@ -76,6 +76,34 @@ describe('useCurrencyStore', () => {
     expect(currencyStore.loaded).toBe(true)
   })
 
+  it('load() fetches the profile only once', async () => {
+    vi.mocked(profileApi.getProfile).mockResolvedValue({
+      name: 'Arthur',
+      email: 'arthur@example.com',
+      avatarUrl: null,
+      accentColor: 'teal',
+      preferredCurrency: 'USD',
+    })
+    const currencyStore = useCurrencyStore()
+    await currencyStore.load()
+    await currencyStore.load()
+    expect(profileApi.getProfile).toHaveBeenCalledTimes(1)
+  })
+
+  it('load() clears the loading flag when the profile request fails', async () => {
+    vi.mocked(profileApi.getProfile).mockRejectedValue(new Error('network'))
+    const currencyStore = useCurrencyStore()
+    await expect(currencyStore.load()).rejects.toThrow('network')
+    expect(currencyStore.loading).toBe(false)
+    expect(currencyStore.loaded).toBe(false)
+  })
+
+  it('setDisplayCurrency skips the API call when the currency is unchanged', async () => {
+    const currencyStore = useCurrencyStore()
+    await currencyStore.setDisplayCurrency('BRL')
+    expect(profileApi.updateProfile).not.toHaveBeenCalled()
+  })
+
   it('hydrate sets the display currency without calling the API', () => {
     const currencyStore = useCurrencyStore()
     currencyStore.hydrate('USD')
