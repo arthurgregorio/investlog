@@ -52,6 +52,7 @@ class ReinvestmentRepository(private val dsl: DSLContext) {
             overview.COST_BASIS,
             overview.CURRENT_PRICE,
             overview.CURRENT_VALUE,
+            overview.FROZEN,
             wallets.CURRENCY,
         )
             .from(overview)
@@ -72,6 +73,7 @@ class ReinvestmentRepository(private val dsl: DSLContext) {
                     name = record.get(overview.NAME)!!,
                     walletCurrency = record.get(wallets.CURRENCY)!!,
                     currentPrice = record.get(overview.CURRENT_PRICE),
+                    frozen = record.get(overview.FROZEN)!!,
                 )
             }
     }

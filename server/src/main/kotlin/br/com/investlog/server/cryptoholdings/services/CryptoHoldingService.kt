@@ -5,6 +5,7 @@ import br.com.investlog.server.cryptoholdings.repositories.CryptoLotRepository
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingCreateRequest
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingUpdateRequest
+import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
@@ -60,6 +61,7 @@ class CryptoHoldingService(
             ticker = request.ticker,
             name = request.name,
             currentPrice = request.currentPrice,
+            frozen = request.frozen,
         ) ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
     }
 
@@ -76,6 +78,9 @@ class CryptoHoldingService(
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
             ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
+        if (holdingRepo.isFrozen(holdingId)) {
+            throw FrozenHoldingException("Esta posição está congelada e não aceita novos lotes")
+        }
         return lotRepo.addLot(holdingId, request)
     }
 
