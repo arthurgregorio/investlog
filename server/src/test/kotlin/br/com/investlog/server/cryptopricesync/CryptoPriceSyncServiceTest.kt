@@ -8,11 +8,13 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
@@ -103,6 +105,16 @@ class CryptoPriceSyncServiceTest : BaseIntegrationTest() {
             .responseBody!!
 
     @Test
+    @Order(1)
+    fun `does not call CoinGecko when there are no crypto holdings to sync`() {
+        cryptoPriceSyncService.syncPrices()
+
+        wireMockServer.verify(0, getRequestedFor(urlPathEqualTo("/coins/markets")))
+        wireMockServer.verify(0, getRequestedFor(urlPathEqualTo("/simple/price")))
+    }
+
+    @Test
+    @Order(2)
     fun `resolves collision-prone tickers to the canonical coin and prices them in each wallet's currency, leaving unresolved tickers untouched`() {
         val bitcoinBrl = createHolding(brlWalletId, "BTC", BigDecimal("300000.00"))
         val ethereumUsd = createHolding(usdWalletId, "ETH", BigDecimal("1500.00"))
@@ -113,6 +125,36 @@ class CryptoPriceSyncServiceTest : BaseIntegrationTest() {
         assertEquals(BigDecimal("329117"), fetchHolding(brlWalletId, bitcoinBrl.id).currentPrice)
         assertEquals(BigDecimal("1864.45"), fetchHolding(usdWalletId, ethereumUsd.id).currentPrice)
         assertEquals(BigDecimal("1.00"), fetchHolding(brlWalletId, unresolved.id).currentPrice)
+    }
+
+    @Test
+    @Order(3)
+    fun `keeps every last-known price when CoinGecko fails to return the prices`() {
+        wireMockServer.stubFor(
+            get(urlPathEqualTo("/simple/price"))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(500))
+        )
+        val bitcoinBefore = createHolding(brlWalletId, "BTC", BigDecimal("300000.00"))
+
+        cryptoPriceSyncService.syncPrices()
+
+        assertEquals(BigDecimal("300000.00"), fetchHolding(brlWalletId, bitcoinBefore.id).currentPrice)
+    }
+
+    @Test
+    @Order(4)
+    fun `keeps every last-known price when CoinGecko fails to resolve the tickers`() {
+        wireMockServer.stubFor(
+            get(urlPathEqualTo("/coins/markets"))
+                .atPriority(1)
+                .willReturn(aResponse().withStatus(500))
+        )
+        val solana = createHolding(brlWalletId, "SOL", BigDecimal("900.00"))
+
+        cryptoPriceSyncService.syncPrices()
+
+        assertEquals(BigDecimal("900.00"), fetchHolding(brlWalletId, solana.id).currentPrice)
     }
 
     companion object {
