@@ -227,4 +227,141 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isBadRequest()
     }
+
+    @Test
+    @Order(12)
+    fun `returns 404 with the holding id when fetching an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(13)
+    fun `returns 404 with the type id when creating a holding with an unknown stock type`() {
+        val unknownTypeId = UUID.randomUUID()
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "stockTypeId":"$unknownTypeId",
+                  "ticker":"PETR4",
+                  "lot":{"lotDate":"2024-01-15","quantity":100,"price":35.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo de ação não encontrado: $unknownTypeId")
+    }
+
+    @Test
+    @Order(14)
+    fun `returns 404 with the type id when updating a holding to an unknown stock type`() {
+        val holding = createHolding("ABEV3")
+        val unknownTypeId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"stockTypeId":"$unknownTypeId"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo de ação não encontrado: $unknownTypeId")
+    }
+
+    @Test
+    @Order(15)
+    fun `returns 404 with the holding id when updating an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"currentPrice":25.00}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(16)
+    fun `returns 404 with the holding id when deleting an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(17)
+    fun `returns 404 with the holding id when adding a lot to an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId/lots")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-03-10","quantity":50,"price":70.00}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(18)
+    fun `returns 404 with the holding id when deleting a lot of an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId/lots/${UUID.randomUUID()}")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(19)
+    fun `returns 404 with the lot id when deleting an unknown lot`() {
+        val holding = createHolding("EQTL3")
+        val unknownLotId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}/lots/$unknownLotId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Lote não encontrado: $unknownLotId")
+    }
+
+    @Test
+    @Order(20)
+    fun `returns 404 with the holding id when updating the lot date of an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId/lots/${UUID.randomUUID()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-02-15"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
+    }
 }

@@ -10,6 +10,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew test                                         # run all tests
 ./gradlew test --tests "br.com.investlog.server.ServerApplicationTests"  # single test class
 ./gradlew jooqCodegen                                  # regenerate jOOQ sources from the Liquibase schema
+./gradlew koverXmlReport                               # run the tests and write build/reports/kover/report.xml
+./gradlew koverHtmlReport                              # run the tests and write build/reports/kover/html
+./gradlew koverVerify                                  # run the tests and fail if coverage is under a floor
 ```
 
 `spring-boot-docker-compose` is a `developmentOnly` dependency wired to `compose.yaml`, so
@@ -407,6 +410,18 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
 - `TestServerApplication` is an alternate `main` that boots the app with
   `TestcontainersConfiguration` applied, for running locally against a throwaway
   Testcontainers-managed Postgres.
+
+#### Coverage
+
+Kover (`org.jetbrains.kotlinx.kover`) measures the suite and `koverVerify` enforces floors on it. CI's `Run server tests` step runs `./gradlew koverXmlReport koverVerify` instead of `test`, because both tasks run the suite themselves, so a coverage drop fails the build.
+
+**The generated jOOQ sources are excluded.** `kover.reports.filters.excludes` removes `br.com.investlog.server.jooq`, the codegen output under `build/generated-sources/jooq/main`. Left in, the line figure drops by about 21 points on the trial run: a swing caused entirely by generated table and record classes nobody wrote and nobody should test. The exclusion lives in the shared filter, so the XML report, the HTML report and `koverVerify` all measure the same set. Nothing else is excluded.
+
+**Enforced floors** (`kover.reports.verify` in `build.gradle.kts`): LINE 98, INSTRUCTION 97, BRANCH 80. Kover 0.9.9 can only bound those three units, so METHOD (99% when the floors were last raised) is reported in the XML and HTML reports but not enforced.
+
+**The floors only ever go up.** A PR may raise a number, never lower one; lowering a floor is what a coverage regression looks like in a diff. The floors sit at what the suite achieves, so a feature PR that adds a meaningful amount of untested production code goes red: ship the tests with the feature.
+
+**BRANCH sits lower than the other units** because a large share of the missed branches are the Kotlin compiler's own null checks on `?:` and `?.` in the repository mapping code, not decisions anyone wrote. Raise it by covering the branches that are real decisions, not by chasing the intrinsic ones.
 
 ### Packaging
 
