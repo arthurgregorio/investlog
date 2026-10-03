@@ -103,6 +103,63 @@ describe('PasswordChangeModal', () => {
 
     expect(document.body.textContent).toContain('Senha atual incorreta')
   })
+
+  it('changes the password and closes the modal when the server accepts it', async () => {
+    vi.mocked(profileApi.changePassword).mockResolvedValue()
+
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+    await passwordInputs[0].setValue('senhaAtual123')
+    await passwordInputs[1].setValue('SenhaNova123')
+    await passwordInputs[2].setValue('SenhaNova123')
+    await wrapper.find('.button.is-success').trigger('click')
+    await flushPromises()
+
+    expect(profileApi.changePassword).toHaveBeenCalledWith('senhaAtual123', 'SenhaNova123')
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(document.body.textContent).not.toContain('Senha atual incorreta')
+  })
+
+  it('flags a confirmation that does not match and keeps the submit button disabled', async () => {
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+    await passwordInputs[0].setValue('senhaAtual123')
+    await passwordInputs[1].setValue('SenhaNova123')
+    await passwordInputs[2].setValue('SenhaNova124')
+
+    expect(document.body.textContent).toContain('As senhas não coincidem.')
+    expect(wrapper.find('.button.is-success').attributes('disabled')).toBeDefined()
+  })
+
+  it('clears the rejection message as soon as the user edits the field again', async () => {
+    vi.mocked(profileApi.changePassword).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 401, data: { error: 'invalid_credentials' } },
+    })
+
+    const wrapper = mountModal()
+    const passwordInputs = wrapper.findAll('input[type="password"]')
+    await passwordInputs[0].setValue('senhaErrada')
+    await passwordInputs[1].setValue('SenhaNova123')
+    await passwordInputs[2].setValue('SenhaNova123')
+    await wrapper.find('.button.is-success').trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('Senha atual incorreta')
+
+    await passwordInputs[0].setValue('senhaCorreta1')
+
+    expect(document.body.textContent).not.toContain('Senha atual incorreta')
+  })
+
+  it('closes without calling the API when cancelled', async () => {
+    const wrapper = mountModal()
+
+    const cancelButton = wrapper.findAll('button').find((button) => button.text() === 'Cancelar')!
+    await cancelButton.trigger('click')
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(profileApi.changePassword).not.toHaveBeenCalled()
+  })
 })
 
 function flushPromises() {
