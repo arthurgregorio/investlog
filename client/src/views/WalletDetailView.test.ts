@@ -23,6 +23,7 @@ vi.mock('@/api/wallets', () => ({
 vi.mock('@/api/holdings', () => ({
   holdingsApi: {
     findAll: vi.fn(),
+    findAllForReport: vi.fn(),
     getStockHolding: vi.fn(),
     getCryptoHolding: vi.fn(),
     getFundHolding: vi.fn(),
@@ -134,6 +135,47 @@ async function mountView(
 describe('WalletDetailView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([])
+  })
+
+  it('loads every holding of the wallet for the allocation donut, not just the current page', async () => {
+    await mountView(detailOf())
+
+    expect(holdingsApi.findAllForReport).toHaveBeenCalledTimes(1)
+    expect(holdingsApi.findAllForReport).toHaveBeenCalledWith({ walletId: 'wallet-1' })
+  })
+
+  it('renders the allocation legend from the report rows and toggles without another request', async () => {
+    vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([
+      { ...mockRow, id: 'a', ticker: 'AAAA3', costBasis: 700, currentValue: 250 },
+      { ...mockRow, id: 'b', ticker: 'BBBB3', costBasis: 200, currentValue: 750 },
+    ])
+    const { wrapper } = await mountView(detailOf())
+
+    const entries = () =>
+      wrapper
+        .find('[data-testid="allocation-card"]')
+        .findAll('[data-testid="allocation-legend-entry"]')
+        .map((entry) => entry.text())
+    expect(entries()[0]).toContain('BBBB3')
+    expect(entries()[0]).toContain('75,00%')
+
+    await wrapper.find('[data-testid="allocation-metric-costBasis"]').trigger('click')
+    expect(entries()[0]).toContain('AAAA3')
+    expect(entries()[0]).toContain('77,78%')
+
+    await wrapper.find('[data-testid="allocation-metric-currentValue"]').trigger('click')
+    expect(entries()[0]).toContain('BBBB3')
+    expect(holdingsApi.findAllForReport).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the allocation empty state for a wallet with no holdings', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    expect(wrapper.find('[data-testid="allocation-card"]').text()).toContain(
+      'Nenhum investimento nesta carteira',
+    )
+    expect(wrapper.find('canvas').exists()).toBe(false)
   })
 
   it('loads the wallet move history on mount', async () => {
