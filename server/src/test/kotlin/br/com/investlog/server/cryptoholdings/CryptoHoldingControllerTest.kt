@@ -202,4 +202,102 @@ class CryptoHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isBadRequest()
     }
+
+    @Test
+    @Order(12)
+    fun `returns 404 with the holding id when fetching an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/$unknownHoldingId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(13)
+    fun `returns 404 with the holding id when updating an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/$unknownHoldingId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"currentPrice":25.00}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(14)
+    fun `returns 404 with the holding id when deleting an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/$unknownHoldingId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(15)
+    fun `returns 404 with the holding id when adding a lot to an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/$unknownHoldingId/lots")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-03-10","quantity":0.25,"price":70000.00}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(16)
+    fun `returns 404 with the holding id when deleting a lot of an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/$unknownHoldingId/lots/${UUID.randomUUID()}")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
+    }
+
+    @Test
+    @Order(17)
+    fun `returns 404 with the lot id when deleting an unknown lot`() {
+        val holding = createHolding("SOL")
+        val unknownLotId = UUID.randomUUID()
+
+        restTestClient.delete()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${holding.id}/lots/$unknownLotId")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Lote não encontrado: $unknownLotId")
+    }
+
+    @Test
+    @Order(18)
+    fun `returns 404 with the holding id when updating the lot date of an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/$unknownHoldingId/lots/${UUID.randomUUID()}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-02-15"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
+    }
 }
