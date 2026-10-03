@@ -186,7 +186,7 @@ Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detail
 expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion renders
 `HoldingDetailPanel` which lazy-fetches the full holding detail from the individual endpoint.
 
-**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, resgatar, reinvestir, mover and, for admins, remover. Closed rows carry no action buttons. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
+**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, resgatar, reinvestir, mover, congelar/descongelar (#237) and, for admins, remover. Closed rows carry no action buttons. A frozen holding (`frozen` on `HoldingRow` and the detail types) shows a "Congelado" `tt-frozen` tag in the table row and the panel, and its buy/aporte action is disabled; the server answers a buy or a reinvestment into it with a 409 whose `detail` the api client's interceptor already toasts, and `ReinvestModal` does not list frozen holdings as destinations. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
 
 ### Routes and their views (`src/router/index.ts`)
 

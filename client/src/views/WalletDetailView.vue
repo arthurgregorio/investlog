@@ -491,6 +491,12 @@ function confirmDeleteWallet() {
                         <div class="name-meta">
                           <div class="name-line">
                             <span class="t-ticker">{{ displayName(row) }}</span>
+                            <span
+                              v-if="row.frozen"
+                              class="type-tag tt-frozen"
+                              data-testid="frozen-tag"
+                              >Congelado</span
+                            >
                           </div>
                           <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
                             {{ row.name }}

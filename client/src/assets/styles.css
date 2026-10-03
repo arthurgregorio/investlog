@@ -1297,6 +1297,15 @@ a {
   color: #f0a821;
 }
 
+.tt-frozen {
+  background: rgba(14, 116, 144, .14);
+  color: #0e7490;
+}
+
+[data-theme="dark"] .tt-frozen {
+  color: #38bdf8;
+}
+
 .cell-strong {
   font-weight: 700;
   font-variant-numeric: tabular-nums;

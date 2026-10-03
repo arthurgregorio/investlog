@@ -21,6 +21,7 @@ const makeRow = (id: string, kind: 'STOCKS' | 'CRYPTO' | 'FUNDS' = 'STOCKS'): Ho
   currentValue: 1100,
   gain: 100,
   gainPct: 10,
+  frozen: false,
 })
 
 const makePagedResponse = (rows: HoldingRow[]): PagedResponse<HoldingRow> => ({
@@ -99,6 +100,21 @@ describe('useHoldingsListStore', () => {
       page: 1,
       size: 20,
     })
+  })
+
+  it('keeps the frozen flag of each row and picks up a toggled flag on refresh', async () => {
+    const open = makeRow('h1')
+    vi.mocked(holdingsApiModule.holdingsApi.findAll)
+      .mockResolvedValueOnce(makePagedResponse([open]))
+      .mockResolvedValueOnce(makePagedResponse([{ ...open, frozen: true }]))
+
+    const store = useHoldingsListStore()
+    await store.loadKind('STOCKS', 0)
+    expect(store.rows.map((row) => row.frozen)).toEqual([false])
+
+    await store.refresh()
+
+    expect(store.rows.map((row) => row.frozen)).toEqual([true])
   })
 
   it('loadKind passes typeLabel, search and sort through to the API', async () => {
