@@ -58,13 +58,6 @@ async function onMoved() {
         <h1 class="page-title">Carteiras</h1>
         <p class="page-desc">Carteiras podem ter tipos e moedas distintas</p>
       </div>
-      <b-button
-        v-if="walletsStore.wallets.length > 1"
-        icon-left="swap-horizontal"
-        data-testid="open-move"
-        @click="moveModalOpen = true"
-        >Mover</b-button
-      >
     </div>
 
     <EmptyState
