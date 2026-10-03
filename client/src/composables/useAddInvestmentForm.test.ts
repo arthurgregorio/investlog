@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAddInvestmentForm } from './useAddInvestmentForm'
 import { useWalletsStore } from '@/stores/wallets'
@@ -116,6 +117,164 @@ describe('useAddInvestmentForm', () => {
     form.amount = 500
     form.date = new Date()
     expect(form.valid).toBe(true)
+  })
+
+  it('submit calls createCryptoHolding with an upper-cased ticker and the current price', async () => {
+    const walletsStore = useWalletsStore()
+    walletsStore.wallets = [
+      ...walletsStore.wallets,
+      { ...mockWallet, id: 'wallet-crypto-1', kind: 'CRYPTO' },
+    ]
+    const onDone = vi.fn()
+
+    const { form, submit } = useAddInvestmentForm('CRYPTO', onDone)
+    form.ticker = ' btc '
+    form.quantity = 0.5
+    form.price = 300000
+    form.currentPrice = 310000
+    form.date = new Date('2024-06-01')
+
+    await submit()
+
+    expect(holdingsApiModule.holdingsApi.createCryptoHolding).toHaveBeenCalledWith(
+      'wallet-crypto-1',
+      {
+        ticker: 'BTC',
+        name: undefined,
+        currentPrice: 310000,
+        lot: { lotDate: '2024-06-01', quantity: 0.5, price: 300000 },
+      },
+    )
+    expect(onDone).toHaveBeenCalledWith('CRYPTO')
+    expect(form.submitting).toBe(false)
+  })
+
+  it('submit calls createFundHolding with the contribution and the optional current value', async () => {
+    const onDone = vi.fn()
+
+    const { form, submit } = useAddInvestmentForm('FUNDS', onDone)
+    form.name = '  Tesouro Direto  '
+    form.amount = 500
+    form.currentValue = 520
+    form.date = new Date('2024-06-01')
+
+    await submit()
+
+    expect(holdingsApiModule.holdingsApi.createFundHolding).toHaveBeenCalledWith(
+      'wallet-funds-1',
+      {
+        fundTypeId: 'type-fund-1',
+        name: 'Tesouro Direto',
+        currentValue: 520,
+        contribution: { contributionDate: '2024-06-01', amount: 500 },
+      },
+    )
+    expect(onDone).toHaveBeenCalledWith('FUNDS')
+  })
+
+  it('submit omits the current value of a fund when it is blank', async () => {
+    const { form, submit } = useAddInvestmentForm('FUNDS')
+    form.name = 'Tesouro Direto'
+    form.amount = 500
+    form.date = new Date('2024-06-01')
+
+    await submit()
+
+    expect(holdingsApiModule.holdingsApi.createFundHolding).toHaveBeenCalledWith(
+      'wallet-funds-1',
+      expect.objectContaining({ currentValue: undefined }),
+    )
+  })
+
+  it('submit does nothing while the form is invalid', async () => {
+    const onDone = vi.fn()
+
+    const { form, submit } = useAddInvestmentForm('STOCKS', onDone)
+    form.ticker = ''
+
+    await submit()
+
+    expect(holdingsApiModule.holdingsApi.createStockHolding).not.toHaveBeenCalled()
+    expect(onDone).not.toHaveBeenCalled()
+    expect(form.submitting).toBe(false)
+  })
+
+  it('submit leaves submitting back at false and skips onDone when the request is rejected', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.createStockHolding).mockRejectedValue(
+      new Error('network'),
+    )
+    const onDone = vi.fn()
+
+    const { form, submit } = useAddInvestmentForm('STOCKS', onDone)
+    form.ticker = 'PETR4'
+    form.quantity = 10
+    form.price = 36.5
+    form.date = new Date('2024-06-01')
+
+    await expect(submit()).rejects.toThrow('network')
+
+    expect(form.submitting).toBe(false)
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('ignores a second submit while the first is still in flight', async () => {
+    let finishRequest: () => void = () => undefined
+    vi.mocked(holdingsApiModule.holdingsApi.createStockHolding).mockReturnValue(
+      new Promise((resolve) => {
+        finishRequest = () => resolve({} as never)
+      }),
+    )
+
+    const { form, submit } = useAddInvestmentForm('STOCKS')
+    form.ticker = 'PETR4'
+    form.quantity = 10
+    form.price = 36.5
+    form.date = new Date('2024-06-01')
+
+    const firstSubmit = submit()
+    await submit()
+    finishRequest()
+    await firstSubmit
+
+    expect(holdingsApiModule.holdingsApi.createStockHolding).toHaveBeenCalledTimes(1)
+  })
+
+  it('selects the first wallet of the new kind when the kind changes', async () => {
+    const { form } = useAddInvestmentForm('STOCKS')
+
+    form.kind = 'FUNDS'
+    await nextTick()
+
+    expect(form.walletId).toBe('wallet-funds-1')
+  })
+
+  it('moves to another wallet when the selected one disappears from the list', async () => {
+    const walletsStore = useWalletsStore()
+    walletsStore.wallets = [
+      mockWallet,
+      { ...mockWallet, id: 'wallet-stocks-2', name: 'Outra Carteira' },
+    ]
+    const { form } = useAddInvestmentForm('STOCKS')
+    form.walletId = 'wallet-stocks-2'
+
+    walletsStore.wallets = [mockWallet]
+    await nextTick()
+
+    expect(form.walletId).toBe('wallet-stocks-1')
+  })
+
+  it('reselects a type when the selected stock or fund type is removed', async () => {
+    const typesListStore = useTypesListStore()
+    const { form } = useAddInvestmentForm('STOCKS')
+    expect(form.stockTypeId).toBe('type-1')
+    expect(form.fundTypeId).toBe('type-fund-1')
+
+    typesListStore.stockTypes = [{ id: 'type-2', name: 'FII', usageCount: 0 }]
+    typesListStore.fundTypes = []
+    await nextTick()
+
+    expect(form.stockTypeId).toBe('type-2')
+    expect(form.fundTypeId).toBe('')
   })
 
   it('submit calls createStockHolding with correct payload', async () => {

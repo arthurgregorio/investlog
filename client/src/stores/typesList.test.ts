@@ -36,6 +36,64 @@ describe('typesList store', () => {
     expect(store.fundTypes).toEqual([fundType])
   })
 
+  it('load fetches only once until refresh is called', async () => {
+    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
+    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
+
+    const store = useTypesListStore()
+    await store.load()
+    await store.load()
+    expect(assetTypesApi.findAllStockTypes).toHaveBeenCalledTimes(1)
+
+    await store.refresh()
+    expect(assetTypesApi.findAllStockTypes).toHaveBeenCalledTimes(2)
+    expect(assetTypesApi.findAllFundTypes).toHaveBeenCalledTimes(2)
+  })
+
+  it('load clears the loading flag and keeps the lists empty when a request fails', async () => {
+    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
+    vi.mocked(assetTypesApi.findAllFundTypes).mockRejectedValue(new Error('network'))
+
+    const store = useTypesListStore()
+    await expect(store.load()).rejects.toThrow('network')
+
+    expect(store.loading).toBe(false)
+    expect(store.loaded).toBe(false)
+    expect(store.stockTypes).toEqual([])
+    expect(store.fundTypes).toEqual([])
+  })
+
+  it('addFundType appends the created type', async () => {
+    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
+    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
+    const created = { id: 'fund-2', name: 'Multimercado', usageCount: 0 }
+    vi.mocked(assetTypesApi.createFundType).mockResolvedValue(created)
+
+    const store = useTypesListStore()
+    await store.load()
+    const result = await store.addFundType('Multimercado')
+
+    expect(assetTypesApi.createFundType).toHaveBeenCalledWith('Multimercado')
+    expect(result).toEqual(created)
+    expect(store.fundTypes).toEqual([fundType, created])
+  })
+
+  it('leaves the lists untouched when a create or remove fails', async () => {
+    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
+    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
+    vi.mocked(assetTypesApi.createStockType).mockRejectedValue(new Error('duplicate'))
+    vi.mocked(assetTypesApi.removeFundType).mockRejectedValue(new Error('in use'))
+
+    const store = useTypesListStore()
+    await store.load()
+
+    await expect(store.addStockType('Ação Ordinária')).rejects.toThrow('duplicate')
+    await expect(store.removeFundType(fundType.id)).rejects.toThrow('in use')
+
+    expect(store.stockTypes).toEqual([stockType])
+    expect(store.fundTypes).toEqual([fundType])
+  })
+
   it('addStockType appends the created type', async () => {
     vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
     vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])

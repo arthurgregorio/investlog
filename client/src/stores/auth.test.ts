@@ -11,6 +11,7 @@ vi.mock('@/api/auth', () => ({
     enroll: vi.fn(),
     verify: vi.fn(),
     register: vi.fn(),
+    linkGoogleAccount: vi.fn(),
   },
 }))
 
@@ -135,6 +136,24 @@ describe('auth store', () => {
     await store.verifyTotp('admin@admin.com', 'admin', '123456')
 
     expect(authApi.verify).toHaveBeenCalledWith('admin@admin.com', 'admin', '123456')
+    expect(store.session?.email).toBe('admin@admin.com')
+    expect(window.location.href).toBe('/overview')
+  })
+
+  it('linkGoogleAccount sets the session and navigates to the overview', async () => {
+    vi.mocked(authApi.linkGoogleAccount).mockResolvedValue({
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    })
+
+    const store = useAuthStore()
+    await store.linkGoogleAccount('link-token', 'admin')
+
+    expect(authApi.linkGoogleAccount).toHaveBeenCalledWith('link-token', 'admin')
     expect(store.session?.email).toBe('admin@admin.com')
     expect(window.location.href).toBe('/overview')
   })
