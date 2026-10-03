@@ -11,6 +11,7 @@ vi.mock('@/api/usersAdmin', () => ({
     unblock: vi.fn(),
     changeRole: vi.fn(),
     resetTotp: vi.fn(),
+    resetPassword: vi.fn(),
     remove: vi.fn(),
   },
 }))
@@ -88,6 +89,81 @@ describe('usersAdmin store', () => {
 
     expect(usersAdminApi.unblock).toHaveBeenCalledWith(blockedUser.id)
     expect(store.users[0].status).toBe('APPROVED')
+  })
+
+  it('load fetches only once until refresh is called', async () => {
+    vi.mocked(usersAdminApi.findAll).mockResolvedValue([adminUser])
+
+    const store = useUsersAdminStore()
+    await store.load()
+    await store.load()
+    expect(usersAdminApi.findAll).toHaveBeenCalledTimes(1)
+
+    await store.refresh()
+    expect(usersAdminApi.findAll).toHaveBeenCalledTimes(2)
+  })
+
+  it('load clears the loading flag when the request fails', async () => {
+    vi.mocked(usersAdminApi.findAll).mockRejectedValue(new Error('network'))
+
+    const store = useUsersAdminStore()
+    await expect(store.load()).rejects.toThrow('network')
+
+    expect(store.loading).toBe(false)
+    expect(store.loaded).toBe(false)
+    expect(store.users).toEqual([])
+  })
+
+  it('changeRole replaces the user in place', async () => {
+    vi.mocked(usersAdminApi.findAll).mockResolvedValue([pendingUser])
+    const promoted = { ...pendingUser, role: 'ADMIN' as const }
+    vi.mocked(usersAdminApi.changeRole).mockResolvedValue(promoted)
+
+    const store = useUsersAdminStore()
+    await store.load()
+    await store.changeRole(pendingUser.id, 'ADMIN')
+
+    expect(usersAdminApi.changeRole).toHaveBeenCalledWith(pendingUser.id, 'ADMIN')
+    expect(store.users[0].role).toBe('ADMIN')
+  })
+
+  it('resetTotp replaces the user in place', async () => {
+    vi.mocked(usersAdminApi.findAll).mockResolvedValue([adminUser])
+    const reset = { ...adminUser, totpEnabled: false }
+    vi.mocked(usersAdminApi.resetTotp).mockResolvedValue(reset)
+
+    const store = useUsersAdminStore()
+    await store.load()
+    await store.resetTotp(adminUser.id)
+
+    expect(usersAdminApi.resetTotp).toHaveBeenCalledWith(adminUser.id)
+    expect(store.users[0].totpEnabled).toBe(false)
+  })
+
+  it('resetPassword replaces the user in place', async () => {
+    vi.mocked(usersAdminApi.findAll).mockResolvedValue([adminUser])
+    vi.mocked(usersAdminApi.resetPassword).mockResolvedValue(adminUser)
+
+    const store = useUsersAdminStore()
+    await store.load()
+    await store.resetPassword(adminUser.id, 'NovaSenha123')
+
+    expect(usersAdminApi.resetPassword).toHaveBeenCalledWith(adminUser.id, 'NovaSenha123')
+    expect(store.users).toEqual([adminUser])
+  })
+
+  it('leaves the list untouched when an action fails', async () => {
+    vi.mocked(usersAdminApi.findAll).mockResolvedValue([adminUser, pendingUser])
+    vi.mocked(usersAdminApi.approve).mockRejectedValue(new Error('forbidden'))
+    vi.mocked(usersAdminApi.remove).mockRejectedValue(new Error('forbidden'))
+
+    const store = useUsersAdminStore()
+    await store.load()
+
+    await expect(store.approve(pendingUser.id)).rejects.toThrow('forbidden')
+    await expect(store.remove(pendingUser.id)).rejects.toThrow('forbidden')
+
+    expect(store.users).toEqual([adminUser, pendingUser])
   })
 
   it('remove drops the user from the list', async () => {

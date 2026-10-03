@@ -61,8 +61,25 @@ Assert on rendered output, emitted events and user interactions — never on `wr
 methods, which couple the test to the implementation and break on refactor. No snapshot-only tests:
 a snapshot nobody reads passes while the feature is broken.
 
-Coverage is measured (`npm run test:coverage`, v8 provider, report in `client/coverage/`) but no
-threshold is enforced and CI does not gate on it.
+Coverage is measured with `npm run test:coverage` (v8 provider, report in `client/coverage/`) and
+**enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
+functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
+drops any of the four below its floor fails the build. The floor today is **96% statements, 97%
+lines, 93% functions and 93% branches** (the suite reaches 96.06 / 97.25 / 93.87 / 93.14), and every
+file under `src/views/` is above 80% statements.
+
+`src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
+branching, already exercised through the store tests that mock it, so measuring it only drags the
+global number down without saying whether the client works. The other exclusions are test files,
+`src/test/**`, `src/main.ts` and `src/types.ts`.
+
+**The ratchet:** a PR may raise these numbers but never lower them. A PR that adds tests sets each
+threshold to the whole-percent value (rounded down) its own `npm run test:coverage` run reports; a
+PR that changes nothing about coverage leaves the numbers alone. The only way to make a coverage
+regression pass CI is to lower a threshold, and a PR never does that. Set each floor to what the suite
+actually reaches, not to a round target: Vue templates are dense with defensive `?.` and `?? 0`
+fallbacks that v8 counts as branches and no realistic test drives both sides of, so branches is the
+metric to watch when a new view lands.
 
 ## Coding Conventions
 
@@ -265,11 +282,12 @@ they refresh — the server-side revocation (next action, not next login) is the
 guarantee; this view is UX, not enforcement.
 
 `UsersView.vue` (route `/settings/users`, admin-only like the rest of `/settings/*`) is the local-user management screen,
-laid out with the same `.wallet-grid`/`.wallet-card` pattern as `WalletsView.vue`. The acting
-admin's own row hides role-change/block/delete (`isSelf(user.email)`) but leaves approve and
-TOTP-reset visible — those two are safe no-ops on your own account, not lockout risks, so hiding
-them would remove a valid self-recovery path for no benefit. `Block` is only offered on
-currently-`APPROVED` rows and `Unblock` only on currently-`BLOCKED` rows — blocking is for revoking
+laid out with `.entity-grid`/`.entity-card`. The acting
+admin's own row offers no actions at all while `APPROVED`: `hasActions` is false for a
+self row with that status, and every action except approve (shown only on `PENDING` rows) sits
+under `!isSelf(user.email)`, so role-change, block, TOTP-reset, password-reset and delete are
+unreachable on your own account. `Block` is only offered on currently-`APPROVED` rows and
+`Unblock` only on currently-`BLOCKED` rows — blocking is for revoking
 existing access, not for handling new signups (those stay on approve/delete).
 
 ### Buefy/Bulma gotchas
