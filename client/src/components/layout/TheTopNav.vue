@@ -26,10 +26,9 @@ const nav = computed<NavItem[]>(() => {
   const items: NavItem[] = [
     {
       label: 'Dashboards',
-      icon: 'sack-outline',
-      activeFor: ['overview-reinvestments'],
+      icon: 'view-dashboard-outline',
       children: [
-        { name: 'overview', label: 'Visão geral', icon: 'view-dashboard-outline' },
+        { name: 'overview', label: 'Visão geral', icon: 'piggy-bank-outline' },
         { name: 'overview-results', label: 'Resultados', icon: 'cash-multiple' },
       ],
     },

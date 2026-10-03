@@ -58,12 +58,12 @@ async function mountView(options: {
   summary: ResultSummary
   reinvestments: ReinvestmentRow[]
   totalElements?: number
+  totalPages?: number
 }) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/overview/resultados', name: 'overview-results', component: ResultsDashboardView },
-      { path: '/overview/reinvestimentos', name: 'overview-reinvestments', component: {} },
       { path: '/wallets', name: 'wallets', component: {} },
     ],
   })
@@ -76,6 +76,8 @@ async function mountView(options: {
   resultsStore.summary = options.summary
   reinvestmentsStore.rows = options.reinvestments
   reinvestmentsStore.totalElements = options.totalElements ?? options.reinvestments.length
+  reinvestmentsStore.totalPages = options.totalPages ?? 1
+  reinvestmentsStore.pageSize = 10
   reinvestmentsStore.loaded = true
 
   const wrapper = mount(ResultsDashboardView, { global: { plugins: [pinia, router] } })
@@ -88,14 +90,14 @@ describe('ResultsDashboardView', () => {
     vi.clearAllMocks()
   })
 
-  it('loads the summary and only the five most recent reinvestments', async () => {
+  it('loads the summary and the first ten reinvestments', async () => {
     const { resultsStore, reinvestmentsStore } = await mountView({
       summary,
       reinvestments: [reinvestment],
     })
 
     expect(resultsStore.loadSummary).toHaveBeenCalled()
-    expect(reinvestmentsStore.load).toHaveBeenCalledWith(0, 5)
+    expect(reinvestmentsStore.load).toHaveBeenCalledWith(0, 10)
   })
 
   it('shows the four realised totals from the summary', async () => {
@@ -107,7 +109,7 @@ describe('ResultsDashboardView', () => {
     expect(wrapper.get('[data-testid="kpi-taxes"]').text()).toBe('R$ 3,00')
   })
 
-  it('shows both sides of each recent reinvestment and its result', async () => {
+  it('shows both sides of each reinvestment and its result', async () => {
     const { wrapper } = await mountView({ summary, reinvestments: [reinvestment] })
 
     const row = wrapper.get('[data-testid="reinvestment-row"]')
@@ -118,13 +120,31 @@ describe('ResultsDashboardView', () => {
     expect(row.text()).toContain('+R$ 500,00')
   })
 
-  it('links through to the full reinvestment history', async () => {
-    const { wrapper, router } = await mountView({ summary, reinvestments: [reinvestment] })
+  it('offers pagination only when there is more than one page', async () => {
+    const single = await mountView({ summary, reinvestments: [reinvestment] })
+    expect(single.wrapper.find('.pagination').exists()).toBe(false)
 
-    await wrapper.get('[data-testid="see-all-reinvestments"]').trigger('click')
+    const several = await mountView({
+      summary,
+      reinvestments: [reinvestment],
+      totalElements: 25,
+      totalPages: 3,
+    })
+    expect(several.wrapper.find('.pagination').exists()).toBe(true)
+  })
+
+  it('loads the next page of ten when paginating forward', async () => {
+    const { wrapper, reinvestmentsStore } = await mountView({
+      summary,
+      reinvestments: [reinvestment],
+      totalElements: 25,
+      totalPages: 3,
+    })
+
+    await wrapper.get('.pagination-next').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.name).toBe('overview-reinvestments')
+    expect(reinvestmentsStore.load).toHaveBeenLastCalledWith(1, 10)
   })
 
   it('shows an empty state instead of zeroed totals when nothing was realised', async () => {
@@ -142,16 +162,13 @@ describe('ResultsDashboardView', () => {
 
     expect(wrapper.find('[data-testid="results-empty"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="kpi-withdrawn"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="recent-reinvestments"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="reinvestments"]').exists()).toBe(false)
   })
 
   it('explains the missing reinvestments when only withdrawals were recorded', async () => {
     const { wrapper } = await mountView({ summary, reinvestments: [] })
 
     expect(wrapper.find('[data-testid="kpi-withdrawn"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="recent-reinvestments"]').text()).toContain(
-      'Nenhum reinvestimento',
-    )
-    expect(wrapper.find('[data-testid="see-all-reinvestments"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="reinvestments"]').text()).toContain('Nenhum reinvestimento')
   })
 })

@@ -15,11 +15,6 @@ function makeRouter() {
         name: 'overview-results',
         component: { template: '<div />' },
       },
-      {
-        path: '/overview/reinvestimentos',
-        name: 'overview-reinvestments',
-        component: { template: '<div />' },
-      },
       { path: '/wallets', name: 'wallets', component: { template: '<div />' } },
       { path: '/wallets/:id', name: 'wallet-detail', component: { template: '<div />' } },
       { path: '/investments', name: 'investments', component: { template: '<div />' } },
@@ -149,7 +144,7 @@ describe('TheTopNav', () => {
     expect(labels).toEqual(['Visão geral', 'Resultados'])
   })
 
-  it.each(['/overview', '/overview/resultados', '/overview/reinvestimentos'])(
+  it.each(['/overview', '/overview/resultados'])(
     'marks Dashboards as active on %s',
     async (path) => {
       router.push(path)

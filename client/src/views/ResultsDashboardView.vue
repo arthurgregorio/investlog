@@ -9,15 +9,19 @@ import { useResultsStore } from '@/stores/results'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { fmt } from '@/composables/useFormat'
 
-const RECENT_REINVESTMENTS = 5
+const REINVESTMENTS_PAGE_SIZE = 10
 
 const resultsStore = useResultsStore()
 const reinvestmentsStore = useReinvestmentsStore()
 const router = useRouter()
 
 onMounted(() => {
-  Promise.all([resultsStore.loadSummary(), reinvestmentsStore.load(0, RECENT_REINVESTMENTS)])
+  Promise.all([resultsStore.loadSummary(), reinvestmentsStore.load(0, REINVESTMENTS_PAGE_SIZE)])
 })
+
+function onPageChange(page: number) {
+  reinvestmentsStore.load(page - 1, REINVESTMENTS_PAGE_SIZE)
+}
 
 const summary = computed(() => resultsStore.summary)
 const currency = computed(() => summary.value?.displayCurrency ?? 'BRL')
@@ -122,26 +126,23 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
           </div>
         </div>
 
-        <Card class="table-card" data-testid="recent-reinvestments">
-          <div class="is-flex is-justify-content-space-between is-align-items-flex-start px-5 pt-4">
-            <div>
-              <div class="chart-title">Últimos reinvestimentos</div>
-              <div class="is-size-7 has-text-grey mt-1">
-                Os {{ RECENT_REINVESTMENTS }} mais recentes
-              </div>
-            </div>
-            <b-button
-              v-if="reinvestmentsStore.totalElements > 0"
-              type="is-ghost"
-              size="is-small"
-              icon-right="arrow-right"
-              data-testid="see-all-reinvestments"
-              @click="router.push({ name: 'overview-reinvestments' })"
-              >Ver histórico completo</b-button
-            >
+        <Card class="table-card" data-testid="reinvestments">
+          <div class="px-5 pt-4">
+            <div class="chart-title">Reinvestimentos</div>
+            <div class="is-size-7 has-text-grey mt-1">Do mais recente para o mais antigo</div>
           </div>
           <div v-if="reinvestmentsStore.rows.length > 0" class="table-wrap">
             <ReinvestmentsTable :rows="reinvestmentsStore.rows" />
+            <div v-if="reinvestmentsStore.totalPages > 1" class="table-foot">
+              <b-pagination
+                :model-value="reinvestmentsStore.page + 1"
+                :total="reinvestmentsStore.totalElements"
+                :per-page="reinvestmentsStore.pageSize"
+                order="is-right"
+                simple
+                @change="onPageChange"
+              />
+            </div>
           </div>
           <div v-else-if="reinvestmentsStore.loaded" class="p-4">
             <EmptyState
