@@ -523,16 +523,12 @@ function confirmDeleteWallet() {
                         </div>
                       </div>
                     </td>
+                    <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
                     <td class="c-num">
-                      <div>{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</div>
-                    </td>
-                    <td class="c-num">
-                      <div>
-                        <span v-if="row.currentPrice == null" class="gl-empty">—</span>
-                        <template v-else>{{
-                          fmt.money(row.currentPrice, row.walletCurrency)
-                        }}</template>
-                      </div>
+                      <span v-if="row.currentPrice == null" class="gl-empty">—</span>
+                      <template v-else>{{
+                        fmt.money(row.currentPrice, row.walletCurrency)
+                      }}</template>
                     </td>
                     <td class="c-num">
                       <div class="cell-strong">
@@ -540,12 +536,10 @@ function confirmDeleteWallet() {
                       </div>
                     </td>
                     <td class="c-num">
-                      <div>
-                        <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                        <template v-else>{{
-                          fmt.money(row.currentValue, row.walletCurrency)
-                        }}</template>
-                      </div>
+                      <span v-if="row.currentValue == null" class="gl-empty">—</span>
+                      <template v-else>{{
+                        fmt.money(row.currentValue, row.walletCurrency)
+                      }}</template>
                     </td>
                     <td class="c-num">
                       <GainChip

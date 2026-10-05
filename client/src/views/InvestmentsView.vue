@@ -415,37 +415,33 @@ function openReport() {
                       {{ row.walletName }}
                     </span>
                   </td>
+                  <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
                   <td class="c-num">
-                    <div>{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</div>
-                  </td>
-                  <td class="c-num">
-                    <div>
-                      <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
-                        {{
-                          fmt.money(
-                            currencyStore.convert(row.currentPrice, row.walletCurrency),
-                            currencyStore.displayCurrency,
-                          )
-                        }}
-                      </template>
-                      <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">
-                        {{
-                          fmt.money(
-                            currencyStore.convert(row.currentValue, row.walletCurrency),
-                            currencyStore.displayCurrency,
-                          )
-                        }}
-                      </template>
-                      <span v-else class="gl-empty">—</span>
-                      <div v-if="row.kind !== 'FUNDS' && row.quantity" class="avg-note">
-                        PM
-                        {{
-                          fmt.money(
-                            currencyStore.convert(row.costBasis / row.quantity, row.walletCurrency),
-                            currencyStore.displayCurrency,
-                          )
-                        }}
-                      </div>
+                    <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.currentPrice, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
+                    </template>
+                    <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.currentValue, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
+                    </template>
+                    <span v-else class="gl-empty">—</span>
+                    <div v-if="row.kind !== 'FUNDS' && row.quantity" class="avg-note">
+                      PM
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.costBasis / row.quantity, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
                     </div>
                   </td>
                   <td class="c-num">
@@ -459,17 +455,15 @@ function openReport() {
                     </div>
                   </td>
                   <td class="c-num">
-                    <div>
-                      <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                      <template v-else>
-                        {{
-                          fmt.money(
-                            currencyStore.convert(row.currentValue, row.walletCurrency),
-                            currencyStore.displayCurrency,
-                          )
-                        }}
-                      </template>
-                    </div>
+                    <span v-if="row.currentValue == null" class="gl-empty">—</span>
+                    <template v-else>
+                      {{
+                        fmt.money(
+                          currencyStore.convert(row.currentValue, row.walletCurrency),
+                          currencyStore.displayCurrency,
+                        )
+                      }}
+                    </template>
                   </td>
                   <td class="c-num">
                     <GainChip

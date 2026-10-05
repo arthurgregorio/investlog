@@ -82,7 +82,6 @@
   --text-muted: #8a96a8;
   --chart-grid: #ecf0f5;
   --tag-bg: #f0f3f8;
-  --frozen: #0e7490;
 }
 
 [data-theme="dark"] {
@@ -97,7 +96,6 @@
   --text-muted: #71819a;
   --chart-grid: #26344a;
   --tag-bg: #222e3f;
-  --frozen: #38bdf8;
   --shadow: 0 1px 2px rgba(0, 0, 0, .25);
   --wt-stocks: #4a93de;
   --wt-crypto: #f0a821;
@@ -1404,56 +1402,19 @@ a {
   color: #f0a821;
 }
 
-.frozen-badge {
-  display: inline-grid;
-  place-items: center;
-  flex-shrink: 0;
-  border-radius: 9px;
-  border: 1.5px dashed var(--frozen);
-  background: var(--surface);
-  color: var(--frozen);
-}
-
-.frozen-badge .icon {
-  width: auto;
-  height: auto;
-}
-
-.frozen-badge .mdi {
-  font-size: 19px;
-  line-height: 1;
-}
-
-.frozen-badge.is-compact {
-  display: inline-flex;
-  border: 0;
-  background: none;
-  border-radius: 0;
-}
-
-.frozen-badge.is-compact .mdi {
-  font-size: 16px;
-}
-
 .inv-row.is-frozen {
-  background: color-mix(in srgb, var(--frozen) 5%, var(--surface));
+  --ice: var(--bulma-info-on-scheme);
+  --ice-tint: color-mix(in srgb, var(--ice) 5%, transparent);
+  background-image: linear-gradient(var(--ice), var(--ice)), linear-gradient(var(--ice-tint), var(--ice-tint));
+  background-size: 3px 100%, auto;
+  background-repeat: no-repeat;
 }
 
-.inv-row.is-frozen:hover {
-  background: color-mix(in srgb, var(--frozen) 5%, var(--surface-hover));
+.inv-row.is-frozen .ticker-badge {
+  border: 1.5px dashed;
 }
 
-.inv-row.is-frozen.is-open {
-  background: color-mix(in srgb, var(--frozen) 5%, var(--surface-2));
-}
-
-.inv-row.is-frozen > td:first-child {
-  box-shadow: inset 3px 0 0 var(--frozen);
-}
-
-.inv-row.is-frozen .name-meta,
-.inv-row.is-frozen .wallet-ref,
-.inv-row.is-frozen > td.c-num > * {
+.inv-row.is-frozen :is(.name-meta, .wallet-ref, td.c-num) {
   opacity: .65;
 }
 

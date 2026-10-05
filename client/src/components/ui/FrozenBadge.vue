@@ -1,20 +1,18 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ compact?: boolean; size?: number }>(), {
-  compact: false,
-  size: 36,
-})
+defineProps<{ compact?: boolean }>()
 </script>
 
 <template>
-  <span
-    class="frozen-badge"
-    :class="{ 'is-compact': compact }"
-    :style="compact ? undefined : { width: `${size}px`, height: `${size}px` }"
+  <b-icon
+    icon="snowflake"
+    type="is-info-on-scheme"
+    :size="compact ? 'is-small' : undefined"
+    :custom-size="compact ? undefined : 'mdi-18px'"
+    :class="{ 'ticker-badge': !compact }"
+    :style="compact ? undefined : { width: '36px', height: '36px' }"
     role="img"
     title="Congelado"
     aria-label="Congelado"
     data-testid="frozen-tag"
-  >
-    <b-icon icon="snowflake" />
-  </span>
+  />
 </template>
