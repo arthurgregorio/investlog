@@ -1402,13 +1402,20 @@ a {
   color: #f0a821;
 }
 
-.tt-frozen {
-  background: rgba(14, 116, 144, .14);
-  color: #0e7490;
+.inv-row.is-frozen {
+  --ice: var(--bulma-info-on-scheme);
+  --ice-tint: color-mix(in srgb, var(--ice) 5%, transparent);
+  background-image: linear-gradient(var(--ice), var(--ice)), linear-gradient(var(--ice-tint), var(--ice-tint));
+  background-size: 3px 100%, auto;
+  background-repeat: no-repeat;
 }
 
-[data-theme="dark"] .tt-frozen {
-  color: #38bdf8;
+.inv-row.is-frozen .ticker-badge {
+  border: 1.5px dashed;
+}
+
+.inv-row.is-frozen :is(.name-meta, .wallet-ref, td.c-num) {
+  opacity: .65;
 }
 
 .cell-strong {

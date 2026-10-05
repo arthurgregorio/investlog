@@ -347,15 +347,38 @@ describe('WalletDetailView', () => {
     expect(wrapper.find('tr.detail-row').exists()).toBe(true)
   })
 
-  it('tags a frozen holding as Congelado in the investments table', async () => {
+  it('swaps a frozen holding square for the snowflake badge and dims its row in the investments table', async () => {
     const { wrapper } = await mountView(detailOf(), [
       { ...mockRow, frozen: true },
       { ...mockRow, id: 'holding-2', ticker: 'VALE3' },
     ])
 
     const rows = wrapper.findAll('tr.inv-row')
-    expect(rows[0].find('[data-testid="frozen-tag"]').text()).toBe('Congelado')
+    const badge = rows[0].find('[data-testid="frozen-tag"]')
+    expect(badge.attributes('title')).toBe('Congelado')
+    expect(badge.attributes('aria-label')).toBe('Congelado')
+    expect(badge.find('.mdi-snowflake').exists()).toBe(true)
+    expect(rows[0].findAll('.ticker-badge')).toHaveLength(1)
+      expect(rows[0].find('.ticker-badge').attributes('data-testid')).toBe('frozen-tag')
+    expect(rows[0].find('.t-ticker').text()).toBe('PETR4')
+    expect(rows[0].text()).not.toContain('Congelado')
+    expect(rows[0].classes()).toContain('is-frozen')
     expect(rows[1].find('[data-testid="frozen-tag"]').exists()).toBe(false)
+    expect(rows[1].find('.ticker-badge').exists()).toBe(true)
+    expect(rows[1].classes()).not.toContain('is-frozen')
+  })
+
+  it('swaps a frozen fund square for the snowflake badge too', async () => {
+    const { wrapper } = await mountView(detailOf(), [
+      { ...mockRow, kind: 'FUNDS', ticker: 'Tesouro Selic', name: '', frozen: true },
+    ])
+
+    const row = wrapper.find('tr.inv-row')
+    expect(row.find('[data-testid="frozen-tag"]').attributes('title')).toBe('Congelado')
+    expect(row.findAll('.ticker-badge')).toHaveLength(1)
+      expect(row.find('.ticker-badge').attributes('data-testid')).toBe('frozen-tag')
+    expect(row.text()).not.toContain('Congelado')
+    expect(row.classes()).toContain('is-frozen')
   })
 
   it('shows an empty state when the wallet has no investments', async () => {
