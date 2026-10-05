@@ -138,6 +138,12 @@ const kindLabelPt = computed(() =>
         <b-field label="Nome do fundo">
           <b-input v-model="form.name" placeholder="ex.: Tesouro Selic 2029" />
         </b-field>
+        <b-field label="Taxa de administração (% a.a.)">
+          <NumberInput v-model="form.administrationFeeRate" placeholder="0,00" min="0" />
+        </b-field>
+        <b-field label="Taxa de performance (%)">
+          <NumberInput v-model="form.performanceFeeRate" placeholder="0,00" min="0" />
+        </b-field>
         <b-field label="Data do aporte">
           <DateInput v-model="form.date" />
         </b-field>
@@ -150,12 +156,6 @@ const kindLabelPt = computed(() =>
           style="grid-column: 1/-1"
         >
           <NumberInput v-model="form.currentValue" placeholder="0,00" :prefix="sym" min="0" />
-        </b-field>
-        <b-field label="Taxa de administração (% a.a.)">
-          <NumberInput v-model="form.administrationFeeRate" placeholder="0,00" min="0" />
-        </b-field>
-        <b-field label="Taxa de performance (%)">
-          <NumberInput v-model="form.performanceFeeRate" placeholder="0,00" min="0" />
         </b-field>
       </template>
     </div>
