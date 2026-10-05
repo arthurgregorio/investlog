@@ -36,6 +36,8 @@ function buildForm(overrides: Partial<AddInvestmentFormState> = {}): AddInvestme
     currentPrice: '',
     amount: '',
     currentValue: '',
+    administrationFeeRate: '',
+    performanceFeeRate: '',
     submitting: false,
     walletsOfKind: [wallet()],
     valid: true,
@@ -194,6 +196,8 @@ describe('AddInvestmentForm', () => {
         'Carteira',
         'Tipo de fundo',
         'Nome do fundo',
+        'Taxa de administração (% a.a.)',
+        'Taxa de performance (%)',
         'Data do aporte',
         'Valor aportado',
         'Valor atual (opcional)',
@@ -203,7 +207,50 @@ describe('AddInvestmentForm', () => {
       expect(optionLabels).toContain('Multimercado')
       expect(optionLabels).not.toContain('FII')
       expect(wrapper.find('input[placeholder="PETR4"]').exists()).toBe(false)
-      expect(wrapper.findAll('input[type="number"]')).toHaveLength(2)
+      expect(wrapper.findAll('input[type="number"]')).toHaveLength(4)
+    })
+
+    it('shows the two fee rate fields empty and without a currency prefix', () => {
+      const wrapper = mountForm(buildForm({ kind: 'FUNDS' }))
+
+      const [administrationInput, performanceInput] = wrapper.findAll('input[type="number"]')
+      expect((administrationInput.element as HTMLInputElement).value).toBe('')
+      expect((performanceInput.element as HTMLInputElement).value).toBe('')
+      expect(wrapper.findAll('.button.is-static')).toHaveLength(2)
+    })
+
+    it('shows the rates already held by the form', () => {
+      const wrapper = mountForm(
+        buildForm({ kind: 'FUNDS', administrationFeeRate: 1.5, performanceFeeRate: 20 }),
+      )
+
+      const [administrationInput, performanceInput] = wrapper.findAll('input[type="number"]')
+      expect((administrationInput.element as HTMLInputElement).value).toBe('1.5')
+      expect((performanceInput.element as HTMLInputElement).value).toBe('20')
+    })
+
+    it('writes the typed fee rates back to the form as numbers', async () => {
+      const form = buildForm({ kind: 'FUNDS' })
+      const wrapper = mountForm(form)
+
+      const [administrationInput, performanceInput] = wrapper.findAll('input[type="number"]')
+      await administrationInput.setValue('1.5')
+      await performanceInput.setValue('0')
+
+      expect(form.administrationFeeRate).toBe(1.5)
+      expect(form.performanceFeeRate).toBe(0)
+    })
+
+    it('clears a fee rate back to an empty string when the user erases it', async () => {
+      const form = buildForm({ kind: 'FUNDS', administrationFeeRate: 1.5, performanceFeeRate: 20 })
+      const wrapper = mountForm(form)
+
+      const [administrationInput, performanceInput] = wrapper.findAll('input[type="number"]')
+      await administrationInput.setValue('')
+      await performanceInput.setValue('')
+
+      expect(form.administrationFeeRate).toBe('')
+      expect(form.performanceFeeRate).toBe('')
     })
 
     it('writes the fund name, amount and current value back to the form', async () => {
@@ -211,7 +258,7 @@ describe('AddInvestmentForm', () => {
       const wrapper = mountForm(form)
 
       await wrapper.find('input[placeholder="ex.: Tesouro Selic 2029"]').setValue('Tesouro Selic')
-      const [amountInput, currentValueInput] = wrapper.findAll('input[type="number"]')
+      const [, , amountInput, currentValueInput] = wrapper.findAll('input[type="number"]')
       await amountInput.setValue('1500')
       await currentValueInput.setValue('1520.5')
 

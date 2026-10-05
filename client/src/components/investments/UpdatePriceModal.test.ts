@@ -15,7 +15,13 @@ vi.mock('@/api/holdings', () => ({
 let activeWrapper: VueWrapper | undefined
 
 function mountModal(
-  options: { kind?: WalletKind; walletCurrency?: string; initialValue?: number | null } = {},
+  options: {
+    kind?: WalletKind
+    walletCurrency?: string
+    initialValue?: number | null
+    initialAdministrationFeeRate?: number | null
+    initialPerformanceFeeRate?: number | null
+  } = {},
 ) {
   activeWrapper = mount(UpdatePriceModal, {
     props: {
@@ -24,6 +30,8 @@ function mountModal(
       kind: options.kind ?? 'STOCKS',
       walletCurrency: options.walletCurrency ?? 'BRL',
       initialValue: options.initialValue === undefined ? 38.5 : options.initialValue,
+      initialAdministrationFeeRate: options.initialAdministrationFeeRate,
+      initialPerformanceFeeRate: options.initialPerformanceFeeRate,
     },
     global: { config: { errorHandler: () => undefined } },
     attachTo: document.body,
@@ -78,8 +86,222 @@ describe('UpdatePriceModal', () => {
   it('labels the field as a value on a fund holding', () => {
     mountModal({ kind: 'FUNDS' })
 
-    expect(document.body.textContent).toContain('Atualizar valor atual')
-    expect(document.body.textContent).toContain('Informe o valor atual do fundo.')
+    expect(document.body.textContent).toContain('Atualizar fundo')
+    expect(document.body.textContent).toContain('Informe o valor atual e as taxas do fundo.')
+    expect(document.body.textContent).toContain('Valor atual')
+  })
+
+  it.each<WalletKind>(['STOCKS', 'CRYPTO'])(
+    'offers a single field and no fee rates on a %s holding',
+    (kind) => {
+      const wrapper = mountModal({ kind, initialAdministrationFeeRate: 1.5 })
+
+      expect(wrapper.findAll('input[type="number"]')).toHaveLength(1)
+      expect(document.body.textContent).not.toContain('Taxa de administração')
+      expect(document.body.textContent).not.toContain('Taxa de performance')
+    },
+  )
+
+  describe('fund fee rates', () => {
+    function fundInputs(wrapper: VueWrapper) {
+      const [valueInput, administrationInput, performanceInput] = wrapper.findAll(
+        'input[type="number"]',
+      )
+      return { valueInput, administrationInput, performanceInput }
+    }
+
+    function fundPayload() {
+      return vi.mocked(holdingsApi.updateFundHolding).mock.calls[0][2]
+    }
+
+    function inputValue(input: ReturnType<VueWrapper['find']>) {
+      return (input.element as HTMLInputElement).value
+    }
+
+    beforeEach(() => {
+      vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue({} as never)
+    })
+
+    it('adds the two rate fields below the current value, with their units in the labels', () => {
+      const wrapper = mountModal({ kind: 'FUNDS', initialValue: 1000 })
+
+      expect(wrapper.findAll('label.label').map((label) => label.text())).toEqual([
+        'Valor atual',
+        'Taxa de administração (% a.a.)',
+        'Taxa de performance (%)',
+      ])
+      expect(wrapper.findAll('.button.is-static')).toHaveLength(1)
+    })
+
+    it('pre-fills the stored rates', () => {
+      const wrapper = mountModal({
+        kind: 'FUNDS',
+        initialValue: 1000,
+        initialAdministrationFeeRate: 1.5,
+        initialPerformanceFeeRate: 20,
+      })
+
+      const { valueInput, administrationInput, performanceInput } = fundInputs(wrapper)
+      expect(inputValue(valueInput)).toBe('1000')
+      expect(inputValue(administrationInput)).toBe('1.5')
+      expect(inputValue(performanceInput)).toBe('20')
+    })
+
+    it('starts the rate fields empty when the fund has no rates', () => {
+      const wrapper = mountModal({
+        kind: 'FUNDS',
+        initialValue: 1000,
+        initialAdministrationFeeRate: null,
+        initialPerformanceFeeRate: null,
+      })
+
+      const { administrationInput, performanceInput } = fundInputs(wrapper)
+      expect(inputValue(administrationInput)).toBe('')
+      expect(inputValue(performanceInput)).toBe('')
+    })
+
+    it('saves an edited administration rate and keeps the current value and the other rate', async () => {
+      const wrapper = mountModal({
+        kind: 'FUNDS',
+        initialValue: 1000,
+        initialAdministrationFeeRate: 1.5,
+        initialPerformanceFeeRate: 20,
+      })
+
+      await fundInputs(wrapper).administrationInput.setValue('2.25')
+      await buttonLabelled(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
+        currentValue: 1000,
+        administrationFeeRate: 2.25,
+        performanceFeeRate: 20,
+      })
+      expect(wrapper.emitted('updated')).toHaveLength(1)
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
+
+    it('saves an edited performance rate and keeps the current value and the other rate', async () => {
+      const wrapper = mountModal({
+        kind: 'FUNDS',
+        initialValue: 1000,
+        initialAdministrationFeeRate: 1.5,
+        initialPerformanceFeeRate: 20,
+      })
+
+      await fundInputs(wrapper).performanceInput.setValue('10')
+      await buttonLabelled(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
+        currentValue: 1000,
+        administrationFeeRate: 1.5,
+        performanceFeeRate: 10,
+      })
+    })
+
+    it('fills in the rates of a fund that had none while editing the value', async () => {
+      const wrapper = mountModal({ kind: 'FUNDS', initialValue: 1000 })
+
+      const { valueInput, administrationInput, performanceInput } = fundInputs(wrapper)
+      await valueInput.setValue('1100')
+      await administrationInput.setValue('1')
+      await performanceInput.setValue('15')
+      await buttonLabelled(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
+        currentValue: 1100,
+        administrationFeeRate: 1,
+        performanceFeeRate: 15,
+      })
+    })
+
+    it('leaves blank rates out of the payload', async () => {
+      const wrapper = mountModal({ kind: 'FUNDS', initialValue: 1000 })
+
+      await fundInputs(wrapper).valueInput.setValue('1080')
+      await buttonLabelled(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(fundPayload()).toEqual({ currentValue: 1080 })
+      expect(fundPayload()).not.toHaveProperty('administrationFeeRate')
+      expect(fundPayload()).not.toHaveProperty('performanceFeeRate')
+    })
+
+    it('sends a rate of zero instead of dropping it', async () => {
+      const wrapper = mountModal({
+        kind: 'FUNDS',
+        initialValue: 1000,
+        initialAdministrationFeeRate: 1.5,
+        initialPerformanceFeeRate: 20,
+      })
+
+      const { administrationInput, performanceInput } = fundInputs(wrapper)
+      await administrationInput.setValue('0')
+      await performanceInput.setValue('0')
+      await buttonLabelled(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(fundPayload()).toHaveProperty('administrationFeeRate', 0)
+      expect(fundPayload()).toHaveProperty('performanceFeeRate', 0)
+    })
+
+    it('saves a rate on a fund with no current value without sending one', async () => {
+      const wrapper = mountModal({ kind: 'FUNDS', initialValue: null })
+      expect(buttonLabelled(wrapper, 'Salvar').attributes('disabled')).toBeDefined()
+
+      await fundInputs(wrapper).administrationInput.setValue('1.5')
+      expect(buttonLabelled(wrapper, 'Salvar').attributes('disabled')).toBeUndefined()
+      await buttonLabelled(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(fundPayload()).toEqual({ administrationFeeRate: 1.5 })
+      expect(fundPayload()).not.toHaveProperty('currentValue')
+    })
+
+    it('saves a current value on its own when the rates stay blank', async () => {
+      const wrapper = mountModal({ kind: 'FUNDS', initialValue: null })
+
+      await fundInputs(wrapper).valueInput.setValue('500')
+      expect(buttonLabelled(wrapper, 'Salvar').attributes('disabled')).toBeUndefined()
+    })
+
+    it('disables Salvar when every field is blank', async () => {
+      const wrapper = mountModal({
+        kind: 'FUNDS',
+        initialValue: 1000,
+        initialAdministrationFeeRate: 1.5,
+        initialPerformanceFeeRate: 20,
+      })
+
+      const { valueInput, administrationInput, performanceInput } = fundInputs(wrapper)
+      await valueInput.setValue('')
+      await administrationInput.setValue('')
+      await performanceInput.setValue('')
+
+      expect(buttonLabelled(wrapper, 'Salvar').attributes('disabled')).toBeDefined()
+    })
+
+    it.each([
+      ['administration', 1],
+      ['performance', 2],
+    ])('disables Salvar when the %s rate is negative', async (_label, index) => {
+      const wrapper = mountModal({ kind: 'FUNDS', initialValue: 1000 })
+
+      await wrapper.findAll('input[type="number"]')[index].setValue('-1')
+
+      expect(buttonLabelled(wrapper, 'Salvar').attributes('disabled')).toBeDefined()
+    })
+
+    it('does not call the API when submitted while invalid', async () => {
+      const wrapper = mountModal({ kind: 'FUNDS', initialValue: null })
+
+      await buttonLabelled(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateFundHolding).not.toHaveBeenCalled()
+    })
   })
 
   it('prefixes the field with the symbol of the wallet currency', () => {

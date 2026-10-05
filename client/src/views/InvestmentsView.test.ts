@@ -844,6 +844,8 @@ describe('InvestmentsView', () => {
         fundTypeId: 'type-3',
         name: 'Tesouro IPCA+',
         currentValue: 3300,
+        administrationFeeRate: null,
+        performanceFeeRate: null,
         contributions: [],
         withdrawals: [],
       })
@@ -890,6 +892,8 @@ describe('InvestmentsView', () => {
         fundTypeId: 'type-3',
         name: 'Tesouro IPCA+',
         currentValue: 3300,
+        administrationFeeRate: null,
+        performanceFeeRate: null,
         contributions: [],
         withdrawals: [],
       })

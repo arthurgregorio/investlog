@@ -135,6 +135,8 @@ export interface FundHoldingDetail {
   fundTypeId: string
   name: string
   currentValue: number | null
+  administrationFeeRate: number | null
+  performanceFeeRate: number | null
   contributions: ContributionDetail[]
   withdrawals: WithdrawalDetail[]
 }

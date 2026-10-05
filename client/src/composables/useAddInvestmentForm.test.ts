@@ -186,6 +186,116 @@ describe('useAddInvestmentForm', () => {
     )
   })
 
+  describe('fund fee rates', () => {
+    function fillRequiredFundFields(form: ReturnType<typeof useAddInvestmentForm>['form']) {
+      form.name = 'Tesouro Direto'
+      form.amount = 500
+      form.date = new Date('2024-06-01')
+    }
+
+    function createFundPayload() {
+      return vi.mocked(holdingsApiModule.holdingsApi.createFundHolding).mock.calls[0][1]
+    }
+
+    it('starts with both rates blank', () => {
+      const { form } = useAddInvestmentForm('FUNDS')
+
+      expect(form.administrationFeeRate).toBe('')
+      expect(form.performanceFeeRate).toBe('')
+    })
+
+    it('stays valid and submittable with both rates blank', async () => {
+      const { form, submit } = useAddInvestmentForm('FUNDS')
+      fillRequiredFundFields(form)
+
+      expect(form.valid).toBe(true)
+      await submit()
+
+      expect(holdingsApiModule.holdingsApi.createFundHolding).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends both rates on the create call', async () => {
+      const { form, submit } = useAddInvestmentForm('FUNDS')
+      fillRequiredFundFields(form)
+      form.administrationFeeRate = 1.5
+      form.performanceFeeRate = 20
+
+      await submit()
+
+      expect(holdingsApiModule.holdingsApi.createFundHolding).toHaveBeenCalledWith(
+        'wallet-funds-1',
+        {
+          fundTypeId: 'type-fund-1',
+          name: 'Tesouro Direto',
+          currentValue: undefined,
+          administrationFeeRate: 1.5,
+          performanceFeeRate: 20,
+          contribution: { contributionDate: '2024-06-01', amount: 500 },
+        },
+      )
+    })
+
+    it('leaves both rates out of the payload when they are blank', async () => {
+      const { form, submit } = useAddInvestmentForm('FUNDS')
+      fillRequiredFundFields(form)
+
+      await submit()
+
+      expect(createFundPayload()).not.toHaveProperty('administrationFeeRate')
+      expect(createFundPayload()).not.toHaveProperty('performanceFeeRate')
+    })
+
+    it('sends only the administration rate when the performance rate is blank', async () => {
+      const { form, submit } = useAddInvestmentForm('FUNDS')
+      fillRequiredFundFields(form)
+      form.administrationFeeRate = 0.8
+
+      await submit()
+
+      expect(createFundPayload()).toHaveProperty('administrationFeeRate', 0.8)
+      expect(createFundPayload()).not.toHaveProperty('performanceFeeRate')
+    })
+
+    it('sends only the performance rate when the administration rate is blank', async () => {
+      const { form, submit } = useAddInvestmentForm('FUNDS')
+      fillRequiredFundFields(form)
+      form.performanceFeeRate = 15
+
+      await submit()
+
+      expect(createFundPayload()).not.toHaveProperty('administrationFeeRate')
+      expect(createFundPayload()).toHaveProperty('performanceFeeRate', 15)
+    })
+
+    it('sends a rate of zero instead of dropping it', async () => {
+      const { form, submit } = useAddInvestmentForm('FUNDS')
+      fillRequiredFundFields(form)
+      form.administrationFeeRate = 0
+      form.performanceFeeRate = 0
+
+      await submit()
+
+      expect(createFundPayload()).toHaveProperty('administrationFeeRate', 0)
+      expect(createFundPayload()).toHaveProperty('performanceFeeRate', 0)
+    })
+
+    it('does not send the rates for stock and crypto holdings', async () => {
+      const { form, submit } = useAddInvestmentForm('STOCKS')
+      form.ticker = 'PETR4'
+      form.quantity = 10
+      form.price = 36.5
+      form.date = new Date('2024-06-01')
+      form.administrationFeeRate = 1.5
+
+      await submit()
+
+      const stockPayload = vi.mocked(holdingsApiModule.holdingsApi.createStockHolding).mock
+        .calls[0][1]
+      expect(stockPayload).not.toHaveProperty('administrationFeeRate')
+      expect(stockPayload).not.toHaveProperty('performanceFeeRate')
+    })
+  })
+
   it('submit does nothing while the form is invalid', async () => {
     const onDone = vi.fn()
 
