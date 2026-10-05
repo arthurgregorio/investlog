@@ -200,4 +200,32 @@ describe('MoveHoldingsModal', () => {
     expect(wrapper.emitted('close')).toBeUndefined()
     expect(wrapper.find('.move-item.is-selected').exists()).toBe(true)
   })
+
+  it('covers the movable list while it loads and leaves once it arrives', async () => {
+    let resolveHoldings!: (page: Awaited<ReturnType<typeof holdingsApi.findAll>>) => void
+    vi.mocked(holdingsApi.findAll).mockReturnValue(
+      new Promise((resolve) => {
+        resolveHoldings = resolve
+      }),
+    )
+    const pinia = createTestingPinia()
+    const walletsStore = useWalletsStore()
+    walletsStore.wallets = wallets
+    walletsStore.walletById = (id: string) => wallets.find((wallet) => wallet.id === id)
+
+    const wrapper = mount(MoveHoldingsModal, {
+      props: { originWalletId: 'wallet-origin' },
+      global: { plugins: [pinia] },
+    })
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    resolveHoldings({
+      content: [holdingOf({})],
+      page: { size: 500, number: 0, totalElements: 1, totalPages: 1 },
+    })
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="move-item"]')).toHaveLength(1)
+  })
 })

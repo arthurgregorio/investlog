@@ -238,4 +238,32 @@ describe('PriceCurrenciesView', () => {
         .every((button) => button.element.disabled),
     ).toBe(true)
   })
+
+  it('shows the loading overlay only while the rates store is loading', async () => {
+    const { wrapper, ratesStore } = await mountView()
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+    ratesStore.loading = true
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    ratesStore.loading = false
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
+
+  it('shows the loading overlay only while the configurations store is loading', async () => {
+    const { wrapper, configurationsStore } = await mountView()
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+    configurationsStore.loading = true
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    configurationsStore.loading = false
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
 })

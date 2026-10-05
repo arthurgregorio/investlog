@@ -107,7 +107,7 @@ function confirmRemoveType(type: AssetType) {
 
 <template>
   <div class="page">
-    <b-loading :is-full-page="false" :active="typesListStore.loading" />
+    <b-loading :is-full-page="false" :model-value="typesListStore.loading" />
 
     <div class="page-head-row">
       <div>

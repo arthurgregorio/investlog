@@ -111,6 +111,7 @@ async function mountView(
     displayCurrency?: string
     convertFactor?: number
     knownWallet?: WalletResponse
+    pendingReport?: Promise<HoldingRow[]>
   } = {},
 ) {
   const {
@@ -119,8 +120,9 @@ async function mountView(
     displayCurrency = 'BRL',
     convertFactor = 1,
     knownWallet,
+    pendingReport,
   } = options
-  vi.mocked(holdingsApi.findAllForReport).mockResolvedValue(rows)
+  vi.mocked(holdingsApi.findAllForReport).mockReturnValue(pendingReport ?? Promise.resolve(rows))
 
   const router = createRouter({
     history: createMemoryHistory(),
@@ -388,5 +390,19 @@ describe('InvestmentReportView', () => {
     activeWrapper = undefined
 
     expect(disconnectSpy).toHaveBeenCalled()
+  })
+
+  it('covers the report while it loads and leaves once the rows arrive', async () => {
+    let resolveReport!: (rows: HoldingRow[]) => void
+    const pendingReport = new Promise<HoldingRow[]>((resolve) => {
+      resolveReport = resolve
+    })
+
+    const { wrapper } = await mountView({ pendingReport })
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    resolveReport(holdings)
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
   })
 })

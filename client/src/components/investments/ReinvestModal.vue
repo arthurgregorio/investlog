@@ -197,7 +197,7 @@ async function submit() {
     wide
     @close="emit('close')"
   >
-    <b-loading :is-full-page="false" :active="loading" />
+    <b-loading :is-full-page="false" :model-value="loading" />
     <b-message v-if="error" type="is-danger" size="is-small" data-testid="reinvest-error">
       {{ error }}
     </b-message>

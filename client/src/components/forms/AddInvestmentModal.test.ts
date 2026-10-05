@@ -120,7 +120,7 @@ describe('AddInvestmentModal', () => {
     })
 
     await wrapper.find('input[placeholder="ex.: Tesouro Selic 2029"]').setValue('Tesouro Selic')
-    await wrapper.find('input[type="number"]').setValue('1500')
+    await wrapper.findAll('input[type="number"]')[2].setValue('1500')
     await buttonLabelled(wrapper, 'Adicionar').trigger('click')
     await flushPromises()
 

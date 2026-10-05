@@ -331,7 +331,7 @@ function openReport() {
 
     <Card v-else class="table-card">
       <div class="table-wrap">
-        <b-loading :is-full-page="false" :active="holdingsListStore.loading" />
+        <b-loading :is-full-page="false" :model-value="holdingsListStore.loading" />
         <div class="table-scroll">
           <table class="inv-table">
             <thead>

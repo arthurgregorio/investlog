@@ -136,7 +136,7 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
       </b-button>
     </div>
 
-    <b-loading :is-full-page="false" :active="loading" />
+    <b-loading :is-full-page="false" :model-value="loading" />
 
     <EmptyState
       v-if="!loading && holdings.length === 0"

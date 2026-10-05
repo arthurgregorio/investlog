@@ -41,7 +41,7 @@ function confirmRevoke(id: string, label: string) {
     subtitle="Dispositivos que não pedem código de autenticação por 30 dias."
     @close="emit('close')"
   >
-    <b-loading :is-full-page="false" :active="trustedDevicesStore.loading" />
+    <b-loading :is-full-page="false" :model-value="trustedDevicesStore.loading" />
     <p
       v-if="!trustedDevicesStore.loading && trustedDevicesStore.devices.length === 0"
       class="has-text-grey"
