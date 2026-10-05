@@ -86,4 +86,19 @@ describe('WalletsView', () => {
     expect(router.currentRoute.value.name).toBe('wallet-detail')
     expect(router.currentRoute.value.params.id).toBe('wallet-1')
   })
+
+  it('shows the loading overlay only while the wallets store is loading', async () => {
+    const { wrapper } = await mountView([walletOf('wallet-1', 'Um')])
+    const walletsStore = useWalletsStore()
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+    walletsStore.loading = true
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    walletsStore.loading = false
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
 })

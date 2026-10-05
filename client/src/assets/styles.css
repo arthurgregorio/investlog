@@ -426,6 +426,7 @@ a {
 }
 
 .page {
+  position: relative;
   max-width: 1920px;
   margin: 0 auto;
   padding: 26px 30px 70px;
@@ -1444,6 +1445,7 @@ a {
 }
 
 .detail {
+  position: relative;
   padding-top: 4px;
 }
 

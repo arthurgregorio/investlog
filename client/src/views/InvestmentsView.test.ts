@@ -1034,4 +1034,23 @@ describe('InvestmentsView', () => {
       expect(String(openWindow.mock.calls[0][0])).toBe('/investments/report')
     })
   })
+
+  describe('loading overlay', () => {
+    it('covers the table while a page is loading and leaves it once loaded', async () => {
+      const { wrapper, holdingsListStore } = await mountView({ loading: true })
+
+      expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+      holdingsListStore.loading = false
+      await flushPromises()
+
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    })
+
+    it('shows no overlay when nothing is loading', async () => {
+      const { wrapper } = await mountView()
+
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    })
+  })
 })

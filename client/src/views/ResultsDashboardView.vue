@@ -31,7 +31,7 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
 
 <template>
   <div class="page">
-    <b-loading :is-full-page="false" :active="loading" />
+    <b-loading :is-full-page="false" :model-value="loading" />
 
     <div class="page-head">
       <h1 class="page-title">Resultados</h1>

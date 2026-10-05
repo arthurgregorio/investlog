@@ -310,4 +310,18 @@ describe('UsersView', () => {
 
     expect(wrapper.find('.password-reset-stub').exists()).toBe(false)
   })
+
+  it('shows the loading overlay only while the users store is loading', async () => {
+    const { wrapper, usersAdminStore } = await mountView([])
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+    usersAdminStore.loading = true
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    usersAdminStore.loading = false
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
 })

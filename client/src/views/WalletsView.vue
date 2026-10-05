@@ -45,7 +45,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
 
 <template>
   <div class="page">
-    <b-loading :is-full-page="false" :active="walletsStore.loading" />
+    <b-loading :is-full-page="false" :model-value="walletsStore.loading" />
 
     <div class="page-head page-head-row">
       <div>

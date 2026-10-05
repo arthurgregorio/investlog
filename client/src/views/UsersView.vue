@@ -90,7 +90,7 @@ function confirmDeleteUser(id: string, name: string) {
 
 <template>
   <div class="page">
-    <b-loading :is-full-page="false" :active="usersAdminStore.loading" />
+    <b-loading :is-full-page="false" :model-value="usersAdminStore.loading" />
 
     <div class="page-head page-head-row">
       <div>

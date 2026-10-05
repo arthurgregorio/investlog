@@ -230,7 +230,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
 
 <template>
   <div class="detail">
-    <b-loading :is-full-page="false" :active="loading" />
+    <b-loading :is-full-page="false" :model-value="loading" />
 
     <div v-if="fundDetail" class="fund-fees" data-testid="fund-fees">
       <div class="fund-fee">

@@ -1157,4 +1157,34 @@ describe('HoldingDetailPanel', () => {
       })
     })
   })
+
+  describe('loading overlay', () => {
+    it('covers the panel while the detail is being fetched and leaves once it arrives', async () => {
+      const [{ row, detail, getHolding }] = kindCases
+      let resolveDetail!: (loaded: HoldingDetail) => void
+      getHolding.mockReturnValue(
+        new Promise<HoldingDetail>((resolve) => {
+          resolveDetail = resolve
+        }),
+      )
+
+      const wrapper = mountPanel(row)
+      await flushPromises()
+      expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+      resolveDetail(detail())
+      await flushPromises()
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    })
+
+    it('leaves the overlay once a failed fetch settles', async () => {
+      const [{ row, getHolding }] = kindCases
+      getHolding.mockRejectedValue(new Error('boom'))
+
+      const wrapper = mountPanel(row)
+      await flushPromises()
+
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    })
+  })
 })

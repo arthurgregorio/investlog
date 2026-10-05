@@ -129,6 +129,23 @@ describe('TrustedDevicesModal', () => {
 
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
+
+  it('covers the list while the devices are loading and leaves once they arrive', async () => {
+    let resolveDevices!: (devices: Awaited<ReturnType<typeof authApi.fetchTrustedDevices>>) => void
+    vi.mocked(authApi.fetchTrustedDevices).mockReturnValue(
+      new Promise((resolve) => {
+        resolveDevices = resolve
+      }),
+    )
+
+    mountModal()
+    await flushPromises()
+    expect(document.body.querySelectorAll('.loading-overlay')).toHaveLength(1)
+
+    resolveDevices([])
+    await flushPromises()
+    expect(document.body.querySelector('.loading-overlay')).toBeNull()
+  })
 })
 
 function flushPromises() {

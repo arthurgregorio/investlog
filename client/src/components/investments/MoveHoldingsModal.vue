@@ -190,7 +190,7 @@ async function submit() {
       </div>
 
       <div class="move-list">
-        <b-loading :is-full-page="false" :active="loadingHoldings" />
+        <b-loading :is-full-page="false" :model-value="loadingHoldings" />
         <p v-if="!loadingHoldings && holdings.length === 0" class="move-hint">
           Nenhum investimento ativo nesta carteira.
         </p>

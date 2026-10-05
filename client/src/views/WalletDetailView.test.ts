@@ -485,4 +485,66 @@ describe('WalletDetailView', () => {
     expect(wrapper.text()).toContain('TRXF11')
     expect(wrapper.find('.wd-share-pct').text()).toBe('41,10%')
   })
+
+  describe('loading overlays', () => {
+    const move: WalletMoveRow = {
+      id: 'move-out',
+      movedAt: '2026-09-20',
+      direction: 'OUT',
+      kind: 'STOCKS',
+      holdingName: 'Vale',
+      ticker: 'VALE3',
+      quantity: 10,
+      originWalletId: 'wallet-1',
+      originWalletName: 'Detail Wallet',
+      destinationWalletId: 'wallet-2',
+      destinationWalletName: 'Outra carteira',
+    }
+
+    it('shows the page overlay only while the wallet detail is loading', async () => {
+      const { wrapper, walletDetailStore } = await mountView(detailOf())
+
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+      walletDetailStore.loading = true
+      await flushPromises()
+      expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+      walletDetailStore.loading = false
+      await flushPromises()
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    })
+
+    it('shows the move history overlay only while the moves are loading', async () => {
+      const { wrapper, walletMovesStore } = await mountView(detailOf(), [mockRow], true, true, [
+        move,
+      ])
+
+      expect(wrapper.find('[data-testid="move-history"] .loading-overlay').exists()).toBe(false)
+
+      walletMovesStore.loading = true
+      await flushPromises()
+      expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+      expect(wrapper.find('[data-testid="move-history"] .loading-overlay').exists()).toBe(true)
+
+      walletMovesStore.loading = false
+      await flushPromises()
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    })
+
+    it('shows the investments table overlay only while the holdings are loading', async () => {
+      const { wrapper, holdingsListStore } = await mountView(detailOf())
+
+      expect(wrapper.find('.table-card .loading-overlay').exists()).toBe(false)
+
+      holdingsListStore.loading = true
+      await flushPromises()
+      expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+      expect(wrapper.find('.table-card .loading-overlay').exists()).toBe(true)
+
+      holdingsListStore.loading = false
+      await flushPromises()
+      expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+    })
+  })
 })

@@ -203,7 +203,7 @@ function confirmDeleteWallet() {
 
 <template>
   <div class="page">
-    <b-loading :is-full-page="false" :active="walletDetailStore.loading" />
+    <b-loading :is-full-page="false" :model-value="walletDetailStore.loading" />
 
     <template v-if="detail">
       <div class="wd-breadcrumb">
@@ -412,7 +412,7 @@ function confirmDeleteWallet() {
           <div class="wd-chart-sub">Investimentos movidos de e para esta carteira</div>
         </div>
         <div v-if="walletMovesStore.rows.length > 0" class="table-wrap">
-          <b-loading :is-full-page="false" :active="walletMovesStore.loading" />
+          <b-loading :is-full-page="false" :model-value="walletMovesStore.loading" />
           <div class="table-scroll">
             <table class="inv-table">
               <thead>
@@ -483,7 +483,7 @@ function confirmDeleteWallet() {
 
       <Card v-else class="table-card mb-0">
         <div class="table-wrap">
-          <b-loading :is-full-page="false" :active="holdingsListStore.loading" />
+          <b-loading :is-full-page="false" :model-value="holdingsListStore.loading" />
           <div class="table-scroll">
             <table class="inv-table">
               <thead>

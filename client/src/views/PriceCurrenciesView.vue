@@ -121,7 +121,7 @@ async function commitRate(currencyCode: string) {
 
     <Card>
       <CardBody>
-        <b-loading :is-full-page="false" :active="ratesStore.loading" />
+        <b-loading :is-full-page="false" :model-value="ratesStore.loading" />
         <div class="set-head">
           <h2 class="set-title">Moeda base e conversão</h2>
           <span class="base-chip">
@@ -155,7 +155,7 @@ async function commitRate(currencyCode: string) {
 
     <Card>
       <CardBody>
-        <b-loading :is-full-page="false" :active="configurationsStore.loading" />
+        <b-loading :is-full-page="false" :model-value="configurationsStore.loading" />
         <div class="set-head"><h2 class="set-title">Sincronização automática</h2></div>
         <p class="set-desc">Ative ou desative funções do sistema.</p>
         <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
