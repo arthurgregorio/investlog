@@ -171,4 +171,18 @@ describe('ResultsDashboardView', () => {
     expect(wrapper.find('[data-testid="kpi-withdrawn"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="reinvestments"]').text()).toContain('Nenhum reinvestimento')
   })
+
+  it('shows the loading overlay only while the results summary is loading', async () => {
+    const { wrapper, resultsStore } = await mountView({ summary, reinvestments: [reinvestment] })
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+    resultsStore.summaryLoading = true
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    resultsStore.summaryLoading = false
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
 })

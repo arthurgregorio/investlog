@@ -321,4 +321,18 @@ describe('OverviewView', () => {
 
     expect(router.currentRoute.value.name).toBe('wallets')
   })
+
+  it('shows the loading overlay only while the overview store is loading', async () => {
+    const { wrapper, overviewStore } = await mountView({ summary: null })
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+    overviewStore.loading = true
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    overviewStore.loading = false
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
 })

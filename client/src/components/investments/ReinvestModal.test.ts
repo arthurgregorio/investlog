@@ -259,4 +259,27 @@ describe('ReinvestModal', () => {
     expect(wrapper.emitted('reinvested')).toBeUndefined()
     expect((control(wrapper, 'reinvest-quantity').element as HTMLInputElement).value).toBe('40')
   })
+
+  it('covers the form while the holdings load and leaves once they arrive', async () => {
+    let resolveHoldings!: (page: Awaited<ReturnType<typeof holdingsApi.findAll>>) => void
+    vi.mocked(holdingsApi.findAll).mockReturnValue(
+      new Promise((resolve) => {
+        resolveHoldings = resolve
+      }),
+    )
+
+    const wrapper = mount(ReinvestModal, {
+      props: { walletId: 'wallet-stocks' },
+      global: { plugins: [createTestingPinia()] },
+    })
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    resolveHoldings({
+      content: walletHoldings,
+      page: { size: 500, number: 0, totalElements: walletHoldings.length, totalPages: 1 },
+    })
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
 })

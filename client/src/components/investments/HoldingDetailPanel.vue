@@ -222,7 +222,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
 
 <template>
   <div class="detail">
-    <b-loading :is-full-page="false" :active="loading" />
+    <b-loading :is-full-page="false" :model-value="loading" />
 
     <div v-if="detail" class="ledger-head">
       <div class="ledger-head-info">

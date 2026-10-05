@@ -222,4 +222,18 @@ describe('TypesView', () => {
     expect(usedRowButtons).toHaveLength(2)
     expect(usedRowButtons[1].attributes('disabled')).toBeDefined()
   })
+
+  it('shows the loading overlay only while the types store is loading', async () => {
+    const { wrapper, typesListStore } = await mountView()
+
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+
+    typesListStore.loading = true
+    await flushPromises()
+    expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
+
+    typesListStore.loading = false
+    await flushPromises()
+    expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
 })
