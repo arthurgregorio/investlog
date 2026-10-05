@@ -76,6 +76,7 @@ const stockRow: HoldingRow = {
   currentValue: 6960,
   gain: 1308,
   gainPct: 23.1,
+  frozen: false,
 }
 
 const cryptoRow: HoldingRow = {
@@ -93,6 +94,7 @@ const cryptoRow: HoldingRow = {
   currentValue: 90000,
   gain: -10000,
   gainPct: -10,
+  frozen: false,
 }
 
 const fundRow: HoldingRow = {
@@ -110,6 +112,7 @@ const fundRow: HoldingRow = {
   currentValue: 3000,
   gain: 0,
   gainPct: 0,
+  frozen: false,
 }
 
 function withdrawalOf(overrides: Partial<WithdrawalDetail> = {}): WithdrawalDetail {
@@ -140,6 +143,7 @@ function stockDetailWithWithdrawals(): StockHoldingDetail {
       { id: 'lot-1', lotDate: '2026-01-12', quantity: 300, price: 25.1 },
       { id: 'lot-2', lotDate: '2026-03-03', quantity: 200, price: 33 },
     ],
+    frozen: false,
     withdrawals: [
       withdrawalOf(),
       withdrawalOf({
@@ -163,6 +167,7 @@ function stockDetailWithoutWithdrawals(): StockHoldingDetail {
     name: 'Petróleo Brasileiro',
     currentPrice: 34.8,
     lots: [{ id: 'lot-1', lotDate: '2026-01-12', quantity: 300, price: 25.1 }],
+    frozen: false,
     withdrawals: [],
   }
 }
@@ -175,6 +180,7 @@ function cryptoDetail(): CryptoHoldingDetail {
     name: 'Bitcoin',
     currentPrice: 180000,
     lots: [{ id: 'lot-9', lotDate: '2026-02-01', quantity: 0.5, price: 200000 }],
+    frozen: false,
     withdrawals: [],
   }
 }
@@ -189,6 +195,7 @@ function fundDetail(overrides: Partial<FundHoldingDetail> = {}): FundHoldingDeta
     administrationFeeRate: null,
     performanceFeeRate: null,
     contributions: [{ id: 'c-1', contributionDate: '2026-01-10', amount: 4000 }],
+    frozen: false,
     withdrawals: [
       withdrawalOf({
         id: 'fw-1',
@@ -221,6 +228,7 @@ interface KindCase {
   row: HoldingRow
   detail: () => HoldingDetail
   getHolding: ApiMock
+  updateHolding: ApiMock
   deleteHolding: ApiMock
   deleteEntry: ApiMock
   deleteWithdrawal: ApiMock
@@ -235,6 +243,7 @@ const kindCases: KindCase[] = [
     row: stockRow,
     detail: stockDetailWithoutWithdrawals,
     getHolding: vi.mocked(holdingsApi.getStockHolding),
+    updateHolding: vi.mocked(holdingsApi.updateStockHolding),
     deleteHolding: vi.mocked(holdingsApi.deleteStockHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteStockLot),
     deleteWithdrawal: vi.mocked(resultsApi.deleteStockWithdrawal),
@@ -247,6 +256,7 @@ const kindCases: KindCase[] = [
     row: cryptoRow,
     detail: cryptoDetail,
     getHolding: vi.mocked(holdingsApi.getCryptoHolding),
+    updateHolding: vi.mocked(holdingsApi.updateCryptoHolding),
     deleteHolding: vi.mocked(holdingsApi.deleteCryptoHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteCryptoLot),
     deleteWithdrawal: vi.mocked(resultsApi.deleteCryptoWithdrawal),
@@ -259,6 +269,7 @@ const kindCases: KindCase[] = [
     row: fundRow,
     detail: fundDetail,
     getHolding: vi.mocked(holdingsApi.getFundHolding),
+    updateHolding: vi.mocked(holdingsApi.updateFundHolding),
     deleteHolding: vi.mocked(holdingsApi.deleteFundHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteFundContribution),
     deleteWithdrawal: vi.mocked(resultsApi.deleteFundWithdrawal),
@@ -648,6 +659,134 @@ describe('HoldingDetailPanel', () => {
     })
   })
 
+  describe('freezing', () => {
+    function frozenOf(row: HoldingRow): HoldingRow {
+      return { ...row, frozen: true }
+    }
+
+    function isDisabled(label: string) {
+      const item = Array.from(document.body.querySelectorAll('.dropdown-item')).find(
+        (candidate) => candidate.textContent?.trim() === label,
+      )
+      return item?.classList.contains('is-disabled')
+    }
+
+    it.each(kindCases)(
+      'shows no snowflake and offers Congelar on an open $label holding',
+      async ({ row, detail }) => {
+        const wrapper = await mountLoadedPanel(row, detail())
+
+        expect(wrapper.find('[data-testid="frozen-tag"]').exists()).toBe(false)
+        expect(actionLabels()).toContain('Congelar')
+        expect(actionLabels()).not.toContain('Descongelar')
+      },
+    )
+
+    it.each(kindCases)(
+      'shows the snowflake next to Movimentações, with no text tag, and offers Descongelar on a frozen $label holding',
+      async ({ row, detail }) => {
+        const wrapper = await mountLoadedPanel(frozenOf(row), detail())
+
+        const badge = wrapper.find('.ledger-head-info [data-testid="frozen-tag"]')
+        expect(badge.attributes('title')).toBe('Congelado')
+        expect(badge.attributes('aria-label')).toBe('Congelado')
+        expect(badge.find('.mdi-snowflake').exists()).toBe(true)
+        expect(badge.text()).toBe('')
+        expect(wrapper.find('.ledger-head-info').text()).not.toContain('Congelado')
+        expect(actionLabels()).toContain('Descongelar')
+        expect(actionLabels()).not.toContain('Congelar')
+      },
+    )
+
+    it.each(kindCases)(
+      'keeps the buy action enabled on an open $label holding',
+      async ({ row, detail }) => {
+        await mountLoadedPanel(row, detail())
+
+        expect(isDisabled(row.kind === 'FUNDS' ? 'Registrar novo aporte' : 'Registrar nova compra')).toBe(
+          false,
+        )
+      },
+    )
+
+    it.each(kindCases)(
+      'disables the buy action and opens no modal on a frozen $label holding',
+      async ({ row, detail }) => {
+        const wrapper = await mountLoadedPanel(frozenOf(row), detail())
+        const buyLabel = row.kind === 'FUNDS' ? 'Registrar novo aporte' : 'Registrar nova compra'
+
+        expect(isDisabled(buyLabel)).toBe(true)
+        await chooseAction(buyLabel)
+
+        expect(wrapper.find('.modal-card').exists()).toBe(false)
+        expect(document.body.querySelector('.modal-card')).toBeNull()
+      },
+    )
+
+    it.each(kindCases)(
+      'freezes an open $label holding, reloads its detail and reports the change',
+      async ({ row, detail, updateHolding, getHolding }) => {
+        updateHolding.mockResolvedValue(detail())
+        const wrapper = await mountLoadedPanel(row, detail())
+
+        await chooseAction('Congelar')
+
+        expect(updateHolding).toHaveBeenCalledWith(row.walletId, row.id, { frozen: true })
+        expect(getHolding).toHaveBeenCalledTimes(2)
+        expect(wrapper.emitted('positionAdded')).toHaveLength(1)
+      },
+    )
+
+    it.each(kindCases)(
+      'unfreezes a frozen $label holding',
+      async ({ row, detail, updateHolding, getHolding }) => {
+        updateHolding.mockResolvedValue(detail())
+        const wrapper = await mountLoadedPanel(frozenOf(row), detail())
+
+        await chooseAction('Descongelar')
+
+        expect(updateHolding).toHaveBeenCalledWith(row.walletId, row.id, { frozen: false })
+        expect(getHolding).toHaveBeenCalledTimes(2)
+        expect(wrapper.emitted('positionAdded')).toHaveLength(1)
+      },
+    )
+
+    it('lets a non-admin freeze a holding', async () => {
+      vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
+      await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals(), { isAdmin: false })
+
+      await chooseAction('Congelar')
+
+      expect(holdingsApi.updateStockHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
+        frozen: true,
+      })
+    })
+
+    it('reports nothing and keeps the panel as it was when the toggle is rejected', async () => {
+      vi.mocked(holdingsApi.updateStockHolding).mockRejectedValue(new Error('500'))
+      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+
+      await chooseAction('Congelar')
+
+      expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(1)
+      expect(wrapper.emitted('positionAdded')).toBeUndefined()
+    })
+
+    it('keeps every other action available on a frozen holding', async () => {
+      vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
+      const wrapper = await mountLoadedPanel(
+        frozenOf(stockRow),
+        stockDetailWithoutWithdrawals(),
+      )
+
+      for (const label of ['Atualizar preço', 'Resgatar', 'Reinvestir', 'Mover', 'Remover']) {
+        expect(isDisabled(label)).toBe(false)
+      }
+      await chooseAction('Atualizar preço')
+      expect(wrapper.find('.modal-card-title').exists()).toBe(true)
+    })
+  })
+
   describe('purchase removal', () => {
     it.each(kindCases)(
       'removes a $label entry on confirm, reloads the detail and reports the change',
@@ -828,6 +967,7 @@ describe('HoldingDetailPanel', () => {
         'Resgatar',
         'Reinvestir',
         'Mover',
+        'Congelar',
         'Remover',
       ])
       expect(wrapper.find('.ledger-actions').findAll(':scope > button')).toHaveLength(0)
@@ -848,6 +988,7 @@ describe('HoldingDetailPanel', () => {
         'Resgatar',
         'Reinvestir',
         'Mover',
+        'Congelar',
       ])
     })
 

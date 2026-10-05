@@ -8,6 +8,7 @@ import br.com.investlog.server.reinvestments.repositories.ReinvestmentRepository
 import br.com.investlog.server.reinvestments.rest.payloads.ReinvestmentRequest
 import br.com.investlog.server.results.repositories.RecordedResult
 import br.com.investlog.server.results.services.PositionExitService
+import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import org.springframework.stereotype.Service
@@ -76,6 +77,10 @@ class ReinvestmentService(
 
         if (destination.position.status == HoldingStatus.COMPLETED) {
             throw InvalidReinvestmentException("${destination.name} está encerrado e não pode receber um reinvestimento")
+        }
+
+        if (destination.frozen) {
+            throw FrozenHoldingException("${destination.name} está congelado e não pode receber um reinvestimento")
         }
 
         if (source.walletCurrency != destination.walletCurrency) {

@@ -69,6 +69,7 @@ class CryptoHoldingRepository(
             cryptoHoldings.TICKER,
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
+            cryptoHoldings.FROZEN,
             lotsField,
             withdrawalsField
         )
@@ -85,6 +86,7 @@ class CryptoHoldingRepository(
                     ticker = rec.get(cryptoHoldings.TICKER)!!,
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),
+                    frozen = rec.get(cryptoHoldings.FROZEN)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
@@ -129,6 +131,7 @@ class CryptoHoldingRepository(
             ticker = holding.ticker!!,
             name = holding.name!!,
             currentPrice = holding.currentPrice,
+            frozen = holding.frozen!!,
             lots = listOf(
                 LotResponse(
                     id = lotRec.externalId!!,
@@ -153,12 +156,19 @@ class CryptoHoldingRepository(
             .and(CRYPTO_HOLDINGS.EXTERNAL_ID.eq(externalId))
             .fetchOne(CRYPTO_HOLDINGS.ID)
 
+    fun isFrozen(internalId: Long): Boolean =
+        dsl.select(CRYPTO_HOLDINGS.FROZEN)
+            .from(CRYPTO_HOLDINGS)
+            .where(CRYPTO_HOLDINGS.ID.eq(internalId))
+            .fetchSingle(CRYPTO_HOLDINGS.FROZEN)!!
+
     fun update(
         walletInternalId: Long,
         externalId: UUID,
         ticker: String?,
         name: String?,
-        currentPrice: BigDecimal?
+        currentPrice: BigDecimal?,
+        frozen: Boolean?,
     ): CryptoHoldingResponse? {
         val existing = dsl.selectFrom(CRYPTO_HOLDINGS)
             .where(CRYPTO_HOLDINGS.WALLET_ID.eq(walletInternalId))
@@ -169,6 +179,7 @@ class CryptoHoldingRepository(
             .set(CRYPTO_HOLDINGS.TICKER, (ticker ?: existing.ticker!!).uppercase())
             .set(CRYPTO_HOLDINGS.NAME, name ?: existing.name!!)
             .set(CRYPTO_HOLDINGS.CURRENT_PRICE, currentPrice ?: existing.currentPrice)
+            .set(CRYPTO_HOLDINGS.FROZEN, frozen ?: existing.frozen!!)
             .set(CRYPTO_HOLDINGS.UPDATED_AT, OffsetDateTime.now())
             .where(CRYPTO_HOLDINGS.ID.eq(existing.id))
             .execute()
@@ -228,6 +239,7 @@ class CryptoHoldingRepository(
             cryptoHoldings.TICKER,
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
+            cryptoHoldings.FROZEN,
             lotsField,
             withdrawalsField
         )
@@ -242,6 +254,7 @@ class CryptoHoldingRepository(
                     ticker = rec.get(cryptoHoldings.TICKER)!!,
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),
+                    frozen = rec.get(cryptoHoldings.FROZEN)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )

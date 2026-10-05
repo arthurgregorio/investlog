@@ -27,6 +27,7 @@ function holdingOf(overrides: Partial<HoldingRow>): HoldingRow {
     currentValue: 3850,
     gain: 350,
     gainPct: 10,
+    frozen: false,
     ...overrides,
   }
 }
@@ -70,9 +71,12 @@ function flushPromises() {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-async function mountModal(props: { walletId: string; preselectedHoldingId?: string }) {
+async function mountModal(
+  props: { walletId: string; preselectedHoldingId?: string },
+  candidates: HoldingRow[] = allHoldings,
+) {
   vi.mocked(holdingsApi.findAll).mockImplementation(async (params) => {
-    const content = params.walletId ? walletHoldings : allHoldings
+    const content = params.walletId ? walletHoldings : candidates
     return { content, page: { size: 500, number: 0, totalElements: content.length, totalPages: 1 } }
   })
   const pinia = createTestingPinia()
@@ -254,6 +258,40 @@ describe('ReinvestModal', () => {
 
     expect(wrapper.find('[data-testid="reinvest-error"]').text()).toBe(
       'Os investimentos de origem e destino devem estar em carteiras com a mesma moeda',
+    )
+    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(wrapper.emitted('reinvested')).toBeUndefined()
+    expect((control(wrapper, 'reinvest-quantity').element as HTMLInputElement).value).toBe('40')
+  })
+
+  it('does not offer a frozen holding as a destination', async () => {
+    const { wrapper } = await mountModal(
+      { walletId: 'wallet-stocks', preselectedHoldingId: 'holding-petr4' },
+      [petrobras, { ...vale, frozen: true }, treasury],
+    )
+
+    expect(optionTexts(wrapper, 'reinvest-destination')).toEqual(['Tesouro Selic'])
+  })
+
+  it('keeps the modal open with the values entered when the destination turns out to be frozen', async () => {
+    const { wrapper, reinvestmentsStore } = await mountModal({
+      walletId: 'wallet-stocks',
+      preselectedHoldingId: 'holding-petr4',
+    })
+    vi.mocked(reinvestmentsStore.reinvest).mockRejectedValue({
+      isAxiosError: true,
+      response: {
+        status: 409,
+        data: { detail: 'Tesouro Selic está congelado e não pode receber um reinvestimento' },
+      },
+    })
+
+    await control(wrapper, 'reinvest-destination').setValue('holding-treasury')
+    await control(wrapper, 'reinvest-quantity').setValue('40')
+    await submit(wrapper)
+
+    expect(wrapper.find('[data-testid="reinvest-error"]').text()).toBe(
+      'Não foi possível registrar o reinvestimento.',
     )
     expect(wrapper.emitted('close')).toBeUndefined()
     expect(wrapper.emitted('reinvested')).toBeUndefined()

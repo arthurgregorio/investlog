@@ -93,6 +93,10 @@ and composable locals. Examples:
 | `qty`, `pct`, `amt` | `quantity`, `percentage`, `amount` |
 | `baseCurrency` shorthand `base` | always `baseCurrency` |
 
+## Styling
+
+**Prefer Bulma classes and helpers; add custom CSS to `styles.css` only for what Bulma cannot express, and keep it minimal.** Reach for the Bulma 1.x helpers first: flex and alignment (`is-flex`, `is-justify-content-center`, `is-align-items-center`), colour (`has-text-info`, `has-text-grey`, `has-background-info-light`, and `has-text-info-on-scheme` for text that must stay readable on the page background in both themes), typography, size and spacing, plus the Buefy props that map onto them (`b-icon`'s `type="is-info"` and `size`). Colour custom rules with Bulma's CSS variables (`--bulma-info-on-scheme`, `--bulma-border`) rather than new hard-coded hex values, so they follow the theme without a dark-mode override.
+
 ## Architecture
 
 InvestLog is a manual (PT-BR) investment logbook: stocks and FIIs, crypto and funds, entered by
@@ -104,8 +108,9 @@ Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
 proxied via `/private` by Vite dev server.
 
 The UI was ported pixel-for-pixel from a Claude Design React/Babel prototype handoff. `src/assets/styles.css`
-is that ported CSS spec (Tabler visual language) and is the single source of styling truth —
+is that ported CSS spec (Tabler visual language) and holds every custom rule and theme variable —
 components rely on its classes and CSS custom properties rather than scoped/component styles.
+What Bulma already expresses (see **Styling** above) does not belong there.
 
 ### API layer (`src/api/`)
 
@@ -173,7 +178,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 
 | Directory | Holds |
 |---|---|
-| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
+| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
 | `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
@@ -189,7 +194,9 @@ Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detail
 expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion renders
 `HoldingDetailPanel` which lazy-fetches the full holding detail from the individual endpoint.
 
-**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, resgatar, reinvestir, mover and, for admins, remover. Closed rows carry no action buttons. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
+**A frozen holding** (#233) has no text tag. Its row carries `is-frozen` and swaps the ticker square for `FrozenBadge` (`ui/`), a template-only wrapper around `b-icon`: a snowflake coloured by Bulma's `has-text-info-on-scheme` (`--bulma-info-on-scheme`, which already lightens itself in the dark theme), sized to the 36px ticker slot and reusing the `ticker-badge` class for the shape. The ticker stays in the name column. The only custom CSS is one `.inv-row.is-frozen` block in `styles.css`, written with that Bulma variable: a faint ice tint and a 3px ice strip as background layers on the `<tr>` (so the hover and open backgrounds still show through), the dashed border on the badge (Bulma has no dashed-border helper), and 65% opacity on the name text, wallet reference and numeric cells. The badge and the actions column stay opaque, so opacity is never put on the `<tr>`. The badge has `title` and `aria-label` "Congelado" and keeps `data-testid="frozen-tag"`; `HoldingDetailPanel` shows its `compact` variant (a small bare icon) next to "Movimentações". `WalletDetailView` uses the same row treatment.
+
+**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, resgatar, reinvestir, mover, congelar/descongelar (#237) and, for admins, remover. Closed rows carry no action buttons. A frozen holding (`frozen` on `HoldingRow` and the detail types) shows the snowflake badge in the table row and the panel, and its buy/aporte action is disabled; the server answers a buy or a reinvestment into it with a 409 whose `detail` the api client's interceptor already toasts, and `ReinvestModal` does not list frozen holdings as destinations. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
 
 ### Routes and their views (`src/router/index.ts`)
 

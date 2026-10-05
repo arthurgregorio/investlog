@@ -1,5 +1,6 @@
 package br.com.investlog.server.stockholdings.services
 
+import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.stockholdings.repositories.StockHoldingRepository
 import br.com.investlog.server.stockholdings.repositories.StockLotRepository
@@ -67,6 +68,7 @@ class StockHoldingService(
             ticker = request.ticker,
             name = request.name,
             currentPrice = request.currentPrice,
+            frozen = request.frozen,
         ) ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
     }
 
@@ -82,6 +84,9 @@ class StockHoldingService(
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
             ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
+        if (holdingRepo.isFrozen(holdingId)) {
+            throw FrozenHoldingException("Esta posição está congelada e não aceita novos lotes")
+        }
         return lotRepo.addLot(holdingId, request)
     }
 

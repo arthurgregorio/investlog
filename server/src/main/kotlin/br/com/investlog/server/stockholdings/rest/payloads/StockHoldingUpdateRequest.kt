@@ -11,4 +11,5 @@ data class StockHoldingUpdateRequest(
     val ticker: String? = null,
     val name: String? = null,
     @field:PositiveOrZero val currentPrice: BigDecimal? = null,
+    val frozen: Boolean? = null,
 )

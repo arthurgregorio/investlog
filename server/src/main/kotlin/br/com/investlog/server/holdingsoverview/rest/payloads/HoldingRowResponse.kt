@@ -16,6 +16,7 @@ data class HoldingRowResponse(
     val costBasis: BigDecimal,
     val currentPrice: BigDecimal?,
     val currentValue: BigDecimal?,
+    val frozen: Boolean,
     val gain: BigDecimal?,
     val gainPct: BigDecimal?,
 )

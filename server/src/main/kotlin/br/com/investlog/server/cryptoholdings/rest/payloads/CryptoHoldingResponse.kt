@@ -11,6 +11,7 @@ data class CryptoHoldingResponse(
     val ticker: String,
     val name: String,
     val currentPrice: BigDecimal?,
+    val frozen: Boolean,
     val lots: List<LotResponse>,
     val withdrawals: List<WithdrawalResponse>,
 )

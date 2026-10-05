@@ -7,6 +7,7 @@ import WithdrawModal from '@/components/investments/WithdrawModal.vue'
 import ReinvestModal from '@/components/investments/ReinvestModal.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
+import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import { holdingsApi } from '@/api/holdings'
 import { resultsApi } from '@/api/results'
@@ -38,6 +39,7 @@ const showMoveModal = ref(false)
 
 const isFund = computed(() => props.row.kind === 'FUNDS')
 const isStock = computed(() => props.row.kind === 'STOCKS')
+const isFrozen = computed(() => props.row.frozen)
 
 const fundDetail = computed(() =>
   isFund.value && detail.value ? (detail.value as FundHoldingDetail) : null,
@@ -85,6 +87,28 @@ async function reloadDetail() {
   } else {
     detail.value = await holdingsApi.getFundHolding(props.row.walletId, props.row.id)
   }
+}
+
+function openAddPosition() {
+  if (isFrozen.value) return
+  showAddPositionModal.value = true
+}
+
+async function toggleFrozen() {
+  const frozen = !isFrozen.value
+  if (isStock.value) {
+    await holdingsApi.updateStockHolding(props.row.walletId, props.row.id, { frozen })
+  } else if (props.row.kind === 'CRYPTO') {
+    await holdingsApi.updateCryptoHolding(props.row.walletId, props.row.id, { frozen })
+  } else {
+    await holdingsApi.updateFundHolding(props.row.walletId, props.row.id, { frozen })
+  }
+  toast.open({
+    message: frozen ? 'Investimento congelado.' : 'Investimento descongelado.',
+    type: 'is-success',
+  })
+  await reloadDetail()
+  emit('positionAdded')
 }
 
 async function onPositionAdded() {
@@ -251,6 +275,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
       <div class="ledger-head-info">
         <span class="ledger-title">Movimentações</span>
         <span class="ledger-count">{{ ledgerRows.length }}</span>
+        <FrozenBadge v-if="isFrozen" compact />
       </div>
       <div class="ledger-actions">
         <b-dropdown
@@ -263,7 +288,12 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             <b-button size="is-small" icon-right="menu-down">Ações</b-button>
           </template>
 
-          <b-dropdown-item aria-role="listitem" @click="showAddPositionModal = true">
+          <b-dropdown-item
+            aria-role="listitem"
+            :disabled="isFrozen"
+            data-testid="holding-add-position"
+            @click="openAddPosition"
+          >
             <b-icon icon="plus" size="is-small" />
             {{ isFund ? 'Registrar novo aporte' : 'Registrar nova compra' }}
           </b-dropdown-item>
@@ -287,6 +317,14 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             @click="showMoveModal = true"
           >
             <b-icon icon="swap-horizontal" size="is-small" /> Mover
+          </b-dropdown-item>
+          <b-dropdown-item
+            aria-role="listitem"
+            data-testid="holding-freeze"
+            @click="toggleFrozen"
+          >
+            <b-icon :icon="isFrozen ? 'snowflake-off' : 'snowflake'" size="is-small" />
+            {{ isFrozen ? 'Descongelar' : 'Congelar' }}
           </b-dropdown-item>
           <template v-if="auth.isAdmin">
             <hr class="dropdown-divider" />

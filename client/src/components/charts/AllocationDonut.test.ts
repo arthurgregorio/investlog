@@ -36,6 +36,7 @@ function rowOf(overrides: Partial<HoldingRow>): HoldingRow {
     currentValue: 100,
     gain: 0,
     gainPct: 0,
+    frozen: false,
     ...overrides,
   }
 }

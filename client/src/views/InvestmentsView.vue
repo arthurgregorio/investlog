@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import SortTh from '@/components/ui/SortTh.vue'
@@ -379,10 +380,16 @@ function openReport() {
             </thead>
             <tbody>
               <template v-for="row in holdingsListStore.rows" :key="row.id">
-                <tr class="inv-row" :class="{ 'is-open': isOpen(row) }" @click="toggleRow(row)">
+                <tr
+                  class="inv-row"
+                  :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
+                  @click="toggleRow(row)"
+                >
                   <td>
                     <div class="name-cell">
+                      <FrozenBadge v-if="row.frozen" />
                       <TickerBadge
+                        v-else
                         :ticker="displayName(row)"
                         :color="badgeColor(row.ticker, row.kind)"
                       />

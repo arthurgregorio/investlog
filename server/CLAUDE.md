@@ -212,6 +212,12 @@ A stock or crypto destination buys at its own `current_price`, so one without a 
 
 **A wallet move that merges and deletes a holding repoints its reinvestments first.** `MovableHoldingRepository.reattachChildren` moves `reinvestments.destination_*_holding_id` to the matched holding along with the lots, because the destination FKs cascade and a holding that only received a reinvestment has no results to stop the delete.
 
+### Frozen holdings
+
+`frozen` on `stock_holdings`, `crypto_holdings` and `fund_holdings` (issue #236) is a buy-side flag: it blocks a new position and nothing else. It is toggled through the holding's existing `PATCH`, and `holdings_overview` and `holdings_report_rows` both expose it (`bool_or(frozen)` on the report view, so a merged row reads as frozen when any part is).
+
+The check lives in the three holding services, in `addLot` / `addContribution` through each repository's `isFrozen`, and in `ReinvestmentService.validate` for the destination. All of them throw `FrozenHoldingException`, which `GlobalExceptionHandler` maps to 409. Editing, repricing, deleting, removing a lot, withdrawals and wallet moves stay allowed, and creating a brand-new holding for an already-frozen ticker is deliberately not blocked.
+
 ### Wallet detail
 
 `walletdetail` serves `GET /private/v1/wallets/{externalId}/detail`, the single payload behind the per-wallet dashboard (issue #212). It assembles five sections that would otherwise be five client round-trips: header figures, the snapshot series with day/week/month deltas, best and worst performer, the largest holding's share, and an activity summary.

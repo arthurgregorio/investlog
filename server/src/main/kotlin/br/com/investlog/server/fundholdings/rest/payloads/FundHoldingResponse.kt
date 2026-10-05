@@ -13,5 +13,6 @@ data class FundHoldingResponse(
     val currentValue: BigDecimal?,
     val administrationFeeRate: BigDecimal?,
     val performanceFeeRate: BigDecimal?,
+    val frozen: Boolean,
     val withdrawals: List<WithdrawalResponse>,
 )

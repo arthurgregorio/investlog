@@ -49,7 +49,9 @@ const destinations = computed(() => {
   if (!currentSource) return []
   return candidates.value.filter(
     (holding) =>
-      holding.id !== currentSource.id && holding.walletCurrency === currentSource.walletCurrency,
+      holding.id !== currentSource.id &&
+      holding.walletCurrency === currentSource.walletCurrency &&
+      !holding.frozen,
   )
 })
 

@@ -11,6 +11,7 @@ import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import GainChip from '@/components/ui/GainChip.vue'
+import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useHoldingsListStore } from '@/stores/holdingsList'
@@ -499,10 +500,16 @@ function confirmDeleteWallet() {
               </thead>
               <tbody>
                 <template v-for="row in holdingsListStore.rows" :key="row.id">
-                  <tr class="inv-row" :class="{ 'is-open': isOpen(row) }" @click="toggleRow(row)">
+                  <tr
+                    class="inv-row"
+                    :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
+                    @click="toggleRow(row)"
+                  >
                     <td>
                       <div class="name-cell">
+                        <FrozenBadge v-if="row.frozen" />
                         <TickerBadge
+                          v-else
                           :ticker="displayName(row)"
                           :color="badgeColor(row.ticker, row.kind)"
                         />
