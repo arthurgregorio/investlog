@@ -173,7 +173,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 
 | Directory | Holds |
 |---|---|
-| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
+| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
 | `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
@@ -188,6 +188,8 @@ it. Anything reusable and presentational goes in `ui/` rather than next to its f
 Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detailed` row
 expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion renders
 `HoldingDetailPanel` which lazy-fetches the full holding detail from the individual endpoint.
+
+**A frozen holding** (#233) has no text tag. Its row carries `is-frozen` and swaps the ticker square for `FrozenBadge` (`ui/`): a snowflake in the same 36px square with a flat surface background and a 1.5px dashed border, all in the ice colour `--frozen` (`#0e7490` light, `#38bdf8` dark, defined with the theme variables in `styles.css`). The ticker stays in the name column. `.inv-row.is-frozen` adds a faint ice tint and a 3px ice strip on the left cell, and dims the name text, wallet reference and numeric cells to 65% opacity; the badge and the actions column stay opaque, so opacity is never put on the `<tr>`. The badge has `title` and `aria-label` "Congelado" and keeps `data-testid="frozen-tag"`; `HoldingDetailPanel` shows its `compact` variant (a bare icon) next to "Movimentações". `WalletDetailView` uses the same row treatment.
 
 **Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, resgatar, reinvestir, mover, congelar/descongelar (#237) and, for admins, remover. Closed rows carry no action buttons. A frozen holding (`frozen` on `HoldingRow` and the detail types) shows a "Congelado" `tt-frozen` tag in the table row and the panel, and its buy/aporte action is disabled; the server answers a buy or a reinvestment into it with a 409 whose `detail` the api client's interceptor already toasts, and `ReinvestModal` does not list frozen holdings as destinations. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
 

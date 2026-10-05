@@ -7,6 +7,7 @@ import WithdrawModal from '@/components/investments/WithdrawModal.vue'
 import ReinvestModal from '@/components/investments/ReinvestModal.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
+import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import { holdingsApi } from '@/api/holdings'
 import { resultsApi } from '@/api/results'
@@ -274,7 +275,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
       <div class="ledger-head-info">
         <span class="ledger-title">Movimentações</span>
         <span class="ledger-count">{{ ledgerRows.length }}</span>
-        <span v-if="isFrozen" class="type-tag tt-frozen" data-testid="frozen-tag">Congelado</span>
+        <FrozenBadge v-if="isFrozen" compact />
       </div>
       <div class="ledger-actions">
         <b-dropdown

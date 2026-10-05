@@ -672,7 +672,7 @@ describe('HoldingDetailPanel', () => {
     }
 
     it.each(kindCases)(
-      'shows no Congelado tag and offers Congelar on an open $label holding',
+      'shows no snowflake and offers Congelar on an open $label holding',
       async ({ row, detail }) => {
         const wrapper = await mountLoadedPanel(row, detail())
 
@@ -683,11 +683,16 @@ describe('HoldingDetailPanel', () => {
     )
 
     it.each(kindCases)(
-      'shows the Congelado tag and offers Descongelar on a frozen $label holding',
+      'shows the snowflake next to Movimentações, with no text tag, and offers Descongelar on a frozen $label holding',
       async ({ row, detail }) => {
         const wrapper = await mountLoadedPanel(frozenOf(row), detail())
 
-        expect(wrapper.find('[data-testid="frozen-tag"]').text()).toBe('Congelado')
+        const badge = wrapper.find('.ledger-head-info [data-testid="frozen-tag"]')
+        expect(badge.attributes('title')).toBe('Congelado')
+        expect(badge.attributes('aria-label')).toBe('Congelado')
+        expect(badge.find('.mdi-snowflake').exists()).toBe(true)
+        expect(badge.text()).toBe('')
+        expect(wrapper.find('.ledger-head-info').text()).not.toContain('Congelado')
         expect(actionLabels()).toContain('Descongelar')
         expect(actionLabels()).not.toContain('Congelar')
       },

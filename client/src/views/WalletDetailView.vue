@@ -11,6 +11,7 @@ import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import GainChip from '@/components/ui/GainChip.vue'
+import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useHoldingsListStore } from '@/stores/holdingsList'
@@ -499,22 +500,22 @@ function confirmDeleteWallet() {
               </thead>
               <tbody>
                 <template v-for="row in holdingsListStore.rows" :key="row.id">
-                  <tr class="inv-row" :class="{ 'is-open': isOpen(row) }" @click="toggleRow(row)">
+                  <tr
+                    class="inv-row"
+                    :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
+                    @click="toggleRow(row)"
+                  >
                     <td>
                       <div class="name-cell">
+                        <FrozenBadge v-if="row.frozen" />
                         <TickerBadge
+                          v-else
                           :ticker="displayName(row)"
                           :color="badgeColor(row.ticker, row.kind)"
                         />
                         <div class="name-meta">
                           <div class="name-line">
                             <span class="t-ticker">{{ displayName(row) }}</span>
-                            <span
-                              v-if="row.frozen"
-                              class="type-tag tt-frozen"
-                              data-testid="frozen-tag"
-                              >Congelado</span
-                            >
                           </div>
                           <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
                             {{ row.name }}
@@ -522,12 +523,16 @@ function confirmDeleteWallet() {
                         </div>
                       </div>
                     </td>
-                    <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
                     <td class="c-num">
-                      <span v-if="row.currentPrice == null" class="gl-empty">—</span>
-                      <template v-else>{{
-                        fmt.money(row.currentPrice, row.walletCurrency)
-                      }}</template>
+                      <div>{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</div>
+                    </td>
+                    <td class="c-num">
+                      <div>
+                        <span v-if="row.currentPrice == null" class="gl-empty">—</span>
+                        <template v-else>{{
+                          fmt.money(row.currentPrice, row.walletCurrency)
+                        }}</template>
+                      </div>
                     </td>
                     <td class="c-num">
                       <div class="cell-strong">
@@ -535,10 +540,12 @@ function confirmDeleteWallet() {
                       </div>
                     </td>
                     <td class="c-num">
-                      <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                      <template v-else>{{
-                        fmt.money(row.currentValue, row.walletCurrency)
-                      }}</template>
+                      <div>
+                        <span v-if="row.currentValue == null" class="gl-empty">—</span>
+                        <template v-else>{{
+                          fmt.money(row.currentValue, row.walletCurrency)
+                        }}</template>
+                      </div>
                     </td>
                     <td class="c-num">
                       <GainChip

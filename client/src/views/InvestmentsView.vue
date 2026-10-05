@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import SortTh from '@/components/ui/SortTh.vue'
@@ -379,10 +380,16 @@ function openReport() {
             </thead>
             <tbody>
               <template v-for="row in holdingsListStore.rows" :key="row.id">
-                <tr class="inv-row" :class="{ 'is-open': isOpen(row) }" @click="toggleRow(row)">
+                <tr
+                  class="inv-row"
+                  :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
+                  @click="toggleRow(row)"
+                >
                   <td>
                     <div class="name-cell">
+                      <FrozenBadge v-if="row.frozen" />
                       <TickerBadge
+                        v-else
                         :ticker="displayName(row)"
                         :color="badgeColor(row.ticker, row.kind)"
                       />
@@ -392,9 +399,6 @@ function openReport() {
                           <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
                             subLabel(row)
                           }}</span>
-                          <span v-if="row.frozen" class="type-tag tt-frozen" data-testid="frozen-tag"
-                            >Congelado</span
-                          >
                         </div>
                         <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
                           {{ row.name }}
@@ -411,33 +415,37 @@ function openReport() {
                       {{ row.walletName }}
                     </span>
                   </td>
-                  <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
                   <td class="c-num">
-                    <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.currentPrice, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </template>
-                    <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.currentValue, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </template>
-                    <span v-else class="gl-empty">—</span>
-                    <div v-if="row.kind !== 'FUNDS' && row.quantity" class="avg-note">
-                      PM
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.costBasis / row.quantity, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
+                    <div>{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</div>
+                  </td>
+                  <td class="c-num">
+                    <div>
+                      <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
+                        {{
+                          fmt.money(
+                            currencyStore.convert(row.currentPrice, row.walletCurrency),
+                            currencyStore.displayCurrency,
+                          )
+                        }}
+                      </template>
+                      <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">
+                        {{
+                          fmt.money(
+                            currencyStore.convert(row.currentValue, row.walletCurrency),
+                            currencyStore.displayCurrency,
+                          )
+                        }}
+                      </template>
+                      <span v-else class="gl-empty">—</span>
+                      <div v-if="row.kind !== 'FUNDS' && row.quantity" class="avg-note">
+                        PM
+                        {{
+                          fmt.money(
+                            currencyStore.convert(row.costBasis / row.quantity, row.walletCurrency),
+                            currencyStore.displayCurrency,
+                          )
+                        }}
+                      </div>
                     </div>
                   </td>
                   <td class="c-num">
@@ -451,15 +459,17 @@ function openReport() {
                     </div>
                   </td>
                   <td class="c-num">
-                    <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                    <template v-else>
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.currentValue, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </template>
+                    <div>
+                      <span v-if="row.currentValue == null" class="gl-empty">—</span>
+                      <template v-else>
+                        {{
+                          fmt.money(
+                            currencyStore.convert(row.currentValue, row.walletCurrency),
+                            currencyStore.displayCurrency,
+                          )
+                        }}
+                      </template>
+                    </div>
                   </td>
                   <td class="c-num">
                     <GainChip
