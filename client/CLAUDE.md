@@ -97,6 +97,8 @@ and composable locals. Examples:
 
 **Prefer Bulma classes and helpers; add custom CSS to `styles.css` only for what Bulma cannot express, and keep it minimal.** Reach for the Bulma 1.x helpers first: flex and alignment (`is-flex`, `is-justify-content-center`, `is-align-items-center`), colour (`has-text-info`, `has-text-grey`, `has-background-info-light`, and `has-text-info-on-scheme` for text that must stay readable on the page background in both themes), typography, size and spacing, plus the Buefy props that map onto them (`b-icon`'s `type="is-info"` and `size`). Colour custom rules with Bulma's CSS variables (`--bulma-info-on-scheme`, `--bulma-border`) rather than new hard-coded hex values, so they follow the theme without a dark-mode override.
 
+**`<style scoped>` is for CSS that is specific to a single component.** A rule goes in a component's scoped block only when that component is its sole user. Never put scoped styles in a route view, and never use them for anything application-wide: a rule needed by two or more components stays in `styles.css` (or becomes a shared component) so it is written once and not duplicated across scoped blocks. Buefy-rendered children inside a component are reached with `:deep()`. Theme tokens, Bulma overrides and print rules always stay in `styles.css`. A component keeps the SFC order `<script>`, `<template>`, `<style>`.
+
 ## Architecture
 
 InvestLog is a manual (PT-BR) investment logbook: stocks and FIIs, crypto and funds, entered by
@@ -108,9 +110,9 @@ Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
 proxied via `/private` by Vite dev server.
 
 The UI was ported pixel-for-pixel from a Claude Design React/Babel prototype handoff. `src/assets/styles.css`
-is that ported CSS spec (Tabler visual language) and holds every custom rule and theme variable —
-components rely on its classes and CSS custom properties rather than scoped/component styles.
-What Bulma already expresses (see **Styling** above) does not belong there.
+is that ported CSS spec (Tabler visual language) and holds the theme variables and every custom rule
+shared across components; a rule specific to one component belongs in that component's scoped
+style (see **Styling** above). What Bulma already expresses does not belong in either place.
 
 ### API layer (`src/api/`)
 

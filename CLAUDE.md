@@ -155,9 +155,10 @@ Rewrite the body only when the spec itself genuinely changed.
 
 ## Umbrella issues and sub-issues
 
-An issue maps to exactly one PR (see below). When a piece of work touches several parts of the
-software — which is almost always, since feature and fix work never spans layers in one PR — it
-does **not** become one issue with several PRs. It becomes an **umbrella issue** with **sub-issues**.
+An issue maps to exactly one PR (see below). When a piece of work is too wide or too big for one
+PR — it touches several layers, or it is simply large — it does **not** become one issue with
+several PRs. It becomes an **umbrella issue** with **sub-issues**. Umbrellas are for any type of
+work: features, fixes, maintenance, documentation.
 
 - The **umbrella issue** holds the motivation and the shape of the whole feature (its `Scope`), not
   the per-layer detail — that lives in each sub-issue's `Design`. It also **names the feature
@@ -222,14 +223,6 @@ recorded. Both flags need `gh` 2.95 or newer.
 review painful — a reviewer looking at Spring Security config doesn't want to scroll past Vue
 components, and vice versa. That's a rule about how work is *sliced into sub-issues*, and the
 one-PR-per-issue rule follows from it rather than fighting it.
-
-**Maintenance is the exception.** The layer split applies to work that *builds something* — features
-and fixes. Pure maintenance of the project's existing structure — dependency and toolchain bumps,
-build config, CI workflows, repo conventions — stays a **single issue and a single PR** even when it
-spans `server/`, `client/` and the repo root at once. The review-pain argument doesn't apply: a
-reviewer reading a version bump wants to see every version that moved in one place, not three PRs
-that only make sense together. Label these `maintenance` (plus `documentation`, `github_actions`,
-etc. as applicable) and don't build an umbrella for them.
 
 ## Branch naming
 
