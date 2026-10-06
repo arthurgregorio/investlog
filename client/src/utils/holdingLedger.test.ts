@@ -7,6 +7,8 @@ function stockDetail(overrides: Partial<StockHoldingDetail> = {}): StockHoldingD
     id: 'holding-1',
     walletId: 'wallet-1',
     stockTypeId: 'type-1',
+    stockSegmentId: null,
+    stockSegmentName: null,
     ticker: 'PETR4',
     name: 'Petróleo Brasileiro',
     currentPrice: 34.8,

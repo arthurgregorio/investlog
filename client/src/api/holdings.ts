@@ -43,6 +43,7 @@ export const holdingsApi = {
     walletId: string,
     payload: {
       stockTypeId: string
+      stockSegmentId?: string
       ticker: string
       name?: string
       currentPrice?: number
@@ -51,6 +52,18 @@ export const holdingsApi = {
   ): Promise<StockHoldingDetail> {
     return apiClient
       .post<StockHoldingDetail>(`/wallets/${walletId}/stock-holdings`, payload)
+      .then((r) => r.data)
+  },
+
+  updateStockHoldingSegment(
+    walletId: string,
+    holdingId: string,
+    stockSegmentId: string | null,
+  ): Promise<StockHoldingDetail> {
+    return apiClient
+      .put<StockHoldingDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}/segment`, {
+        stockSegmentId,
+      })
       .then((r) => r.data)
   },
 
