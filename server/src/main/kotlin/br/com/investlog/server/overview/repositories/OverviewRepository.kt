@@ -1,16 +1,9 @@
 package br.com.investlog.server.overview.repositories
 
-import br.com.investlog.server.currencyrates.repositories.CurrencyRateRepository
-import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
-import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
+import br.com.investlog.server.jooq.finances.tables.references.CONTRIBUTIONS_TIMELINE
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
-import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
-import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_VALUED
-import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
-import br.com.investlog.server.jooq.finances.tables.references.STOCK_LOTS
-import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.overview.rest.payloads.KindSummaryResponse
 import br.com.investlog.server.overview.rest.payloads.PortfolioSummaryResponse
 import br.com.investlog.server.overview.rest.payloads.SeriesPointResponse
@@ -22,23 +15,12 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 @Repository
-class OverviewRepository(
-    private val dsl: DSLContext,
-    private val currencyRateRepository: CurrencyRateRepository,
-) {
+class OverviewRepository(private val dsl: DSLContext) {
 
     fun findSummary(userId: Long, displayCurrency: String): PortfolioSummaryResponse {
         val overview = HOLDINGS_VALUED.`as`("overview")
 
-        val displayCurrencyRate = DSL.coalesce(
-            DSL.field(
-                DSL.select(CURRENCY_RATES.RATE)
-                    .from(CURRENCY_RATES)
-                    .where(CURRENCY_RATES.CURRENCY_CODE.eq(displayCurrency))
-            ),
-            BigDecimal.ONE,
-        )
-        val appliedRate = overview.RATE.div(displayCurrencyRate)
+        val appliedRate = overview.RATE.div(displayCurrencyRate(displayCurrency))
 
         val kindSummaries = dsl.select(
             overview.KIND,
@@ -80,67 +62,35 @@ class OverviewRepository(
     }
 
     fun findSeries(userId: Long, displayCurrency: String): List<SeriesPointResponse> {
-        val stockRates = CURRENCY_RATES.`as`("stock_rates")
-        val cryptoRates = CURRENCY_RATES.`as`("crypto_rates")
-        val fundRates = CURRENCY_RATES.`as`("fund_rates")
-        val stockWallets = WALLETS.`as`("stock_wallets")
-        val cryptoWallets = WALLETS.`as`("crypto_wallets")
-        val fundWallets = WALLETS.`as`("fund_wallets")
+        val timeline = CONTRIBUTIONS_TIMELINE.`as`("timeline")
 
-        val displayCurrencyRate = currencyRateRepository.findRateOrAnchor(displayCurrency)
+        val monthlyAmount = DSL.sum(timeline.WALLET_AMOUNT.mul(timeline.RATE.div(displayCurrencyRate(displayCurrency))))
+        val cumulativeAmount = DSL.sum(monthlyAmount).over().orderBy(timeline.MONTH)
 
-        data class MonthAmount(val month: String, val amount: BigDecimal)
-
-        val stockAmounts = dsl.select(
-            DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, STOCK_LOTS.LOT_DATE).`as`("month"),
-            STOCK_LOTS.QUANTITY.mul(STOCK_LOTS.PRICE)
-                .mul(DSL.coalesce(stockRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)).`as`("amount"),
+        return dsl.select(
+            DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, timeline.MONTH).`as`("month"),
+            cumulativeAmount.`as`("total_invested"),
         )
-            .from(STOCK_LOTS)
-            .join(STOCK_HOLDINGS).on(STOCK_HOLDINGS.ID.eq(STOCK_LOTS.STOCK_HOLDING_ID))
-            .join(stockWallets).on(stockWallets.ID.eq(STOCK_HOLDINGS.WALLET_ID))
-            .leftJoin(stockRates)
-                .on(stockRates.CURRENCY_CODE.eq(stockWallets.CURRENCY))
-            .where(stockWallets.USER_ID.eq(userId))
-            .fetch { MonthAmount(it.get("month", String::class.java)!!, it.get("amount", BigDecimal::class.java) ?: BigDecimal.ZERO) }
-
-        val cryptoAmounts = dsl.select(
-            DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, CRYPTO_LOTS.LOT_DATE).`as`("month"),
-            CRYPTO_LOTS.QUANTITY.mul(CRYPTO_LOTS.PRICE)
-                .mul(DSL.coalesce(cryptoRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)).`as`("amount"),
-        )
-            .from(CRYPTO_LOTS)
-            .join(CRYPTO_HOLDINGS).on(CRYPTO_HOLDINGS.ID.eq(CRYPTO_LOTS.CRYPTO_HOLDING_ID))
-            .join(cryptoWallets).on(cryptoWallets.ID.eq(CRYPTO_HOLDINGS.WALLET_ID))
-            .leftJoin(cryptoRates)
-                .on(cryptoRates.CURRENCY_CODE.eq(cryptoWallets.CURRENCY))
-            .where(cryptoWallets.USER_ID.eq(userId))
-            .fetch { MonthAmount(it.get("month", String::class.java)!!, it.get("amount", BigDecimal::class.java) ?: BigDecimal.ZERO) }
-
-        val fundAmounts = dsl.select(
-            DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, FUND_CONTRIBUTIONS.CONTRIBUTION_DATE).`as`("month"),
-            FUND_CONTRIBUTIONS.AMOUNT
-                .mul(DSL.coalesce(fundRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)).`as`("amount"),
-        )
-            .from(FUND_CONTRIBUTIONS)
-            .join(FUND_HOLDINGS).on(FUND_HOLDINGS.ID.eq(FUND_CONTRIBUTIONS.FUND_HOLDING_ID))
-            .join(fundWallets).on(fundWallets.ID.eq(FUND_HOLDINGS.WALLET_ID))
-            .leftJoin(fundRates)
-                .on(fundRates.CURRENCY_CODE.eq(fundWallets.CURRENCY))
-            .where(fundWallets.USER_ID.eq(userId))
-            .fetch { MonthAmount(it.get("month", String::class.java)!!, it.get("amount", BigDecimal::class.java) ?: BigDecimal.ZERO) }
-
-        val grouped = (stockAmounts + cryptoAmounts + fundAmounts)
-            .groupBy { it.month }
-            .mapValues { entry -> entry.value.fold(BigDecimal.ZERO) { acc, point -> acc + point.amount } }
-            .toSortedMap()
-
-        var cumulative = BigDecimal.ZERO
-        return grouped.map { (month, total) ->
-            cumulative += total
-            SeriesPointResponse(month = month, totalInvested = cumulative)
-        }
+            .from(timeline)
+            .where(timeline.USER_ID.eq(userId))
+            .groupBy(timeline.MONTH)
+            .orderBy(timeline.MONTH)
+            .fetch { record ->
+                SeriesPointResponse(
+                    month = record.get("month", String::class.java)!!,
+                    totalInvested = record.get("total_invested", BigDecimal::class.java)!!,
+                )
+            }
     }
+
+    private fun displayCurrencyRate(displayCurrency: String) = DSL.coalesce(
+        DSL.field(
+            DSL.select(CURRENCY_RATES.RATE)
+                .from(CURRENCY_RATES)
+                .where(CURRENCY_RATES.CURRENCY_CODE.eq(displayCurrency))
+        ),
+        BigDecimal.ONE,
+    )
 
     private fun gainPct(gain: BigDecimal, costBasis: BigDecimal): BigDecimal? =
         if (costBasis.signum() != 0) gain.divide(costBasis, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))

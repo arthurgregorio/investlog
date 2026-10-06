@@ -167,9 +167,15 @@ In detail:
   `holdings_overview` VIEW, which carries the owner (`user_id`), the wallet's `wallet_external_id`, `wallet_name` and `wallet_currency`, and the `gain` and `gain_pct` columns, so the repository joins nothing and computes nothing. `gain_pct` is `ROUND(ratio, 10) * 100` — the ratio is rounded to ten places *before* scaling, which is how the Kotlin it replaced behaved and what keeps the payload digits unchanged.
 - `overview` — `GET /private/v1/overview` (portfolio summary: `baseCurrency`, totals, per-kind
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
-  invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
-  (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
-  `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
+  invested amounts for chart display). `findSeries` is one query against
+  `finances.contributions_timeline`, a `UNION ALL` of stock lots, crypto lots and fund
+  contributions with one row per purchase: it groups by the real `DATE` month and takes the running
+  total with `SUM(SUM(...)) OVER (ORDER BY month)`, so nothing is grouped, sorted or accumulated in
+  Kotlin. The view carries `wallet_amount` (the purchase in the wallet's own currency), `rate` and
+  `amount` (`wallet_amount` restated in the anchor currency); like `findSummary` below, `findSeries`
+  multiplies `wallet_amount * (rate / displayRate)` instead of dividing `amount`, to keep every
+  digit of the payload unchanged. The series charts money put in, so it counts every lot, completed
+  holdings included, and ignores withdrawals. `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
   holding of `holdings_overview` with its wallet currency's `rate` (1 when it has no
   `currency_rates` row) and `cost_basis_anchor` / `current_value_anchor`, the amounts restated in
   the rates-anchor currency, the one whose own row stores rate 1. The display currency is a runtime
