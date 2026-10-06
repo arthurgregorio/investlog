@@ -6,6 +6,7 @@ import CardBody from '@/components/ui/CardBody.vue'
 import PasswordResetModal from '@/components/forms/PasswordResetModal.vue'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 import { useAuthStore } from '@/stores/auth'
+import { escapeHtml } from '@/utils/escapeHtml'
 import type { UserAdminResponse, UserRole } from '@/types'
 
 const toast = useToast()
@@ -47,7 +48,7 @@ function confirmRoleChange(id: string, name: string, currentRole: UserRole) {
   dialog.confirm({
     title:
       nextRole === 'ADMIN' ? 'Promover a administrador' : 'Remover privilégios de administrador',
-    message: `Alterar o papel de <strong>${name}</strong> para <strong>${nextRole}</strong>?`,
+    message: `Alterar o papel de <strong>${escapeHtml(name)}</strong> para <strong>${nextRole}</strong>?`,
     confirmText: 'Confirmar',
     cancelText: 'Cancelar',
     onConfirm: async () => {
@@ -60,7 +61,7 @@ function confirmRoleChange(id: string, name: string, currentRole: UserRole) {
 function confirmTotpReset(id: string, name: string) {
   dialog.confirm({
     title: 'Redefinir autenticação em duas etapas',
-    message: `<strong>${name}</strong> precisará configurar a autenticação novamente no próximo login.`,
+    message: `<strong>${escapeHtml(name)}</strong> precisará configurar a autenticação novamente no próximo login.`,
     type: 'is-danger',
     hasIcon: true,
     confirmText: 'Redefinir',
@@ -75,7 +76,7 @@ function confirmTotpReset(id: string, name: string) {
 function confirmDeleteUser(id: string, name: string) {
   dialog.confirm({
     title: 'Remover usuário',
-    message: `Remover <strong>${name}</strong>? Esta ação <strong>não pode ser desfeita</strong>.`,
+    message: `Remover <strong>${escapeHtml(name)}</strong>? Esta ação <strong>não pode ser desfeita</strong>.`,
     type: 'is-danger',
     hasIcon: true,
     confirmText: 'Remover',

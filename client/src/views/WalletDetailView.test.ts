@@ -11,6 +11,7 @@ import { useWalletsStore } from '@/stores/wallets'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { holdingsApi } from '@/api/holdings'
 import type { HoldingRow, WalletDetail, WalletMoveRow, WalletResponse } from '@/types'
+import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
 vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { findAll: vi.fn(), move: vi.fn() } }))
 vi.mock('@/api/reinvestments', () => ({
@@ -485,6 +486,16 @@ describe('WalletDetailView', () => {
       'Remover',
     ])
     expect(wrapper.findAll('button').some((button) => button.text() === 'Mover')).toBe(false)
+  })
+
+  it('shows a wallet name containing markup literally in the remove confirmation', async () => {
+    const markupName = '<img src=x onerror=alert(1)>'
+    const { wrapper } = await mountView(detailOf({ name: markupName }))
+
+    await wrapper.find('[data-testid="wallet-remove"]').trigger('click')
+    await flushPromises()
+
+    expectDialogShowsLiterally(markupName)
   })
 
   it('hides the remove action from a non-admin', async () => {
