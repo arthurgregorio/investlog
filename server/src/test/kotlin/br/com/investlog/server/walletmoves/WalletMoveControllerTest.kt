@@ -573,4 +573,30 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
             .expectBody()
             .jsonPath("$.content[0].currentValue").isEqualTo(1150)
     }
+
+    @Test
+    @Order(19)
+    fun `a partial move keeps the segment on the copy`() {
+        val origin = createWallet("Origem Segmento", "stocks")
+        val destination = createWallet("Destino Segmento", "stocks")
+        val holdingId = createStockHolding(origin, "TAEE11", "10", "30")
+        val segmentId = createType("/private/v1/stock-segments", "Energia")
+        restTestClient.put()
+            .uri("/private/v1/wallets/$origin/stock-holdings/$holdingId/segment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"stockSegmentId":"$segmentId"}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId","quantity":4}]}""")
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$destination")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].segmentLabel").isEqualTo("Energia")
+    }
 }

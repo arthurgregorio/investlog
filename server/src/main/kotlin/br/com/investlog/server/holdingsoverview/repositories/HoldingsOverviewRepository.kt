@@ -68,6 +68,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             overview.CURRENT_PRICE,
             overview.CURRENT_VALUE,
             overview.FROZEN,
+            overview.SEGMENT_LABEL,
         )
             .from(overview)
             .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
@@ -89,6 +90,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     name = record.get(overview.NAME)!!,
                     ticker = record.get(overview.TICKER),
                     typeLabel = record.get(overview.TYPE_LABEL),
+                    segmentLabel = record.get(overview.SEGMENT_LABEL),
                     walletId = record.get(wallets.EXTERNAL_ID)!!,
                     walletName = record.get(wallets.NAME)!!,
                     walletCurrency = record.get(wallets.CURRENCY)!!,
@@ -146,6 +148,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             reportRows.CURRENT_PRICE,
             reportRows.CURRENT_VALUE,
             reportRows.FROZEN,
+            reportRows.SEGMENT_LABEL,
         )
             .from(reportRows)
             .join(wallets).on(wallets.ID.eq(reportRows.WALLET_ID))
@@ -165,6 +168,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     name = record.get(reportRows.NAME)!!,
                     ticker = record.get(reportRows.TICKER),
                     typeLabel = record.get(reportRows.TYPE_LABEL),
+                    segmentLabel = record.get(reportRows.SEGMENT_LABEL),
                     walletId = record.get(wallets.EXTERNAL_ID)!!,
                     walletName = record.get(wallets.NAME)!!,
                     walletCurrency = record.get(wallets.CURRENCY)!!,

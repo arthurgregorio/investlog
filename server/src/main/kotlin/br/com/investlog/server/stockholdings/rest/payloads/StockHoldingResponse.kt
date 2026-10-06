@@ -8,6 +8,8 @@ data class StockHoldingResponse(
     val id: UUID,
     val walletId: UUID,
     val stockTypeId: UUID,
+    val stockSegmentId: UUID?,
+    val stockSegmentName: String?,
     val ticker: String,
     val name: String,
     val currentPrice: BigDecimal?,
