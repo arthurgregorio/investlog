@@ -164,7 +164,7 @@ In detail:
   `preferredCurrency`.
 - `holdingsoverview` — `GET /private/v1/holdings` with optional `kind` filter and Spring
   `Pageable` for server-side pagination. Returns `HoldingRowResponse` rows from the
-  `holdings_overview` VIEW (joined with `wallets`). Computes `gain` and `gainPct` in Kotlin.
+  `holdings_overview` VIEW, which carries the owner (`user_id`), the wallet's `wallet_external_id`, `wallet_name` and `wallet_currency`, and the `gain` and `gain_pct` columns, so the repository joins nothing and computes nothing. `gain_pct` is `ROUND(ratio, 10) * 100` — the ratio is rounded to ten places *before* scaling, which is how the Kotlin it replaced behaved and what keeps the payload digits unchanged.
 - `overview` — `GET /private/v1/overview` (portfolio summary: `baseCurrency`, totals, per-kind
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
