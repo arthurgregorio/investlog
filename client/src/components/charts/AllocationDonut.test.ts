@@ -7,13 +7,20 @@ import type { HoldingRow } from '@/types'
 
 const DonutChartStub = defineComponent({
   props: {
-    segments: { type: Array as PropType<{ label: string; value: number }[]>, required: true },
+    segments: {
+      type: Array as PropType<{ label: string; value: number; color: string }[]>,
+      required: true,
+    },
   },
   setup(props, { slots }) {
     return () =>
       h('div', { 'data-testid': 'donut-stub' }, [
         ...props.segments.map((segment) =>
-          h('span', { 'data-testid': 'donut-segment' }, `${segment.label}=${segment.value}`),
+          h(
+            'span',
+            { 'data-testid': 'donut-segment', 'data-color': segment.color },
+            `${segment.label}=${segment.value}`,
+          ),
         ),
         slots.default?.(),
       ])
@@ -43,7 +50,7 @@ function rowOf(overrides: Partial<HoldingRow>): HoldingRow {
 
 function mountDonut(rows: HoldingRow[]) {
   return mount(AllocationDonut, {
-    props: { rows, kind: 'STOCKS', currency: 'BRL' },
+    props: { rows, currency: 'BRL' },
     global: { plugins: [createTestingPinia()], stubs: { DonutChart: DonutChartStub } },
   })
 }
@@ -111,8 +118,7 @@ describe('AllocationDonut', () => {
     expect(wrapper.find('[data-testid="allocation-center-value"]').text()).toBe('R$ 900,00')
   })
 
-  it('colours the legend and ring from the kind accent, darkest first, with a neutral Outros', () => {
-    document.documentElement.style.setProperty('--wt-stocks', '#2b6cb0')
+  it('colours each entry with its own theme palette colour and a neutral Outros', () => {
     const wrapper = mountDonut([
       rowOf({ id: 'big', ticker: 'BIGG3', currentValue: 600 }),
       rowOf({ id: 'mid', ticker: 'MIDD3', currentValue: 380 }),
@@ -122,11 +128,75 @@ describe('AllocationDonut', () => {
     const swatches = wrapper
       .findAll('.allocation-legend-swatch')
       .map((swatch) => (swatch.element as HTMLElement).style.background)
-    expect(swatches).toHaveLength(3)
-    expect(swatches[0]).toBe('rgb(43, 108, 176)')
-    expect(swatches[1]).not.toBe(swatches[0])
-    expect(swatches[2]).toBe('rgb(154, 163, 173)')
-    document.documentElement.style.removeProperty('--wt-stocks')
+    expect(swatches).toEqual(['var(--chart-1)', 'var(--chart-2)', 'var(--text-muted)'])
+  })
+
+  it('gives the ring the same variable colours so it re-resolves them when the theme changes', () => {
+    const wrapper = mountDonut([
+      rowOf({ id: 'big', ticker: 'BIGG3', currentValue: 600 }),
+      rowOf({ id: 'mid', ticker: 'MIDD3', currentValue: 380 }),
+      rowOf({ id: 'small', ticker: 'SMLL3', currentValue: 10 }),
+    ])
+
+    const ringColors = wrapper
+      .findAll('[data-testid="donut-segment"]')
+      .map((segment) => segment.attributes('data-color'))
+    expect(ringColors).toEqual(['var(--chart-1)', 'var(--chart-2)', 'var(--text-muted)'])
+  })
+
+  it('shows the company name beside the ticker, and the asset count in the ring centre', () => {
+    const wrapper = mountDonut([
+      rowOf({ id: 'a', ticker: 'AAAA3', name: 'Empresa A', currentValue: 600 }),
+      rowOf({ id: 'b', ticker: 'BBBB3', name: 'Empresa B', currentValue: 400 }),
+    ])
+
+    const entries = legendTexts(wrapper)
+    expect(entries[0]).toContain('AAAA3')
+    expect(entries[0]).toContain('Empresa A')
+    expect(wrapper.find('[data-testid="donut-stub"]').text()).toContain('2 ativos')
+  })
+
+  it('draws one share bar per legend row, scaled to the largest share', () => {
+    const wrapper = mountDonut(mixedRows)
+
+    const bars = wrapper.findAll('progress').map((bar) => Number(bar.attributes('value')))
+    expect(bars).toEqual([100, expect.closeTo(33.33, 1)])
+  })
+
+  it('strips the bottom margin Bulma gives a progress bar so it stays centred on its legend row', () => {
+    const wrapper = mountDonut(mixedRows)
+
+    expect(wrapper.findAll('progress').every((bar) => bar.classes().includes('mb-0'))).toBe(true)
+  })
+
+  it('states how much the three largest positions concentrate once there are more than three', () => {
+    const wrapper = mountDonut([
+      rowOf({ id: 'a', ticker: 'AAAA3', currentValue: 400 }),
+      rowOf({ id: 'b', ticker: 'BBBB3', currentValue: 300 }),
+      rowOf({ id: 'c', ticker: 'CCCC3', currentValue: 200 }),
+      rowOf({ id: 'd', ticker: 'DDDD3', currentValue: 100 }),
+    ])
+
+    expect(wrapper.find('[data-testid="allocation-concentration-note"]').text()).toBe(
+      'As 3 maiores posições concentram 90,00% do total.',
+    )
+  })
+
+  it('leaves out the concentration note for three holdings or fewer', () => {
+    const wrapper = mountDonut(mixedRows)
+
+    expect(wrapper.find('[data-testid="allocation-concentration-note"]').exists()).toBe(false)
+  })
+
+  it('explains what Outros groups', () => {
+    const wrapper = mountDonut([
+      rowOf({ id: 'big', ticker: 'BIGG3', currentValue: 9000 }),
+      rowOf({ id: 'small', ticker: 'SMLL3', currentValue: 100 }),
+    ])
+
+    expect(wrapper.find('[data-testid="allocation-concentration-note"]').text()).toBe(
+      '“Outros” reúne os investimentos abaixo de 3%.',
+    )
   })
 
   it('shows an already merged same-ticker holding as one entry', () => {

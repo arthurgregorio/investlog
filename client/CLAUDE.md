@@ -65,7 +65,7 @@ Coverage is measured with `npm run test:coverage` (v8 provider, report in `clien
 **enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
 functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
 drops any of the four below its floor fails the build. The floor today is **96% statements, 97%
-lines, 93% functions and 93% branches** (the suite reaches 96.06 / 97.25 / 93.87 / 93.14), and every
+lines, 94% functions and 93% branches** (the suite reaches 96.16 / 97.3 / 94.12 / 93.45), and every
 file under `src/views/` is above 80% statements.
 
 `src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
@@ -180,7 +180,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 
 | Directory | Holds |
 |---|---|
-| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, and the `DateInput`/`NumberInput` field wrappers |
+| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
 | `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
@@ -215,13 +215,13 @@ It reads two stores: `walletDetail` for the header, chart, deltas, performers an
 
 The chart and the delta chips render only when `series` is non-empty; otherwise an `EmptyState` explains that history starts accumulating from the first snapshot job run. The concentration warning appears when `largestHoldingShare` exceeds 50.
 
-Sections run header → highlight cards → Desempenho chart → **Distribuição** → **Movimentações** → investments, since the page is read for its history first.
+Sections run header card (identity, figures, **Ações** dropdown and, below them, a three-cell strip with the best performer, worst performer and largest position) → Desempenho → **Distribuição** → one tabbed card (`b-tabs`) holding **Investimentos** and **Movimentações**. Every `Card` on the page carries `mb-0`: Bulma gives `.card` a bottom margin, and the `.page` flex gap alone must set the spacing between blocks.
 
-**Distribuição** (#240) is `AllocationDonut`, fed by `holdingsApi.findAllForReport({ walletId })` — the unpaginated, ticker-merged report endpoint, not the paged `holdingsList` store. The math lives in `utils/allocation.ts` (`computeAllocation`): a Valor atual / Investido toggle recomputes shares from the same rows with no refetch, holdings with a null `currentValue` are left out of Valor atual and counted in an on-screen note, and every holding under `OTHERS_SHARE_CUTOFF` (3%) collapses into a single "Outros" entry that is always last in the legend. Segment colours are `accentShades` steps of the wallet kind accent, darkest for the largest share.
+**Distribuição** (#240) is `AllocationDonut`, fed by `holdingsApi.findAllForReport({ walletId })` — the unpaginated, ticker-merged report endpoint, not the paged `holdingsList` store. The math lives in `utils/allocation.ts` (`computeAllocation`): a Valor atual / Investido `SegmentedControl` recomputes shares from the same rows with no refetch, holdings with a null `currentValue` are left out of Valor atual and counted in an on-screen note, and every holding under `OTHERS_SHARE_CUTOFF` (3%) collapses into a single "Outros" entry that is always last in the legend. Segment colours come from a ten-colour categorical palette, the `--chart-1`…`--chart-10` variables in `styles.css` (brighter values under `[data-theme="dark"]`), handed out by `chartColor(index)` in largest-first order so neighbouring slices always differ; `Outros` is `--text-muted`. The colours travel as `var(--…)` strings, so `DonutChart` re-resolves them when the theme changes, and the ring leaves a 2px gap between slices (its `spacing` prop). The ring sits beside the legend; each legend row shows the ticker, the company name, a Bulma `progress` bar scaled to the largest share, the share and the value, and the footer states the combined share of the three largest positions (`topThreeShare`, only when there are more than three holdings). The card renders its own title row so the toggle can sit beside it.
 
 The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the expanded row's own dropdown (see the investments table above).
 
-It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fixed origin, and the **Movimentações** table listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
+It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fixed origin, and the **Movimentações** tab listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
 
 ### Results dashboard (`ResultsDashboardView.vue`)
 

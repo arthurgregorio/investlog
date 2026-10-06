@@ -5,9 +5,12 @@ export type AllocationMetric = 'currentValue' | 'costBasis'
 export const OTHERS_SHARE_CUTOFF = 3
 export const OTHERS_LABEL = 'Outros'
 
+export const TOP_POSITIONS_COUNT = 3
+
 export interface AllocationEntry {
   key: string
   label: string
+  name: string | null
   value: number
   share: number
   isOthers: boolean
@@ -17,6 +20,7 @@ export interface Allocation {
   entries: AllocationEntry[]
   total: number
   excludedCount: number
+  topThreeShare: number | null
 }
 
 function metricValue(row: HoldingRow, metric: AllocationMetric): number | null {
@@ -36,11 +40,12 @@ export function computeAllocation(
     )
 
   const total = counted.reduce((sum, item) => sum + item.value, 0)
-  if (total === 0) return { entries: [], total: 0, excludedCount }
+  if (total === 0) return { entries: [], total: 0, excludedCount, topThreeShare: null }
 
   const individual: AllocationEntry[] = counted.map(({ row, value }) => ({
     key: row.id,
     label: row.ticker ?? row.name,
+    name: row.ticker && row.name && row.name !== row.ticker ? row.name : null,
     value,
     share: (value / total) * 100,
     isOthers: false,
@@ -48,33 +53,39 @@ export function computeAllocation(
 
   const bySizeDescending = (first: AllocationEntry, second: AllocationEntry) =>
     second.share - first.share
+  const topThreeShare =
+    individual.length > TOP_POSITIONS_COUNT
+      ? [...individual]
+          .sort(bySizeDescending)
+          .slice(0, TOP_POSITIONS_COUNT)
+          .reduce((sum, entry) => sum + entry.share, 0)
+      : null
   const small = individual.filter((entry) => entry.share < othersShareCutoff)
   const large = individual.filter((entry) => entry.share >= othersShareCutoff)
 
   if (small.length === 0 || large.length === 0) {
-    return { entries: individual.sort(bySizeDescending), total, excludedCount }
+    return { entries: individual.sort(bySizeDescending), total, excludedCount, topThreeShare }
   }
 
   const others: AllocationEntry = {
     key: 'others',
     label: OTHERS_LABEL,
+    name: small.length === 1 ? '1 investimento' : `${small.length} investimentos`,
     value: small.reduce((sum, entry) => sum + entry.value, 0),
     share: small.reduce((sum, entry) => sum + entry.share, 0),
     isOthers: true,
   }
 
-  return { entries: [...large.sort(bySizeDescending), others], total, excludedCount }
+  return {
+    entries: [...large.sort(bySizeDescending), others],
+    total,
+    excludedCount,
+    topThreeShare,
+  }
 }
 
-const WHITE_MIX_AT_LIGHTEST_STEP = 0.65
-const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
+export const CHART_PALETTE_SIZE = 10
 
-export function accentShades(accentHex: string, count: number): string[] {
-  if (!HEX_COLOR_PATTERN.test(accentHex)) return Array(count).fill(accentHex)
-  const channels = [1, 3, 5].map((start) => parseInt(accentHex.slice(start, start + 2), 16))
-  return Array.from({ length: count }, (_, index) => {
-    const whiteMix = count === 1 ? 0 : (index / (count - 1)) * WHITE_MIX_AT_LIGHTEST_STEP
-    const mixed = channels.map((channel) => Math.round(channel + (255 - channel) * whiteMix))
-    return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
-  })
+export function chartColor(index: number): string {
+  return `var(--chart-${(index % CHART_PALETTE_SIZE) + 1})`
 }

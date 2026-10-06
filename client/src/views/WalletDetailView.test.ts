@@ -274,12 +274,61 @@ describe('WalletDetailView', () => {
     expect(row.find('.chev').exists()).toBe(true)
   })
 
-  it('shows the move history above the investments listing', async () => {
+  it('puts the investments and the move history in one tabbed card, investments first', async () => {
+    const { wrapper, holdingsListStore, walletMovesStore } = await mountView(detailOf())
+    holdingsListStore.totalElements = 7
+    walletMovesStore.totalElements = 3
+    await flushPromises()
+
+    const card = wrapper.find('.table-card')
+    const tabs = card.findAll('.tabs li')
+    expect(tabs).toHaveLength(2)
+    expect(tabs[0].text()).toMatch(/^Investimentos\s*7$/)
+    expect(tabs[1].text()).toMatch(/^Movimentações\s*3$/)
+    expect(tabs[0].classes()).toContain('is-active')
+    expect(card.find('[data-testid="move-history"]').exists()).toBe(true)
+    expect(card.find('table.inv-table').exists()).toBe(true)
+  })
+
+  it('switches to the move history tab', async () => {
     const { wrapper } = await mountView(detailOf())
 
-    const html = wrapper.html()
-    expect(html.indexOf('data-testid="move-history"')).toBeGreaterThan(-1)
-    expect(html.indexOf('data-testid="move-history"')).toBeLessThan(html.indexOf('inv-table'))
+    await wrapper.findAll('.tabs li a')[1].trigger('click')
+    await flushPromises()
+
+    const tabs = wrapper.findAll('.tabs li')
+    expect(tabs[0].classes()).not.toContain('is-active')
+    expect(tabs[1].classes()).toContain('is-active')
+  })
+
+  it('labels each delta chip with its period when there is history', async () => {
+    const { wrapper } = await mountView(
+      detailOf({
+        series: [
+          {
+            snapshotDate: '2026-09-19',
+            currentValue: 4750,
+            totalInvested: 4500,
+            gain: 250,
+            gainPct: 5.5,
+          },
+        ],
+        dayChange: 10,
+        weekChange: 20,
+        monthChange: 30,
+      }),
+    )
+
+    const deltas = wrapper.find('[data-testid="wallet-deltas"]').text()
+    expect(deltas).toContain('1 dia')
+    expect(deltas).toContain('7 dias')
+    expect(deltas).toContain('30 dias')
+  })
+
+  it('hides the delta chips when there is no history', async () => {
+    const { wrapper } = await mountView(detailOf({ series: [] }))
+
+    expect(wrapper.find('[data-testid="wallet-deltas"]').exists()).toBe(false)
   })
 
   it('loads the detail and the wallet-scoped holdings on mount', async () => {
@@ -327,13 +376,21 @@ describe('WalletDetailView', () => {
     expect(wrapper.find('canvas').exists()).toBe(true)
   })
 
-  it('shows the largest position share in its card, with no separate warning banner', async () => {
+  it('shows the largest position share in its highlight cell, with no separate warning banner', async () => {
     const { wrapper } = await mountView(
       detailOf({ largestHoldingName: 'Petrobras', largestHoldingShare: 81.05 }),
     )
 
     expect(wrapper.find('.message.is-warning').exists()).toBe(false)
-    expect(wrapper.find('.wd-share-pct').text()).toBe('81,05%')
+    expect(wrapper.find('[data-testid="highlight-largest"]').text()).toContain('81,05%')
+  })
+
+  it('shows a dash in each highlight cell that has no data', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    for (const testId of ['highlight-best', 'highlight-worst', 'highlight-largest']) {
+      expect(wrapper.find(`[data-testid="${testId}"]`).text()).toContain('—')
+    }
   })
 
   it('lists the wallet holdings and expands a row into the detail panel', async () => {
@@ -488,7 +545,7 @@ describe('WalletDetailView', () => {
     expect(wrapper.text()).not.toContain('Venda parte ou toda a posição e reinvista')
   })
 
-  it('renders best, worst and largest position as three highlight cards', async () => {
+  it('renders best, worst and largest position as a three-cell strip inside the header card', async () => {
     const { wrapper } = await mountView(
       detailOf({
         bestPerformer: {
@@ -512,13 +569,27 @@ describe('WalletDetailView', () => {
       }),
     )
 
-    expect(wrapper.findAll('.wd-highlight')).toHaveLength(3)
-    expect(wrapper.text()).toContain('Melhor desempenho')
-    expect(wrapper.text()).toContain('Pior desempenho')
-    expect(wrapper.text()).toContain('Maior posição')
-    expect(wrapper.text()).toContain('ITUB4')
-    expect(wrapper.text()).toContain('TRXF11')
-    expect(wrapper.find('.wd-share-pct').text()).toBe('41,10%')
+    const strip = wrapper.find('.wd-highlight-strip')
+    expect(strip.findAll('.wd-highlight-cell')).toHaveLength(3)
+    expect(strip.text()).toContain('Melhor desempenho')
+    expect(strip.text()).toContain('Pior desempenho')
+    expect(strip.text()).toContain('Maior posição')
+
+    const best = wrapper.find('[data-testid="highlight-best"]')
+    expect(best.text()).toContain('ITUB4')
+    expect(best.find('.has-text-success-on-scheme').text()).toBe('+39,71%')
+    const worst = wrapper.find('[data-testid="highlight-worst"]')
+    expect(worst.text()).toContain('TRXF11')
+    expect(worst.find('.has-text-danger-on-scheme').text()).toBe('−11,22%')
+    expect(wrapper.find('[data-testid="highlight-largest"]').text()).toContain('41,10%')
+  })
+
+  it('keeps every card free of the bottom margin that Bulma adds, so the page gap sets the spacing', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    const cards = wrapper.findAll('.page > .card')
+    expect(cards.length).toBeGreaterThanOrEqual(4)
+    expect(cards.every((card) => card.classes().includes('mb-0'))).toBe(true)
   })
 
   describe('loading overlays', () => {

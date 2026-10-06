@@ -25,6 +25,7 @@ import { badgeColor, WALLET_TYPES } from '@/utils/walletTypes'
 import type { HoldingRow, WalletMoveRow } from '@/types'
 
 const HOLDINGS_PAGE_SIZE = 10
+const GAIN_EPSILON = 0.0001
 
 const route = useRoute()
 const router = useRouter()
@@ -39,6 +40,7 @@ const walletMovesStore = useWalletMovesStore()
 const walletId = computed(() => route.params.id as string)
 const detail = computed(() => walletDetailStore.detail)
 const openedDetails = ref<string[]>([])
+const activeTab = ref(0)
 const moveModalOpen = ref(false)
 const reinvestModalOpen = ref(false)
 const allocationRows = ref<HoldingRow[]>([])
@@ -50,11 +52,17 @@ const chartSeries = computed(() => ({
   labels: (detail.value?.series ?? []).map((point) => fmt.date(point.snapshotDate)),
 }))
 
+const deltas = computed(() => [
+  { label: '1 dia', value: detail.value?.dayChange ?? null },
+  { label: '7 dias', value: detail.value?.weekChange ?? null },
+  { label: '30 dias', value: detail.value?.monthChange ?? null },
+])
+
 const resultDirection = computed(() => {
   const gain = detail.value?.gain
   if (gain == null) return 'gl-empty'
-  if (gain > 0.0001) return 'gl-up'
-  if (gain < -0.0001) return 'gl-down'
+  if (gain > GAIN_EPSILON) return 'gl-up'
+  if (gain < -GAIN_EPSILON) return 'gl-down'
   return 'gl-flat'
 })
 
@@ -79,6 +87,12 @@ const activitySummary = computed(() => {
   if (activity.walletAgeInDays != null) parts.push(`${activity.walletAgeInDays} dias`)
   return parts.join(' · ')
 })
+
+function gainTextClass(gain: number) {
+  if (gain > GAIN_EPSILON) return 'has-text-success-on-scheme'
+  if (gain < -GAIN_EPSILON) return 'has-text-danger-on-scheme'
+  return ''
+}
 
 function fmtY(value: number) {
   return fmt.money(value, currency.value, { compact: true })
@@ -299,85 +313,100 @@ function confirmDeleteWallet() {
             </div>
           </div>
         </CardBody>
-      </Card>
 
-      <div class="fixed-grid has-3-cols has-1-cols-mobile">
-        <div class="grid">
-          <div class="cell">
-            <Card class="wd-highlight">
-              <CardBody class="wd-highlight-body">
-                <span class="wd-rail wd-rail-up" />
-                <div class="wd-highlight-text">
-                  <div class="kpi-label">Melhor desempenho</div>
-                  <template v-if="detail.bestPerformer">
-                    <div class="wd-highlight-name">
-                      {{ detail.bestPerformer.ticker ?? detail.bestPerformer.name }}
-                    </div>
-                    <GainChip
-                      :value="detail.bestPerformer.gain"
-                      :pct="detail.bestPerformer.gainPct"
-                      :cur="detail.currency"
-                      compact
-                    />
-                  </template>
-                  <div v-else class="wd-highlight-empty">—</div>
-                </div>
-              </CardBody>
-            </Card>
+        <div class="wd-highlight-strip">
+          <div
+            class="wd-highlight-cell is-flex is-align-items-center is-gap-3"
+            data-testid="highlight-best"
+          >
+            <span class="wd-rail wd-rail-up" />
+            <div class="is-flex-grow-1">
+              <div class="is-size-7 has-text-weight-semibold has-text-grey">Melhor desempenho</div>
+              <div
+                v-if="detail.bestPerformer"
+                class="is-flex is-align-items-center is-justify-content-space-between mt-1"
+              >
+                <span class="has-text-weight-bold">
+                  {{ detail.bestPerformer.ticker ?? detail.bestPerformer.name }}
+                </span>
+                <span
+                  class="has-text-weight-bold is-size-6"
+                  :class="gainTextClass(detail.bestPerformer.gainPct)"
+                >
+                  {{ fmt.pctSigned(detail.bestPerformer.gainPct) }}
+                </span>
+              </div>
+              <div v-else class="has-text-grey mt-1">—</div>
+            </div>
           </div>
-          <div class="cell">
-            <Card class="wd-highlight">
-              <CardBody class="wd-highlight-body">
-                <span class="wd-rail wd-rail-down" />
-                <div class="wd-highlight-text">
-                  <div class="kpi-label">Pior desempenho</div>
-                  <template v-if="detail.worstPerformer">
-                    <div class="wd-highlight-name">
-                      {{ detail.worstPerformer.ticker ?? detail.worstPerformer.name }}
-                    </div>
-                    <GainChip
-                      :value="detail.worstPerformer.gain"
-                      :pct="detail.worstPerformer.gainPct"
-                      :cur="detail.currency"
-                      compact
-                    />
-                  </template>
-                  <div v-else class="wd-highlight-empty">—</div>
-                </div>
-              </CardBody>
-            </Card>
+
+          <div
+            class="wd-highlight-cell is-flex is-align-items-center is-gap-3"
+            data-testid="highlight-worst"
+          >
+            <span class="wd-rail wd-rail-down" />
+            <div class="is-flex-grow-1">
+              <div class="is-size-7 has-text-weight-semibold has-text-grey">Pior desempenho</div>
+              <div
+                v-if="detail.worstPerformer"
+                class="is-flex is-align-items-center is-justify-content-space-between mt-1"
+              >
+                <span class="has-text-weight-bold">
+                  {{ detail.worstPerformer.ticker ?? detail.worstPerformer.name }}
+                </span>
+                <span
+                  class="has-text-weight-bold is-size-6"
+                  :class="gainTextClass(detail.worstPerformer.gainPct)"
+                >
+                  {{ fmt.pctSigned(detail.worstPerformer.gainPct) }}
+                </span>
+              </div>
+              <div v-else class="has-text-grey mt-1">—</div>
+            </div>
           </div>
-          <div class="cell">
-            <Card class="wd-highlight">
-              <CardBody class="wd-highlight-body">
-                <span class="wd-rail wd-rail-largest" />
-                <div class="wd-highlight-text">
-                  <div class="kpi-label">Maior posição</div>
-                  <template v-if="detail.largestHoldingName">
-                    <div class="wd-highlight-name">{{ largestHoldingTicker }}</div>
-                    <div class="wd-share">
-                      <span class="wd-share-pct">{{ concentrationLabel }}</span>
-                    </div>
-                  </template>
-                  <div v-else class="wd-highlight-empty">—</div>
-                </div>
-              </CardBody>
-            </Card>
+
+          <div
+            class="wd-highlight-cell is-flex is-align-items-center is-gap-3"
+            data-testid="highlight-largest"
+          >
+            <span class="wd-rail wd-rail-largest" />
+            <div class="is-flex-grow-1">
+              <div class="is-size-7 has-text-weight-semibold has-text-grey">Maior posição</div>
+              <div
+                v-if="detail.largestHoldingName"
+                class="is-flex is-align-items-center is-justify-content-space-between mt-1"
+              >
+                <span class="has-text-weight-bold">{{ largestHoldingTicker }}</span>
+                <span class="has-text-weight-bold is-size-6">{{ concentrationLabel }}</span>
+              </div>
+              <div v-else class="has-text-grey mt-1">—</div>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       <Card class="mb-0">
         <CardBody>
-          <div class="card-title-row">
+          <div
+            class="is-flex is-flex-wrap-wrap is-align-items-flex-start is-justify-content-space-between is-gap-3 mb-4"
+          >
             <div>
               <div class="chart-title">Desempenho</div>
               <div class="wd-chart-sub">Valor atual ao longo do tempo</div>
             </div>
-            <div v-if="detail.series.length" class="wd-deltas">
-              <GainChip :value="detail.dayChange" :cur="detail.currency" compact />
-              <GainChip :value="detail.weekChange" :cur="detail.currency" compact />
-              <GainChip :value="detail.monthChange" :cur="detail.currency" compact />
+            <div
+              v-if="detail.series.length"
+              class="is-flex is-flex-wrap-wrap is-align-items-center is-gap-5"
+              data-testid="wallet-deltas"
+            >
+              <div
+                v-for="delta in deltas"
+                :key="delta.label"
+                class="is-flex is-align-items-center is-gap-2"
+              >
+                <span class="is-size-7 has-text-grey">{{ delta.label }}</span>
+                <GainChip :value="delta.value" :cur="detail.currency" compact />
+              </div>
             </div>
           </div>
 
@@ -386,7 +415,7 @@ function confirmDeleteWallet() {
               :data="chartSeries.data"
               :x-labels="chartSeries.labels"
               color="var(--primary)"
-              :height="260"
+              :height="200"
               :fmt-y="fmtY"
             />
           </div>
@@ -401,185 +430,197 @@ function confirmDeleteWallet() {
 
       <Card class="mb-0" data-testid="allocation-card">
         <CardBody>
-          <div class="chart-title">Distribuição</div>
-          <div class="wd-chart-sub">Participação de cada investimento na carteira</div>
-          <AllocationDonut :rows="allocationRows" :kind="detail.kind" :currency="detail.currency" />
+          <AllocationDonut :rows="allocationRows" :currency="detail.currency" />
         </CardBody>
       </Card>
 
-      <Card class="table-card" data-testid="move-history">
-        <div class="move-history-title">
-          <div class="chart-title">Movimentações</div>
-          <div class="wd-chart-sub">Investimentos movidos de e para esta carteira</div>
-        </div>
-        <div v-if="walletMovesStore.rows.length > 0" class="table-wrap">
-          <b-loading :is-full-page="false" :model-value="walletMovesStore.loading" />
-          <div class="table-scroll">
-            <table class="inv-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Investimento</th>
-                  <th>Direção</th>
-                  <th>Carteira</th>
-                  <th class="c-num">Qtd.</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="move in walletMovesStore.rows" :key="move.id" data-testid="move-row">
-                  <td>{{ fmt.date(move.movedAt) }}</td>
-                  <td>
-                    <span class="t-ticker">{{ move.ticker ?? move.holdingName }}</span>
-                  </td>
-                  <td>
-                    <span
-                      class="move-direction"
-                      :class="move.direction === 'IN' ? 'is-in' : 'is-out'"
-                    >
-                      <b-icon
-                        :icon="move.direction === 'IN' ? 'arrow-bottom-left' : 'arrow-top-right'"
-                        size="is-small"
-                      />
-                      {{ move.direction === 'IN' ? 'Entrada' : 'Saída' }}
-                    </span>
-                  </td>
-                  <td>{{ moveCounterpart(move) }}</td>
-                  <td class="c-num">
-                    {{ move.quantity == null ? 'Tudo' : fmt.qty(move.quantity) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div v-if="walletMovesStore.totalPages > 1" class="table-foot">
-            <b-pagination
-              :model-value="walletMovesStore.page + 1"
-              :total="walletMovesStore.totalElements"
-              :per-page="walletMovesStore.pageSize"
-              order="is-right"
-              simple
-              @change="onMovesPageChange"
-            />
-          </div>
-        </div>
-        <div
-          v-else-if="walletMovesStore.loaded"
-          class="move-history-empty"
-          data-testid="move-history-empty"
-        >
-          <EmptyState
-            icon="swap-horizontal"
-            title="Nenhuma movimentação"
-            text="Investimentos movidos entre carteiras aparecem aqui."
-          />
-        </div>
-      </Card>
+      <Card class="table-card mb-0">
+        <b-tabs v-model="activeTab" class="wd-tabs" :animated="false">
+          <b-tab-item>
+            <template #header>
+              <span>Investimentos</span>
+              <span class="tag is-rounded ml-2">{{ holdingsListStore.totalElements }}</span>
+            </template>
 
-      <EmptyState
-        v-if="holdingsListStore.loaded && holdingsListStore.rows.length === 0"
-        icon="wallet-outline"
-        title="Nenhum investimento nesta carteira"
-        text="Adicione um investimento para começar a acompanhar esta carteira."
-      />
-
-      <Card v-else class="table-card mb-0">
-        <div class="table-wrap">
-          <b-loading :is-full-page="false" :model-value="holdingsListStore.loading" />
-          <div class="table-scroll">
-            <table class="inv-table">
-              <thead>
-                <tr>
-                  <th>Investimento</th>
-                  <th class="c-num">Qtd.</th>
-                  <th class="c-num">Preço atual</th>
-                  <th class="c-num">Investido</th>
-                  <th class="c-num">Valor atual</th>
-                  <th class="c-num">Resultado</th>
-                  <th class="c-act"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="row in holdingsListStore.rows" :key="row.id">
-                  <tr
-                    class="inv-row"
-                    :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
-                    @click="toggleRow(row)"
-                  >
-                    <td>
-                      <div class="name-cell">
-                        <FrozenBadge v-if="row.frozen" />
-                        <TickerBadge
-                          v-else
-                          :ticker="displayName(row)"
-                          :color="badgeColor(row.ticker, row.kind)"
-                        />
-                        <div class="name-meta">
-                          <div class="name-line">
-                            <span class="t-ticker">{{ displayName(row) }}</span>
-                          </div>
-                          <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
-                            {{ row.name }}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
-                    <td class="c-num">
-                      <span v-if="row.currentPrice == null" class="gl-empty">—</span>
-                      <template v-else>{{
-                        fmt.money(row.currentPrice, row.walletCurrency)
-                      }}</template>
-                    </td>
-                    <td class="c-num">
-                      <div class="cell-strong">
-                        {{ fmt.money(row.costBasis, row.walletCurrency) }}
-                      </div>
-                    </td>
-                    <td class="c-num">
-                      <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                      <template v-else>{{
-                        fmt.money(row.currentValue, row.walletCurrency)
-                      }}</template>
-                    </td>
-                    <td class="c-num">
-                      <GainChip
-                        :value="row.gain"
-                        :pct="row.gainPct"
-                        :cur="row.walletCurrency"
-                        stacked
-                      />
-                    </td>
-                    <td class="c-act">
-                      <span class="chev">
-                        <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
-                      </span>
-                    </td>
-                  </tr>
-                  <tr v-if="isOpen(row)" class="detail-row">
-                    <td colspan="7">
-                      <HoldingDetailPanel
-                        :row="row"
-                        @deleted="onHoldingChanged"
-                        @position-added="onHoldingChanged"
-                        @relocated="onPositionsChanged"
-                      />
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-          <div v-if="holdingsListStore.totalPages > 1" class="table-foot">
-            <b-pagination
-              :model-value="holdingsListStore.page + 1"
-              :total="holdingsListStore.totalElements"
-              :per-page="holdingsListStore.pageSize"
-              order="is-right"
-              simple
-              @change="onPageChange"
+            <EmptyState
+              v-if="holdingsListStore.loaded && holdingsListStore.rows.length === 0"
+              icon="wallet-outline"
+              title="Nenhum investimento nesta carteira"
+              text="Adicione um investimento para começar a acompanhar esta carteira."
             />
-          </div>
-        </div>
+
+            <div v-else class="table-wrap">
+              <b-loading :is-full-page="false" :model-value="holdingsListStore.loading" />
+              <div class="table-scroll">
+                <table class="inv-table">
+                  <thead>
+                    <tr>
+                      <th>Investimento</th>
+                      <th class="c-num">Qtd.</th>
+                      <th class="c-num">Preço atual</th>
+                      <th class="c-num">Investido</th>
+                      <th class="c-num">Valor atual</th>
+                      <th class="c-num">Resultado</th>
+                      <th class="c-act"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template v-for="row in holdingsListStore.rows" :key="row.id">
+                      <tr
+                        class="inv-row"
+                        :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
+                        @click="toggleRow(row)"
+                      >
+                        <td>
+                          <div class="name-cell">
+                            <FrozenBadge v-if="row.frozen" />
+                            <TickerBadge
+                              v-else
+                              :ticker="displayName(row)"
+                              :color="badgeColor(row.ticker, row.kind)"
+                            />
+                            <div class="name-meta">
+                              <div class="name-line">
+                                <span class="t-ticker">{{ displayName(row) }}</span>
+                              </div>
+                              <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
+                                {{ row.name }}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="c-num">
+                          {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
+                        </td>
+                        <td class="c-num">
+                          <span v-if="row.currentPrice == null" class="gl-empty">—</span>
+                          <template v-else>{{
+                            fmt.money(row.currentPrice, row.walletCurrency)
+                          }}</template>
+                        </td>
+                        <td class="c-num">
+                          <div class="cell-strong">
+                            {{ fmt.money(row.costBasis, row.walletCurrency) }}
+                          </div>
+                        </td>
+                        <td class="c-num">
+                          <span v-if="row.currentValue == null" class="gl-empty">—</span>
+                          <template v-else>{{
+                            fmt.money(row.currentValue, row.walletCurrency)
+                          }}</template>
+                        </td>
+                        <td class="c-num">
+                          <GainChip
+                            :value="row.gain"
+                            :pct="row.gainPct"
+                            :cur="row.walletCurrency"
+                            stacked
+                          />
+                        </td>
+                        <td class="c-act">
+                          <span class="chev">
+                            <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
+                          </span>
+                        </td>
+                      </tr>
+                      <tr v-if="isOpen(row)" class="detail-row">
+                        <td colspan="7">
+                          <HoldingDetailPanel
+                            :row="row"
+                            @deleted="onHoldingChanged"
+                            @position-added="onHoldingChanged"
+                            @relocated="onPositionsChanged"
+                          />
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+              <div v-if="holdingsListStore.totalPages > 1" class="table-foot">
+                <b-pagination
+                  :model-value="holdingsListStore.page + 1"
+                  :total="holdingsListStore.totalElements"
+                  :per-page="holdingsListStore.pageSize"
+                  order="is-right"
+                  simple
+                  @change="onPageChange"
+                />
+              </div>
+            </div>
+          </b-tab-item>
+
+          <b-tab-item>
+            <template #header>
+              <span>Movimentações</span>
+              <span class="tag is-rounded ml-2">{{ walletMovesStore.totalElements }}</span>
+            </template>
+
+            <div data-testid="move-history">
+              <div v-if="walletMovesStore.rows.length > 0" class="table-wrap">
+                <b-loading :is-full-page="false" :model-value="walletMovesStore.loading" />
+                <div class="table-scroll">
+                  <table class="inv-table">
+                    <thead>
+                      <tr>
+                        <th>Data</th>
+                        <th>Investimento</th>
+                        <th>Direção</th>
+                        <th>Carteira</th>
+                        <th class="c-num">Qtd.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="move in walletMovesStore.rows" :key="move.id" data-testid="move-row">
+                        <td>{{ fmt.date(move.movedAt) }}</td>
+                        <td>
+                          <span class="t-ticker">{{ move.ticker ?? move.holdingName }}</span>
+                        </td>
+                        <td>
+                          <span
+                            class="move-direction"
+                            :class="move.direction === 'IN' ? 'is-in' : 'is-out'"
+                          >
+                            <b-icon
+                              :icon="move.direction === 'IN' ? 'arrow-bottom-left' : 'arrow-top-right'"
+                              size="is-small"
+                            />
+                            {{ move.direction === 'IN' ? 'Entrada' : 'Saída' }}
+                          </span>
+                        </td>
+                        <td>{{ moveCounterpart(move) }}</td>
+                        <td class="c-num">
+                          {{ move.quantity == null ? 'Tudo' : fmt.qty(move.quantity) }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="walletMovesStore.totalPages > 1" class="table-foot">
+                  <b-pagination
+                    :model-value="walletMovesStore.page + 1"
+                    :total="walletMovesStore.totalElements"
+                    :per-page="walletMovesStore.pageSize"
+                    order="is-right"
+                    simple
+                    @change="onMovesPageChange"
+                  />
+                </div>
+              </div>
+              <div
+                v-else-if="walletMovesStore.loaded"
+                class="move-history-empty"
+                data-testid="move-history-empty"
+              >
+                <EmptyState
+                  icon="swap-horizontal"
+                  title="Nenhuma movimentação"
+                  text="Investimentos movidos entre carteiras aparecem aqui."
+                />
+              </div>
+            </div>
+          </b-tab-item>
+        </b-tabs>
       </Card>
 
       <MoveHoldingsModal
