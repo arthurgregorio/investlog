@@ -169,6 +169,14 @@ In detail:
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
   (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
+  `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
+  holding of `holdings_overview` with its wallet currency's `rate` (1 when it has no
+  `currency_rates` row) and `cost_basis_anchor` / `current_value_anchor`, the amounts restated in
+  the rates-anchor currency, the one whose own row stores rate 1. The display currency is a runtime
+  parameter and cannot live in a view, so `findSummary` divides by its rate itself, as a scalar
+  subselect in the same query. It multiplies `cost_basis * (rate / displayRate)` rather than
+  dividing the anchor columns: the two orders agree mathematically but not digit for digit, and
+  the summary payload exposes every digit.
 - `configurations` — `GET /private/v1/configurations`, `PATCH /private/v1/configurations/{key}`.
   Runtime feature toggles keyed by `ConfigurationKey`; this is what gates the price-sync jobs.
 - `wallets` — `GET`/`POST /private/v1/wallets`, `GET`/`PATCH`/`DELETE /private/v1/wallets/{id}`. The holding count, invested total, current value, `gain` and `gain_pct` come from the `finances.wallet_totals` view, LEFT JOINed once by `WalletRepository.selectWallets()`, which every read goes through. A wallet with no active holding has no row there, so the count and the invested total are coalesced to zero while the current value, gain and gain percentage stay null; `current_value` deliberately keeps a bare `SUM` so an all-unpriced wallet reads null rather than zero.

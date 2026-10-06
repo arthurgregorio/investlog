@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="06-1200-1" author="${claude}">
+        <comment>
+            Currency conversion gets one definition (issue #243). Every row of holdings_overview
+            is restated in the rates-anchor currency, the one whose own currency_rates row stores
+            rate 1: rate is the wallet currency's stored rate, or 1 when it has no row, and the
+            two anchor columns are the corresponding amounts multiplied by it. The view stops at
+            the anchor on purpose, because the display currency is a runtime parameter and cannot
+            live in a view. currency_rates is keyed by currency_code, so the LEFT JOIN never
+            multiplies a holding.
+        </comment>
+        <sql>
+            CREATE VIEW finances.holdings_valued AS
+            SELECT
+                holdings_overview.*,
+                COALESCE(currency_rates.rate, 1) AS rate,
+                holdings_overview.cost_basis * COALESCE(currency_rates.rate, 1) AS cost_basis_anchor,
+                holdings_overview.current_value * COALESCE(currency_rates.rate, 1) AS current_value_anchor
+            FROM finances.holdings_overview
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = holdings_overview.wallet_currency;
+        </sql>
+        <rollback>
+            <sql>
+                DROP VIEW finances.holdings_valued;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
