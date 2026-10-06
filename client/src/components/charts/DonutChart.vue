@@ -14,10 +14,11 @@ interface Segment {
 }
 
 const props = withDefaults(
-  defineProps<{ segments: Segment[]; size?: number; thickness?: number }>(),
+  defineProps<{ segments: Segment[]; size?: number; thickness?: number; spacing?: number }>(),
   {
     size: 168,
     thickness: 22,
+    spacing: 0,
   },
 )
 
@@ -35,7 +36,7 @@ function createChart() {
           data: props.segments.map((segment) => segment.value),
           backgroundColor: props.segments.map((segment) => resolveColor(segment.color)),
           borderWidth: 0,
-          spacing: 0,
+          spacing: props.spacing,
         },
       ],
     },
@@ -65,7 +66,7 @@ function createChart() {
 onMounted(createChart)
 
 watch(
-  [() => props.size, () => props.thickness, () => props.segments],
+  [() => props.size, () => props.thickness, () => props.spacing, () => props.segments],
   () => {
     chart?.destroy()
     createChart()

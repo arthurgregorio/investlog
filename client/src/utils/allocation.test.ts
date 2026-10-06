@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { accentShades, computeAllocation, OTHERS_LABEL, OTHERS_SHARE_CUTOFF } from './allocation'
+import {
+  CHART_PALETTE_SIZE,
+  chartColor,
+  computeAllocation,
+  OTHERS_LABEL,
+  OTHERS_SHARE_CUTOFF,
+} from './allocation'
 import type { HoldingRow } from '@/types'
 
 function rowOf(overrides: Partial<HoldingRow>): HoldingRow {
@@ -27,22 +33,21 @@ function sumOfShares(entries: { share: number }[]) {
   return entries.reduce((sum, entry) => sum + entry.share, 0)
 }
 
-describe('accentShades', () => {
-  it('runs from the accent itself down to a lighter tint', () => {
-    const shades = accentShades('#2b6cb0', 3)
-
-    expect(shades[0]).toBe('#2b6cb0')
-    expect(shades).toHaveLength(3)
-    expect(new Set(shades).size).toBe(3)
-    const lightness = (hex: string) =>
-      [1, 3, 5].reduce((sum, start) => sum + parseInt(hex.slice(start, start + 2), 16), 0)
-    expect(lightness(shades[0])).toBeLessThan(lightness(shades[1]))
-    expect(lightness(shades[1])).toBeLessThan(lightness(shades[2]))
+describe('chartColor', () => {
+  it('hands out the theme palette variables in order', () => {
+    expect(chartColor(0)).toBe('var(--chart-1)')
+    expect(chartColor(1)).toBe('var(--chart-2)')
+    expect(chartColor(CHART_PALETTE_SIZE - 1)).toBe(`var(--chart-${CHART_PALETTE_SIZE})`)
   })
 
-  it('returns the accent unchanged for a single step or a non-hex colour', () => {
-    expect(accentShades('#0ca678', 1)).toEqual(['#0ca678'])
-    expect(accentShades('', 2)).toEqual(['', ''])
+  it('wraps around once the palette is used up', () => {
+    expect(chartColor(CHART_PALETTE_SIZE)).toBe('var(--chart-1)')
+    expect(chartColor(CHART_PALETTE_SIZE + 2)).toBe('var(--chart-3)')
+  })
+
+  it('gives neighbouring entries different colours', () => {
+    const colors = Array.from({ length: CHART_PALETTE_SIZE }, (_, index) => chartColor(index))
+    expect(new Set(colors).size).toBe(CHART_PALETTE_SIZE)
   })
 })
 
@@ -180,5 +185,68 @@ describe('computeAllocation', () => {
     const unpriced = computeAllocation([rowOf({ currentValue: null })], 'currentValue')
     expect(unpriced.entries).toEqual([])
     expect(unpriced.excludedCount).toBe(1)
+    expect(unpriced.topThreeShare).toBeNull()
+  })
+
+  it('adds the company name beside the ticker, and none for a fund or a repeated name', () => {
+    const { entries } = computeAllocation(
+      [
+        rowOf({ id: 'a', ticker: 'AAAA3', name: 'Empresa A', currentValue: 300 }),
+        rowOf({ id: 'b', ticker: null, name: 'Fundo Renda Fixa', currentValue: 200 }),
+        rowOf({ id: 'c', ticker: 'CCCC3', name: 'CCCC3', currentValue: 100 }),
+      ],
+      'currentValue',
+    )
+
+    expect(entries.map((entry) => entry.name)).toEqual(['Empresa A', null, null])
+  })
+
+  it('names the Outros entry after how many holdings it groups', () => {
+    const oneSmall = computeAllocation(
+      [
+        rowOf({ id: 'big', ticker: 'BIGG3', currentValue: 9900 }),
+        rowOf({ id: 'small', ticker: 'SML1', currentValue: 100 }),
+      ],
+      'currentValue',
+    ).entries
+    const twoSmall = computeAllocation(
+      [
+        rowOf({ id: 'big', ticker: 'BIGG3', currentValue: 9800 }),
+        rowOf({ id: 'small-1', ticker: 'SML1', currentValue: 100 }),
+        rowOf({ id: 'small-2', ticker: 'SML2', currentValue: 100 }),
+      ],
+      'currentValue',
+    ).entries
+
+    expect(oneSmall[1].name).toBe('1 investimento')
+    expect(twoSmall[1].name).toBe('2 investimentos')
+  })
+
+  it('reports the combined share of the three largest holdings only when there are more than three', () => {
+    const threeRows = [
+      rowOf({ id: 'a', ticker: 'AAAA3', currentValue: 500 }),
+      rowOf({ id: 'b', ticker: 'BBBB3', currentValue: 300 }),
+      rowOf({ id: 'c', ticker: 'CCCC3', currentValue: 200 }),
+    ]
+    const fourRows = [...threeRows, rowOf({ id: 'd', ticker: 'DDDD3', currentValue: 1000 })]
+
+    expect(computeAllocation(threeRows, 'currentValue').topThreeShare).toBeNull()
+    expect(computeAllocation(fourRows, 'currentValue').topThreeShare).toBeCloseTo(
+      (1800 / 2000) * 100,
+      9,
+    )
+  })
+
+  it('counts the three largest individual holdings, not the grouped Outros entry', () => {
+    const rows = [
+      rowOf({ id: 'a', ticker: 'AAAA3', currentValue: 4000 }),
+      rowOf({ id: 'b', ticker: 'BBBB3', currentValue: 3000 }),
+      rowOf({ id: 'c', ticker: 'CCCC3', currentValue: 2000 }),
+      rowOf({ id: 'd', ticker: 'DDDD3', currentValue: 900 }),
+      rowOf({ id: 'e', ticker: 'EEEE3', currentValue: 50 }),
+      rowOf({ id: 'f', ticker: 'FFFF3', currentValue: 50 }),
+    ]
+
+    expect(computeAllocation(rows, 'currentValue').topThreeShare).toBeCloseTo(90, 9)
   })
 })
