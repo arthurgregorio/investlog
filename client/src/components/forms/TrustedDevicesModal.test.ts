@@ -3,6 +3,7 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import TrustedDevicesModal from './TrustedDevicesModal.vue'
 import { authApi } from '@/api/auth'
+import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
 vi.mock('@/api/auth', () => ({
   authApi: {
@@ -92,6 +93,25 @@ describe('TrustedDevicesModal', () => {
     expect(authApi.revokeTrustedDevice).toHaveBeenCalledWith('1')
     expect(document.body.textContent).not.toContain('Chrome em Windows')
     expect(document.body.textContent).toContain('Safari em iPhone')
+  })
+
+  it('shows a device label containing markup literally in the revoke confirmation', async () => {
+    const markupLabel = '<img src=x onerror=alert(1)>'
+    vi.mocked(authApi.fetchTrustedDevices).mockResolvedValue([
+      {
+        id: '1',
+        label: markupLabel,
+        lastUsedAt: '2026-08-01T10:00:00Z',
+        expiresAt: '2026-08-31T10:00:00Z',
+      },
+    ])
+
+    const wrapper = mountModal()
+    await flushPromises()
+    await wrapper.find('button[aria-label="Revogar dispositivo"]').trigger('click')
+    await flushPromises()
+
+    expectDialogShowsLiterally(markupLabel)
   })
 
   it('keeps the device when the confirmation is cancelled', async () => {

@@ -4,6 +4,7 @@ import { useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { useTypesListStore } from '@/stores/typesList'
+import { escapeHtml } from '@/utils/escapeHtml'
 import { useAuthStore } from '@/stores/auth'
 import type { AssetType } from '@/types'
 
@@ -88,7 +89,7 @@ function confirmRemoveType(type: AssetType) {
   const kind = activeKind.value
   dialog.confirm({
     title: 'Remover tipo',
-    message: `Remover <strong>${type.name}</strong>? Esta ação <strong>não pode ser desfeita</strong>.`,
+    message: `Remover <strong>${escapeHtml(type.name)}</strong>? Esta ação <strong>não pode ser desfeita</strong>.`,
     type: 'is-danger',
     hasIcon: true,
     confirmText: 'Remover',
