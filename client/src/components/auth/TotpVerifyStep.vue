@@ -15,10 +15,18 @@ const trustDevice = ref(false)
 
 <template>
   <form class="form-stack" @submit.prevent="emit('submit', totpCode, trustDevice)">
-    <b-field label="Código de 6 dígitos">
-      <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
-    </b-field>
-    <b-checkbox v-model="trustDevice">Confiar neste dispositivo por 30 dias</b-checkbox>
+    <div class="is-flex is-flex-direction-column">
+      <b-field label="Código de 6 dígitos">
+        <b-input
+          v-model="totpCode"
+          maxlength="6"
+          :has-counter="false"
+          placeholder="000000"
+          required
+        />
+      </b-field>
+      <b-checkbox v-model="trustDevice">Confiar neste dispositivo por 30 dias</b-checkbox>
+    </div>
     <b-button
       type="is-primary"
       expanded

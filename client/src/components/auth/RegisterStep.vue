@@ -49,13 +49,14 @@ const registrationValid = computed(
     >
       Criar conta
     </b-button>
-    <button
-      type="button"
-      class="auth-toggle"
+    <b-button
+      type="is-ghost"
+      size="is-small"
+      class="has-text-primary has-text-weight-semibold"
       data-testid="toggle-register"
       @click="emit('toggleRegister')"
     >
       Já tem uma conta? Entrar
-    </button>
+    </b-button>
   </form>
 </template>

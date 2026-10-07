@@ -38,7 +38,7 @@ describe('CredentialsStep', () => {
   it('shows the Google button as a real anchor when Google auth is enabled', () => {
     const wrapper = mountStep({ googleAuthEnabled: true })
 
-    const googleButton = wrapper.find('.auth-google-button')
+    const googleButton = wrapper.find('[data-testid="google-login"]')
     expect(googleButton.exists()).toBe(true)
     // Must be a real anchor causing a full browser navigation, not a button/click handler —
     // an OAuth2 authorization-code flow requires the browser to actually leave the SPA.
@@ -49,6 +49,6 @@ describe('CredentialsStep', () => {
   it('hides the Google button when Google auth is disabled', () => {
     const wrapper = mountStep()
 
-    expect(wrapper.find('.auth-google-button').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="google-login"]').exists()).toBe(false)
   })
 })
