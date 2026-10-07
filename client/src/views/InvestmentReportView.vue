@@ -127,7 +127,7 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
 
 <template>
   <div class="page report-page">
-    <div class="report-toolbar no-print">
+    <div class="is-flex is-align-items-center is-justify-content-space-between no-print">
       <RouterLink to="/investments" class="back-link">
         <b-icon icon="arrow-left" size="is-small" /> Voltar
       </RouterLink>

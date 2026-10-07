@@ -204,7 +204,7 @@ onBeforeUnmount(() => chart?.destroy())
 </script>
 
 <template>
-  <div :style="{ position: 'relative', height: `${height}px` }">
+  <div class="is-relative" :style="{ height: `${height}px` }">
     <canvas ref="canvasElement"></canvas>
   </div>
 </template>

@@ -278,12 +278,12 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
     </div>
 
     <div v-if="detail" class="ledger-head">
-      <div class="ledger-head-info">
+      <div class="is-flex is-align-items-center is-gap-1">
         <span class="ledger-title">Movimentações</span>
         <span class="ledger-count">{{ ledgerRows.length }}</span>
         <FrozenBadge v-if="isFrozen" compact />
       </div>
-      <div class="ledger-actions">
+      <div class="is-flex is-align-items-center is-flex-wrap-wrap is-gap-1">
         <b-dropdown
           aria-role="list"
           position="is-bottom-left"
@@ -332,11 +332,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           >
             <b-icon icon="swap-horizontal" size="is-small" /> Mover
           </b-dropdown-item>
-          <b-dropdown-item
-            aria-role="listitem"
-            data-testid="holding-freeze"
-            @click="toggleFrozen"
-          >
+          <b-dropdown-item aria-role="listitem" data-testid="holding-freeze" @click="toggleFrozen">
             <b-icon :icon="isFrozen ? 'snowflake-off' : 'snowflake'" size="is-small" />
             {{ isFrozen ? 'Descongelar' : 'Congelar' }}
           </b-dropdown-item>

@@ -51,7 +51,7 @@ describe('AppModal', () => {
   it('widens the card on request', () => {
     mountModal({ wide: true })
 
-    expect(document.body.querySelector<HTMLElement>('.modal-card')?.style.width).toBe('600px')
+    expect(document.body.querySelector('.modal-card')?.classList).toContain('is-wide')
   })
 
   it('emits close when the header close button is clicked', () => {

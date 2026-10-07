@@ -386,7 +386,7 @@ function openReport() {
                   @click="toggleRow(row)"
                 >
                   <td>
-                    <div class="name-cell">
+                    <div class="is-flex is-align-items-center is-gap-1.5">
                       <FrozenBadge v-if="row.frozen" />
                       <TickerBadge
                         v-else
@@ -394,7 +394,7 @@ function openReport() {
                         :color="badgeColor(row.ticker, row.kind)"
                       />
                       <div class="name-meta">
-                        <div class="name-line">
+                        <div class="is-flex is-align-items-center is-gap-1">
                           <span class="t-ticker">{{ displayName(row) }}</span>
                           <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
                             subLabel(row)
@@ -445,7 +445,7 @@ function openReport() {
                     </div>
                   </td>
                   <td class="c-num">
-                    <div class="cell-strong">
+                    <div class="has-text-weight-bold">
                       {{
                         fmt.money(
                           currencyStore.convert(row.costBasis, row.walletCurrency),

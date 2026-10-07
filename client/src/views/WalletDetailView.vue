@@ -236,8 +236,8 @@ function confirmDeleteWallet() {
                 <b-icon :icon="WALLET_TYPES[detail.kind].icon" size="is-small" />
               </span>
               <div>
-                <div class="wd-name-line">
-                  <h1 class="page-title">{{ detail.name }}</h1>
+                <div class="is-flex is-align-items-center is-gap-1">
+                  <h1 class="page-title m-0">{{ detail.name }}</h1>
                   <b-button
                     type="is-ghost"
                     size="is-small"
@@ -246,7 +246,7 @@ function confirmDeleteWallet() {
                     @click="renameWallet"
                   />
                 </div>
-                <div class="wd-meta">
+                <div class="is-flex is-align-items-center is-flex-wrap-wrap is-gap-1 mt-1">
                   <span class="type-tag" :class="`tt-${detail.kind.toLowerCase()}`">
                     {{ WALLET_TYPES[detail.kind].label }}
                   </span>
@@ -477,7 +477,7 @@ function confirmDeleteWallet() {
                         @click="toggleRow(row)"
                       >
                         <td>
-                          <div class="name-cell">
+                          <div class="is-flex is-align-items-center is-gap-1.5">
                             <FrozenBadge v-if="row.frozen" />
                             <TickerBadge
                               v-else
@@ -485,7 +485,7 @@ function confirmDeleteWallet() {
                               :color="badgeColor(row.ticker, row.kind)"
                             />
                             <div class="name-meta">
-                              <div class="name-line">
+                              <div class="is-flex is-align-items-center is-gap-1">
                                 <span class="t-ticker">{{ displayName(row) }}</span>
                               </div>
                               <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
@@ -504,7 +504,7 @@ function confirmDeleteWallet() {
                           }}</template>
                         </td>
                         <td class="c-num">
-                          <div class="cell-strong">
+                          <div class="has-text-weight-bold">
                             {{ fmt.money(row.costBasis, row.walletCurrency) }}
                           </div>
                         </td>
