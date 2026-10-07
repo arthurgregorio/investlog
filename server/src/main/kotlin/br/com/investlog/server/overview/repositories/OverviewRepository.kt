@@ -29,7 +29,6 @@ class OverviewRepository(
 
     fun findSummary(userId: Long, displayCurrency: String): PortfolioSummaryResponse {
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
-        val wallets = WALLETS.`as`("wallets")
         val currencyRates = CURRENCY_RATES.`as`("currency_rates")
 
         val displayCurrencyRate = currencyRateRepository.findRateOrAnchor(displayCurrency)
@@ -42,10 +41,9 @@ class OverviewRepository(
             DSL.coalesce(DSL.sum(overview.CURRENT_VALUE.mul(appliedRate)), BigDecimal.ZERO).`as`("total_current_value"),
         )
             .from(overview)
-            .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
             .leftJoin(currencyRates)
-                .on(currencyRates.CURRENCY_CODE.eq(wallets.CURRENCY))
-            .where(wallets.USER_ID.eq(userId))
+                .on(currencyRates.CURRENCY_CODE.eq(overview.WALLET_CURRENCY))
+            .where(overview.USER_ID.eq(userId))
             .and(overview.STATUS.eq(HoldingStatus.ACTIVE))
             .groupBy(overview.KIND)
             .fetch { record ->
