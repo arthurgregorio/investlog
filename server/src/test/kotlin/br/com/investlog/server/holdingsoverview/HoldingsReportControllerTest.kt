@@ -170,4 +170,63 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
             .jsonPath("$.content").doesNotExist()
             .jsonPath("$.page").doesNotExist()
     }
+
+    @Test
+    @Order(7)
+    fun `GET holdings report carries the segment and keeps merging same-ticker holdings that disagree on it`() {
+        val segmentWalletId = createWallet("Report Test Segment Wallet", "STOCKS")
+        val segmentId = restTestClient.post()
+            .uri("/private/v1/stock-segments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Report Test Segment"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+            .id
+
+        createStockHolding(segmentWalletId, "RPSEG3", segmentId)
+        createStockHolding(segmentWalletId, "RPSEG3", null)
+        createStockHolding(segmentWalletId, "RPNOS3", null)
+
+        restTestClient.get()
+            .uri("/private/v1/holdings/report?walletId={walletId}", segmentWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.length()").isEqualTo(2)
+            .jsonPath("$[?(@.ticker == 'RPSEG3')].segmentLabel").isEqualTo("Report Test Segment")
+            .jsonPath("$[?(@.ticker == 'RPSEG3')].quantity").isEqualTo(20)
+            .jsonPath("$[?(@.ticker == 'RPNOS3' && @.segmentLabel == null)]").isNotEmpty()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings/report?walletId={walletId}", cryptoWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$[?(@.ticker == '$mergedHoldingTicker' && @.segmentLabel == null)]").isNotEmpty()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={walletId}", segmentWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(3)
+            .jsonPath("$.content[?(@.ticker == 'RPSEG3' && @.segmentLabel == 'Report Test Segment')]").isNotEmpty()
+            .jsonPath("$.content[?(@.ticker == 'RPSEG3' && @.segmentLabel == null)]").isNotEmpty()
+    }
+
+    private fun createStockHolding(walletId: UUID, ticker: String, segmentId: UUID?) {
+        val segmentJson = segmentId?.let { "\"$it\"" } ?: "null"
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"stockTypeId":"$stockTypeId","stockSegmentId":$segmentJson,"ticker":"$ticker",
+                   "currentPrice":50.00,
+                   "lot":{"lotDate":"2025-01-15","quantity":10,"price":45.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
+    }
 }

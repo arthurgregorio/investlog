@@ -392,6 +392,8 @@ describe('useAddInvestmentForm', () => {
       id: 'new-holding-id',
       walletId: 'wallet-stocks-1',
       stockTypeId: 'type-1',
+      stockSegmentId: null,
+      stockSegmentName: null,
       ticker: 'PETR4',
       name: '',
       currentPrice: null,
@@ -421,5 +423,45 @@ describe('useAddInvestmentForm', () => {
         }),
       }),
     )
+  })
+
+  it('sends the chosen segment and leaves it out when none is chosen', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.createStockHolding).mockResolvedValue(
+      {} as Awaited<ReturnType<typeof holdingsApiModule.holdingsApi.createStockHolding>>,
+    )
+    const typesListStore = useTypesListStore()
+    typesListStore.stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 0 }]
+
+    const { form, submit } = useAddInvestmentForm('STOCKS')
+    expect(form.stockSegmentId).toBe('')
+    form.ticker = 'TAEE11'
+    form.quantity = 1
+    form.price = 30
+    form.date = new Date('2024-06-01')
+
+    await submit()
+    expect(holdingsApiModule.holdingsApi.createStockHolding).toHaveBeenLastCalledWith(
+      'wallet-stocks-1',
+      expect.objectContaining({ stockSegmentId: undefined }),
+    )
+
+    form.stockSegmentId = 'segment-1'
+    await submit()
+    expect(holdingsApiModule.holdingsApi.createStockHolding).toHaveBeenLastCalledWith(
+      'wallet-stocks-1',
+      expect.objectContaining({ stockSegmentId: 'segment-1' }),
+    )
+  })
+
+  it('drops the chosen segment when it disappears from the list', async () => {
+    const typesListStore = useTypesListStore()
+    typesListStore.stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 0 }]
+    const { form } = useAddInvestmentForm('STOCKS')
+    form.stockSegmentId = 'segment-1'
+
+    typesListStore.stockSegments = [{ id: 'segment-2', name: 'Tecnologia', usageCount: 0 }]
+    await nextTick()
+
+    expect(form.stockSegmentId).toBe('')
   })
 })

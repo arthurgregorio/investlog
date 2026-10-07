@@ -20,3 +20,5 @@ investlog:
   security:
     totp:
       enabled: false
+    client-ip:
+      trusted-proxy-count: 1

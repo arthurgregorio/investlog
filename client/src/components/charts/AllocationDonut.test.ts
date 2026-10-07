@@ -34,6 +34,7 @@ function rowOf(overrides: Partial<HoldingRow>): HoldingRow {
     name: 'Petrobras',
     ticker: 'PETR4',
     typeLabel: 'Ação ON',
+    segmentLabel: null,
     walletId: 'wallet-1',
     walletName: 'Wallet',
     walletCurrency: 'BRL',
@@ -48,9 +49,9 @@ function rowOf(overrides: Partial<HoldingRow>): HoldingRow {
   }
 }
 
-function mountDonut(rows: HoldingRow[]) {
+function mountDonut(rows: HoldingRow[], groupable = false) {
   return mount(AllocationDonut, {
-    props: { rows, currency: 'BRL' },
+    props: { rows, currency: 'BRL', groupable },
     global: { plugins: [createTestingPinia()], stubs: { DonutChart: DonutChartStub } },
   })
 }
@@ -272,5 +273,59 @@ describe('AllocationDonut', () => {
     expect(wrapper.text()).toContain('Sem valores para exibir')
     expect(wrapper.find('[data-testid="donut-stub"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="allocation-exclusion-note"]').exists()).toBe(true)
+  })
+
+  describe('grouping by segment', () => {
+    const segmentedRows = [
+      rowOf({ id: 'a', ticker: 'TAEE11', segmentLabel: 'Energia', currentValue: 300 }),
+      rowOf({ id: 'b', ticker: 'EGIE3', segmentLabel: 'Energia', currentValue: 200 }),
+      rowOf({ id: 'c', ticker: 'WEGE3', segmentLabel: 'Indústria', currentValue: 250 }),
+      rowOf({ id: 'd', ticker: 'PETR4', segmentLabel: null, currentValue: 250 }),
+    ]
+
+    it('offers no grouping control unless the wallet is groupable', () => {
+      const wrapper = mountDonut(segmentedRows)
+
+      expect(wrapper.find('[data-testid="allocation-grouping-segment"]').exists()).toBe(false)
+    })
+
+    it('switches to one entry per segment with a neutral Sem segmento and back', async () => {
+      const wrapper = mountDonut(segmentedRows, true)
+      expect(legendTexts(wrapper)).toHaveLength(4)
+      expect(wrapper.text()).toContain('Participação de cada investimento na carteira')
+
+      await wrapper.find('[data-testid="allocation-grouping-segment"]').trigger('click')
+
+      const entries = legendTexts(wrapper)
+      expect(entries).toHaveLength(3)
+      expect(entries[0]).toContain('Energia')
+      expect(entries[0]).toContain('2 investimentos')
+      expect(entries[0]).toContain('50,00%')
+      expect(wrapper.text()).toContain('Participação de cada segmento na carteira')
+      const colors = wrapper
+        .findAll('[data-testid="donut-segment"]')
+        .map((segment) => [segment.text(), segment.attributes('data-color')])
+      expect(colors).toContainEqual(['Sem segmento=250', 'var(--text-muted)'])
+      expect(wrapper.find('[data-testid="allocation-concentration-note"]').exists()).toBe(false)
+
+      await wrapper.find('[data-testid="allocation-grouping-holding"]').trigger('click')
+      expect(legendTexts(wrapper)).toHaveLength(4)
+    })
+
+    it('words the Outros note in segments', async () => {
+      const wrapper = mountDonut(
+        [
+          rowOf({ id: 'a', segmentLabel: 'Energia', currentValue: 980 }),
+          rowOf({ id: 'b', segmentLabel: 'Saúde', currentValue: 20 }),
+        ],
+        true,
+      )
+
+      await wrapper.find('[data-testid="allocation-grouping-segment"]').trigger('click')
+
+      expect(wrapper.find('[data-testid="allocation-concentration-note"]').text()).toContain(
+        'reúne os segmentos abaixo de 3%',
+      )
+    })
   })
 })

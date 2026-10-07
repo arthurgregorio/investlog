@@ -8,7 +8,10 @@ import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollRequest
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.auth.rest.payloads.TotpVerifyRequest
+import br.com.investlog.server.auth.security.AttemptKeys
+import br.com.investlog.server.auth.security.ClientIpResolver
 import br.com.investlog.server.auth.security.GoogleLinkTokenStore
+import br.com.investlog.server.auth.security.IpAttemptLimiter
 import br.com.investlog.server.auth.security.LoginAttemptLimiter
 import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
@@ -43,6 +46,8 @@ class AuthService(
     private val googleLinkTokenStore: GoogleLinkTokenStore,
     private val totpAttemptLimiter: TotpAttemptLimiter,
     private val loginAttemptLimiter: LoginAttemptLimiter,
+    private val ipAttemptLimiter: IpAttemptLimiter,
+    private val clientIpResolver: ClientIpResolver,
     private val trustedDeviceService: TrustedDeviceService,
     @Value($$"${investlog.google-auth.enabled:false}")
     private val googleAuthEnabled: Boolean,
@@ -55,7 +60,8 @@ class AuthService(
     @Transactional
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
 
-        val user = verifyCredentials(request.email, request.password)
+        val clientIp = clientIpResolver.resolve(servletRequest)
+        val user = verifyCredentials(request.email, request.password, clientIp)
 
         if (user.status == CurrentUser.Status.BLOCKED) {
             throw InvalidCredentialsException(BLOCKED_MESSAGE)
@@ -76,17 +82,19 @@ class AuthService(
         val code = request.totpCode
             ?: throw TotpRequiredException("Um código TOTP é necessário para concluir o login")
 
-        totpAttemptLimiter.checkNotLocked(request.email)
+        val attemptKey = AttemptKeys.of(request.email, clientIp)
+        totpAttemptLimiter.checkNotLocked(attemptKey)
 
         val secret = userRepository.findTotpSecretByEmail(request.email)
             ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
 
         if (!totpService.isCodeValid(secret, code)) {
-            totpAttemptLimiter.recordFailure(request.email)
+            totpAttemptLimiter.recordFailure(attemptKey)
+            ipAttemptLimiter.recordFailure(clientIp)
             throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
         }
 
-        totpAttemptLimiter.recordSuccess(request.email)
+        totpAttemptLimiter.recordSuccess(attemptKey)
 
         if (request.trustDevice) {
             trustedDeviceService.trust(user.id, servletRequest, servletResponse)
@@ -96,9 +104,9 @@ class AuthService(
     }
 
     @Transactional
-    fun enrollTotp(request: TotpEnrollRequest): TotpEnrollResponse {
+    fun enrollTotp(request: TotpEnrollRequest, servletRequest: HttpServletRequest): TotpEnrollResponse {
 
-        val user = verifyCredentials(request.email, request.password)
+        val user = verifyCredentials(request.email, request.password, clientIpResolver.resolve(servletRequest))
 
         if (user.totpEnabled) {
             throw TotpAlreadyEnabledException("O TOTP já está habilitado para esta conta")
@@ -116,19 +124,22 @@ class AuthService(
     @Transactional
     fun verifyTotp(request: TotpVerifyRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): SessionResponse {
 
-        val user = verifyCredentials(request.email, request.password)
+        val clientIp = clientIpResolver.resolve(servletRequest)
+        val user = verifyCredentials(request.email, request.password, clientIp)
 
-        totpAttemptLimiter.checkNotLocked(request.email)
+        val attemptKey = AttemptKeys.of(request.email, clientIp)
+        totpAttemptLimiter.checkNotLocked(attemptKey)
 
         val secret = userRepository.findTotpSecretByEmail(request.email)
             ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
 
         if (!totpService.isCodeValid(secret, request.code)) {
-            totpAttemptLimiter.recordFailure(request.email)
+            totpAttemptLimiter.recordFailure(attemptKey)
+            ipAttemptLimiter.recordFailure(clientIp)
             throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
         }
 
-        totpAttemptLimiter.recordSuccess(request.email)
+        totpAttemptLimiter.recordSuccess(attemptKey)
 
         userRepository.enableTotp(user.id, secret)
 
@@ -178,7 +189,7 @@ class AuthService(
         val pending = googleLinkTokenStore.consume(request.linkToken)
             ?: throw InvalidCredentialsException("Solicitação de vínculo expirada ou inválida — entre novamente com o Google")
 
-        val user = verifyCredentials(pending.email, request.password)
+        val user = verifyCredentials(pending.email, request.password, clientIpResolver.resolve(servletRequest))
 
         if (user.status == CurrentUser.Status.BLOCKED) {
             throw InvalidCredentialsException(BLOCKED_MESSAGE)
@@ -209,22 +220,28 @@ class AuthService(
         SecurityContextHolder.clearContext()
     }
 
-    private fun verifyCredentials(email: String, password: String): CurrentUser {
+    private fun verifyCredentials(email: String, password: String, clientIp: String): CurrentUser {
 
-        loginAttemptLimiter.checkNotLocked(email)
+        val attemptKey = AttemptKeys.of(email, clientIp)
+
+        ipAttemptLimiter.checkNotLocked(clientIp)
+        loginAttemptLimiter.checkNotLocked(attemptKey)
 
         val user = userRepository.findByEmail(email)
-            ?: throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
-
         val passwordHash = userRepository.findPasswordHashByEmail(email)
-            ?: throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
 
-        if (!passwordEncoder.matches(password, passwordHash)) {
-            loginAttemptLimiter.recordFailure(email)
+        if (user == null || passwordHash == null) {
+            ipAttemptLimiter.recordFailure(clientIp)
             throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
         }
 
-        loginAttemptLimiter.recordSuccess(email)
+        if (!passwordEncoder.matches(password, passwordHash)) {
+            loginAttemptLimiter.recordFailure(attemptKey)
+            ipAttemptLimiter.recordFailure(clientIp)
+            throw InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE)
+        }
+
+        loginAttemptLimiter.recordSuccess(attemptKey)
 
         return user
     }

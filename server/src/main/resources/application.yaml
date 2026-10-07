@@ -32,6 +32,12 @@ investlog:
       lockout-base-duration: ${LOGIN_LOCKOUT_BASE_DURATION:60s}
     trusted-device:
       expiry: ${TRUSTED_DEVICE_EXPIRY:30d}
+    ip-lockout:
+      max-attempts: ${IP_LOCKOUT_MAX_ATTEMPTS:20}
+      base-duration: ${IP_LOCKOUT_BASE_DURATION:60s}
+      failure-window: ${IP_LOCKOUT_FAILURE_WINDOW:15m}
+    client-ip:
+      trusted-proxy-count: ${CLIENT_IP_TRUSTED_PROXY_COUNT:0}
 
   google-auth:
     enabled: ${GOOGLE_AUTH_ENABLED:false}

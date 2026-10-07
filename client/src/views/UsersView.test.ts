@@ -5,6 +5,7 @@ import UsersView from './UsersView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 import type { UserAdminResponse } from '@/types'
+import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
 vi.mock('@/api/usersAdmin', () => ({ usersAdminApi: {} }))
 
@@ -284,6 +285,21 @@ describe('UsersView', () => {
     expect(usersAdminStore.remove).toHaveBeenCalledWith('user-2')
     expect(document.body.textContent).toContain('Usuário removido.')
   })
+
+  it.each(['Promover a admin', 'Redefinir 2FA', 'Remover'])(
+    'shows a user name containing markup literally in the "%s" confirmation',
+    async (action) => {
+      const markupName = '<img src=x onerror=alert(1)>'
+      const { wrapper } = await mountView([
+        self,
+        userOf({ id: 'user-2', name: markupName, totpEnabled: true }),
+      ])
+
+      await chooseAction(wrapper, markupName, action)
+
+      expectDialogShowsLiterally(markupName)
+    },
+  )
 
   it('does not call the store when a confirmation is cancelled', async () => {
     const { wrapper, usersAdminStore } = await mountView([

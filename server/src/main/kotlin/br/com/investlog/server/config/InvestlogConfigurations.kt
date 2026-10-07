@@ -21,6 +21,8 @@ data class InvestlogConfigurations(
         val totp: Totp,
         val login: Login,
         val trustedDevice: TrustedDevice,
+        val ipLockout: IpLockout = IpLockout(),
+        val clientIp: ClientIp = ClientIp(),
     ) {
         data class Totp(
             val enabled: Boolean,
@@ -35,6 +37,16 @@ data class InvestlogConfigurations(
 
         data class TrustedDevice(
             val expiry: Duration,
+        )
+
+        data class IpLockout(
+            val maxAttempts: Int = 20,
+            val baseDuration: Duration = Duration.ofMinutes(1),
+            val failureWindow: Duration = Duration.ofMinutes(15),
+        )
+
+        data class ClientIp(
+            val trustedProxyCount: Int = 0,
         )
     }
 

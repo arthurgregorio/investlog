@@ -96,6 +96,19 @@ const kindLabelPt = computed(() =>
         </b-select>
       </b-field>
 
+      <b-field v-if="form.kind === 'STOCKS'" label="Segmento (opcional)">
+        <b-select v-model="form.stockSegmentId" data-testid="stock-segment-select">
+          <option value="">Sem segmento</option>
+          <option
+            v-for="stockSegment in typesListStore.stockSegments"
+            :key="stockSegment.id"
+            :value="stockSegment.id"
+          >
+            {{ stockSegment.name }}
+          </option>
+        </b-select>
+      </b-field>
+
       <template v-if="form.kind !== 'FUNDS'">
         <b-field :label="form.kind === 'CRYPTO' ? 'Sigla / código' : 'Ticker'">
           <b-input v-model="ticker" :placeholder="form.kind === 'CRYPTO' ? 'BTC' : 'PETR4'" />
