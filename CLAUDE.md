@@ -277,7 +277,7 @@ link the PR to its issue with the GraphQL `addCloseIssueReferences` mutation (`<
 
 ```bash
 issue=$(gh issue view <N> --json id --jq .id); pr=$(gh pr view <PR> --json id --jq .id)
-gh api graphql -f query='mutation($i:ID!,$p:[ID!]!){addCloseIssueReferences(input:{issueId:$i,pullRequestIds:[$p]}){clientMutationId}}' -f i="$issue" -f p="$pr"
+gh api graphql -f query='mutation($i:ID!,$p:ID!){addCloseIssueReferences(input:{issueId:$i,pullRequestIds:[$p]}){clientMutationId}}' -f i="$issue" -f p="$pr"
 ```
 
 Then **verify the link on every PR**, sub-issue or not — the result must name the PR's issue:
