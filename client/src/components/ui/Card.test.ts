@@ -11,8 +11,8 @@ describe('Card', () => {
   })
 
   it('passes extra classes through to the root', () => {
-    const wrapper = mount(Card, { attrs: { class: 'kpi-card' } })
+    const wrapper = mount(Card, { attrs: { class: 'table-card' } })
 
-    expect(wrapper.classes()).toEqual(expect.arrayContaining(['card', 'kpi-card']))
+    expect(wrapper.classes()).toEqual(expect.arrayContaining(['card', 'table-card']))
   })
 })

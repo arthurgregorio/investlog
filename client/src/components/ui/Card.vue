@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/* Surface card. Extra classes (e.g. kpi-card, table-card) fall through to the root. */
+/* Surface card. Extra classes (e.g. table-card) fall through to the root. */
 </script>
 
 <template>
