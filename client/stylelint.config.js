@@ -10,7 +10,7 @@ export default {
     'selector-class-pattern': '^[a-z][a-z0-9]*(-[a-z0-9]+)*$',
     'value-keyword-case': [
       'lower',
-      { camelCaseSvgKeywords: true, ignoreKeywords: ['BlinkMacSystemFont', 'Roboto'] },
+      { ignoreKeywords: ['BlinkMacSystemFont', 'Roboto', 'optimizeLegibility'] },
     ],
     'selector-pseudo-class-no-unknown': [true, { ignorePseudoClasses: ['deep'] }],
   },
