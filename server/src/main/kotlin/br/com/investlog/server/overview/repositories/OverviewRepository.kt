@@ -7,7 +7,7 @@ import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
-import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
+import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_VALUED
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_LOTS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
@@ -28,11 +28,17 @@ class OverviewRepository(
 ) {
 
     fun findSummary(userId: Long, displayCurrency: String): PortfolioSummaryResponse {
-        val overview = HOLDINGS_OVERVIEW.`as`("overview")
-        val currencyRates = CURRENCY_RATES.`as`("currency_rates")
+        val overview = HOLDINGS_VALUED.`as`("overview")
 
-        val displayCurrencyRate = currencyRateRepository.findRateOrAnchor(displayCurrency)
-        val appliedRate = DSL.coalesce(currencyRates.RATE, BigDecimal.ONE).div(displayCurrencyRate)
+        val displayCurrencyRate = DSL.coalesce(
+            DSL.field(
+                DSL.select(CURRENCY_RATES.RATE)
+                    .from(CURRENCY_RATES)
+                    .where(CURRENCY_RATES.CURRENCY_CODE.eq(displayCurrency))
+            ),
+            BigDecimal.ONE,
+        )
+        val appliedRate = overview.RATE.div(displayCurrencyRate)
 
         val kindSummaries = dsl.select(
             overview.KIND,
@@ -41,8 +47,6 @@ class OverviewRepository(
             DSL.coalesce(DSL.sum(overview.CURRENT_VALUE.mul(appliedRate)), BigDecimal.ZERO).`as`("total_current_value"),
         )
             .from(overview)
-            .leftJoin(currencyRates)
-                .on(currencyRates.CURRENCY_CODE.eq(overview.WALLET_CURRENCY))
             .where(overview.USER_ID.eq(userId))
             .and(overview.STATUS.eq(HoldingStatus.ACTIVE))
             .groupBy(overview.KIND)
