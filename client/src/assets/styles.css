@@ -28,8 +28,6 @@
   --ticker-fallback-funds: #2a8f6f;
   --withdrawal-soft: rgba(184, 134, 11, 0.14);
   --bulma-modal-content-width: 460px;
-  --bulma-success-invert-l: 100%;
-  --bulma-danger-invert-l: 100%;
 }
 
 [data-accent='blue'] {
@@ -1691,6 +1689,14 @@ a {
   background-color: var(--surface-hover);
   border-color: transparent;
   color: var(--text);
+}
+
+.button.is-success {
+  --bulma-success-invert-l: 100%;
+}
+
+.button.is-danger {
+  --bulma-danger-invert-l: 100%;
 }
 
 .button.is-static {
