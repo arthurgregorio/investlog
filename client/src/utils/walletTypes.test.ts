@@ -40,11 +40,11 @@ describe('badgeColor', () => {
   })
 
   it.each([null, undefined, ''])('falls back to the neutral color for %j on stocks', (ticker) => {
-    expect(badgeColor(ticker, 'STOCKS')).toBe('#5b6dd8')
-    expect(badgeColor(ticker, 'CRYPTO')).toBe('#5b6dd8')
+    expect(badgeColor(ticker, 'STOCKS')).toBe('var(--ticker-fallback)')
+    expect(badgeColor(ticker, 'CRYPTO')).toBe('var(--ticker-fallback)')
   })
 
   it.each([null, undefined])('falls back to the funds color for %j on funds', (ticker) => {
-    expect(badgeColor(ticker, 'FUNDS')).toBe('#2a8f6f')
+    expect(badgeColor(ticker, 'FUNDS')).toBe('var(--ticker-fallback-funds)')
   })
 })

@@ -1645,6 +1645,7 @@ a {
   transition: 0.13s;
   padding: 0;
   flex: none;
+  background: var(--primary);
 }
 
 .accent-swatch:hover {
