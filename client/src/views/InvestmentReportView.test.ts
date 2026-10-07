@@ -160,7 +160,7 @@ function kindSection(wrapper: VueWrapper, label: string) {
 function subtotals(container: Pick<VueWrapper, 'find'>, selector: string) {
   return container
     .find(selector)
-    .findAll('.stotal-value')
+    .findAll('.report-figure-value')
     .map((value) => value.text())
 }
 

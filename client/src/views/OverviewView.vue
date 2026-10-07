@@ -179,7 +179,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
                 <div class="card-title-row">
                   <div>
                     <div class="chart-title">Evolução dos aportes</div>
-                    <div class="chart-sub">Capital investido acumulado · {{ baseCurrency }}</div>
+                    <div class="sub-caption">Capital investido acumulado · {{ baseCurrency }}</div>
                   </div>
                   <div class="chart-big">
                     {{ fmt.money(lastSeries, baseCurrency, { compact: true }) }}
@@ -258,15 +258,15 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
                 <div class="type-value">
                   {{ fmt.money(typeRow.invested, baseCurrency, { compact: true }) }}
                 </div>
-                <div class="type-result-row">
-                  <div class="type-result-item">
-                    <div class="type-result-label">Valor atual</div>
-                    <div class="type-result-value">
+                <div class="result-row">
+                  <div class="result-item">
+                    <div class="result-label">Valor atual</div>
+                    <div class="result-value">
                       {{ fmt.money(typeRow.currentValue, baseCurrency, { compact: true }) }}
                     </div>
                   </div>
-                  <div class="type-result-item">
-                    <div class="type-result-label">Resultado</div>
+                  <div class="result-item">
+                    <div class="result-label">Resultado</div>
                     <GainChip
                       :value="typeRow.gain"
                       :pct="typeRow.gainPct"

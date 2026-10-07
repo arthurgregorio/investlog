@@ -1,7 +1,4 @@
 :root {
-  --primary: #206bc4;
-  --primary-d: #1b5aa6;
-  --primary-soft: rgba(32, 107, 196, 0.12);
   --up: #15915b;
   --down: #e0384f;
   --up-soft: rgba(21, 145, 91, 0.12);
@@ -9,6 +6,9 @@
   --wt-stocks: #2b6cb0;
   --wt-crypto: #e0900a;
   --wt-funds: #0ca678;
+  --wt-stocks-soft: rgba(43, 108, 176, 0.13);
+  --wt-crypto-soft: rgba(224, 144, 10, 0.15);
+  --wt-funds-soft: rgba(12, 166, 120, 0.14);
   --chart-1: #2b6cb0;
   --chart-2: #e8590c;
   --chart-3: #0ca678;
@@ -26,53 +26,40 @@
   --bulma-modal-content-width: 460px;
 }
 
+[data-accent='blue'] {
+  --primary: #206bc4;
+  --primary-d: #1b5aa6;
+  --primary-soft: rgba(32, 107, 196, 0.12);
+  --bulma-primary-h: 213deg;
+  --bulma-primary-s: 72%;
+  --bulma-primary-l: 45%;
+}
+
 [data-accent='yellow'] {
   --primary: #b8860b;
   --primary-d: #9c7209;
   --primary-soft: rgba(184, 134, 11, 0.12);
+  --bulma-primary-h: 43deg;
+  --bulma-primary-s: 89%;
+  --bulma-primary-l: 38%;
 }
 
 [data-accent='teal'] {
   --primary: #0ca678;
   --primary-d: #099268;
   --primary-soft: rgba(12, 166, 120, 0.12);
-}
-
-[data-accent='blue'] {
-  --primary: #206bc4;
-  --primary-d: #1b5aa6;
-  --primary-soft: rgba(32, 107, 196, 0.12);
+  --bulma-primary-h: 162deg;
+  --bulma-primary-s: 87%;
+  --bulma-primary-l: 35%;
 }
 
 [data-accent='indigo'] {
   --primary: #4263eb;
   --primary-d: #3950c8;
   --primary-soft: rgba(66, 99, 235, 0.12);
-}
-
-:root,
-[data-accent='blue'] {
-  --bulma-primary-h: 213deg;
-  --bulma-primary-s: 72%;
-  --bulma-primary-l: 45%;
-}
-
-[data-accent='indigo'] {
   --bulma-primary-h: 228deg;
   --bulma-primary-s: 81%;
   --bulma-primary-l: 59%;
-}
-
-[data-accent='teal'] {
-  --bulma-primary-h: 162deg;
-  --bulma-primary-s: 87%;
-  --bulma-primary-l: 35%;
-}
-
-[data-accent='yellow'] {
-  --bulma-primary-h: 43deg;
-  --bulma-primary-s: 89%;
-  --bulma-primary-l: 38%;
 }
 
 /* Bulma's [data-theme=dark] selector matches any element, including .app-root[data-theme=dark],
@@ -90,6 +77,7 @@
   --text-muted: #8a96a8;
   --chart-grid: #ecf0f5;
   --tag-bg: #f0f3f8;
+  --wt-crypto-text: #b06f06;
 }
 
 [data-theme='dark'] {
@@ -108,6 +96,7 @@
   --wt-stocks: #4a93de;
   --wt-crypto: #f0a821;
   --wt-funds: #1fc093;
+  --wt-crypto-text: var(--wt-crypto);
   --chart-1: #4a93de;
   --chart-2: #ff8a4c;
   --chart-3: #1fc093;
@@ -124,13 +113,14 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html {
   margin: 0;
   padding: 0;
 }
 
 body {
+  margin: 0;
+  padding: 0;
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
@@ -538,7 +528,7 @@ a {
   letter-spacing: -0.01em;
 }
 
-.chart-sub {
+.sub-caption {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 2px;
@@ -576,12 +566,12 @@ a {
 }
 
 /* Reset Bulma's %block margin-bottom so page flex gap handles spacing */
-.page > .fixed-grid,
-.page > .fixed-grid > .grid {
+.page > .fixed-grid {
   margin-bottom: 0;
 }
 
 .page > .fixed-grid > .grid {
+  margin-bottom: 0;
   --bulma-grid-gap: 1rem;
 }
 
@@ -714,30 +704,33 @@ a {
   letter-spacing: -0.02em;
 }
 
-.type-result-row {
+.result-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: 11px 0;
 }
 
-.type-result-item {
+.result-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.type-result-label {
+.result-label {
   font-size: 11px;
   color: var(--text-muted);
   font-weight: 500;
 }
 
-.type-result-value {
+.result-value {
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.type-card .result-row {
+  margin: 11px 0;
 }
 
 .type-meta {
@@ -881,41 +874,13 @@ a {
   letter-spacing: -0.02em;
 }
 
-.wi-base {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.wallet-result {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.entity-card .result-row {
   margin-bottom: 14px;
 }
 
-.wallet-result-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.wallet-result-item:last-child {
+.entity-card .result-item:last-child {
   align-items: flex-end;
   text-align: right;
-}
-
-.wallet-result-label {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.wallet-result-value {
-  font-size: 13px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
 }
 
 .wallet-count {
@@ -1187,22 +1152,18 @@ a {
 }
 
 .tt-stocks {
-  background: rgba(43, 108, 176, 0.13);
+  background: var(--wt-stocks-soft);
   color: var(--wt-stocks);
 }
 
 .tt-crypto {
-  background: rgba(224, 144, 10, 0.15);
-  color: #b06f06;
+  background: var(--wt-crypto-soft);
+  color: var(--wt-crypto-text);
 }
 
 .tt-funds {
-  background: rgba(12, 166, 120, 0.14);
+  background: var(--wt-funds-soft);
   color: var(--wt-funds);
-}
-
-[data-theme='dark'] .tt-crypto {
-  color: #f0a821;
 }
 
 .inv-row.is-frozen {
@@ -1689,67 +1650,6 @@ a {
   position: absolute;
 }
 
-@media (max-width: 680px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .page {
-    padding: 20px 16px 60px;
-  }
-
-  .inv-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .seg-tabs {
-    justify-content: space-between;
-  }
-
-  .inv-toolbar {
-    margin-left: 0;
-  }
-
-  .inv-toolbar .search-input {
-    flex: 1 1 160px;
-    max-width: none;
-  }
-
-  .page-title {
-    font-size: 22px;
-  }
-
-  .navbar-inner,
-  .topnav-inner {
-    padding: 0 16px;
-  }
-
-  .navbar {
-    gap: 8px;
-  }
-
-  .navbar .base-chip {
-    display: none;
-  }
-
-  .navbar-user .nu-meta {
-    display: none;
-  }
-
-  .topnav {
-    padding: 0;
-  }
-
-  .topnav-total {
-    display: none;
-  }
-
-  .nav-item .nav-label {
-    font-size: 13px;
-  }
-}
-
 .navbar .button:not(.is-primary):not(.is-text) {
   width: 38px;
   height: 38px;
@@ -1869,12 +1769,12 @@ a {
   color: var(--text-muted);
 }
 
-.select,
-.select select {
+.select {
   width: 100%;
 }
 
 .select select {
+  width: 100%;
   height: 40px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1911,21 +1811,17 @@ a {
 }
 
 .tag.is-link {
-  background-color: rgba(43, 108, 176, 0.13);
+  background-color: var(--wt-stocks-soft);
   color: var(--wt-stocks);
 }
 
 .tag.is-warning {
-  background-color: rgba(224, 144, 10, 0.15);
-  color: #b06f06;
-}
-
-[data-theme='dark'] .tag.is-warning {
-  color: var(--wt-crypto);
+  background-color: var(--wt-crypto-soft);
+  color: var(--wt-crypto-text);
 }
 
 .tag.is-success {
-  background-color: rgba(12, 166, 120, 0.14);
+  background-color: var(--wt-funds-soft);
   color: var(--wt-funds);
 }
 
@@ -2174,16 +2070,6 @@ a {
   margin-bottom: 22px;
 }
 
-.auth-card-brand .brand-name {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.auth-card-brand .brand-name b {
-  color: var(--primary);
-}
-
 .auth-head {
   margin-bottom: 15px;
 }
@@ -2242,16 +2128,6 @@ a {
   background: var(--border);
 }
 
-@media (max-width: 860px) {
-  .auth-aside {
-    display: none;
-  }
-
-  .auth-card-brand {
-    display: flex;
-  }
-}
-
 .report-page {
   max-width: 980px;
 }
@@ -2262,10 +2138,6 @@ a {
   justify-content: space-between;
 }
 
-/* The report is a print preview: it always renders as a light "paper" page
-   regardless of the app's active theme, so printing from dark mode never
-   depends on data-theme text/background colors (which are tuned for a dark
-   surface and turn near-invisible once forced onto white paper). */
 .report-paper {
   width: 210mm;
   margin: 0 auto;
@@ -2276,25 +2148,7 @@ a {
     0 1px 3px rgba(15, 23, 42, 0.08),
     0 12px 32px rgba(15, 23, 42, 0.12);
   border-radius: 3px;
-  /* .app-root sets `color: var(--text)` directly on itself, so its computed
-     color is resolved once from *its own* --text and inherits from there
-     unchanged — redeclaring --text down here has no effect on descendants
-     (h1.report-title, .rgt-value, table cells, ...) that read `color` only
-     by inheritance rather than their own var(--text). Re-declaring `color`
-     here re-triggers resolution using this element's own pinned --text. */
   color: var(--text);
-  --bg: #f4f6fa;
-  --surface: #ffffff;
-  --surface-2: #f7f9fc;
-  --surface-hover: #f1f5fa;
-  --border: #e6e9ef;
-  --border-2: #eef1f6;
-  --text: #172033;
-  --text-2: #586375;
-  --text-muted: #8a96a8;
-  --chart-grid: #ecf0f5;
-  --tag-bg: #f0f3f8;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .report-page-break {
@@ -2395,27 +2249,6 @@ h1.report-title {
   flex-shrink: 0;
 }
 
-.rgt-item {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  white-space: normal;
-}
-
-.rgt-label {
-  font-size: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-
-.rgt-value,
-.rgt-item .gl {
-  font-size: 12px;
-  font-weight: 800;
-}
-
 .report-kind-section {
   margin-top: 15px;
 }
@@ -2458,6 +2291,12 @@ h3.report-subgroup-title {
   flex: 1;
 }
 
+/* report-kind-section and report-subgroup are deliberately NOT
+   break-inside: avoid — either can span several pages on its own (a
+   subgroup with more than one wallet especially), and forcing a big
+   block to stay together just pushes it entirely onto the next page,
+   leaving the previous one mostly blank. Only report-wallet-block (one
+   table, normally small enough to fit on one page) avoids splitting. */
 .report-wallet-block {
   margin-bottom: 10px;
   break-inside: avoid;
@@ -2516,14 +2355,14 @@ h3.report-subgroup-title {
   justify-content: flex-end;
 }
 
-.stotal-item {
+.report-figure {
   display: flex;
   flex-direction: column;
   gap: 2px;
   white-space: nowrap;
 }
 
-.stotal-label {
+.report-figure-label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2531,106 +2370,31 @@ h3.report-subgroup-title {
   font-weight: 700;
 }
 
-.stotal-value {
+.report-figure-value,
+.report-figure .gl {
   font-size: 14px;
   font-weight: 800;
 }
 
-.report-subtotal-line .gl {
-  font-size: 14px;
-  font-weight: 800;
+.report-grand-total .report-figure {
+  gap: 1px;
+  white-space: normal;
 }
 
-.report-subgroup-head .stotal-label {
+.report-grand-total .report-figure-label {
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+
+.report-subgroup-head .report-figure-label {
   font-size: 9px;
 }
 
-.report-subgroup-head .stotal-value,
-.report-subgroup-head .report-subtotal-line .gl {
+.report-grand-total .report-figure-value,
+.report-grand-total .report-figure .gl,
+.report-subgroup-head .report-figure-value,
+.report-subgroup-head .report-figure .gl {
   font-size: 12px;
-}
-
-@page {
-  size: A4;
-  margin: 14mm 12mm;
-}
-
-@media print {
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
-
-  html,
-  body {
-    height: auto;
-  }
-
-  .app-root {
-    height: auto;
-    overflow: visible;
-  }
-
-  .main {
-    overflow: visible;
-  }
-
-  .navbar,
-  .topnav,
-  .no-print {
-    display: none !important;
-  }
-
-  .content {
-    overflow: visible;
-  }
-
-  /* Force a plain white page regardless of theme — dark mode's --bg (and
-     even light mode's slightly-off-white --bg) would otherwise now print
-     exactly, since the color-adjust rule above stops the browser from
-     stripping it like it used to. `html` is the one that actually mattered
-     for the stray dark block from #171: Buefy's bundled Bulma sets
-     `html { background-color: var(--bulma-body-background-color) }`
-     (near-black in dark mode), and `body`'s own height:auto below means it
-     only ever paints as tall as its content — any blank space past that on
-     the physical page (near-guaranteed on a short last page) falls through
-     to html's background, which this list never used to cover. */
-  html,
-  body,
-  .app-root,
-  .main,
-  .content,
-  .report-page {
-    background: #fff !important;
-  }
-
-  .report-page {
-    max-width: none;
-    width: 100%;
-    padding: 0;
-  }
-
-  /* The A4 "paper" card look (shadow, rounded corner, fixed width) is a
-     screen-only preview aid — real pagination/margins come from @page, and
-     a soft shadow with no page below it to fall on would otherwise print
-     as a faint gray band past the last page's content. */
-  .report-paper {
-    width: 100%;
-    padding: 0;
-    box-shadow: none;
-    border-radius: 0;
-  }
-
-  /* report-kind-section and report-subgroup are deliberately NOT
-     break-inside: avoid — either can span several pages on its own (a
-     subgroup with more than one wallet especially), and forcing a big
-     block to stay together just pushes it entirely onto the next page,
-     leaving the previous one mostly blank. Only report-wallet-block (one
-     table, normally small enough to fit on one page) avoids splitting. */
-  .report-wallet-block {
-    break-inside: avoid;
-  }
 }
 
 .wd-breadcrumb {
@@ -2754,12 +2518,6 @@ h3.report-subgroup-title {
   background: var(--bulma-info-on-scheme);
 }
 
-.wd-chart-sub {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 3px;
-}
-
 .wd-tabs .tabs {
   margin-bottom: 0;
 }
@@ -2803,41 +2561,6 @@ h3.report-subgroup-title {
 
 .wd-tabs .tab-content {
   padding: 0;
-}
-
-@media (max-width: 860px) {
-  .wd-header-row {
-    align-items: flex-start;
-  }
-
-  .wd-figures {
-    margin-left: 0;
-    width: 100%;
-    gap: 24px;
-  }
-
-  .wd-actions {
-    padding-left: 0;
-    border-left: 0;
-    width: 100%;
-    align-self: flex-start;
-    justify-content: flex-end;
-  }
-}
-
-@media (max-width: 680px) {
-  .wd-figures {
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .wd-actions {
-    flex-wrap: wrap;
-  }
-
-  .wd-identity {
-    align-items: flex-start;
-  }
 }
 
 .move-hint {
@@ -2910,4 +2633,179 @@ h3.report-subgroup-title {
 
 .move-history-empty {
   padding: 16px 20px 20px;
+}
+
+@media (max-width: 860px) {
+  .auth-aside {
+    display: none;
+  }
+
+  .auth-card-brand {
+    display: flex;
+  }
+
+  .wd-header-row {
+    align-items: flex-start;
+  }
+
+  .wd-figures {
+    margin-left: 0;
+    width: 100%;
+    gap: 24px;
+  }
+
+  .wd-actions {
+    padding-left: 0;
+    border-left: 0;
+    width: 100%;
+    align-self: flex-start;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 680px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page {
+    padding: 20px 16px 60px;
+  }
+
+  .inv-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .seg-tabs {
+    justify-content: space-between;
+  }
+
+  .inv-toolbar {
+    margin-left: 0;
+  }
+
+  .inv-toolbar .search-input {
+    flex: 1 1 160px;
+    max-width: none;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .navbar-inner,
+  .topnav-inner {
+    padding: 0 16px;
+  }
+
+  .navbar {
+    gap: 8px;
+  }
+
+  .navbar .base-chip {
+    display: none;
+  }
+
+  .navbar-user .nu-meta {
+    display: none;
+  }
+
+  .topnav {
+    padding: 0;
+  }
+
+  .topnav-total {
+    display: none;
+  }
+
+  .nav-item .nav-label {
+    font-size: 13px;
+  }
+
+  .wd-figures {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .wd-actions {
+    flex-wrap: wrap;
+  }
+
+  .wd-identity {
+    align-items: flex-start;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm 12mm;
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    height: auto;
+  }
+
+  .app-root {
+    height: auto;
+    overflow: visible;
+  }
+
+  .main {
+    overflow: visible;
+  }
+
+  .navbar,
+  .topnav,
+  .no-print {
+    display: none !important;
+  }
+
+  .content {
+    overflow: visible;
+  }
+
+  /* Force a plain white page regardless of theme — dark mode's --bg (and
+     even light mode's slightly-off-white --bg) would otherwise now print
+     exactly, since the color-adjust rule above stops the browser from
+     stripping it like it used to. `html` is the one that actually mattered
+     for the stray dark block from #171: Buefy's bundled Bulma sets
+     `html { background-color: var(--bulma-body-background-color) }`
+     (near-black in dark mode), and `body`'s own height:auto below means it
+     only ever paints as tall as its content — any blank space past that on
+     the physical page (near-guaranteed on a short last page) falls through
+     to html's background, which this list never used to cover. */
+  html,
+  body,
+  .app-root,
+  .main,
+  .content,
+  .report-page {
+    background: #fff !important;
+  }
+
+  .report-page {
+    max-width: none;
+    width: 100%;
+    padding: 0;
+  }
+
+  /* The A4 "paper" card look (shadow, rounded corner, fixed width) is a
+     screen-only preview aid — real pagination/margins come from @page, and
+     a soft shadow with no page below it to fall on would otherwise print
+     as a faint gray band past the last page's content. */
+  .report-paper {
+    width: 100%;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
 }

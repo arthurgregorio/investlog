@@ -145,7 +145,7 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
       text="Ajuste os filtros na tela de Investimentos e gere o relatório novamente."
     />
 
-    <div v-else-if="!loading" ref="reportPaperRef" class="report-paper">
+    <div v-else-if="!loading" ref="reportPaperRef" class="report-paper" data-theme="light">
       <div
         v-for="(offset, index) in pageBreakOffsets"
         :key="offset"
@@ -174,20 +174,20 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
         <div class="report-title-row">
           <h1 class="report-title">Relatório de investimentos</h1>
           <div class="report-grand-total">
-            <div class="rgt-item">
-              <span class="rgt-label">Investido</span>
-              <span class="rgt-value">
+            <div class="report-figure">
+              <span class="report-figure-label">Investido</span>
+              <span class="report-figure-value">
                 {{ fmt.money(grouping.grandTotals.costBasis, currencyStore.displayCurrency) }}
               </span>
             </div>
-            <div class="rgt-item">
-              <span class="rgt-label">Atual</span>
-              <span class="rgt-value">
+            <div class="report-figure">
+              <span class="report-figure-label">Atual</span>
+              <span class="report-figure-value">
                 {{ fmt.money(grouping.grandTotals.currentValue, currencyStore.displayCurrency) }}
               </span>
             </div>
-            <div class="rgt-item">
-              <span class="rgt-label">Resultado</span>
+            <div class="report-figure">
+              <span class="report-figure-label">Resultado</span>
               <GainChip
                 :value="grouping.grandTotals.gain"
                 :pct="grouping.grandTotals.gainPct"
@@ -206,20 +206,20 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
         <div class="report-kind-head">
           <h2>{{ kindGroup.label }}</h2>
           <div class="report-subtotal-line">
-            <div class="stotal-item">
-              <span class="stotal-label">Investido</span>
-              <span class="stotal-value">{{
+            <div class="report-figure">
+              <span class="report-figure-label">Investido</span>
+              <span class="report-figure-value">{{
                 fmt.money(kindGroup.totals.costBasis, currencyStore.displayCurrency)
               }}</span>
             </div>
-            <div class="stotal-item">
-              <span class="stotal-label">Atual</span>
-              <span class="stotal-value">{{
+            <div class="report-figure">
+              <span class="report-figure-label">Atual</span>
+              <span class="report-figure-value">{{
                 fmt.money(kindGroup.totals.currentValue, currencyStore.displayCurrency)
               }}</span>
             </div>
-            <div class="stotal-item">
-              <span class="stotal-label">Resultado</span>
+            <div class="report-figure">
+              <span class="report-figure-label">Resultado</span>
               <GainChip
                 :value="kindGroup.totals.gain"
                 :pct="kindGroup.totals.gainPct"
@@ -233,20 +233,20 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
           <div class="report-subgroup-head">
             <h3 class="report-subgroup-title">{{ subGroup.label }}</h3>
             <div class="report-subtotal-line">
-              <div class="stotal-item">
-                <span class="stotal-label">Investido</span>
-                <span class="stotal-value">{{
+              <div class="report-figure">
+                <span class="report-figure-label">Investido</span>
+                <span class="report-figure-value">{{
                   fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
                 }}</span>
               </div>
-              <div class="stotal-item">
-                <span class="stotal-label">Atual</span>
-                <span class="stotal-value">{{
+              <div class="report-figure">
+                <span class="report-figure-label">Atual</span>
+                <span class="report-figure-value">{{
                   fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
                 }}</span>
               </div>
-              <div class="stotal-item">
-                <span class="stotal-label">Resultado</span>
+              <div class="report-figure">
+                <span class="report-figure-label">Resultado</span>
                 <GainChip
                   :value="subGroup.totals.gain"
                   :pct="subGroup.totals.gainPct"
