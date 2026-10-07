@@ -17,7 +17,8 @@
 BEGIN;
 
 -- 1. Wipe every wallet (and, via ON DELETE CASCADE, every holding/lot/contribution) for every
---    user, including admin.
+--    user, including admin. Wallet moves only SET NULL on wallet delete, so they go explicitly.
+DELETE FROM finances.wallet_moves;
 DELETE FROM finances.wallets;
 
 -- 2. Global type lists (finances.stock_types/fund_types have carried no user_id since
@@ -34,6 +35,9 @@ VALUES ('BRL', 1, true), ('USD', 5.18, false);
 
 -- 4. Every non-admin account. Safe now that all non-admin wallets are already gone —
 --    deleting a user with a remaining wallet would otherwise violate wallets.user_id's FK.
+--    trusted_devices.user_id has no ON DELETE CASCADE either, so their devices go first.
+DELETE FROM system.trusted_devices
+WHERE user_id IN (SELECT id FROM system.users WHERE email <> 'admin@admin.com');
 DELETE FROM system.users WHERE email <> 'admin@admin.com';
 
 -- 5. Recreate admin's sample wallets, holdings, lots, and snapshot history. \ir resolves relative to this
