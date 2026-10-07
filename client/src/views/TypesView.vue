@@ -165,7 +165,7 @@ function confirmRemoveType(type: AssetType) {
       </div>
 
       <div v-if="auth.isAdmin" class="inv-toolbar">
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
+        <b-button type="is-primary" icon-left="plus" @click="addType">
           {{ activeConfig.newLabel }}
         </b-button>
       </div>
@@ -180,7 +180,7 @@ function confirmRemoveType(type: AssetType) {
       :text="activeConfig.emptyText"
     >
       <template v-if="auth.isAdmin" #action>
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
+        <b-button type="is-primary" icon-left="plus" @click="addType">
           {{ activeConfig.newLabel }}
         </b-button>
       </template>
@@ -215,7 +215,13 @@ function confirmRemoveType(type: AssetType) {
                       :label="`Não é possível remover: ${activeConfig.noun} em uso`"
                       position="is-left"
                     >
-                      <b-button outlined type="is-danger" size="is-small" icon-left="delete" disabled />
+                      <b-button
+                        outlined
+                        type="is-danger"
+                        size="is-small"
+                        icon-left="delete"
+                        disabled
+                      />
                     </b-tooltip>
                     <b-button
                       v-else

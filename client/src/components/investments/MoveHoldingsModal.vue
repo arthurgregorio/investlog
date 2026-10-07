@@ -59,7 +59,9 @@ function takesQuantity(holding: HoldingRow): boolean {
 
 function exceedsRemaining(holding: HoldingRow): boolean {
   const quantity = quantities.value[holding.id]
-  return quantity !== '' && quantity != null && holding.quantity != null && quantity > holding.quantity
+  return (
+    quantity !== '' && quantity != null && holding.quantity != null && quantity > holding.quantity
+  )
 }
 
 const items = computed<WalletMoveItemPayload[]>(() => {
@@ -99,7 +101,10 @@ async function loadHoldings(walletId: string) {
   try {
     const page = await holdingsApi.findAll({ walletId, size: MOVABLE_HOLDINGS_PAGE_SIZE })
     holdings.value = page.content
-    if (props.preselectedHoldingId && page.content.some((holding) => holding.id === props.preselectedHoldingId)) {
+    if (
+      props.preselectedHoldingId &&
+      page.content.some((holding) => holding.id === props.preselectedHoldingId)
+    ) {
       selected.value = { [props.preselectedHoldingId]: true }
     }
   } finally {
@@ -206,7 +211,10 @@ async function submit() {
             :disabled="moveAll"
             @update:model-value="(checked: boolean) => (selected[holding.id] = checked)"
           />
-          <TickerBadge :ticker="displayName(holding)" :color="badgeColor(holding.ticker, holding.kind)" />
+          <TickerBadge
+            :ticker="displayName(holding)"
+            :color="badgeColor(holding.ticker, holding.kind)"
+          />
           <div class="move-item-meta">
             <div class="t-ticker">{{ displayName(holding) }}</div>
             <div class="t-name">
@@ -241,7 +249,6 @@ async function submit() {
       >
       <b-button
         type="is-primary"
-        class="has-text-light"
         icon-left="swap-horizontal"
         :disabled="!valid"
         :loading="submitting"

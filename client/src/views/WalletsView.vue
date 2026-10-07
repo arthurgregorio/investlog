@@ -61,11 +61,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
       text="Crie sua primeira carteira para começar a registrar investimentos."
     >
       <template #action>
-        <b-button
-          type="is-primary"
-          class="has-text-light"
-          icon-left="plus"
-          @click="modals.openCreateWallet()"
+        <b-button type="is-primary" icon-left="plus" @click="modals.openCreateWallet()"
           >Nova carteira</b-button
         >
       </template>

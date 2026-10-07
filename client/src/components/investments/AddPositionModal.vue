@@ -97,7 +97,6 @@ async function submit() {
       >
       <b-button
         type="is-success"
-        class="has-text-light"
         icon-left="check"
         :disabled="!valid"
         :loading="submitting"

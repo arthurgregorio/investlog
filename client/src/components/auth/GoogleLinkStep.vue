@@ -22,7 +22,7 @@ const linkPassword = ref('')
       expanded
       native-type="submit"
       :loading="submitting"
-      class="auth-submit has-text-light"
+      class="auth-submit"
     >
       Vincular conta
     </b-button>

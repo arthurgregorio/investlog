@@ -131,9 +131,7 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
       <RouterLink to="/investments" class="back-link">
         <b-icon icon="arrow-left" size="is-small" /> Voltar
       </RouterLink>
-      <b-button type="is-primary" class="has-text-light" icon-left="printer" @click="print">
-        Imprimir
-      </b-button>
+      <b-button type="is-primary" icon-left="printer" @click="print"> Imprimir </b-button>
     </div>
 
     <b-loading :is-full-page="false" :model-value="loading" />

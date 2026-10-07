@@ -323,7 +323,6 @@ async function submit() {
       >
       <b-button
         type="is-primary"
-        class="has-text-light"
         icon-left="autorenew"
         :disabled="!valid"
         :loading="submitting"
