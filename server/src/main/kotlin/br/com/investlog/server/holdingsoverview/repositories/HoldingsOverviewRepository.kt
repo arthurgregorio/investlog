@@ -4,7 +4,6 @@ import br.com.investlog.server.holdingsoverview.rest.payloads.HoldingRowResponse
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_REPORT_ROWS
-import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.shared.utils.pagedModelOf
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -14,7 +13,6 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Repository
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.util.UUID
 import br.com.investlog.server.jooq.finances.enums.WalletKind as JooqWalletKind
 
@@ -29,13 +27,12 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         search: String?,
         pageable: Pageable,
     ): PagedModel<HoldingRowResponse> {
-        val wallets = WALLETS.`as`("wallets")
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
 
-        val baseCondition = wallets.USER_ID.eq(userId).and(overview.STATUS.eq(HoldingStatus.ACTIVE))
+        val baseCondition = overview.USER_ID.eq(userId).and(overview.STATUS.eq(HoldingStatus.ACTIVE))
         val kindCondition = if (kind != null) overview.KIND.eq(kind) else DSL.noCondition()
         val typeLabelCondition = if (typeLabel != null) overview.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
-        val walletIdCondition = if (walletId != null) wallets.EXTERNAL_ID.eq(walletId) else DSL.noCondition()
+        val walletIdCondition = if (walletId != null) overview.WALLET_EXTERNAL_ID.eq(walletId) else DSL.noCondition()
         val searchCondition = if (!search.isNullOrBlank()) {
             overview.NAME.likeIgnoreCase("%$search%").or(overview.TICKER.likeIgnoreCase("%$search%"))
         } else {
@@ -44,11 +41,11 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
 
         val sortFields: List<SortField<*>> = pageable.sort.mapNotNull { order ->
             val field: Field<*>? = when (order.property) {
-                "wallet" -> wallets.NAME
+                "wallet" -> overview.WALLET_NAME
                 "price" -> overview.CURRENT_PRICE
                 "invested" -> overview.COST_BASIS
                 "current" -> overview.CURRENT_VALUE
-                "gain" -> overview.CURRENT_VALUE.sub(overview.COST_BASIS)
+                "gain" -> overview.GAIN
                 else -> null
             }
             field?.let { if (order.isAscending) it.asc().nullsLast() else it.desc().nullsLast() }
@@ -60,30 +57,24 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             overview.NAME,
             overview.TICKER,
             overview.TYPE_LABEL,
-            wallets.EXTERNAL_ID,
-            wallets.NAME,
-            wallets.CURRENCY,
+            overview.WALLET_EXTERNAL_ID,
+            overview.WALLET_NAME,
+            overview.WALLET_CURRENCY,
             overview.QUANTITY,
             overview.COST_BASIS,
             overview.CURRENT_PRICE,
             overview.CURRENT_VALUE,
             overview.FROZEN,
+            overview.GAIN,
+            overview.GAIN_PCT,
             overview.SEGMENT_LABEL,
         )
             .from(overview)
-            .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
             .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
             .orderBy(sortFields)
             .limit(pageable.pageSize)
             .offset(pageable.offset.toInt())
             .fetch { record ->
-                val costBasis = record.get(overview.COST_BASIS) ?: BigDecimal.ZERO
-                val currentValue = record.get(overview.CURRENT_VALUE)
-                val gain = currentValue?.let { it - costBasis }
-                val gainPct = if (gain != null && costBasis.signum() != 0) {
-                    gain.divide(costBasis, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))
-                } else null
-
                 HoldingRowResponse(
                     id = record.get(overview.EXTERNAL_ID)!!,
                     kind = record.get(overview.KIND)!!.literal,
@@ -91,23 +82,22 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     ticker = record.get(overview.TICKER),
                     typeLabel = record.get(overview.TYPE_LABEL),
                     segmentLabel = record.get(overview.SEGMENT_LABEL),
-                    walletId = record.get(wallets.EXTERNAL_ID)!!,
-                    walletName = record.get(wallets.NAME)!!,
-                    walletCurrency = record.get(wallets.CURRENCY)!!,
+                    walletId = record.get(overview.WALLET_EXTERNAL_ID)!!,
+                    walletName = record.get(overview.WALLET_NAME)!!,
+                    walletCurrency = record.get(overview.WALLET_CURRENCY)!!,
                     quantity = record.get(overview.QUANTITY),
-                    costBasis = costBasis,
+                    costBasis = record.get(overview.COST_BASIS) ?: BigDecimal.ZERO,
                     currentPrice = record.get(overview.CURRENT_PRICE),
                     frozen = record.get(overview.FROZEN)!!,
-                    currentValue = currentValue,
-                    gain = gain,
-                    gainPct = gainPct,
+                    currentValue = record.get(overview.CURRENT_VALUE),
+                    gain = record.get(overview.GAIN),
+                    gainPct = record.get(overview.GAIN_PCT),
                 )
             }
 
         val total = dsl.fetchCount(
             dsl.select(DSL.one())
                 .from(overview)
-                .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
                 .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
         )
 
@@ -121,13 +111,12 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         walletId: UUID?,
         search: String?,
     ): List<HoldingRowResponse> {
-        val wallets = WALLETS.`as`("wallets")
         val reportRows = HOLDINGS_REPORT_ROWS.`as`("report_rows")
 
-        val baseCondition = wallets.USER_ID.eq(userId)
+        val baseCondition = reportRows.USER_ID.eq(userId)
         val kindCondition = if (kind != null) reportRows.KIND.eq(kind) else DSL.noCondition()
         val typeLabelCondition = if (typeLabel != null) reportRows.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
-        val walletIdCondition = if (walletId != null) wallets.EXTERNAL_ID.eq(walletId) else DSL.noCondition()
+        val walletIdCondition = if (walletId != null) reportRows.WALLET_EXTERNAL_ID.eq(walletId) else DSL.noCondition()
         val searchCondition = if (!search.isNullOrBlank()) {
             reportRows.NAME.likeIgnoreCase("%$search%").or(reportRows.TICKER.likeIgnoreCase("%$search%"))
         } else {
@@ -140,28 +129,22 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             reportRows.NAME,
             reportRows.TICKER,
             reportRows.TYPE_LABEL,
-            wallets.EXTERNAL_ID,
-            wallets.NAME,
-            wallets.CURRENCY,
+            reportRows.WALLET_EXTERNAL_ID,
+            reportRows.WALLET_NAME,
+            reportRows.WALLET_CURRENCY,
             reportRows.QUANTITY,
             reportRows.COST_BASIS,
             reportRows.CURRENT_PRICE,
             reportRows.CURRENT_VALUE,
             reportRows.FROZEN,
+            reportRows.GAIN,
+            reportRows.GAIN_PCT,
             reportRows.SEGMENT_LABEL,
         )
             .from(reportRows)
-            .join(wallets).on(wallets.ID.eq(reportRows.WALLET_ID))
             .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
-            .orderBy(wallets.NAME, reportRows.COST_BASIS.desc().nullsLast())
+            .orderBy(reportRows.WALLET_NAME, reportRows.COST_BASIS.desc().nullsLast())
             .fetch { record ->
-                val costBasis = record.get(reportRows.COST_BASIS) ?: BigDecimal.ZERO
-                val currentValue = record.get(reportRows.CURRENT_VALUE)
-                val gain = currentValue?.let { it - costBasis }
-                val gainPct = if (gain != null && costBasis.signum() != 0) {
-                    gain.divide(costBasis, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))
-                } else null
-
                 HoldingRowResponse(
                     id = record.get(reportRows.EXTERNAL_ID)!!,
                     kind = record.get(reportRows.KIND)!!.literal,
@@ -169,16 +152,16 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     ticker = record.get(reportRows.TICKER),
                     typeLabel = record.get(reportRows.TYPE_LABEL),
                     segmentLabel = record.get(reportRows.SEGMENT_LABEL),
-                    walletId = record.get(wallets.EXTERNAL_ID)!!,
-                    walletName = record.get(wallets.NAME)!!,
-                    walletCurrency = record.get(wallets.CURRENCY)!!,
+                    walletId = record.get(reportRows.WALLET_EXTERNAL_ID)!!,
+                    walletName = record.get(reportRows.WALLET_NAME)!!,
+                    walletCurrency = record.get(reportRows.WALLET_CURRENCY)!!,
                     quantity = record.get(reportRows.QUANTITY),
-                    costBasis = costBasis,
+                    costBasis = record.get(reportRows.COST_BASIS) ?: BigDecimal.ZERO,
                     currentPrice = record.get(reportRows.CURRENT_PRICE),
                     frozen = record.get(reportRows.FROZEN)!!,
-                    currentValue = currentValue,
-                    gain = gain,
-                    gainPct = gainPct,
+                    currentValue = record.get(reportRows.CURRENT_VALUE),
+                    gain = record.get(reportRows.GAIN),
+                    gainPct = record.get(reportRows.GAIN_PCT),
                 )
             }
     }

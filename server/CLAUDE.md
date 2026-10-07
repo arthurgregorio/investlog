@@ -170,14 +170,28 @@ In detail:
   `preferredCurrency`.
 - `holdingsoverview` — `GET /private/v1/holdings` with optional `kind` filter and Spring
   `Pageable` for server-side pagination. Returns `HoldingRowResponse` rows from the
-  `holdings_overview` VIEW (joined with `wallets`). Computes `gain` and `gainPct` in Kotlin.
+  `holdings_overview` VIEW, which carries the owner (`user_id`), the wallet's `wallet_external_id`, `wallet_name` and `wallet_currency`, and the `gain` and `gain_pct` columns, so the repository joins nothing and computes nothing. `gain_pct` is `ROUND(ratio, 10) * 100` — the ratio is rounded to ten places *before* scaling, which is how the Kotlin it replaced behaved and what keeps the payload digits unchanged.
 - `overview` — `GET /private/v1/overview` (portfolio summary: `baseCurrency`, totals, per-kind
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
-  invested amounts for chart display). `OverviewRepository` performs three separate jOOQ queries
-  (stock lots, crypto lots, fund contributions) and accumulates a running total in Kotlin.
+  invested amounts for chart display). `findSeries` is one query against
+  `finances.contributions_timeline`, a `UNION ALL` of stock lots, crypto lots and fund
+  contributions with one row per purchase: it groups by the real `DATE` month and takes the running
+  total with `SUM(SUM(...)) OVER (ORDER BY month)`, so nothing is grouped, sorted or accumulated in
+  Kotlin. The view carries `wallet_amount` (the purchase in the wallet's own currency), `rate` and
+  `amount` (`wallet_amount` restated in the anchor currency); like `findSummary` below, `findSeries`
+  multiplies `wallet_amount * (rate / displayRate)` instead of dividing `amount`, to keep every
+  digit of the payload unchanged. The series charts money put in, so it counts every lot, completed
+  holdings included, and ignores withdrawals. `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
+  holding of `holdings_overview` with its wallet currency's `rate` (1 when it has no
+  `currency_rates` row) and `cost_basis_anchor` / `current_value_anchor`, the amounts restated in
+  the rates-anchor currency, the one whose own row stores rate 1. The display currency is a runtime
+  parameter and cannot live in a view, so `findSummary` divides by its rate itself, as a scalar
+  subselect in the same query. It multiplies `cost_basis * (rate / displayRate)` rather than
+  dividing the anchor columns: the two orders agree mathematically but not digit for digit, and
+  the summary payload exposes every digit.
 - `configurations` — `GET /private/v1/configurations`, `PATCH /private/v1/configurations/{key}`.
   Runtime feature toggles keyed by `ConfigurationKey`; this is what gates the price-sync jobs.
-- `wallets` — `GET`/`POST /private/v1/wallets`, `GET`/`PATCH`/`DELETE /private/v1/wallets/{id}`.
+- `wallets` — `GET`/`POST /private/v1/wallets`, `GET`/`PATCH`/`DELETE /private/v1/wallets/{id}`. The holding count, invested total, current value, `gain` and `gain_pct` come from the `finances.wallet_totals` view, LEFT JOINed once by `WalletRepository.selectWallets()`, which every read goes through. A wallet with no active holding has no row there, so the count and the invested total are coalesced to zero while the current value, gain and gain percentage stay null; `current_value` deliberately keeps a bare `SUM` so an all-unpriced wallet reads null rather than zero.
 - `stockholdings`, `cryptoholdings`, `fundholdings` — the three holding kinds, each nested under
   `/private/v1/wallets/{walletId}/{stock|crypto|fund}-holdings` with the same CRUD shape plus a
   child collection: `lots` for stocks and crypto, `contributions` for funds. They are separate
@@ -194,9 +208,9 @@ In detail:
 
 **Only stock and crypto subtract withdrawn quantity from `current_value`.** A fund withdrawal decrements `fund_holdings.current_value` directly, so the view nets only its `cost_basis`; subtracting again would double-count.
 
-`holdings_overview` exposes `status` and each of its three consumers filters to `ACTIVE` itself (`HoldingsOverviewRepository`, `OverviewRepository`, `WalletRepository`). `holdings_report_rows` is the deliberate exception — it filters to `ACTIVE` inside the view and does not expose the column, because it merges rows sharing `(wallet_id, kind, ticker, type_label, name)` and two such holdings can differ in status; adding `status` to its `GROUP BY` would split the very rows it exists to merge.
+`holdings_overview` exposes `status` and its consumers filter to `ACTIVE` themselves (`HoldingsOverviewRepository`, `OverviewRepository`), and `wallet_totals` filters inside the view. `holdings_report_rows` is the deliberate exception — it filters to `ACTIVE` inside the view and does not expose the column, because it merges rows sharing `(wallet_id, kind, ticker, type_label, name)` and two such holdings can differ in status; adding `status` to its `GROUP BY` would split the very rows it exists to merge.
 
-A wallet whose holdings have all been completed reports the same shape as an empty wallet — `holdingCount` 0, `totalInvested` 0, a null `currentValue` — because `WalletRepository`'s subqueries now match no rows. That is the intended outcome, and the wallets view already renders that shape.
+A wallet whose holdings have all been completed reports the same shape as an empty wallet — `holdingCount` 0, `totalInvested` 0, a null `currentValue` — because `wallet_totals` has no row for such a wallet and `WalletRepository` LEFT JOINs it. That is the intended outcome, and the wallets view already renders that shape.
 
 `GET /private/v1/results/summary` sums every `finances.results` row, reinvestments included, into totals in the user's preferred currency, optionally restricted to a `from`/`to` range on `result_date`. Conversion goes through `CurrencyRateRepository.findRateOrAnchor`, the same lookup `OverviewRepository` uses, and the controller calls `ResultRepository` directly because there is no work to do between the query and the response.
 

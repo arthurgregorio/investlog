@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="06-1000-1" author="${claude}">
+        <comment>
+            holdings_overview carries the owner, the wallet identity and the gain arithmetic, so no
+            consumer has to join finances.wallets or recompute gain in Kotlin (issue #241).
+            CREATE OR REPLACE VIEW only accepts columns appended at the end of the list, so
+            user_id, wallet_external_id, wallet_name, wallet_currency, gain and gain_pct trail
+            frozen and segment_label, which keeps holdings_report_rows alive without dropping it.
+            This changelog runs after 06-1000-create-stock-segments, so segment_label keeps the
+            position that one gave it. gain_pct rounds the
+            ratio to ten places before scaling by 100, exactly as the Kotlin it replaces did, so
+            every payload keeps the same digits. The report view recomputes both from its own sums
+            rather than averaging the rows underneath.
+        </comment>
+        <sql>
+            CREATE OR REPLACE VIEW finances.holdings_overview AS
+            SELECT
+                holdings.holding_id,
+                holdings.external_id,
+                holdings.wallet_id,
+                holdings.kind,
+                holdings.status,
+                holdings.name,
+                holdings.ticker,
+                holdings.type_label,
+                holdings.current_price,
+                holdings.quantity,
+                holdings.cost_basis,
+                holdings.current_value,
+                holdings.frozen,
+                holdings.segment_label,
+                holdings.user_id,
+                holdings.wallet_external_id,
+                holdings.wallet_name,
+                holdings.wallet_currency,
+                holdings.current_value - holdings.cost_basis AS gain,
+                CASE
+                    WHEN holdings.cost_basis <![CDATA[<>]]> 0
+                        THEN ROUND((holdings.current_value - holdings.cost_basis) / holdings.cost_basis, 10) * 100
+                END AS gain_pct
+            FROM (
+                SELECT
+                    stock_holdings.id AS holding_id,
+                    stock_holdings.external_id,
+                    stock_holdings.wallet_id,
+                    'STOCKS'::finances.wallet_kind AS kind,
+                    stock_holdings.status,
+                    stock_holdings.name,
+                    stock_holdings.ticker,
+                    stock_types.name AS type_label,
+                    stock_holdings.current_price,
+                    COALESCE(SUM(stock_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.stock_holding_id = stock_holdings.id
+                    ) AS quantity,
+                    COALESCE(SUM(stock_lots.quantity * stock_lots.price), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.stock_holding_id = stock_holdings.id
+                    ) AS cost_basis,
+                    stock_holdings.current_price * (
+                        COALESCE(SUM(stock_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.stock_holding_id = stock_holdings.id
+                        )
+                    ) AS current_value,
+                    stock_holdings.frozen,
+                    stock_segments.name AS segment_label,
+                    wallets.user_id,
+                    wallets.external_id AS wallet_external_id,
+                    wallets.name AS wallet_name,
+                    wallets.currency AS wallet_currency
+                FROM finances.stock_holdings
+                JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+                LEFT JOIN finances.stock_segments ON stock_segments.id = stock_holdings.stock_segment_id
+                JOIN finances.stock_types ON stock_types.id = stock_holdings.stock_type_id
+                LEFT JOIN finances.stock_lots ON stock_lots.stock_holding_id = stock_holdings.id
+                GROUP BY stock_holdings.id, stock_holdings.external_id, stock_holdings.wallet_id,
+                         stock_holdings.status, stock_holdings.name, stock_holdings.ticker,
+                         stock_types.name, stock_holdings.current_price, stock_holdings.frozen,
+                         wallets.id, stock_segments.name
+
+                UNION ALL
+
+                SELECT
+                    crypto_holdings.id AS holding_id,
+                    crypto_holdings.external_id,
+                    crypto_holdings.wallet_id,
+                    'CRYPTO'::finances.wallet_kind AS kind,
+                    crypto_holdings.status,
+                    crypto_holdings.name,
+                    crypto_holdings.ticker,
+                    NULL::TEXT AS type_label,
+                    crypto_holdings.current_price,
+                    COALESCE(SUM(crypto_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.crypto_holding_id = crypto_holdings.id
+                    ) AS quantity,
+                    COALESCE(SUM(crypto_lots.quantity * crypto_lots.price), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.crypto_holding_id = crypto_holdings.id
+                    ) AS cost_basis,
+                    crypto_holdings.current_price * (
+                        COALESCE(SUM(crypto_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.crypto_holding_id = crypto_holdings.id
+                        )
+                    ) AS current_value,
+                    crypto_holdings.frozen,
+                    NULL::TEXT AS segment_label,
+                    wallets.user_id,
+                    wallets.external_id AS wallet_external_id,
+                    wallets.name AS wallet_name,
+                    wallets.currency AS wallet_currency
+                FROM finances.crypto_holdings
+                JOIN finances.wallets ON wallets.id = crypto_holdings.wallet_id
+                LEFT JOIN finances.crypto_lots ON crypto_lots.crypto_holding_id = crypto_holdings.id
+                GROUP BY crypto_holdings.id, crypto_holdings.external_id, crypto_holdings.wallet_id,
+                         crypto_holdings.status, crypto_holdings.name, crypto_holdings.ticker,
+                         crypto_holdings.current_price, crypto_holdings.frozen,
+                         wallets.id
+
+                UNION ALL
+
+                SELECT
+                    fund_holdings.id AS holding_id,
+                    fund_holdings.external_id,
+                    fund_holdings.wallet_id,
+                    'FUNDS'::finances.wallet_kind AS kind,
+                    fund_holdings.status,
+                    fund_holdings.name,
+                    NULL::TEXT AS ticker,
+                    fund_types.name AS type_label,
+                    NULL::NUMERIC AS current_price,
+                    NULL::NUMERIC AS quantity,
+                    COALESCE(SUM(fund_contributions.amount), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.fund_holding_id = fund_holdings.id
+                    ) AS cost_basis,
+                    fund_holdings.current_value,
+                    fund_holdings.frozen,
+                    NULL::TEXT AS segment_label,
+                    wallets.user_id,
+                    wallets.external_id AS wallet_external_id,
+                    wallets.name AS wallet_name,
+                    wallets.currency AS wallet_currency
+                FROM finances.fund_holdings
+                JOIN finances.wallets ON wallets.id = fund_holdings.wallet_id
+                JOIN finances.fund_types ON fund_types.id = fund_holdings.fund_type_id
+                LEFT JOIN finances.fund_contributions ON fund_contributions.fund_holding_id = fund_holdings.id
+                GROUP BY fund_holdings.id, fund_holdings.external_id, fund_holdings.wallet_id,
+                         fund_holdings.status, fund_holdings.name, fund_types.name,
+                         fund_holdings.current_value, fund_holdings.frozen,
+                         wallets.id
+            ) AS holdings;
+
+            CREATE OR REPLACE VIEW finances.holdings_report_rows AS
+            SELECT
+                MIN(external_id::TEXT)::UUID AS external_id,
+                wallet_id,
+                kind,
+                name,
+                ticker,
+                type_label,
+                CASE
+                    WHEN SUM(quantity) IS NOT NULL AND SUM(quantity) <![CDATA[<>]]> 0
+                        THEN SUM(current_value) / SUM(quantity)
+                    ELSE MAX(current_price)
+                END AS current_price,
+                SUM(quantity) AS quantity,
+                SUM(cost_basis) AS cost_basis,
+                SUM(current_value) AS current_value,
+                bool_or(frozen) AS frozen,
+                MAX(segment_label) AS segment_label,
+                user_id,
+                wallet_external_id,
+                wallet_name,
+                wallet_currency,
+                SUM(current_value) - SUM(cost_basis) AS gain,
+                CASE
+                    WHEN SUM(cost_basis) <![CDATA[<>]]> 0
+                        THEN ROUND((SUM(current_value) - SUM(cost_basis)) / SUM(cost_basis), 10) * 100
+                END AS gain_pct
+            FROM finances.holdings_overview
+            WHERE status = 'ACTIVE'
+            GROUP BY wallet_id, kind, name, ticker, type_label,
+                     user_id, wallet_external_id, wallet_name, wallet_currency;
+        </sql>
+        <rollback>
+            <sql>
+                DROP VIEW finances.holdings_report_rows;
+                DROP VIEW finances.holdings_overview;
+
+                CREATE VIEW finances.holdings_overview AS
+                SELECT
+                    stock_holdings.id AS holding_id,
+                    stock_holdings.external_id,
+                    stock_holdings.wallet_id,
+                    'STOCKS'::finances.wallet_kind AS kind,
+                    stock_holdings.status,
+                    stock_holdings.name,
+                    stock_holdings.ticker,
+                    stock_types.name AS type_label,
+                    stock_holdings.current_price,
+                    COALESCE(SUM(stock_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.stock_holding_id = stock_holdings.id
+                    ) AS quantity,
+                    COALESCE(SUM(stock_lots.quantity * stock_lots.price), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.stock_holding_id = stock_holdings.id
+                    ) AS cost_basis,
+                    stock_holdings.current_price * (
+                        COALESCE(SUM(stock_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.stock_holding_id = stock_holdings.id
+                        )
+                    ) AS current_value,
+                    stock_holdings.frozen,
+                    stock_segments.name AS segment_label
+                FROM finances.stock_holdings
+                JOIN finances.stock_types ON stock_types.id = stock_holdings.stock_type_id
+                LEFT JOIN finances.stock_segments ON stock_segments.id = stock_holdings.stock_segment_id
+                LEFT JOIN finances.stock_lots ON stock_lots.stock_holding_id = stock_holdings.id
+                GROUP BY stock_holdings.id, stock_holdings.external_id, stock_holdings.wallet_id,
+                         stock_holdings.status, stock_holdings.name, stock_holdings.ticker,
+                         stock_types.name, stock_holdings.current_price, stock_holdings.frozen,
+                         stock_segments.name
+
+                UNION ALL
+
+                SELECT
+                    crypto_holdings.id AS holding_id,
+                    crypto_holdings.external_id,
+                    crypto_holdings.wallet_id,
+                    'CRYPTO'::finances.wallet_kind AS kind,
+                    crypto_holdings.status,
+                    crypto_holdings.name,
+                    crypto_holdings.ticker,
+                    NULL::TEXT AS type_label,
+                    crypto_holdings.current_price,
+                    COALESCE(SUM(crypto_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.crypto_holding_id = crypto_holdings.id
+                    ) AS quantity,
+                    COALESCE(SUM(crypto_lots.quantity * crypto_lots.price), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.crypto_holding_id = crypto_holdings.id
+                    ) AS cost_basis,
+                    crypto_holdings.current_price * (
+                        COALESCE(SUM(crypto_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.crypto_holding_id = crypto_holdings.id
+                        )
+                    ) AS current_value,
+                    crypto_holdings.frozen,
+                    NULL::TEXT AS segment_label
+                FROM finances.crypto_holdings
+                LEFT JOIN finances.crypto_lots ON crypto_lots.crypto_holding_id = crypto_holdings.id
+                GROUP BY crypto_holdings.id, crypto_holdings.external_id, crypto_holdings.wallet_id,
+                         crypto_holdings.status, crypto_holdings.name, crypto_holdings.ticker,
+                         crypto_holdings.current_price, crypto_holdings.frozen
+
+                UNION ALL
+
+                SELECT
+                    fund_holdings.id AS holding_id,
+                    fund_holdings.external_id,
+                    fund_holdings.wallet_id,
+                    'FUNDS'::finances.wallet_kind AS kind,
+                    fund_holdings.status,
+                    fund_holdings.name,
+                    NULL::TEXT AS ticker,
+                    fund_types.name AS type_label,
+                    NULL::NUMERIC AS current_price,
+                    NULL::NUMERIC AS quantity,
+                    COALESCE(SUM(fund_contributions.amount), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.fund_holding_id = fund_holdings.id
+                    ) AS cost_basis,
+                    fund_holdings.current_value,
+                    fund_holdings.frozen,
+                    NULL::TEXT AS segment_label
+                FROM finances.fund_holdings
+                JOIN finances.fund_types ON fund_types.id = fund_holdings.fund_type_id
+                LEFT JOIN finances.fund_contributions ON fund_contributions.fund_holding_id = fund_holdings.id
+                GROUP BY fund_holdings.id, fund_holdings.external_id, fund_holdings.wallet_id,
+                         fund_holdings.status, fund_holdings.name, fund_types.name,
+                         fund_holdings.current_value, fund_holdings.frozen;
+
+                CREATE VIEW finances.holdings_report_rows AS
+                SELECT
+                    MIN(external_id::TEXT)::UUID AS external_id,
+                    wallet_id,
+                    kind,
+                    name,
+                    ticker,
+                    type_label,
+                    CASE
+                        WHEN SUM(quantity) IS NOT NULL AND SUM(quantity) <![CDATA[<>]]> 0
+                            THEN SUM(current_value) / SUM(quantity)
+                        ELSE MAX(current_price)
+                    END AS current_price,
+                    SUM(quantity) AS quantity,
+                    SUM(cost_basis) AS cost_basis,
+                    SUM(current_value) AS current_value,
+                    bool_or(frozen) AS frozen,
+                    MAX(segment_label) AS segment_label
+                FROM finances.holdings_overview
+                WHERE status = 'ACTIVE'
+                GROUP BY wallet_id, kind, name, ticker, type_label;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

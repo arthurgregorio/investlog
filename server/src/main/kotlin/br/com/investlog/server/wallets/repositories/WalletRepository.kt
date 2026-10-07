@@ -1,8 +1,7 @@
 package br.com.investlog.server.wallets.repositories
 
-import br.com.investlog.server.jooq.finances.enums.HoldingStatus
-import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
+import br.com.investlog.server.jooq.finances.tables.references.WALLET_TOTALS
 import br.com.investlog.server.shared.utils.pagedModelOf
 import br.com.investlog.server.wallets.rest.payloads.WalletKind
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
@@ -13,7 +12,6 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Repository
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -21,11 +19,7 @@ import java.util.UUID
 class WalletRepository(private val dsl: DSLContext) {
 
     fun findAll(userId: Long, pageable: Pageable): PagedModel<WalletResponse> {
-        val content = dsl.select(
-            WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(), currentValueField(),
-        )
-            .from(WALLETS)
+        val content = selectWallets()
             .where(WALLETS.USER_ID.eq(userId))
             .orderBy(WALLETS.CREATED_AT.desc())
             .limit(pageable.pageSize)
@@ -46,21 +40,13 @@ class WalletRepository(private val dsl: DSLContext) {
             .returning()
             .fetchSingle()
 
-        return dsl.select(
-            WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(), currentValueField(),
-        )
-            .from(WALLETS)
+        return selectWallets()
             .where(WALLETS.ID.eq(wallet.id))
             .fetchSingle { record -> record.toResponse() }
     }
 
     fun findByExternalId(userId: Long, externalId: UUID): WalletResponse? =
-        dsl.select(
-            WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(), currentValueField(),
-        )
-            .from(WALLETS)
+        selectWallets()
             .where(WALLETS.USER_ID.eq(userId))
             .and(WALLETS.EXTERNAL_ID.eq(externalId))
             .fetchOne { record -> record.toResponse() }
@@ -81,11 +67,7 @@ class WalletRepository(private val dsl: DSLContext) {
             .returning(WALLETS.ID)
             .fetchOne() ?: return null
 
-        return dsl.select(
-            WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
-            holdingCountField(), totalInvestedField(), currentValueField(),
-        )
-            .from(WALLETS)
+        return selectWallets()
             .where(WALLETS.ID.eq(updated.id))
             .fetchSingle { record -> record.toResponse() }
     }
@@ -96,49 +78,31 @@ class WalletRepository(private val dsl: DSLContext) {
             .and(WALLETS.EXTERNAL_ID.eq(externalId))
             .execute()
 
-    private fun holdingCountField() =
-        DSL.field(
-            DSL.selectCount()
-                .from(HOLDINGS_OVERVIEW)
-                .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
-                .and(HOLDINGS_OVERVIEW.STATUS.eq(HoldingStatus.ACTIVE))
-        ).`as`("holding_count")
+    private fun selectWallets() =
+        dsl.select(
+            WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
+            HOLDING_COUNT, TOTAL_INVESTED,
+            WALLET_TOTALS.CURRENT_VALUE, WALLET_TOTALS.GAIN, WALLET_TOTALS.GAIN_PCT,
+        )
+            .from(WALLETS)
+            .leftJoin(WALLET_TOTALS).on(WALLET_TOTALS.WALLET_ID.eq(WALLETS.ID))
 
-    private fun totalInvestedField() =
-        DSL.field(
-            DSL.select(DSL.coalesce(DSL.sum(HOLDINGS_OVERVIEW.COST_BASIS), BigDecimal.ZERO))
-                .from(HOLDINGS_OVERVIEW)
-                .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
-                .and(HOLDINGS_OVERVIEW.STATUS.eq(HoldingStatus.ACTIVE))
-        ).`as`("total_invested")
-
-    private fun currentValueField() =
-        DSL.field(
-            DSL.select(DSL.sum(HOLDINGS_OVERVIEW.CURRENT_VALUE))
-                .from(HOLDINGS_OVERVIEW)
-                .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(WALLETS.ID))
-                .and(HOLDINGS_OVERVIEW.STATUS.eq(HoldingStatus.ACTIVE))
-        ).`as`("current_value")
-
-    private fun Record.toResponse(): WalletResponse {
-        val totalInvested = get("total_invested", BigDecimal::class.java) ?: BigDecimal.ZERO
-        val currentValue = get("current_value", BigDecimal::class.java)
-        val gain = currentValue?.let { it - totalInvested }
-        val gainPct = if (gain != null && totalInvested.signum() != 0) {
-            gain.divide(totalInvested, 10, RoundingMode.HALF_UP).multiply(BigDecimal("100"))
-        } else null
-
-        return WalletResponse(
+    private fun Record.toResponse() =
+        WalletResponse(
             id = get(WALLETS.EXTERNAL_ID)!!,
             name = get(WALLETS.NAME)!!,
             kind = WalletKind.fromText(get(WALLETS.KIND)!!.literal),
             currency = get(WALLETS.CURRENCY)!!,
-            holdingCount = get("holding_count", Int::class.java) ?: 0,
-            totalInvested = totalInvested,
-            currentValue = currentValue,
-            gain = gain,
-            gainPct = gainPct,
+            holdingCount = get(HOLDING_COUNT)!!.toInt(),
+            totalInvested = get(TOTAL_INVESTED)!!,
+            currentValue = get(WALLET_TOTALS.CURRENT_VALUE),
+            gain = get(WALLET_TOTALS.GAIN),
+            gainPct = get(WALLET_TOTALS.GAIN_PCT),
             createdAt = get(WALLETS.CREATED_AT)!!,
         )
+
+    private companion object {
+        val HOLDING_COUNT = DSL.coalesce(WALLET_TOTALS.HOLDING_COUNT, 0L).`as`("holding_count")
+        val TOTAL_INVESTED = DSL.coalesce(WALLET_TOTALS.TOTAL_INVESTED, BigDecimal.ZERO).`as`("total_invested")
     }
 }
