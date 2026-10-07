@@ -393,7 +393,7 @@ function confirmDeleteWallet() {
           >
             <div>
               <div class="chart-title">Desempenho</div>
-              <div class="wd-chart-sub">Valor atual ao longo do tempo</div>
+              <div class="sub-caption">Valor atual ao longo do tempo</div>
             </div>
             <div
               v-if="detail.series.length"

@@ -108,11 +108,11 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
                 )
               }}
             </div>
-            <div class="wi-base">Investido</div>
+            <div class="sub-caption">Investido</div>
           </div>
-          <div class="wallet-result">
-            <div class="wallet-result-item">
-              <div class="wallet-result-value">
+          <div class="result-row">
+            <div class="result-item">
+              <div class="result-value">
                 {{
                   wallet.currentValue == null
                     ? '—'
@@ -122,9 +122,9 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
                       )
                 }}
               </div>
-              <div class="wallet-result-label">Valor atual</div>
+              <div class="result-label">Valor atual</div>
             </div>
-            <div class="wallet-result-item">
+            <div class="result-item">
               <GainChip
                 :value="
                   wallet.gain == null ? null : currencyStore.convert(wallet.gain, wallet.currency)
@@ -132,7 +132,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
                 :pct="wallet.gainPct"
                 :cur="currencyStore.displayCurrency"
               />
-              <div class="wallet-result-label">Resultado</div>
+              <div class="result-label">Resultado</div>
             </div>
           </div>
           <div class="entity-foot">
