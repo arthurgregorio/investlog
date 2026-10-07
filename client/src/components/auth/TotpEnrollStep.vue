@@ -18,10 +18,16 @@ const totpCode = ref('')
     <img
       :src="qrCodeDataUri"
       alt="QR code para configurar a autenticação em duas etapas"
-      class="auth-totp-qr"
+      class="auth-totp-qr is-block mx-auto"
     />
     <b-field label="Código de 6 dígitos">
-      <b-input v-model="totpCode" maxlength="6" placeholder="000000" required />
+      <b-input
+        v-model="totpCode"
+        maxlength="6"
+        :has-counter="false"
+        placeholder="000000"
+        required
+      />
     </b-field>
     <b-button
       type="is-primary"

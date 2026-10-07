@@ -30,17 +30,25 @@ const password = defineModel<string>('password', { required: true })
     >
       Entrar
     </b-button>
-    <button
-      type="button"
-      class="auth-toggle"
+    <b-button
+      type="is-ghost"
+      size="is-small"
+      class="has-text-primary has-text-weight-semibold"
       data-testid="toggle-register"
       @click="emit('toggleRegister')"
     >
       Não tem uma conta? Criar conta
-    </button>
+    </b-button>
     <div v-if="googleAuthEnabled" class="auth-divider">ou</div>
-    <a v-if="googleAuthEnabled" href="/private/oauth2/authorization/google" class="auth-google-button">
+    <b-button
+      v-if="googleAuthEnabled"
+      tag="a"
+      href="/private/oauth2/authorization/google"
+      expanded
+      class="auth-submit"
+      data-testid="google-login"
+    >
       Continuar com Google
-    </a>
+    </b-button>
   </form>
 </template>
