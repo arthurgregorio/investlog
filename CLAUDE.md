@@ -249,8 +249,8 @@ carries (see below).
   one `Closes #N` line for the umbrella and one for each of its sub-issues. This applies to the PR
   body only — individual **commit messages** still use `Refs #N` as a breadcrumb, since repeating
   the closing keyword on every commit would be noise.
-- **A linked issue — verified, not assumed.** See below; on a sub-issue PR this one needs a manual
-  step and fails silently without it.
+- **A linked issue — verified, not assumed.** See below; on a sub-issue PR this one needs an
+  explicit `gh api graphql` call and fails silently without it.
 - The **same milestone as its issue** — `gh issue view <N> --json milestone` to check. `gh pr
   create` does not inherit it, so it's the easiest of these to drop.
 - The **label** matching the work (`feature`, `bug`, `documentation`, `maintenance`, …).
@@ -262,7 +262,7 @@ If any of these weren't set at creation time, fix it immediately:
 gh pr edit <N> --add-label feature --add-assignee arthurgregorio --milestone "<name>"
 ```
 
-### `Closes #N` does nothing on a sub-issue PR — link it by hand
+### `Closes #N` does nothing on a sub-issue PR — link it with `gh`
 
 GitHub honours a closing keyword **only when the PR targets the repository's default branch**. A
 sub-issue PR targets its umbrella's feature branch, so its `Closes #N` is ignored: no linked issue,
@@ -271,17 +271,25 @@ timeline cross-reference, which is a weaker relationship and does not survive an
 body text. The `Closes #N` line still belongs in the body — it states what the PR implements — but
 it is a statement of intent, not a mechanism.
 
-So **check the link on every PR, and create it by hand when it is missing**:
+So **linking is mandatory on every sub-issue PR, at creation time**: right after `gh pr create`,
+link the PR to its issue with the GraphQL `addCloseIssueReferences` mutation (`<N>` is the issue,
+`<PR>` the pull request):
 
 ```bash
-gh pr view <N> --json closingIssuesReferences --jq '[.closingIssuesReferences[].number] | join(", ")'
+issue=$(gh issue view <N> --json id --jq .id); pr=$(gh pr view <PR> --json id --jq .id)
+gh api graphql -f query='mutation($i:ID!,$p:[ID!]!){addCloseIssueReferences(input:{issueId:$i,pullRequestIds:[$p]}){clientMutationId}}' -f i="$issue" -f p="$pr"
 ```
 
-An empty result means no link was created. There is no API to fix that — the only candidate GraphQL
-mutation, `createLinkedBranch`, takes a commit id and creates a *new branch*, which is the wrong
-tool. The link is made in the browser, from the **issue's** Development panel → "link a pull
-request". Worth knowing that `gh pr create` reports success either way, and a body containing
-`Closes #N` looks correct in review, so nothing surfaces this except the command above.
+Then **verify the link on every PR**, sub-issue or not — the result must name the PR's issue:
+
+```bash
+gh pr view <PR> --json closingIssuesReferences --jq '[.closingIssuesReferences[].number] | join(", ")'
+```
+
+An empty result means no link exists; run the mutation above. Worth knowing that `gh pr create`
+reports success either way, and a body containing `Closes #N` looks correct in review, so nothing
+surfaces a missing link except this check. `removeCloseIssueReferences` takes the same input and
+undoes a wrong link.
 
 ### Closing sub-issues: the umbrella PR does it
 
