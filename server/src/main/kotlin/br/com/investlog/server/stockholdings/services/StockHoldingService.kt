@@ -9,6 +9,7 @@ import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
+import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingSegmentRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingUpdateRequest
 import br.com.investlog.server.wallets.services.WalletService
 import org.springframework.data.domain.Pageable
@@ -44,6 +45,7 @@ class StockHoldingService(
         return holdingRepo.create(
             walletInternalId = walletId,
             stockTypeInternalId = stockTypeId,
+            stockSegmentInternalId = request.stockSegmentId?.let(::resolveStockSegmentId),
             ticker = request.ticker,
             name = request.name ?: request.ticker.uppercase(),
             currentPrice = request.currentPrice,
@@ -69,6 +71,20 @@ class StockHoldingService(
             name = request.name,
             currentPrice = request.currentPrice,
             frozen = request.frozen,
+        ) ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
+    }
+
+    @Transactional
+    fun updateSegment(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: StockHoldingSegmentRequest,
+    ): StockHoldingResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        return holdingRepo.updateSegment(
+            walletInternalId = walletId,
+            externalId = holdingExternalId,
+            stockSegmentInternalId = request.stockSegmentId?.let(::resolveStockSegmentId),
         ) ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
     }
 
@@ -112,4 +128,8 @@ class StockHoldingService(
         return lotRepo.updateLotDate(holdingId, lotExternalId, request.lotDate)
             ?: throw NotFoundException("Lote não encontrado: $lotExternalId")
     }
+
+    private fun resolveStockSegmentId(externalId: UUID): Long =
+        holdingRepo.findStockSegmentInternalId(externalId)
+            ?: throw NotFoundException("Segmento não encontrado: $externalId")
 }

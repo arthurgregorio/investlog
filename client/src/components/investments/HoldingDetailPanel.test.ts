@@ -5,6 +5,7 @@ import HoldingDetailPanel from './HoldingDetailPanel.vue'
 import { holdingsApi } from '@/api/holdings'
 import { resultsApi } from '@/api/results'
 import { useAuthStore } from '@/stores/auth'
+import { useTypesListStore } from '@/stores/typesList'
 import { useCurrencyStore } from '@/stores/currency'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { useWalletsStore } from '@/stores/wallets'
@@ -32,6 +33,7 @@ vi.mock('@/api/holdings', () => ({
     updateStockHolding: vi.fn(),
     updateCryptoHolding: vi.fn(),
     updateFundHolding: vi.fn(),
+    updateStockHoldingSegment: vi.fn(),
     deleteStockHolding: vi.fn(),
     deleteCryptoHolding: vi.fn(),
     deleteFundHolding: vi.fn(),
@@ -67,6 +69,7 @@ const stockRow: HoldingRow = {
   name: 'Petróleo Brasileiro',
   ticker: 'PETR4',
   typeLabel: 'Ação PN',
+  segmentLabel: null,
   walletId: 'wallet-1',
   walletName: 'Carteira B3',
   walletCurrency: 'BRL',
@@ -85,6 +88,7 @@ const cryptoRow: HoldingRow = {
   name: 'Bitcoin',
   ticker: 'BTC',
   typeLabel: null,
+  segmentLabel: null,
   walletId: 'wallet-3',
   walletName: 'Carteira Cripto',
   walletCurrency: 'BRL',
@@ -103,6 +107,7 @@ const fundRow: HoldingRow = {
   name: 'Tesouro IPCA+',
   ticker: null,
   typeLabel: 'Renda Fixa',
+  segmentLabel: null,
   walletId: 'wallet-2',
   walletName: 'Carteira Fundos',
   walletCurrency: 'BRL',
@@ -136,6 +141,8 @@ function stockDetailWithWithdrawals(): StockHoldingDetail {
     id: 'holding-1',
     walletId: 'wallet-1',
     stockTypeId: 'type-1',
+    stockSegmentId: null,
+    stockSegmentName: null,
     ticker: 'PETR4',
     name: 'Petróleo Brasileiro',
     currentPrice: 34.8,
@@ -163,6 +170,8 @@ function stockDetailWithoutWithdrawals(): StockHoldingDetail {
     id: 'holding-1',
     walletId: 'wallet-1',
     stockTypeId: 'type-1',
+    stockSegmentId: null,
+    stockSegmentName: null,
     ticker: 'PETR4',
     name: 'Petróleo Brasileiro',
     currentPrice: 34.8,
@@ -576,6 +585,48 @@ describe('HoldingDetailPanel', () => {
     })
   })
 
+  describe('stock segment', () => {
+    it.each(kindCases)(
+      'offers Definir segmento only for a stock, not for a $label holding',
+      async ({ row, detail }) => {
+        await mountLoadedPanel(row, detail())
+
+        expect(actionLabels().includes('Definir segmento')).toBe(row.kind === 'STOCKS')
+      },
+    )
+
+    it('opens the segment modal preselected and reloads the detail after saving', async () => {
+      vi.mocked(holdingsApi.updateStockHoldingSegment).mockResolvedValue(
+        stockDetailWithoutWithdrawals(),
+      )
+      const wrapper = await mountLoadedPanel(stockRow, {
+        ...stockDetailWithoutWithdrawals(),
+        stockSegmentId: 'segment-1',
+        stockSegmentName: 'Energia',
+      })
+
+      useTypesListStore().stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 1 }]
+      await chooseAction('Definir segmento')
+      const select = wrapper.find('select[data-testid="set-segment-select"]')
+      expect(select.findAll('option').map((option) => option.text())).toEqual([
+        'Sem segmento',
+        'Energia',
+      ])
+      expect((select.element as HTMLSelectElement).value).toBe('segment-1')
+      await select.setValue('')
+      await modalButton(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateStockHoldingSegment).toHaveBeenCalledWith(
+        'wallet-1',
+        'holding-1',
+        null,
+      )
+      expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(2)
+      expect(wrapper.emitted('positionAdded')).toHaveLength(1)
+    })
+  })
+
   describe('fund fee rates', () => {
     function feeRateText(wrapper: VueWrapper, testId: string) {
       return wrapper.find(`[data-testid="${testId}"]`).text()
@@ -964,6 +1015,7 @@ describe('HoldingDetailPanel', () => {
       expect(actionLabels()).toEqual([
         'Registrar nova compra',
         'Atualizar preço',
+        'Definir segmento',
         'Resgatar',
         'Reinvestir',
         'Mover',

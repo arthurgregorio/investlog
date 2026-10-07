@@ -8,30 +8,71 @@ import { escapeHtml } from '@/utils/escapeHtml'
 import { useAuthStore } from '@/stores/auth'
 import type { AssetType } from '@/types'
 
-type TypeKind = 'stock' | 'fund'
-
-const KIND_CONFIG: Record<
-  TypeKind,
-  { label: string; description: string; addTitle: string; emptyText: string }
-> = {
-  stock: {
-    label: 'Tipos de ação',
-    description: 'Cadastrados antes de registrar uma ação (escolhidos no formulário).',
-    addTitle: 'Novo tipo de ação',
-    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar uma ação.',
-  },
-  fund: {
-    label: 'Tipos de fundo',
-    description: 'Cadastrados antes de registrar um fundo (escolhidos no formulário).',
-    addTitle: 'Novo tipo de fundo',
-    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar um fundo.',
-  },
-}
+type TypeKind = 'stock' | 'fund' | 'segment'
 
 const dialog = useDialog()
 const toast = useToast()
 const typesListStore = useTypesListStore()
 const auth = useAuthStore()
+
+const KIND_CONFIG: Record<
+  TypeKind,
+  {
+    label: string
+    description: string
+    addTitle: string
+    emptyTitle: string
+    emptyText: string
+    newLabel: string
+    noun: string
+    list: () => AssetType[]
+    add: (name: string) => Promise<AssetType>
+    update: (id: string, name: string) => Promise<AssetType>
+    remove: (id: string) => Promise<void>
+  }
+> = {
+  stock: {
+    label: 'Tipos de ação',
+    description: 'Cadastrados antes de registrar uma ação (escolhidos no formulário).',
+    addTitle: 'Novo tipo de ação',
+    emptyTitle: 'Nenhum tipo ainda',
+    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar uma ação.',
+    newLabel: 'Novo tipo',
+    noun: 'tipo',
+    list: () => typesListStore.stockTypes,
+    add: (name) => typesListStore.addStockType(name),
+    update: (id, name) => typesListStore.updateStockType(id, name),
+    remove: (id) => typesListStore.removeStockType(id),
+  },
+  fund: {
+    label: 'Tipos de fundo',
+    description: 'Cadastrados antes de registrar um fundo (escolhidos no formulário).',
+    addTitle: 'Novo tipo de fundo',
+    emptyTitle: 'Nenhum tipo ainda',
+    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar um fundo.',
+    newLabel: 'Novo tipo',
+    noun: 'tipo',
+    list: () => typesListStore.fundTypes,
+    add: (name) => typesListStore.addFundType(name),
+    update: (id, name) => typesListStore.updateFundType(id, name),
+    remove: (id) => typesListStore.removeFundType(id),
+  },
+  segment: {
+    label: 'Segmentos',
+    description: 'Setores de atuação das ações (opcional no formulário).',
+    addTitle: 'Novo segmento',
+    emptyTitle: 'Nenhum segmento ainda',
+    emptyText: 'Crie o primeiro segmento para poder selecioná-lo ao registrar uma ação.',
+    newLabel: 'Novo segmento',
+    noun: 'segmento',
+    list: () => typesListStore.stockSegments,
+    add: (name) => typesListStore.addStockSegment(name),
+    update: (id, name) => typesListStore.updateStockSegment(id, name),
+    remove: (id) => typesListStore.removeStockSegment(id),
+  },
+}
+
+const KINDS: TypeKind[] = ['stock', 'fund', 'segment']
 
 const activeKind = ref<TypeKind>('stock')
 
@@ -39,68 +80,59 @@ onMounted(() => {
   typesListStore.load()
 })
 
-const activeTypes = computed(() =>
-  activeKind.value === 'stock' ? typesListStore.stockTypes : typesListStore.fundTypes,
-)
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+const activeConfig = computed(() => KIND_CONFIG[activeKind.value])
+const activeTypes = computed(() => activeConfig.value.list())
 
 function addType() {
-  const kind = activeKind.value
+  const config = activeConfig.value
   dialog.prompt({
-    title: KIND_CONFIG[kind].addTitle,
+    title: config.addTitle,
     message: 'Nome:',
-    inputAttrs: { placeholder: 'Nome do tipo' },
+    inputAttrs: { placeholder: `Nome do ${config.noun}` },
     confirmText: 'Criar',
     cancelText: 'Cancelar',
     onConfirm: async (name: string) => {
       const trimmedName = name.trim()
       if (!trimmedName) return
-      if (kind === 'stock') {
-        await typesListStore.addStockType(trimmedName)
-      } else {
-        await typesListStore.addFundType(trimmedName)
-      }
-      toast.open({ message: 'Tipo criado.', type: 'is-success' })
+      await config.add(trimmedName)
+      toast.open({ message: `${capitalize(config.noun)} criado.`, type: 'is-success' })
     },
   })
 }
 
 function renameType(type: AssetType) {
-  const kind = activeKind.value
+  const config = activeConfig.value
   dialog.prompt({
-    title: 'Renomear tipo',
+    title: `Renomear ${config.noun}`,
     message: 'Nome:',
-    inputAttrs: { value: type.name, placeholder: 'Nome do tipo' },
+    inputAttrs: { value: type.name, placeholder: `Nome do ${config.noun}` },
     confirmText: 'Salvar',
     cancelText: 'Cancelar',
     onConfirm: async (name: string) => {
       const trimmedName = name.trim()
       if (!trimmedName || trimmedName === type.name) return
-      if (kind === 'stock') {
-        await typesListStore.updateStockType(type.id, trimmedName)
-      } else {
-        await typesListStore.updateFundType(type.id, trimmedName)
-      }
-      toast.open({ message: 'Tipo renomeado.', type: 'is-success' })
+      await config.update(type.id, trimmedName)
+      toast.open({ message: `${capitalize(config.noun)} renomeado.`, type: 'is-success' })
     },
   })
 }
 
 function confirmRemoveType(type: AssetType) {
-  const kind = activeKind.value
+  const config = activeConfig.value
   dialog.confirm({
-    title: 'Remover tipo',
+    title: `Remover ${config.noun}`,
     message: `Remover <strong>${escapeHtml(type.name)}</strong>? Esta ação <strong>não pode ser desfeita</strong>.`,
     type: 'is-danger',
     hasIcon: true,
     confirmText: 'Remover',
     cancelText: 'Cancelar',
     onConfirm: async () => {
-      if (kind === 'stock') {
-        await typesListStore.removeStockType(type.id)
-      } else {
-        await typesListStore.removeFundType(type.id)
-      }
-      toast.open({ message: 'Tipo removido.', type: 'is-success' })
+      await config.remove(type.id)
+      toast.open({ message: `${capitalize(config.noun)} removido.`, type: 'is-success' })
     },
   })
 }
@@ -113,46 +145,43 @@ function confirmRemoveType(type: AssetType) {
     <div class="page-head-row">
       <div>
         <h1 class="page-title">Tipos</h1>
-        <p class="page-desc">Gerencie os tipos de ação e de fundo usados no cadastro.</p>
+        <p class="page-desc">
+          Gerencie os tipos de ação, de fundo e os segmentos usados no cadastro.
+        </p>
       </div>
     </div>
 
     <div class="inv-controls">
       <div class="seg-tabs">
         <button
+          v-for="kind in KINDS"
+          :key="kind"
           class="seg-tab"
-          :class="{ active: activeKind === 'stock' }"
-          @click="activeKind = 'stock'"
+          :class="{ active: activeKind === kind }"
+          @click="activeKind = kind"
         >
-          Tipos de ação
-        </button>
-        <button
-          class="seg-tab"
-          :class="{ active: activeKind === 'fund' }"
-          @click="activeKind = 'fund'"
-        >
-          Tipos de fundo
+          {{ KIND_CONFIG[kind].label }}
         </button>
       </div>
 
       <div v-if="auth.isAdmin" class="inv-toolbar">
         <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
-          Novo tipo
+          {{ activeConfig.newLabel }}
         </b-button>
       </div>
     </div>
 
-    <p class="set-desc">{{ KIND_CONFIG[activeKind].description }}</p>
+    <p class="set-desc">{{ activeConfig.description }}</p>
 
     <EmptyState
       v-if="typesListStore.loaded && activeTypes.length === 0"
       icon="shape-outline"
-      title="Nenhum tipo ainda"
-      :text="KIND_CONFIG[activeKind].emptyText"
+      :title="activeConfig.emptyTitle"
+      :text="activeConfig.emptyText"
     >
       <template v-if="auth.isAdmin" #action>
         <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
-          Novo tipo
+          {{ activeConfig.newLabel }}
         </b-button>
       </template>
     </EmptyState>
@@ -183,7 +212,7 @@ function confirmRemoveType(type: AssetType) {
                     />
                     <b-tooltip
                       v-if="type.usageCount > 0"
-                      label="Não é possível remover: tipo em uso"
+                      :label="`Não é possível remover: ${activeConfig.noun} em uso`"
                       position="is-left"
                     >
                       <b-button outlined type="is-danger" size="is-small" icon-left="delete" disabled />

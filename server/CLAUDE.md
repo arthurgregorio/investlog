@@ -154,9 +154,15 @@ In detail:
 - `profile` — `GET`/`PATCH /private/v1/profile`, `PATCH /private/v1/profile/password`, following
   the flat `<feature>/<Controller>.kt` + `services/` + `rest/payloads/` layout every feature
   package uses (no `domain/` layer, no `rest/controllers/` subfolder — dropped repo-wide).
-- `typelists` — `GET`/`POST`/`DELETE /private/v1/stock-types` and `.../fund-types`, paginated,
-  sharing one pair of payloads (`TypeResponse`/`TypeCreateRequest`) since both resources are
-  `{id, name}`. Extends the `profile` layout with a `repositories/` folder.
+- `typelists` — `GET`/`POST`/`PUT`/`DELETE /private/v1/stock-types`, `.../fund-types` and
+  `.../stock-segments`, paginated, sharing one set of payloads (`TypeResponse`/`TypeCreateRequest`/
+  `TypeUpdateRequest`) since all three resources are `{id, name}`. Extends the `profile` layout
+  with a `repositories/` folder. A stock segment (#343) is optional on a stock holding: set on
+  create through `stockSegmentId`, changed or cleared through `PUT
+  /wallets/{walletId}/stock-holdings/{holdingId}/segment` (the holding `PATCH` treats `null` as
+  "keep", so it cannot clear it), and exposed as `segment_label` in both holdings views, where
+  `holdings_report_rows` aggregates it with `MAX` rather than grouping by it so same-ticker rows
+  still merge.
 - `currencyrates` — `GET`/`PUT /private/v1/currency-rates`, addressed by `currencyCode` (not
   `external_id`); `PUT` upserts and, when `isBase: true`, clears the previous base row in the
   same transaction. Owns `CurrencyCode` (`currencyrates/rest/payloads/CurrencyCode.kt`) — the
