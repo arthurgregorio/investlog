@@ -5,6 +5,7 @@ import AddPositionModal from '@/components/investments/AddPositionModal.vue'
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import WithdrawModal from '@/components/investments/WithdrawModal.vue'
 import ReinvestModal from '@/components/investments/ReinvestModal.vue'
+import SetSegmentModal from '@/components/investments/SetSegmentModal.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import FrozenBadge from '@/components/ui/FrozenBadge.vue'
@@ -36,6 +37,7 @@ const showUpdatePriceModal = ref(false)
 const showWithdrawModal = ref(false)
 const showReinvestModal = ref(false)
 const showMoveModal = ref(false)
+const showSetSegmentModal = ref(false)
 
 const isFund = computed(() => props.row.kind === 'FUNDS')
 const isStock = computed(() => props.row.kind === 'STOCKS')
@@ -43,6 +45,10 @@ const isFrozen = computed(() => props.row.frozen)
 
 const fundDetail = computed(() =>
   isFund.value && detail.value ? (detail.value as FundHoldingDetail) : null,
+)
+
+const stockDetail = computed(() =>
+  isStock.value && detail.value ? (detail.value as StockHoldingDetail) : null,
 )
 
 const currentAmount = computed<number | null>(() => {
@@ -256,17 +262,26 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
   <div class="detail">
     <b-loading :is-full-page="false" :model-value="loading" />
 
-    <div v-if="fundDetail" class="fund-fees" data-testid="fund-fees">
-      <div class="fund-fee">
-        <span class="fund-fee-label">Taxa de administração (% a.a.)</span>
-        <span class="fund-fee-value" data-testid="administration-fee-rate">{{
+    <div v-if="fundDetail" class="detail-facts" data-testid="fund-fees">
+      <div class="detail-fact">
+        <span class="detail-fact-label">Taxa de administração (% a.a.)</span>
+        <span class="detail-fact-value" data-testid="administration-fee-rate">{{
           formatFeeRate(fundDetail.administrationFeeRate)
         }}</span>
       </div>
-      <div class="fund-fee">
-        <span class="fund-fee-label">Taxa de performance (%)</span>
-        <span class="fund-fee-value" data-testid="performance-fee-rate">{{
+      <div class="detail-fact">
+        <span class="detail-fact-label">Taxa de performance (%)</span>
+        <span class="detail-fact-value" data-testid="performance-fee-rate">{{
           formatFeeRate(fundDetail.performanceFeeRate)
+        }}</span>
+      </div>
+    </div>
+
+    <div v-if="stockDetail" class="detail-facts">
+      <div class="detail-fact">
+        <span class="detail-fact-label">Segmento</span>
+        <span class="detail-fact-value" data-testid="stock-segment">{{
+          stockDetail.stockSegmentName ?? 'Sem segmento'
         }}</span>
       </div>
     </div>
@@ -300,6 +315,14 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           <b-dropdown-item aria-role="listitem" @click="showUpdatePriceModal = true">
             <b-icon icon="pencil" size="is-small" />
             {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
+          </b-dropdown-item>
+          <b-dropdown-item
+            v-if="isStock"
+            aria-role="listitem"
+            data-testid="holding-set-segment"
+            @click="showSetSegmentModal = true"
+          >
+            <b-icon icon="tag-outline" size="is-small" /> Definir segmento
           </b-dropdown-item>
           <b-dropdown-item aria-role="listitem" @click="showWithdrawModal = true">
             <b-icon icon="cash-minus" size="is-small" /> Resgatar
@@ -477,6 +500,15 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
       :initial-performance-fee-rate="fundDetail?.performanceFeeRate ?? null"
       @updated="onPriceUpdated"
       @close="showUpdatePriceModal = false"
+    />
+
+    <SetSegmentModal
+      v-if="showSetSegmentModal"
+      :holding-id="row.id"
+      :wallet-id="row.walletId"
+      :initial-segment-id="stockDetail?.stockSegmentId ?? null"
+      @updated="onPriceUpdated"
+      @close="showSetSegmentModal = false"
     />
 
     <WithdrawModal

@@ -27,6 +27,7 @@ function buildForm(overrides: Partial<AddInvestmentFormState> = {}): AddInvestme
     kind: 'STOCKS',
     walletId: 'wallet-1',
     stockTypeId: '',
+    stockSegmentId: '',
     fundTypeId: '',
     ticker: '',
     name: '',
@@ -74,6 +75,10 @@ describe('AddInvestmentForm', () => {
             { id: 'fund-type-1', name: 'Renda Fixa', usageCount: 0 },
             { id: 'fund-type-2', name: 'Multimercado', usageCount: 0 },
           ],
+          stockSegments: [
+            { id: 'segment-1', name: 'Energia', usageCount: 0 },
+            { id: 'segment-2', name: 'Tecnologia', usageCount: 0 },
+          ],
         },
       },
     })
@@ -103,6 +108,7 @@ describe('AddInvestmentForm', () => {
         'Tipo de investimento',
         'Carteira',
         'Tipo',
+        'Segmento (opcional)',
         'Ticker',
         'Nome (opcional)',
         'Data da aquisição',
@@ -114,6 +120,23 @@ describe('AddInvestmentForm', () => {
       expect(optionLabels).toContain('Ação')
       expect(optionLabels).toContain('FII')
       expect(optionLabels).not.toContain('Renda Fixa')
+    })
+
+    it('offers the optional segment, defaulting to none, and writes the choice back', async () => {
+      const form = buildForm()
+      const wrapper = mountForm(form)
+
+      const segmentSelect = wrapper.find('select[data-testid="stock-segment-select"]')
+      expect(segmentSelect.findAll('option').map((option) => option.text())).toEqual([
+        'Sem segmento',
+        'Energia',
+        'Tecnologia',
+      ])
+      expect((segmentSelect.element as HTMLSelectElement).value).toBe('')
+
+      await segmentSelect.setValue('segment-2')
+
+      expect(form.stockSegmentId).toBe('segment-2')
     })
 
     it('writes the typed quantity, price and current price back to the form as numbers', async () => {

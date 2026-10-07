@@ -11,6 +11,7 @@ interface AddInvestmentFormState {
   kind: InvestmentKind
   walletId: string
   stockTypeId: string
+  stockSegmentId: string
   fundTypeId: string
   ticker: string
   name: string
@@ -39,6 +40,7 @@ export function useAddInvestmentForm(
     kind: initialKind ?? 'STOCKS',
     walletId: '' as string,
     stockTypeId: '' as string,
+    stockSegmentId: '' as string,
     fundTypeId: '' as string,
     ticker: '',
     name: '',
@@ -96,6 +98,15 @@ export function useAddInvestmentForm(
   )
 
   watch(
+    () => typesListStore.stockSegments,
+    (segments) => {
+      if (!segments.some((segment) => segment.id === form.stockSegmentId)) {
+        form.stockSegmentId = ''
+      }
+    },
+  )
+
+  watch(
     () => typesListStore.fundTypes,
     (types) => {
       if (!form.fundTypeId || !types.some((type) => type.id === form.fundTypeId)) {
@@ -114,6 +125,7 @@ export function useAddInvestmentForm(
       if (form.kind === 'STOCKS') {
         await holdingsApi.createStockHolding(form.walletId, {
           stockTypeId: form.stockTypeId,
+          stockSegmentId: form.stockSegmentId || undefined,
           ticker: form.ticker.trim().toUpperCase(),
           name: form.name.trim() || undefined,
           currentPrice: currentPriceNum,

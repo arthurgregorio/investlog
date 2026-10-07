@@ -33,6 +33,7 @@ export interface HoldingRow {
   name: string
   ticker: string | null
   typeLabel: string | null
+  segmentLabel: string | null
   walletId: string
   walletName: string
   walletCurrency: string
@@ -113,6 +114,8 @@ export interface StockHoldingDetail {
   id: string
   walletId: string
   stockTypeId: string
+  stockSegmentId: string | null
+  stockSegmentName: string | null
   ticker: string
   name: string
   currentPrice: number | null

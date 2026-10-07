@@ -430,7 +430,11 @@ function confirmDeleteWallet() {
 
       <Card class="mb-0" data-testid="allocation-card">
         <CardBody>
-          <AllocationDonut :rows="allocationRows" :currency="detail.currency" />
+          <AllocationDonut
+            :rows="allocationRows"
+            :currency="detail.currency"
+            :groupable="detail.kind === 'STOCKS'"
+          />
         </CardBody>
       </Card>
 

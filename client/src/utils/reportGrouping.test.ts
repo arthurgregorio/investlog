@@ -9,6 +9,7 @@ function holdingRow(overrides: Partial<HoldingRow>): HoldingRow {
     name: 'Petrobras',
     ticker: 'PETR4',
     typeLabel: 'Ação',
+    segmentLabel: null,
     walletId: 'wallet-1',
     walletName: 'Corretora A',
     walletCurrency: 'BRL',

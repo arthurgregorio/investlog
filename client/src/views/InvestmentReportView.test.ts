@@ -21,6 +21,7 @@ function holdingOf(overrides: Partial<HoldingRow>): HoldingRow {
     name: 'Petrobras',
     ticker: 'PETR4',
     typeLabel: 'Ordinária',
+    segmentLabel: null,
     walletId: 'wallet-1',
     walletName: 'Ações BR',
     walletCurrency: 'BRL',

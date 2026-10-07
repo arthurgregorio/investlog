@@ -12,6 +12,7 @@ const makeRow = (id: string, kind: 'STOCKS' | 'CRYPTO' | 'FUNDS' = 'STOCKS'): Ho
   name: 'Test Holding',
   ticker: 'TEST3',
   typeLabel: 'Ação',
+  segmentLabel: null,
   walletId: 'wallet-1',
   walletName: 'Test Wallet',
   walletCurrency: 'BRL',

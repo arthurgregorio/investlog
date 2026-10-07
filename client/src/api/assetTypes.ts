@@ -20,6 +20,24 @@ export const assetTypesApi = {
     return apiClient.delete(`/stock-types/${id}`).then(() => undefined)
   },
 
+  findAllStockSegments(): Promise<AssetType[]> {
+    return apiClient
+      .get<PagedResponse<AssetType>>('/stock-segments', { params: { size: 200 } })
+      .then((r) => r.data.content)
+  },
+
+  createStockSegment(name: string): Promise<AssetType> {
+    return apiClient.post<AssetType>('/stock-segments', { name }).then((r) => r.data)
+  },
+
+  updateStockSegment(id: string, name: string): Promise<AssetType> {
+    return apiClient.put<AssetType>(`/stock-segments/${id}`, { name }).then((r) => r.data)
+  },
+
+  removeStockSegment(id: string): Promise<void> {
+    return apiClient.delete(`/stock-segments/${id}`).then(() => undefined)
+  },
+
   findAllFundTypes(): Promise<AssetType[]> {
     return apiClient
       .get<PagedResponse<AssetType>>('/fund-types', { params: { size: 200 } })

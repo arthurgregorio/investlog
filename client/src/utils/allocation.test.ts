@@ -5,6 +5,8 @@ import {
   computeAllocation,
   OTHERS_LABEL,
   OTHERS_SHARE_CUTOFF,
+  SEGMENTLESS_KEY,
+  SEGMENTLESS_LABEL,
 } from './allocation'
 import type { HoldingRow } from '@/types'
 
@@ -15,6 +17,7 @@ function rowOf(overrides: Partial<HoldingRow>): HoldingRow {
     name: 'Petrobras',
     ticker: 'PETR4',
     typeLabel: 'Ação ON',
+    segmentLabel: null,
     walletId: 'wallet-1',
     walletName: 'Wallet',
     walletCurrency: 'BRL',
@@ -248,5 +251,61 @@ describe('computeAllocation', () => {
     ]
 
     expect(computeAllocation(rows, 'currentValue').topThreeShare).toBeCloseTo(90, 9)
+  })
+})
+
+describe('computeAllocation by segment', () => {
+  function bySegment(rows: HoldingRow[]) {
+    return computeAllocation(rows, 'currentValue', OTHERS_SHARE_CUTOFF, 'segment')
+  }
+
+  it('sums the holdings of each segment and buckets the unsegmented ones', () => {
+    const { entries, total, topThreeShare } = bySegment([
+      rowOf({ id: 'a', segmentLabel: 'Energia', currentValue: 300 }),
+      rowOf({ id: 'b', segmentLabel: 'Energia', currentValue: 200 }),
+      rowOf({ id: 'c', segmentLabel: 'Tecnologia', currentValue: 100 }),
+      rowOf({ id: 'd', segmentLabel: 'Bancos', currentValue: 150 }),
+      rowOf({ id: 'e', segmentLabel: null, currentValue: 250 }),
+    ])
+
+    expect(total).toBe(1000)
+    expect(entries.map((entry) => [entry.label, entry.value, entry.name])).toEqual([
+      ['Energia', 500, '2 investimentos'],
+      [SEGMENTLESS_LABEL, 250, '1 investimento'],
+      ['Bancos', 150, '1 investimento'],
+      ['Tecnologia', 100, '1 investimento'],
+    ])
+    expect(entries[1].key).toBe(SEGMENTLESS_KEY)
+    expect(sumOfShares(entries)).toBeCloseTo(100, 9)
+    expect(topThreeShare).toBeNull()
+  })
+
+  it('keeps a segment named like the bucket apart from the unsegmented holdings', () => {
+    const { entries } = bySegment([
+      rowOf({ id: 'a', segmentLabel: SEGMENTLESS_KEY, currentValue: 100 }),
+      rowOf({ id: 'b', segmentLabel: null, currentValue: 100 }),
+    ])
+
+    expect(entries).toHaveLength(2)
+  })
+
+  it('folds the small segments into Outros counted in segments', () => {
+    const { entries } = bySegment([
+      rowOf({ id: 'a', segmentLabel: 'Energia', currentValue: 960 }),
+      rowOf({ id: 'b', segmentLabel: 'Saúde', currentValue: 20 }),
+      rowOf({ id: 'c', segmentLabel: 'Varejo', currentValue: 20 }),
+    ])
+
+    expect(entries.map((entry) => entry.label)).toEqual(['Energia', OTHERS_LABEL])
+    expect(entries[1].name).toBe('2 segmentos')
+  })
+
+  it('names a single folded segment in the singular', () => {
+    const { entries } = bySegment([
+      rowOf({ id: 'a', segmentLabel: 'Energia', currentValue: 980 }),
+      rowOf({ id: 'b', segmentLabel: 'Saúde', currentValue: 20 }),
+    ])
+
+    expect(entries[1].name).toBe('1 segmento')
   })
 })
