@@ -9,6 +9,7 @@ class AttemptLockoutTracker(
     private val maxAttempts: Int,
     private val baseDuration: Duration,
     private val clock: Clock,
+    private val failureWindow: Duration? = null,
 ) {
 
     private val attemptStateByKey = ConcurrentHashMap<String, AttemptState>()
@@ -20,19 +21,26 @@ class AttemptLockoutTracker(
 
     fun recordFailure(key: String) {
 
+        val now = clock.instant()
+
         attemptStateByKey.compute(key) { _, existingState ->
-            val failureCount = (existingState?.failureCount ?: 0) + 1
+            val failureCount = (existingState.freshFailureCount(now)) + 1
 
             if (failureCount < maxAttempts) {
-                existingState?.copy(failureCount = failureCount)
-                    ?: AttemptState(failureCount = failureCount, lockoutCount = 0, lockedUntil = null)
+                AttemptState(
+                    failureCount = failureCount,
+                    lockoutCount = existingState?.lockoutCount ?: 0,
+                    lockedUntil = existingState?.lockedUntil,
+                    lastFailureAt = now,
+                )
             } else {
                 val lockoutCount = (existingState?.lockoutCount ?: 0) + 1
                 val backoffMultiplier = 1L shl (lockoutCount - 1).coerceAtMost(MAX_BACKOFF_EXPONENT)
                 AttemptState(
                     failureCount = 0,
                     lockoutCount = lockoutCount,
-                    lockedUntil = clock.instant().plus(baseDuration.multipliedBy(backoffMultiplier)),
+                    lockedUntil = now.plus(baseDuration.multipliedBy(backoffMultiplier)),
+                    lastFailureAt = now,
                 )
             }
         }
@@ -42,7 +50,22 @@ class AttemptLockoutTracker(
         attemptStateByKey.remove(key)
     }
 
-    private data class AttemptState(val failureCount: Int, val lockoutCount: Int, val lockedUntil: Instant?)
+    fun clearKeysStartingWith(prefix: String) {
+        attemptStateByKey.keys.removeIf { it.startsWith(prefix) }
+    }
+
+    private fun AttemptState?.freshFailureCount(now: Instant): Int {
+        if (this == null) return 0
+        val window = failureWindow ?: return failureCount
+        return if (Duration.between(lastFailureAt, now) > window) 0 else failureCount
+    }
+
+    private data class AttemptState(
+        val failureCount: Int,
+        val lockoutCount: Int,
+        val lockedUntil: Instant?,
+        val lastFailureAt: Instant,
+    )
 
     companion object {
         private const val MAX_BACKOFF_EXPONENT = 5

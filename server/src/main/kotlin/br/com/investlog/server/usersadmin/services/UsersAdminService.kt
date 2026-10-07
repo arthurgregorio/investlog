@@ -65,7 +65,7 @@ class UsersAdminService(
     @Transactional
     fun resetTotp(externalId: UUID): UserAdminResponse {
         val user = requireUser(externalId)
-        totpAttemptLimiter.recordSuccess(user.email!!)
+        totpAttemptLimiter.clearAllFor(user.email!!)
         return usersAdminRepository.resetTotp(user.id!!)
     }
 
@@ -88,7 +88,7 @@ class UsersAdminService(
 
         demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
 
-        loginAttemptLimiter.recordSuccess(user.email!!)
+        loginAttemptLimiter.clearAllFor(user.email!!)
 
         return usersAdminRepository.updatePasswordHash(user.id!!, passwordEncoder.encode(request.newPassword)!!)
     }

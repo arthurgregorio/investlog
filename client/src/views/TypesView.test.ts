@@ -5,6 +5,7 @@ import TypesView from './TypesView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTypesListStore } from '@/stores/typesList'
 import type { AssetType } from '@/types'
+import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
 vi.mock('@/api/assetTypes', () => ({ assetTypesApi: {} }))
 
@@ -198,6 +199,18 @@ describe('TypesView', () => {
 
     expect(typesListStore.removeStockType).toHaveBeenCalledWith('stock-type-1')
     expect(document.body.textContent).toContain('Tipo removido.')
+  })
+
+  it('shows a type name containing markup literally in the remove confirmation', async () => {
+    const markupName = '<img src=x onerror=alert(1)>'
+    const { wrapper, typesListStore } = await mountView()
+    typesListStore.stockTypes = [{ id: 'stock-type-3', name: markupName, usageCount: 0 }]
+    await flushPromises()
+
+    await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
+    await flushPromises()
+
+    expectDialogShowsLiterally(markupName)
   })
 
   it('removes a fund type through the fund action', async () => {

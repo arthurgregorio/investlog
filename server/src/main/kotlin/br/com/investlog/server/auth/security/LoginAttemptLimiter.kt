@@ -15,13 +15,15 @@ class LoginAttemptLimiter(investlogConfigurations: InvestlogConfigurations, cloc
         clock = clock,
     )
 
-    fun checkNotLocked(email: String) {
-        if (tracker.lockedUntil(email) != null) {
+    fun checkNotLocked(attemptKey: String) {
+        if (tracker.lockedUntil(attemptKey) != null) {
             throw TooManyLoginAttemptsException("Muitas tentativas de login inválidas, tente novamente mais tarde")
         }
     }
 
-    fun recordFailure(email: String) = tracker.recordFailure(email)
+    fun recordFailure(attemptKey: String) = tracker.recordFailure(attemptKey)
 
-    fun recordSuccess(email: String) = tracker.recordSuccess(email)
+    fun recordSuccess(attemptKey: String) = tracker.recordSuccess(attemptKey)
+
+    fun clearAllFor(email: String) = tracker.clearKeysStartingWith(AttemptKeys.prefixOf(email))
 }
