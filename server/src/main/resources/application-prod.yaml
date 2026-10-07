@@ -10,4 +10,4 @@ spring:
       validation-timeout: 5000
 
 server:
-  forward-headers-strategy: framework
+  forward-headers-strategy: native

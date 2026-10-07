@@ -352,6 +352,7 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   is the client's `link` step. `POST /auth/google/link` consumes that token with the account's
   password and funnels through `establishSession` like every other login path. The store is
   in-memory, so pending links do not survive a restart and do not work across instances.
+- **The `prod` and `railway` profiles use `server.forward-headers-strategy: native`, not `framework`** (issue #207). With `framework` the forwarded scheme is applied by a servlet filter inside the application, which is too late for Tomcat's own session cookie: `JSESSIONID` came out without `Secure` behind the proxy while `ResponseCookie.secure(servletRequest.isSecure)` (the trusted-device cookie) was already right. `native` makes Tomcat's `RemoteIpValve` apply `X-Forwarded-Proto` before anything reads the request, so both cookies are `Secure` exactly when the proxy reports https, and the compose stack on plain `http://localhost` still gets cookies without it. The valve only trusts the header from internal addresses, and its default covers Docker's bridge network and Railway's private IPv6 range, so no `internal-proxies` override is needed. `SecureCookiesTest` pins both cookies against a real server.
 - **Attempt limiting** — `LoginAttemptLimiter` and `TotpAttemptLimiter` wrap a shared
   `AttemptLockoutTracker` with escalating lockouts, configured under
   `investlog.security.login.*`. Both are keyed **per account** (email), not per IP; issue #209
