@@ -5,6 +5,7 @@ import TypesView from './TypesView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTypesListStore } from '@/stores/typesList'
 import type { AssetType } from '@/types'
+import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
 vi.mock('@/api/assetTypes', () => ({ assetTypesApi: {} }))
 
@@ -13,6 +14,10 @@ const stockTypes: AssetType[] = [
   { id: 'stock-type-2', name: 'Preferencial', usageCount: 3 },
 ]
 const fundTypes: AssetType[] = [{ id: 'fund-type-1', name: 'Multimercado', usageCount: 0 }]
+const stockSegments: AssetType[] = [
+  { id: 'segment-1', name: 'Energia', usageCount: 0 },
+  { id: 'segment-2', name: 'Tecnologia', usageCount: 2 },
+]
 
 let activeWrapper: VueWrapper | undefined
 
@@ -30,6 +35,7 @@ async function mountView(options: { isAdmin?: boolean; loaded?: boolean } = {}) 
   const typesListStore = useTypesListStore()
   typesListStore.stockTypes = stockTypes
   typesListStore.fundTypes = fundTypes
+  typesListStore.stockSegments = stockSegments
   typesListStore.loaded = loaded
   useAuthStore().session = {
     name: 'Admin',
@@ -195,6 +201,18 @@ describe('TypesView', () => {
     expect(document.body.textContent).toContain('Tipo removido.')
   })
 
+  it('shows a type name containing markup literally in the remove confirmation', async () => {
+    const markupName = '<img src=x onerror=alert(1)>'
+    const { wrapper, typesListStore } = await mountView()
+    typesListStore.stockTypes = [{ id: 'stock-type-3', name: markupName, usageCount: 0 }]
+    await flushPromises()
+
+    await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
+    await flushPromises()
+
+    expectDialogShowsLiterally(markupName)
+  })
+
   it('removes a fund type through the fund action', async () => {
     const { wrapper, typesListStore } = await mountView()
 
@@ -235,5 +253,68 @@ describe('TypesView', () => {
     typesListStore.loading = false
     await flushPromises()
     expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
+
+  describe('segments tab', () => {
+    function newSegmentButton(wrapper: VueWrapper) {
+      return wrapper.findAll('button').find((button) => button.text() === 'Novo segmento')!
+    }
+
+    async function openSegments() {
+      const mounted = await mountView()
+      await mounted.wrapper.findAll('.seg-tab')[2].trigger('click')
+      return mounted
+    }
+
+    it('is the third tab and lists the segments with their usage counts', async () => {
+      const { wrapper } = await openSegments()
+
+      expect(wrapper.findAll('.seg-tab').map((tab) => tab.text())).toEqual([
+        'Tipos de ação',
+        'Tipos de fundo',
+        'Segmentos',
+      ])
+      expect(tableNames(wrapper)).toEqual(['Energia', 'Tecnologia'])
+      expect(wrapper.findAll('tbody .c-num').map((cell) => cell.text())).toEqual(['0', '2'])
+      expect(wrapper.find('.set-desc').text()).toContain('Setores de atuação')
+    })
+
+    it('creates, renames and removes a segment through the segment actions', async () => {
+      const { wrapper, typesListStore } = await openSegments()
+
+      await newSegmentButton(wrapper).trigger('click')
+      await answerPrompt('Saúde', 'Criar')
+      expect(typesListStore.addStockSegment).toHaveBeenCalledWith('Saúde')
+      expect(typesListStore.addStockType).not.toHaveBeenCalled()
+      expect(document.body.textContent).toContain('Segmento criado.')
+
+      await wrapper.findAll('tbody tr')[0].find('button').trigger('click')
+      await answerPrompt('Energia elétrica', 'Salvar')
+      expect(typesListStore.updateStockSegment).toHaveBeenCalledWith(
+        'segment-1',
+        'Energia elétrica',
+      )
+
+      await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
+      await confirmDialog('Remover')
+      expect(typesListStore.removeStockSegment).toHaveBeenCalledWith('segment-1')
+      expect(document.body.textContent).toContain('Segmento removido.')
+    })
+
+    it('blocks removing a segment in use', async () => {
+      const { wrapper } = await openSegments()
+
+      const deleteButton = wrapper.findAll('tbody tr')[1].findAll('button')[1]
+      expect(deleteButton.attributes('disabled')).toBeDefined()
+    })
+
+    it('shows the segment empty state', async () => {
+      const { wrapper, typesListStore } = await openSegments()
+      typesListStore.stockSegments = []
+      await flushPromises()
+
+      expect(wrapper.find('.empty-title').text()).toBe('Nenhum segmento ainda')
+      expect(newSegmentButton(wrapper).exists()).toBe(true)
+    })
   })
 })

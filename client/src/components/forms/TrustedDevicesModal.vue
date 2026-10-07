@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import { useDialog, useToast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
 import { useTrustedDevicesStore } from '@/stores/trustedDevices'
+import { escapeHtml } from '@/utils/escapeHtml'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -22,7 +23,7 @@ function formatDateTime(iso: string): string {
 function confirmRevoke(id: string, label: string) {
   dialog.confirm({
     title: 'Revogar dispositivo confiável',
-    message: `Revogar <strong>${label}</strong>? Será necessário confirmar o código de autenticação no próximo login nesse dispositivo.`,
+    message: `Revogar <strong>${escapeHtml(label)}</strong>? Será necessário confirmar o código de autenticação no próximo login nesse dispositivo.`,
     type: 'is-danger',
     hasIcon: true,
     confirmText: 'Revogar',

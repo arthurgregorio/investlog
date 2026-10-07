@@ -11,6 +11,7 @@ import { useWalletsStore } from '@/stores/wallets'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { holdingsApi } from '@/api/holdings'
 import type { HoldingRow, WalletDetail, WalletMoveRow, WalletResponse } from '@/types'
+import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
 vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { findAll: vi.fn(), move: vi.fn() } }))
 vi.mock('@/api/reinvestments', () => ({
@@ -66,6 +67,7 @@ const mockRow: HoldingRow = {
   name: 'Petrobras',
   ticker: 'PETR4',
   typeLabel: 'Ação ON',
+  segmentLabel: null,
   walletId: 'wallet-1',
   walletName: 'Detail Wallet',
   walletCurrency: 'BRL',
@@ -168,6 +170,19 @@ describe('WalletDetailView', () => {
     await wrapper.find('[data-testid="allocation-metric-currentValue"]').trigger('click')
     expect(entries()[0]).toContain('BBBB3')
     expect(holdingsApi.findAllForReport).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers the by-segment grouping on a stock wallet only', async () => {
+    vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([mockRow])
+    const groupingControl =
+      '[data-testid="allocation-card"] [data-testid="allocation-grouping-segment"]'
+
+    const stockWallet = await mountView(detailOf())
+    expect(stockWallet.wrapper.find(groupingControl).exists()).toBe(true)
+    stockWallet.wrapper.unmount()
+
+    const cryptoWallet = await mountView(detailOf({ kind: 'CRYPTO' }))
+    expect(cryptoWallet.wrapper.find(groupingControl).exists()).toBe(false)
   })
 
   it('shows the allocation empty state for a wallet with no holdings', async () => {
@@ -485,6 +500,16 @@ describe('WalletDetailView', () => {
       'Remover',
     ])
     expect(wrapper.findAll('button').some((button) => button.text() === 'Mover')).toBe(false)
+  })
+
+  it('shows a wallet name containing markup literally in the remove confirmation', async () => {
+    const markupName = '<img src=x onerror=alert(1)>'
+    const { wrapper } = await mountView(detailOf({ name: markupName }))
+
+    await wrapper.find('[data-testid="wallet-remove"]').trigger('click')
+    await flushPromises()
+
+    expectDialogShowsLiterally(markupName)
   })
 
   it('hides the remove action from a non-admin', async () => {

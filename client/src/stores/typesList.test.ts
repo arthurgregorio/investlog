@@ -13,16 +13,22 @@ vi.mock('@/api/assetTypes', () => ({
     createFundType: vi.fn(),
     updateFundType: vi.fn(),
     removeFundType: vi.fn(),
+    findAllStockSegments: vi.fn(),
+    createStockSegment: vi.fn(),
+    updateStockSegment: vi.fn(),
+    removeStockSegment: vi.fn(),
   },
 }))
 
 const stockType = { id: 'stock-1', name: 'Ação Ordinária', usageCount: 3 }
 const fundType = { id: 'fund-1', name: 'Renda Fixa', usageCount: 0 }
+const stockSegment = { id: 'segment-1', name: 'Tecnologia', usageCount: 2 }
 
 describe('typesList store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    vi.mocked(assetTypesApi.findAllStockSegments).mockResolvedValue([])
   })
 
   it('loads stock and fund types', async () => {
@@ -34,6 +40,45 @@ describe('typesList store', () => {
 
     expect(store.stockTypes).toEqual([stockType])
     expect(store.fundTypes).toEqual([fundType])
+  })
+
+  it('loads the stock segments with the types', async () => {
+    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
+    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])
+    vi.mocked(assetTypesApi.findAllStockSegments).mockResolvedValue([stockSegment])
+
+    const store = useTypesListStore()
+    await store.load()
+
+    expect(store.stockSegments).toEqual([stockSegment])
+  })
+
+  it('addStockSegment, updateStockSegment and removeStockSegment keep the list in step', async () => {
+    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
+    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])
+    vi.mocked(assetTypesApi.findAllStockSegments).mockResolvedValue([stockSegment])
+    const created = { id: 'segment-2', name: 'Energia', usageCount: 0 }
+    const renamed = { ...stockSegment, name: 'Tecnologia da Informação' }
+    vi.mocked(assetTypesApi.createStockSegment).mockResolvedValue(created)
+    vi.mocked(assetTypesApi.updateStockSegment).mockResolvedValue(renamed)
+    vi.mocked(assetTypesApi.removeStockSegment).mockResolvedValue(undefined)
+
+    const store = useTypesListStore()
+    await store.load()
+
+    expect(await store.addStockSegment('Energia')).toEqual(created)
+    expect(store.stockSegments).toEqual([stockSegment, created])
+
+    await store.updateStockSegment(stockSegment.id, 'Tecnologia da Informação')
+    expect(assetTypesApi.updateStockSegment).toHaveBeenCalledWith(
+      stockSegment.id,
+      'Tecnologia da Informação',
+    )
+    expect(store.stockSegments).toEqual([renamed, created])
+
+    await store.removeStockSegment(created.id)
+    expect(assetTypesApi.removeStockSegment).toHaveBeenCalledWith(created.id)
+    expect(store.stockSegments).toEqual([renamed])
   })
 
   it('load fetches only once until refresh is called', async () => {

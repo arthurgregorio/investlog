@@ -18,6 +18,7 @@ import { useHoldingsListStore } from '@/stores/holdingsList'
 import { holdingsApi } from '@/api/holdings'
 import { walletsApi } from '@/api/wallets'
 import { useWalletsStore } from '@/stores/wallets'
+import { escapeHtml } from '@/utils/escapeHtml'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useWalletMovesStore } from '@/stores/walletMoves'
 import { fmt } from '@/composables/useFormat'
@@ -201,7 +202,7 @@ function confirmDeleteWallet() {
   if (!currentDetail) return
   dialog.confirm({
     title: 'Remover carteira',
-    message: `Remover <strong>${currentDetail.name}</strong> apagará todos os seus investimentos. Esta ação <strong>não pode ser desfeita</strong>.`,
+    message: `Remover <strong>${escapeHtml(currentDetail.name)}</strong> apagará todos os seus investimentos. Esta ação <strong>não pode ser desfeita</strong>.`,
     type: 'is-danger',
     hasIcon: true,
     confirmText: 'Remover',
@@ -430,7 +431,11 @@ function confirmDeleteWallet() {
 
       <Card class="mb-0" data-testid="allocation-card">
         <CardBody>
-          <AllocationDonut :rows="allocationRows" :currency="detail.currency" />
+          <AllocationDonut
+            :rows="allocationRows"
+            :currency="detail.currency"
+            :groupable="detail.kind === 'STOCKS'"
+          />
         </CardBody>
       </Card>
 

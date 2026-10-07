@@ -9,6 +9,7 @@ data class HoldingRowResponse(
     val name: String,
     val ticker: String?,
     val typeLabel: String?,
+    val segmentLabel: String?,
     val walletId: UUID,
     val walletName: String,
     val walletCurrency: String,

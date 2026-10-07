@@ -6,6 +6,7 @@ import type { AssetType } from '@/types'
 export const useTypesListStore = defineStore('typesList', () => {
   const stockTypes = ref<AssetType[]>([])
   const fundTypes = ref<AssetType[]>([])
+  const stockSegments = ref<AssetType[]>([])
   const loaded = ref(false)
   const loading = ref(false)
 
@@ -13,12 +14,14 @@ export const useTypesListStore = defineStore('typesList', () => {
     if (loaded.value) return
     loading.value = true
     try {
-      const [stockTypesData, fundTypesData] = await Promise.all([
+      const [stockTypesData, fundTypesData, stockSegmentsData] = await Promise.all([
         assetTypesApi.findAllStockTypes(),
         assetTypesApi.findAllFundTypes(),
+        assetTypesApi.findAllStockSegments(),
       ])
       stockTypes.value = stockTypesData
       fundTypes.value = fundTypesData
+      stockSegments.value = stockSegmentsData
       loaded.value = true
     } finally {
       loading.value = false
@@ -64,9 +67,29 @@ export const useTypesListStore = defineStore('typesList', () => {
     fundTypes.value = fundTypes.value.filter((type) => type.id !== id)
   }
 
+  async function addStockSegment(name: string): Promise<AssetType> {
+    const created = await assetTypesApi.createStockSegment(name)
+    stockSegments.value = [...stockSegments.value, created]
+    return created
+  }
+
+  async function updateStockSegment(id: string, name: string): Promise<AssetType> {
+    const updated = await assetTypesApi.updateStockSegment(id, name)
+    stockSegments.value = stockSegments.value.map((segment) =>
+      segment.id === id ? updated : segment,
+    )
+    return updated
+  }
+
+  async function removeStockSegment(id: string): Promise<void> {
+    await assetTypesApi.removeStockSegment(id)
+    stockSegments.value = stockSegments.value.filter((segment) => segment.id !== id)
+  }
+
   return {
     stockTypes,
     fundTypes,
+    stockSegments,
     loaded,
     loading,
     load,
@@ -77,5 +100,8 @@ export const useTypesListStore = defineStore('typesList', () => {
     addFundType,
     updateFundType,
     removeFundType,
+    addStockSegment,
+    updateStockSegment,
+    removeStockSegment,
   }
 })

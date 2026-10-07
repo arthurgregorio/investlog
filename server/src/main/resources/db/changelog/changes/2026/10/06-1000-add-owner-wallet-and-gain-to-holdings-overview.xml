@@ -11,7 +11,9 @@
             consumer has to join finances.wallets or recompute gain in Kotlin (issue #241).
             CREATE OR REPLACE VIEW only accepts columns appended at the end of the list, so
             user_id, wallet_external_id, wallet_name, wallet_currency, gain and gain_pct trail
-            frozen, which keeps holdings_report_rows alive without dropping it. gain_pct rounds the
+            frozen and segment_label, which keeps holdings_report_rows alive without dropping it.
+            This changelog runs after 06-1000-create-stock-segments, so segment_label keeps the
+            position that one gave it. gain_pct rounds the
             ratio to ten places before scaling by 100, exactly as the Kotlin it replaces did, so
             every payload keeps the same digits. The report view recomputes both from its own sums
             rather than averaging the rows underneath.
@@ -32,6 +34,7 @@
                 holdings.cost_basis,
                 holdings.current_value,
                 holdings.frozen,
+                holdings.segment_label,
                 holdings.user_id,
                 holdings.wallet_external_id,
                 holdings.wallet_name,
@@ -70,18 +73,20 @@
                         )
                     ) AS current_value,
                     stock_holdings.frozen,
+                    stock_segments.name AS segment_label,
                     wallets.user_id,
                     wallets.external_id AS wallet_external_id,
                     wallets.name AS wallet_name,
                     wallets.currency AS wallet_currency
                 FROM finances.stock_holdings
                 JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+                LEFT JOIN finances.stock_segments ON stock_segments.id = stock_holdings.stock_segment_id
                 JOIN finances.stock_types ON stock_types.id = stock_holdings.stock_type_id
                 LEFT JOIN finances.stock_lots ON stock_lots.stock_holding_id = stock_holdings.id
                 GROUP BY stock_holdings.id, stock_holdings.external_id, stock_holdings.wallet_id,
                          stock_holdings.status, stock_holdings.name, stock_holdings.ticker,
                          stock_types.name, stock_holdings.current_price, stock_holdings.frozen,
-                         wallets.id
+                         wallets.id, stock_segments.name
 
                 UNION ALL
 
@@ -113,6 +118,7 @@
                         )
                     ) AS current_value,
                     crypto_holdings.frozen,
+                    NULL::TEXT AS segment_label,
                     wallets.user_id,
                     wallets.external_id AS wallet_external_id,
                     wallets.name AS wallet_name,
@@ -145,6 +151,7 @@
                     ) AS cost_basis,
                     fund_holdings.current_value,
                     fund_holdings.frozen,
+                    NULL::TEXT AS segment_label,
                     wallets.user_id,
                     wallets.external_id AS wallet_external_id,
                     wallets.name AS wallet_name,
@@ -176,6 +183,7 @@
                 SUM(cost_basis) AS cost_basis,
                 SUM(current_value) AS current_value,
                 bool_or(frozen) AS frozen,
+                MAX(segment_label) AS segment_label,
                 user_id,
                 wallet_external_id,
                 wallet_name,
@@ -223,13 +231,16 @@
                             WHERE results.stock_holding_id = stock_holdings.id
                         )
                     ) AS current_value,
-                    stock_holdings.frozen
+                    stock_holdings.frozen,
+                    stock_segments.name AS segment_label
                 FROM finances.stock_holdings
                 JOIN finances.stock_types ON stock_types.id = stock_holdings.stock_type_id
+                LEFT JOIN finances.stock_segments ON stock_segments.id = stock_holdings.stock_segment_id
                 LEFT JOIN finances.stock_lots ON stock_lots.stock_holding_id = stock_holdings.id
                 GROUP BY stock_holdings.id, stock_holdings.external_id, stock_holdings.wallet_id,
                          stock_holdings.status, stock_holdings.name, stock_holdings.ticker,
-                         stock_types.name, stock_holdings.current_price, stock_holdings.frozen
+                         stock_types.name, stock_holdings.current_price, stock_holdings.frozen,
+                         stock_segments.name
 
                 UNION ALL
 
@@ -260,7 +271,8 @@
                             WHERE results.crypto_holding_id = crypto_holdings.id
                         )
                     ) AS current_value,
-                    crypto_holdings.frozen
+                    crypto_holdings.frozen,
+                    NULL::TEXT AS segment_label
                 FROM finances.crypto_holdings
                 LEFT JOIN finances.crypto_lots ON crypto_lots.crypto_holding_id = crypto_holdings.id
                 GROUP BY crypto_holdings.id, crypto_holdings.external_id, crypto_holdings.wallet_id,
@@ -286,7 +298,8 @@
                         WHERE results.fund_holding_id = fund_holdings.id
                     ) AS cost_basis,
                     fund_holdings.current_value,
-                    fund_holdings.frozen
+                    fund_holdings.frozen,
+                    NULL::TEXT AS segment_label
                 FROM finances.fund_holdings
                 JOIN finances.fund_types ON fund_types.id = fund_holdings.fund_type_id
                 LEFT JOIN finances.fund_contributions ON fund_contributions.fund_holding_id = fund_holdings.id
@@ -310,7 +323,8 @@
                     SUM(quantity) AS quantity,
                     SUM(cost_basis) AS cost_basis,
                     SUM(current_value) AS current_value,
-                    bool_or(frozen) AS frozen
+                    bool_or(frozen) AS frozen,
+                    MAX(segment_label) AS segment_label
                 FROM finances.holdings_overview
                 WHERE status = 'ACTIVE'
                 GROUP BY wallet_id, kind, name, ticker, type_label;

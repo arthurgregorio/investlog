@@ -8,7 +8,9 @@ import {
   chartColor,
   computeAllocation,
   OTHERS_SHARE_CUTOFF,
+  SEGMENTLESS_KEY,
   TOP_POSITIONS_COUNT,
+  type AllocationGrouping,
   type AllocationMetric,
 } from '@/utils/allocation'
 import type { HoldingRow } from '@/types'
@@ -18,27 +20,42 @@ const RING_THICKNESS = 38
 const SEGMENT_SPACING = 2
 const OTHERS_COLOR = 'var(--text-muted)'
 
-const props = defineProps<{ rows: HoldingRow[]; currency: string }>()
+const props = defineProps<{ rows: HoldingRow[]; currency: string; groupable?: boolean }>()
 
 const METRIC_OPTIONS: { value: AllocationMetric; label: string; testId: string }[] = [
   { value: 'currentValue', label: 'Valor atual', testId: 'allocation-metric-currentValue' },
   { value: 'costBasis', label: 'Investido', testId: 'allocation-metric-costBasis' },
 ]
 
+const GROUPING_OPTIONS: { value: AllocationGrouping; label: string; testId: string }[] = [
+  { value: 'holding', label: 'Por ativo', testId: 'allocation-grouping-holding' },
+  { value: 'segment', label: 'Por segmento', testId: 'allocation-grouping-segment' },
+]
+
 const activeMetric = ref<AllocationMetric>('currentValue')
+const activeGrouping = ref<AllocationGrouping>('holding')
+
+const groupingBySegment = computed(() => props.groupable && activeGrouping.value === 'segment')
 
 const activeMetricLabel = computed(
   () => METRIC_OPTIONS.find((option) => option.value === activeMetric.value)?.label ?? '',
 )
 
-const allocation = computed(() => computeAllocation(props.rows, activeMetric.value))
+const allocation = computed(() =>
+  computeAllocation(
+    props.rows,
+    activeMetric.value,
+    OTHERS_SHARE_CUTOFF,
+    groupingBySegment.value ? 'segment' : 'holding',
+  ),
+)
 
 const coloredEntries = computed(() => {
   const entries = allocation.value.entries
   const largestShare = Math.max(...entries.map((entry) => entry.share))
   return entries.map((entry, index) => ({
     ...entry,
-    color: entry.isOthers ? OTHERS_COLOR : chartColor(index),
+    color: entry.isOthers || entry.key === SEGMENTLESS_KEY ? OTHERS_COLOR : chartColor(index),
     relativeShare: (entry.share / largestShare) * 100,
   }))
 })
@@ -64,7 +81,8 @@ const concentrationNote = computed(() => {
     )
   }
   if (allocation.value.entries.some((entry) => entry.isOthers)) {
-    notes.push(`“Outros” reúne os investimentos abaixo de ${OTHERS_SHARE_CUTOFF}%.`)
+    const grouped = groupingBySegment.value ? 'os segmentos' : 'os investimentos'
+    notes.push(`“Outros” reúne ${grouped} abaixo de ${OTHERS_SHARE_CUTOFF}%.`)
   }
   return notes.join(' ')
 })
@@ -85,14 +103,23 @@ const exclusionNote = computed(() => {
     >
       <div>
         <div class="chart-title">Distribuição</div>
-        <div class="wd-chart-sub">Participação de cada investimento na carteira</div>
+        <div class="wd-chart-sub">
+          Participação de cada {{ groupingBySegment ? 'segmento' : 'investimento' }} na carteira
+        </div>
       </div>
-      <SegmentedControl
-        v-if="rows.length > 0"
-        v-model="activeMetric"
-        :options="METRIC_OPTIONS"
-        group-label="Métrica da distribuição"
-      />
+      <div v-if="rows.length > 0" class="is-flex is-flex-wrap-wrap is-gap-2">
+        <SegmentedControl
+          v-if="groupable"
+          v-model="activeGrouping"
+          :options="GROUPING_OPTIONS"
+          group-label="Agrupar por"
+        />
+        <SegmentedControl
+          v-model="activeMetric"
+          :options="METRIC_OPTIONS"
+          group-label="Métrica da distribuição"
+        />
+      </div>
     </div>
 
     <EmptyState

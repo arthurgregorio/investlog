@@ -67,6 +67,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             overview.FROZEN,
             overview.GAIN,
             overview.GAIN_PCT,
+            overview.SEGMENT_LABEL,
         )
             .from(overview)
             .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
@@ -80,6 +81,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     name = record.get(overview.NAME)!!,
                     ticker = record.get(overview.TICKER),
                     typeLabel = record.get(overview.TYPE_LABEL),
+                    segmentLabel = record.get(overview.SEGMENT_LABEL),
                     walletId = record.get(overview.WALLET_EXTERNAL_ID)!!,
                     walletName = record.get(overview.WALLET_NAME)!!,
                     walletCurrency = record.get(overview.WALLET_CURRENCY)!!,
@@ -137,6 +139,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             reportRows.FROZEN,
             reportRows.GAIN,
             reportRows.GAIN_PCT,
+            reportRows.SEGMENT_LABEL,
         )
             .from(reportRows)
             .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
@@ -148,6 +151,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     name = record.get(reportRows.NAME)!!,
                     ticker = record.get(reportRows.TICKER),
                     typeLabel = record.get(reportRows.TYPE_LABEL),
+                    segmentLabel = record.get(reportRows.SEGMENT_LABEL),
                     walletId = record.get(reportRows.WALLET_EXTERNAL_ID)!!,
                     walletName = record.get(reportRows.WALLET_NAME)!!,
                     walletCurrency = record.get(reportRows.WALLET_CURRENCY)!!,
