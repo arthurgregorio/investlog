@@ -22,7 +22,8 @@ DELETE FROM finances.wallet_moves;
 DELETE FROM finances.wallets;
 
 -- 2. Global type lists (finances.stock_types/fund_types have carried no user_id since
---    24-1200-make-settings-global.xml) — safe now that no holding references them.
+--    24-1200-make-settings-global.xml) and the stock segments — safe now that no holding references them.
+DELETE FROM finances.stock_segments;
 DELETE FROM finances.stock_types;
 DELETE FROM finances.fund_types;
 

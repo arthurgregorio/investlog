@@ -5,7 +5,7 @@ BEGIN
     END IF;
 END $$;
 
-INSERT INTO finances.stock_types (name) VALUES
+INSERT INTO finances.stock_segments (name) VALUES
     ('Tecnologia da Informação'),
     ('Serviços de Comunicação'),
     ('Consumo Discricionário'),
@@ -16,7 +16,21 @@ INSERT INTO finances.stock_types (name) VALUES
     ('Energia'),
     ('Materiais'),
     ('Imobiliário'),
-    ('Utilidade Pública');
+    ('Utilidade Pública'),
+    ('Logística'),
+    ('Recebíveis'),
+    ('Shoppings'),
+    ('Imóveis Comerciais'),
+    ('Índice Brasil'),
+    ('Índice EUA'),
+    ('Índice Nasdaq-100');
+
+INSERT INTO finances.stock_types (name) VALUES
+    ('Ações'),
+    ('FII'),
+    ('REIT'),
+    ('ETF'),
+    ('BDR');
 
 INSERT INTO finances.fund_types (name) VALUES
     ('Ações'),
@@ -35,33 +49,43 @@ CROSS JOIN (VALUES
 ) AS v(name, kind, currency)
 WHERE u.email = 'admin@admin.com';
 
-INSERT INTO finances.stock_holdings (wallet_id, stock_type_id, ticker, name, current_price)
-SELECT w.id, st.id, v.ticker, v.name, v.current_price
+INSERT INTO finances.stock_holdings (wallet_id, stock_type_id, stock_segment_id, ticker, name, current_price)
+SELECT w.id, st.id, sg.id, v.ticker, v.name, v.current_price
 FROM (VALUES
-    ('Ações Brasil', 'Energia', 'PETR4', 'Petrobras PN', 49.12),
-    ('Ações Brasil', 'Materiais', 'VALE3', 'Vale ON', 69.91),
-    ('Ações Brasil', 'Financeiro', 'ITUB4', 'Itaú Unibanco PN', 44.28),
-    ('Ações Brasil', 'Financeiro', 'BBDC4', 'Bradesco PN', 18.51),
-    ('Ações Brasil', 'Financeiro', 'BBAS3', 'Banco do Brasil ON', 23.07),
-    ('Ações Brasil', 'Financeiro', 'B3SA3', 'B3 ON', 18.34),
-    ('Ações Brasil', 'Industrial', 'WEGE3', 'WEG ON', 49.46),
-    ('Ações Brasil', 'Consumo Básico', 'ABEV3', 'Ambev ON', 15.36),
-    ('Ações Brasil', 'Materiais', 'SUZB3', 'Suzano ON', 44.20),
-    ('Ações Brasil', 'Utilidade Pública', 'SBSP3', 'Sabesp ON', 27.43),
-    ('Ações EUA', 'Tecnologia da Informação', 'NVDA', 'NVIDIA', 227.21),
-    ('Ações EUA', 'Tecnologia da Informação', 'AAPL', 'Apple', 329.40),
-    ('Ações EUA', 'Serviços de Comunicação', 'GOOGL', 'Alphabet', 337.32),
-    ('Ações EUA', 'Tecnologia da Informação', 'MSFT', 'Microsoft', 508.96),
-    ('Ações EUA', 'Consumo Discricionário', 'AMZN', 'Amazon', 246.67),
-    ('Ações EUA', 'Serviços de Comunicação', 'META', 'Meta Platforms', 738.79),
-    ('Ações EUA', 'Tecnologia da Informação', 'AVGO', 'Broadcom', 355.10),
-    ('Ações EUA', 'Consumo Discricionário', 'TSLA', 'Tesla', 352.84),
-    ('Ações EUA', 'Financeiro', 'BRK.B', 'Berkshire Hathaway', 502.35),
-    ('Ações EUA', 'Financeiro', 'JPM', 'JPMorgan Chase', 334.98)
-) AS v(wallet_name, type_name, ticker, name, current_price)
+    ('Ações Brasil', 'Ações', 'Energia', 'PETR4', 'Petrobras PN', 49.12),
+    ('Ações Brasil', 'Ações', 'Materiais', 'VALE3', 'Vale ON', 69.91),
+    ('Ações Brasil', 'Ações', 'Financeiro', 'ITUB4', 'Itaú Unibanco PN', 44.28),
+    ('Ações Brasil', 'Ações', 'Financeiro', 'BBDC4', 'Bradesco PN', 18.51),
+    ('Ações Brasil', 'Ações', 'Financeiro', 'BBAS3', 'Banco do Brasil ON', 23.07),
+    ('Ações Brasil', 'Ações', 'Financeiro', 'B3SA3', 'B3 ON', 18.34),
+    ('Ações Brasil', 'Ações', 'Industrial', 'WEGE3', 'WEG ON', 49.46),
+    ('Ações Brasil', 'Ações', 'Consumo Básico', 'ABEV3', 'Ambev ON', 15.36),
+    ('Ações Brasil', 'Ações', 'Materiais', 'SUZB3', 'Suzano ON', 44.20),
+    ('Ações Brasil', 'Ações', 'Utilidade Pública', 'SBSP3', 'Sabesp ON', 27.43),
+    ('Ações EUA', 'Ações', 'Tecnologia da Informação', 'NVDA', 'NVIDIA', 227.21),
+    ('Ações EUA', 'Ações', 'Tecnologia da Informação', 'AAPL', 'Apple', 329.40),
+    ('Ações EUA', 'Ações', 'Serviços de Comunicação', 'GOOGL', 'Alphabet', 337.32),
+    ('Ações EUA', 'Ações', 'Tecnologia da Informação', 'MSFT', 'Microsoft', 508.96),
+    ('Ações EUA', 'Ações', 'Consumo Discricionário', 'AMZN', 'Amazon', 246.67),
+    ('Ações EUA', 'Ações', 'Serviços de Comunicação', 'META', 'Meta Platforms', 738.79),
+    ('Ações EUA', 'Ações', 'Tecnologia da Informação', 'AVGO', 'Broadcom', 355.10),
+    ('Ações EUA', 'Ações', 'Consumo Discricionário', 'TSLA', 'Tesla', 352.84),
+    ('Ações EUA', 'Ações', 'Financeiro', 'BRK.B', 'Berkshire Hathaway', 502.35),
+    ('Ações EUA', 'Ações', 'Financeiro', 'JPM', 'JPMorgan Chase', 334.98),
+    ('Ações Brasil', 'FII', 'Logística', 'HGLG11', 'CSHG Logística FII', 154.00),
+    ('Ações Brasil', 'FII', 'Recebíveis', 'MXRF11', 'Maxi Renda FII', 9.36),
+    ('Ações Brasil', 'FII', 'Shoppings', 'XPML11', 'XP Malls FII', 105.49),
+    ('Ações Brasil', 'ETF', 'Índice Brasil', 'BOVA11', 'iShares Ibovespa ETF', 202.50),
+    ('Ações Brasil', 'BDR', 'Tecnologia da Informação', 'AAPL34', 'Apple BDR', 83.20),
+    ('Ações EUA', 'REIT', 'Imóveis Comerciais', 'O', 'Realty Income', 54.30),
+    ('Ações EUA', 'REIT', 'Logística', 'PLD', 'Prologis', 129.84),
+    ('Ações EUA', 'ETF', 'Índice EUA', 'VOO', 'Vanguard S&P 500 ETF', 700.86),
+    ('Ações EUA', 'ETF', 'Índice Nasdaq-100', 'QQQ', 'Invesco QQQ Trust', 739.77)
+) AS v(wallet_name, type_name, segment_name, ticker, name, current_price)
 JOIN finances.wallets w ON w.name = v.wallet_name
     AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
-JOIN finances.stock_types st ON st.name = v.type_name;
+JOIN finances.stock_types st ON st.name = v.type_name
+JOIN finances.stock_segments sg ON sg.name = v.segment_name;
 
 INSERT INTO finances.stock_lots (stock_holding_id, lot_date, quantity, price)
 SELECT sh.id, v.lot_date, v.quantity, v.price
@@ -116,7 +140,31 @@ FROM (VALUES
     ('BRK.B', DATE '2025-10-29', 8, 497.40),
     ('JPM', DATE '2025-03-27', 15, 235.60),
     ('JPM', DATE '2026-01-28', 10, 318.20),
-    ('JPM', DATE '2026-07-22', 8, 329.10)
+    ('JPM', DATE '2026-07-22', 8, 329.10),
+    ('HGLG11', DATE '2025-03-06', 20, 156.80),
+    ('HGLG11', DATE '2025-09-11', 15, 157.20),
+    ('HGLG11', DATE '2026-05-21', 10, 151.40),
+    ('MXRF11', DATE '2025-02-20', 300, 9.85),
+    ('MXRF11', DATE '2025-08-13', 400, 9.30),
+    ('MXRF11', DATE '2026-03-05', 250, 9.55),
+    ('XPML11', DATE '2025-04-17', 40, 99.60),
+    ('XPML11', DATE '2025-12-11', 30, 107.40),
+    ('BOVA11', DATE '2025-05-28', 40, 137.20),
+    ('BOVA11', DATE '2025-11-19', 30, 156.40),
+    ('BOVA11', DATE '2026-04-28', 20, 181.90),
+    ('AAPL34', DATE '2025-06-25', 100, 60.40),
+    ('AAPL34', DATE '2026-01-14', 80, 72.10),
+    ('O', DATE '2025-03-12', 40, 56.10),
+    ('O', DATE '2025-09-17', 30, 57.80),
+    ('O', DATE '2026-04-01', 25, 55.20),
+    ('PLD', DATE '2025-05-14', 15, 103.50),
+    ('PLD', DATE '2026-02-18', 12, 126.80),
+    ('VOO', DATE '2025-01-23', 6, 550.40),
+    ('VOO', DATE '2025-07-16', 5, 574.20),
+    ('VOO', DATE '2026-03-31', 4, 641.30),
+    ('QQQ', DATE '2025-02-12', 8, 530.40),
+    ('QQQ', DATE '2025-10-02', 5, 600.90),
+    ('QQQ', DATE '2026-05-06', 4, 699.10)
 ) AS v(ticker, lot_date, quantity, price)
 JOIN finances.stock_holdings sh ON sh.ticker = v.ticker
 JOIN finances.wallets w ON w.id = sh.wallet_id
