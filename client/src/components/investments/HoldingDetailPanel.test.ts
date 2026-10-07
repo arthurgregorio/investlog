@@ -587,27 +587,13 @@ describe('HoldingDetailPanel', () => {
 
   describe('stock segment', () => {
     it.each(kindCases)(
-      'shows the segment block and the Definir segmento action only for a stock, not for a $label holding',
+      'offers Definir segmento only for a stock, not for a $label holding',
       async ({ row, detail }) => {
-        const wrapper = await mountLoadedPanel(row, detail())
+        await mountLoadedPanel(row, detail())
 
-        expect(wrapper.find('[data-testid="stock-segment"]').exists()).toBe(row.kind === 'STOCKS')
         expect(actionLabels().includes('Definir segmento')).toBe(row.kind === 'STOCKS')
       },
     )
-
-    it('reads Sem segmento when the stock has none and the name when it has one', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
-      expect(wrapper.find('[data-testid="stock-segment"]').text()).toBe('Sem segmento')
-
-      activeWrapper?.unmount()
-      const segmented = await mountLoadedPanel(stockRow, {
-        ...stockDetailWithoutWithdrawals(),
-        stockSegmentId: 'segment-1',
-        stockSegmentName: 'Energia',
-      })
-      expect(segmented.find('[data-testid="stock-segment"]').text()).toBe('Energia')
-    })
 
     it('opens the segment modal preselected and reloads the detail after saving', async () => {
       vi.mocked(holdingsApi.updateStockHoldingSegment).mockResolvedValue(

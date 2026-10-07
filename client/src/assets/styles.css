@@ -1438,26 +1438,26 @@ a {
   color: var(--primary-d);
 }
 
-.detail-facts {
+.fund-fees {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 28px;
   margin: 4px 2px 12px;
 }
 
-.detail-fact {
+.fund-fee {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.detail-fact-label {
+.fund-fee-label {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
 }
 
-.detail-fact-value {
+.fund-fee-value {
   font-size: 14px;
   font-weight: 700;
 }
