@@ -346,7 +346,7 @@ function openReport() {
                   @toggle="toggleSort"
                   >Carteira</SortTh
                 >
-                <th class="c-num">Qtd.</th>
+                <th class="c-num has-text-right">Qtd.</th>
                 <SortTh
                   sort-key="price"
                   :active-key="sortKey"
@@ -386,7 +386,7 @@ function openReport() {
                   @click="toggleRow(row)"
                 >
                   <td>
-                    <div class="name-cell">
+                    <div class="is-flex is-align-items-center is-gap-1.5">
                       <FrozenBadge v-if="row.frozen" />
                       <TickerBadge
                         v-else
@@ -394,7 +394,7 @@ function openReport() {
                         :color="badgeColor(row.ticker, row.kind)"
                       />
                       <div class="name-meta">
-                        <div class="name-line">
+                        <div class="is-flex is-align-items-center is-gap-1">
                           <span class="t-ticker">{{ displayName(row) }}</span>
                           <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
                             subLabel(row)
@@ -415,8 +415,10 @@ function openReport() {
                       {{ row.walletName }}
                     </span>
                   </td>
-                  <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
+                    {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
+                  </td>
+                  <td class="c-num has-text-right">
                     <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
                       {{
                         fmt.money(
@@ -444,8 +446,8 @@ function openReport() {
                       }}
                     </div>
                   </td>
-                  <td class="c-num">
-                    <div class="cell-strong">
+                  <td class="c-num has-text-right">
+                    <div class="has-text-weight-bold">
                       {{
                         fmt.money(
                           currencyStore.convert(row.costBasis, row.walletCurrency),
@@ -454,7 +456,7 @@ function openReport() {
                       }}
                     </div>
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <span v-if="row.currentValue == null" class="gl-empty">—</span>
                     <template v-else>
                       {{
@@ -465,7 +467,7 @@ function openReport() {
                       }}
                     </template>
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <GainChip
                       :value="
                         row.gain == null

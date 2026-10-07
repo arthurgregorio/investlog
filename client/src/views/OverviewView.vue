@@ -108,7 +108,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
         <h1 class="page-title">Visão geral</h1>
         <p class="page-desc">Uma visão consolidada dos seus investimentos</p>
       </div>
-      <div class="head-actions">
+      <div class="is-flex is-gap-1">
         <b-button
           type="is-primary"
           class="has-text-light"
@@ -176,7 +176,9 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           <div class="cell is-col-span-2">
             <Card class="chart-card">
               <CardBody>
-                <div class="card-title-row">
+                <div
+                  class="is-flex is-align-items-flex-start is-justify-content-space-between is-gap-1.5 mb-3"
+                >
                   <div>
                     <div class="chart-title">Evolução dos aportes</div>
                     <div class="sub-caption">Capital investido acumulado · {{ baseCurrency }}</div>
@@ -201,7 +203,11 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           <div class="cell">
             <Card class="alloc-card">
               <CardBody>
-                <div class="card-title-row"><div class="chart-title">Alocação por tipo</div></div>
+                <div
+                  class="is-flex is-align-items-flex-start is-justify-content-space-between is-gap-1.5 mb-3"
+                >
+                  <div class="chart-title">Alocação por tipo</div>
+                </div>
                 <div class="alloc-body">
                   <DonutChart :segments="segments" :size="156" :thickness="22">
                     <div class="donut-center-label">Investido</div>
@@ -238,7 +244,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           <div v-for="typeRow in typeRows" :key="typeRow.key" class="cell">
             <Card class="type-card" @click="gotoType(typeRow.key)">
               <CardBody>
-                <div class="type-card-head">
+                <div class="is-flex is-align-items-center is-gap-1 mb-3">
                   <span class="type-ic" :style="{ background: typeRow.accent }">
                     <b-icon :icon="iconFor(typeRow.key)" />
                   </span>

@@ -316,7 +316,10 @@ describe('OverviewView', () => {
   it('navigates to the wallets page from the Carteiras button', async () => {
     const { wrapper, router } = await mountView({ summary: null })
 
-    await wrapper.find('.head-actions button').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Carteiras')!
+      .trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('wallets')

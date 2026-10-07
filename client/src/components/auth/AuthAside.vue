@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import LogoMark from '@/components/icons/LogoMark.vue'
+
+const DECORATION_BAR_HEIGHTS = [34, 52, 46, 68, 60, 84, 76, 100]
 </script>
 
 <template>
@@ -23,11 +25,10 @@ import LogoMark from '@/components/icons/LogoMark.vue'
       <li><span class="ap-dot" />Histórico completo de cada aporte</li>
     </ul>
     <div class="auth-deco" aria-hidden="true">
-      <span style="height: 34%" /><span style="height: 52%" /> <span style="height: 46%" /><span
-        style="height: 68%"
-      />
-      <span style="height: 60%" /><span style="height: 84%" /> <span style="height: 76%" /><span
-        style="height: 100%"
+      <span
+        v-for="(barHeight, index) in DECORATION_BAR_HEIGHTS"
+        :key="index"
+        :style="{ height: `${barHeight}%` }"
       />
     </div>
   </aside>

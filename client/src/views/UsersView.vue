@@ -106,7 +106,7 @@ function confirmDeleteUser(id: string, name: string) {
           <div class="entity-head">
             <div class="entity-titles">
               <div class="entity-name">{{ user.name }}</div>
-              <div class="entity-tags">
+              <div class="is-flex is-align-items-center is-gap-1 mt-1">
                 <b-tag :type="user.role === 'ADMIN' ? 'is-primary' : 'is-dark'">
                   {{ user.role }}
                 </b-tag>
@@ -126,7 +126,7 @@ function confirmDeleteUser(id: string, name: string) {
             </div>
           </div>
           <div class="entity-foot">
-            <p class="set-desc" style="margin: 0">{{ user.email }}</p>
+            <p class="set-desc m-0">{{ user.email }}</p>
             <b-dropdown
               v-if="hasActions(user)"
               aria-role="list"

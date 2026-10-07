@@ -19,8 +19,7 @@ describe('FrozenBadge', () => {
     const wrapper = mount(FrozenBadge)
 
     expect(wrapper.classes()).toContain('ticker-badge')
-    expect(wrapper.attributes('style')).toContain('width: 36px')
-    expect(wrapper.attributes('style')).toContain('height: 36px')
+    expect(wrapper.classes()).toContain('frozen-badge')
   })
 
   it('renders a small bare icon without the square when compact', () => {

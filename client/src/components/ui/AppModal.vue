@@ -11,7 +11,7 @@ const emit = defineEmits<{ close: [] }>()
     :can-cancel="['escape', 'outside']"
     @close="emit('close')"
   >
-    <div class="modal-card" :style="wide ? { width: '600px' } : undefined">
+    <div class="modal-card" :class="{ 'is-wide': wide }">
       <header class="modal-card-head">
         <p class="modal-card-title">{{ title }}</p>
         <b-button icon-left="close" aria-label="Fechar" @click="emit('close')" />

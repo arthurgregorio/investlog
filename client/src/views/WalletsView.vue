@@ -81,12 +81,12 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
             </span>
             <div class="entity-titles">
               <div class="entity-name">{{ wallet.name }}</div>
-              <div class="entity-tags">
+              <div class="is-flex is-align-items-center is-gap-1 mt-1">
                 <b-tag :type="tagTypeFor[wallet.kind]">{{ WALLET_TYPES[wallet.kind].label }}</b-tag>
                 <span class="cur-chip">{{ wallet.currency }}</span>
               </div>
             </div>
-            <div style="display: flex; gap: 6px; margin-left: auto">
+            <div class="is-flex is-gap-1 ml-auto">
               <b-tooltip label="Detalhes" position="is-left">
                 <b-button
                   outlined

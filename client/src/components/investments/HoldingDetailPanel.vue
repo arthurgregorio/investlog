@@ -278,12 +278,12 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
     </div>
 
     <div v-if="detail" class="ledger-head">
-      <div class="ledger-head-info">
+      <div class="is-flex is-align-items-center is-gap-1">
         <span class="ledger-title">Movimentações</span>
         <span class="ledger-count">{{ ledgerRows.length }}</span>
         <FrozenBadge v-if="isFrozen" compact />
       </div>
-      <div class="ledger-actions">
+      <div class="is-flex is-align-items-center is-flex-wrap-wrap is-gap-1">
         <b-dropdown
           aria-role="list"
           position="is-bottom-left"
@@ -332,11 +332,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
           >
             <b-icon icon="swap-horizontal" size="is-small" /> Mover
           </b-dropdown-item>
-          <b-dropdown-item
-            aria-role="listitem"
-            data-testid="holding-freeze"
-            @click="toggleFrozen"
-          >
+          <b-dropdown-item aria-role="listitem" data-testid="holding-freeze" @click="toggleFrozen">
             <b-icon :icon="isFrozen ? 'snowflake-off' : 'snowflake'" size="is-small" />
             {{ isFrozen ? 'Descongelar' : 'Congelar' }}
           </b-dropdown-item>
@@ -392,10 +388,10 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             </template>
             <template v-else>{{ fmt.date(entry.date) }}</template>
           </td>
-          <td v-if="!isFund" class="c-num">
+          <td v-if="!isFund" class="c-num has-text-right">
             {{ entry.quantity == null ? '—' : signedQty(entry.quantity) }}
           </td>
-          <td v-if="!isFund" class="c-num">
+          <td v-if="!isFund" class="c-num has-text-right">
             <template v-if="entry.unitPrice != null">
               {{
                 fmt.money(
@@ -406,7 +402,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
-          <td class="c-num">
+          <td class="c-num has-text-right">
             <template v-if="entry.costs != null">
               {{
                 fmt.money(
@@ -433,7 +429,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
-          <td class="c-num">
+          <td class="c-num has-text-right">
             {{
               fmt.money(
                 currencyStore.convert(entry.amount, row.walletCurrency),
@@ -441,7 +437,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
               )
             }}
           </td>
-          <td class="c-num">
+          <td class="c-num has-text-right">
             <GainChip
               v-if="entry.profit != null"
               :value="currencyStore.convert(entry.profit, row.walletCurrency)"
@@ -449,7 +445,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             />
             <span v-else class="gl-empty">—</span>
           </td>
-          <td v-if="!isFund" class="c-num">
+          <td v-if="!isFund" class="c-num has-text-right">
             {{ entry.balance == null ? '—' : fmt.qty(entry.balance) }}
           </td>
           <td class="c-act">
