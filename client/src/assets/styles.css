@@ -23,6 +23,10 @@
   --radius-sm: 7px;
   --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ink: #0f172a;
+  --ticker-fallback: #5b6dd8;
+  --ticker-fallback-funds: #2a8f6f;
+  --withdrawal-soft: rgba(184, 134, 11, 0.14);
   --bulma-modal-content-width: 460px;
   --bulma-success-invert-l: 100%;
   --bulma-danger-invert-l: 100%;
@@ -84,6 +88,10 @@
   --chart-grid: #ecf0f5;
   --tag-bg: #f0f3f8;
   --wt-crypto-text: #b06f06;
+  --withdrawal-text: #9c7209;
+  --primary-text: var(--primary-d);
+  --nav-active-text: var(--primary-d);
+  --shadow-raised: 0 10px 40px rgba(15, 23, 42, 0.08);
 }
 
 [data-theme='dark'] {
@@ -103,6 +111,10 @@
   --wt-crypto: #f0a821;
   --wt-funds: #1fc093;
   --wt-crypto-text: var(--wt-crypto);
+  --withdrawal-text: #f0a821;
+  --primary-text: var(--primary);
+  --nav-active-text: #7fb3ec;
+  --shadow-raised: 0 12px 44px rgba(0, 0, 0, 0.32);
   --chart-1: #4a93de;
   --chart-2: #ff8a4c;
   --chart-3: #1fc093;
@@ -180,7 +192,7 @@ a {
   height: 32px;
   border-radius: 9px;
   background: var(--primary);
-  color: #fff;
+  color: var(--bulma-white);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -256,7 +268,7 @@ a {
 }
 
 .nav-item.active {
-  color: var(--primary-d);
+  color: var(--nav-active-text);
   font-weight: 600;
 }
 
@@ -313,10 +325,6 @@ a {
 .tn-sub {
   font-size: 11.5px;
   color: var(--text-muted);
-}
-
-[data-theme='dark'] .nav-item.active {
-  color: #7fb3ec;
 }
 
 .main {
@@ -410,7 +418,7 @@ a {
   border-radius: 10px;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--bulma-white);
   font-size: 13px;
   font-weight: 700;
   flex-shrink: 0;
@@ -687,7 +695,7 @@ a {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  color: #fff;
+  color: var(--bulma-white);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -919,7 +927,7 @@ a {
 
 .ticker-badge {
   border-radius: 9px;
-  color: #fff;
+  color: var(--bulma-white);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -1372,17 +1380,13 @@ a {
 }
 
 .lt-purchase {
-  background: rgba(21, 145, 91, 0.12);
+  background: var(--up-soft);
   color: var(--up);
 }
 
 .lt-withdrawal {
-  background: rgba(184, 134, 11, 0.14);
-  color: #9c7209;
-}
-
-[data-theme='dark'] .lt-withdrawal {
-  color: #f0a821;
+  background: var(--withdrawal-soft);
+  color: var(--withdrawal-text);
 }
 
 .ledger-costs-note {
@@ -1652,7 +1656,7 @@ a {
 }
 
 .accent-swatch .sw-check {
-  color: #fff;
+  color: var(--bulma-white);
   position: absolute;
 }
 
@@ -1822,7 +1826,7 @@ a {
 }
 
 .modal-background {
-  background-color: rgba(15, 23, 42, 0.42);
+  background-color: color-mix(in srgb, var(--ink) 42%, transparent);
   backdrop-filter: blur(2px);
 }
 
@@ -1830,7 +1834,7 @@ a {
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border);
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 20px 60px color-mix(in srgb, var(--ink) 25%, transparent);
 }
 
 .modal-card-head {
@@ -1891,7 +1895,7 @@ a {
 .b-radio.radio.button.is-selected {
   border-color: var(--primary);
   background-color: var(--primary-soft);
-  color: var(--primary-d);
+  color: var(--primary-text);
   box-shadow: none;
 }
 
@@ -1899,10 +1903,6 @@ a {
   border-color: var(--primary);
   background-color: var(--primary-soft);
   color: var(--primary-d);
-}
-
-[data-theme='dark'] .b-radio.radio.button.is-selected {
-  color: var(--primary);
 }
 
 .modal-card-body .media-content {
@@ -1929,7 +1929,7 @@ a {
   display: flex;
   flex-direction: column;
   padding: 44px 48px;
-  color: #fff;
+  color: var(--bulma-white);
   background: linear-gradient(160deg, var(--primary) 0%, var(--primary-d) 78%);
 }
 
@@ -1947,7 +1947,7 @@ a {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--bulma-white) 16%, transparent);
   display: grid;
   place-items: center;
   backdrop-filter: blur(4px);
@@ -1984,7 +1984,7 @@ a {
 .auth-tagline {
   font-size: 15px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.85);
+  color: color-mix(in srgb, var(--bulma-white) 85%, transparent);
   max-width: 380px;
   margin: 0;
 }
@@ -2005,7 +2005,7 @@ a {
   align-items: center;
   gap: 11px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--bulma-white) 90%, transparent);
   font-weight: 500;
 }
 
@@ -2013,9 +2013,9 @@ a {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--bulma-white);
   flex-shrink: 0;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bulma-white) 18%, transparent);
 }
 
 .auth-deco {
@@ -2033,7 +2033,7 @@ a {
 .auth-deco span {
   width: 22px;
   border-radius: 6px 6px 0 0;
-  background: #fff;
+  background: var(--bulma-white);
 }
 
 .auth-main {
@@ -2051,12 +2051,8 @@ a {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-raised);
   padding: 32px 30px;
-}
-
-[data-theme='dark'] .auth-card {
-  box-shadow: 0 12px 44px rgba(0, 0, 0, 0.32);
 }
 
 .auth-card-brand {
@@ -2139,10 +2135,10 @@ a {
   margin: 0 auto;
   padding: 14mm 12mm;
   position: relative;
-  background: #fff;
+  background: var(--surface);
   box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.08),
-    0 12px 32px rgba(15, 23, 42, 0.12);
+    0 1px 3px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 12px 32px color-mix(in srgb, var(--ink) 12%, transparent);
   border-radius: 3px;
   color: var(--text);
 }
@@ -2420,7 +2416,7 @@ h3.report-subgroup-title {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--bulma-white);
 }
 
 .wd-name-line {
