@@ -346,7 +346,7 @@ function openReport() {
                   @toggle="toggleSort"
                   >Carteira</SortTh
                 >
-                <th class="c-num">Qtd.</th>
+                <th class="c-num has-text-right">Qtd.</th>
                 <SortTh
                   sort-key="price"
                   :active-key="sortKey"
@@ -415,8 +415,10 @@ function openReport() {
                       {{ row.walletName }}
                     </span>
                   </td>
-                  <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
+                    {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
+                  </td>
+                  <td class="c-num has-text-right">
                     <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
                       {{
                         fmt.money(
@@ -444,7 +446,7 @@ function openReport() {
                       }}
                     </div>
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <div class="has-text-weight-bold">
                       {{
                         fmt.money(
@@ -454,7 +456,7 @@ function openReport() {
                       }}
                     </div>
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <span v-if="row.currentValue == null" class="gl-empty">—</span>
                     <template v-else>
                       {{
@@ -465,7 +467,7 @@ function openReport() {
                       }}
                     </template>
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <GainChip
                       :value="
                         row.gain == null

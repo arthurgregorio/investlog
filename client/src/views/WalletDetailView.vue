@@ -461,11 +461,11 @@ function confirmDeleteWallet() {
                   <thead>
                     <tr>
                       <th>Investimento</th>
-                      <th class="c-num">Qtd.</th>
-                      <th class="c-num">Preço atual</th>
-                      <th class="c-num">Investido</th>
-                      <th class="c-num">Valor atual</th>
-                      <th class="c-num">Resultado</th>
+                      <th class="c-num has-text-right">Qtd.</th>
+                      <th class="c-num has-text-right">Preço atual</th>
+                      <th class="c-num has-text-right">Investido</th>
+                      <th class="c-num has-text-right">Valor atual</th>
+                      <th class="c-num has-text-right">Resultado</th>
                       <th class="c-act"></th>
                     </tr>
                   </thead>
@@ -494,27 +494,27 @@ function confirmDeleteWallet() {
                             </div>
                           </div>
                         </td>
-                        <td class="c-num">
+                        <td class="c-num has-text-right">
                           {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
                         </td>
-                        <td class="c-num">
+                        <td class="c-num has-text-right">
                           <span v-if="row.currentPrice == null" class="gl-empty">—</span>
                           <template v-else>{{
                             fmt.money(row.currentPrice, row.walletCurrency)
                           }}</template>
                         </td>
-                        <td class="c-num">
+                        <td class="c-num has-text-right">
                           <div class="has-text-weight-bold">
                             {{ fmt.money(row.costBasis, row.walletCurrency) }}
                           </div>
                         </td>
-                        <td class="c-num">
+                        <td class="c-num has-text-right">
                           <span v-if="row.currentValue == null" class="gl-empty">—</span>
                           <template v-else>{{
                             fmt.money(row.currentValue, row.walletCurrency)
                           }}</template>
                         </td>
-                        <td class="c-num">
+                        <td class="c-num has-text-right">
                           <GainChip
                             :value="row.gain"
                             :pct="row.gainPct"
@@ -572,7 +572,7 @@ function confirmDeleteWallet() {
                         <th>Investimento</th>
                         <th>Direção</th>
                         <th>Carteira</th>
-                        <th class="c-num">Qtd.</th>
+                        <th class="c-num has-text-right">Qtd.</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -600,7 +600,7 @@ function confirmDeleteWallet() {
                           </span>
                         </td>
                         <td>{{ moveCounterpart(move) }}</td>
-                        <td class="c-num">
+                        <td class="c-num has-text-right">
                           {{ move.quantity == null ? 'Tudo' : fmt.qty(move.quantity) }}
                         </td>
                       </tr>

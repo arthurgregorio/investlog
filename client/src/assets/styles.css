@@ -1032,14 +1032,6 @@ a {
   white-space: nowrap;
 }
 
-.inv-table > thead > tr > th.c-num {
-  text-align: right !important;
-}
-
-.inv-table > tbody > tr > td.c-num {
-  text-align: right;
-}
-
 .inv-table > tbody > tr > td {
   padding: 13px 16px !important;
   border-bottom: 1px solid var(--border-2);
@@ -1221,11 +1213,6 @@ a {
   color: var(--text-muted);
   padding: 9px 12px !important;
   border-bottom: 1px solid var(--border-2) !important;
-}
-
-.sub-table th.c-num,
-.sub-table td.c-num {
-  text-align: right;
 }
 
 .sub-table td {
@@ -2252,11 +2239,6 @@ h3.report-subgroup-title {
   padding: 6px 8px;
   border-bottom: 1px solid var(--border-2);
   text-align: left;
-}
-
-.report-table th.c-num,
-.report-table td.c-num {
-  text-align: right !important;
 }
 
 .report-table thead th {

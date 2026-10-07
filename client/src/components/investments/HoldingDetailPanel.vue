@@ -388,10 +388,10 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             </template>
             <template v-else>{{ fmt.date(entry.date) }}</template>
           </td>
-          <td v-if="!isFund" class="c-num">
+          <td v-if="!isFund" class="c-num has-text-right">
             {{ entry.quantity == null ? '—' : signedQty(entry.quantity) }}
           </td>
-          <td v-if="!isFund" class="c-num">
+          <td v-if="!isFund" class="c-num has-text-right">
             <template v-if="entry.unitPrice != null">
               {{
                 fmt.money(
@@ -402,7 +402,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
-          <td class="c-num">
+          <td class="c-num has-text-right">
             <template v-if="entry.costs != null">
               {{
                 fmt.money(
@@ -429,7 +429,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             </template>
             <span v-else class="gl-empty">—</span>
           </td>
-          <td class="c-num">
+          <td class="c-num has-text-right">
             {{
               fmt.money(
                 currencyStore.convert(entry.amount, row.walletCurrency),
@@ -437,7 +437,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
               )
             }}
           </td>
-          <td class="c-num">
+          <td class="c-num has-text-right">
             <GainChip
               v-if="entry.profit != null"
               :value="currencyStore.convert(entry.profit, row.walletCurrency)"
@@ -445,7 +445,7 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
             />
             <span v-else class="gl-empty">—</span>
           </td>
-          <td v-if="!isFund" class="c-num">
+          <td v-if="!isFund" class="c-num has-text-right">
             {{ entry.balance == null ? '—' : fmt.qty(entry.balance) }}
           </td>
           <td class="c-act">

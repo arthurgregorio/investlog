@@ -193,14 +193,14 @@ function confirmRemoveType(type: AssetType) {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th class="c-num">Investimentos</th>
+                <th class="c-num has-text-right">Investimentos</th>
                 <th v-if="auth.isAdmin" class="c-act is-wide">Ações</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="type in activeTypes" :key="type.id">
                 <td class="has-text-weight-bold">{{ type.name }}</td>
-                <td class="c-num">{{ type.usageCount }}</td>
+                <td class="c-num has-text-right">{{ type.usageCount }}</td>
                 <td v-if="auth.isAdmin" class="c-act">
                   <div class="is-flex is-gap-1 is-justify-content-center">
                     <b-button
