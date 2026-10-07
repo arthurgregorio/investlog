@@ -1909,7 +1909,7 @@ a {
 .b-radio.radio.button.is-selected:hover {
   border-color: var(--primary);
   background-color: var(--primary-soft);
-  color: var(--primary-d);
+  color: var(--primary-text);
 }
 
 .modal-card-body .media-content {
