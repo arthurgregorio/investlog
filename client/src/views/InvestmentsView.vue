@@ -292,7 +292,7 @@ function openReport() {
         />
         <b-button
           type="is-primary"
-          class="has-text-light toolbar-add"
+          class="has-text-light"
           icon-left="plus"
           @click="openAddInvestment"
         >

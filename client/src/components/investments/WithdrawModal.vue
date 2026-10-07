@@ -34,7 +34,9 @@ const submitting = ref(false)
 const error = ref('')
 
 const grossAmount = computed(() =>
-  isFund.value ? Number(amount.value || 0) : Number(quantity.value || 0) * Number(unitPrice.value || 0),
+  isFund.value
+    ? Number(amount.value || 0)
+    : Number(quantity.value || 0) * Number(unitPrice.value || 0),
 )
 
 const valid = computed(() =>
@@ -125,7 +127,7 @@ async function submit() {
         <NumberInput v-model="taxes" :prefix="symbol" placeholder="0,00" min="0" />
       </b-field>
 
-      <p v-if="!isFund" class="withdraw-gross" style="grid-column: 1/-1">
+      <p v-if="!isFund" style="grid-column: 1/-1">
         Valor bruto:
         <strong>{{ fmt.money(grossAmount, walletCurrency) }}</strong>
       </p>

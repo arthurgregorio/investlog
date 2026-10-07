@@ -123,7 +123,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
       <div class="fixed-grid has-3-cols has-1-cols-mobile">
         <div class="grid">
           <div class="cell">
-            <Card class="kpi-card">
+            <Card data-testid="kpi">
               <CardBody>
                 <div class="kpi-label">Total investido</div>
                 <div class="kpi-value">
@@ -139,7 +139,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           </div>
 
           <div class="cell">
-            <Card class="kpi-card">
+            <Card data-testid="kpi">
               <CardBody>
                 <div class="kpi-label">Valor atual estimado</div>
                 <div class="kpi-value">
@@ -153,7 +153,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           </div>
 
           <div class="cell">
-            <Card class="kpi-card">
+            <Card data-testid="kpi">
               <CardBody>
                 <div class="kpi-label">Resultado</div>
                 <div class="kpi-value" :class="summary.totalGain >= 0 ? 'gl-up' : 'gl-down'">

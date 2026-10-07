@@ -62,7 +62,7 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
         <div class="fixed-grid has-4-cols has-1-cols-mobile">
           <div class="grid">
             <div class="cell">
-              <Card class="kpi-card">
+              <Card data-testid="kpi">
                 <CardBody>
                   <div class="kpi-label">Total resgatado</div>
                   <div class="kpi-value" data-testid="kpi-withdrawn">
@@ -76,7 +76,7 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
             </div>
 
             <div class="cell">
-              <Card class="kpi-card">
+              <Card data-testid="kpi">
                 <CardBody>
                   <div class="kpi-label">Lucro realizado</div>
                   <div
@@ -97,7 +97,7 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
             </div>
 
             <div class="cell">
-              <Card class="kpi-card">
+              <Card data-testid="kpi">
                 <CardBody>
                   <div class="kpi-label">Taxas pagas</div>
                   <div class="kpi-value" data-testid="kpi-fees">
@@ -111,7 +111,7 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
             </div>
 
             <div class="cell">
-              <Card class="kpi-card">
+              <Card data-testid="kpi">
                 <CardBody>
                   <div class="kpi-label">Impostos pagos</div>
                   <div class="kpi-value" data-testid="kpi-taxes">

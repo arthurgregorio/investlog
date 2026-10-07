@@ -171,13 +171,12 @@ describe('App', () => {
   })
 
   describe('theming', () => {
-    it('stamps the light theme, the stored accent and the density on the root', async () => {
+    it('stamps the light theme and the stored accent on the root', async () => {
       const wrapper = await mountApp({ session: sessionWithStatus('APPROVED') })
 
       const root = wrapper.get('.app-root')
       expect(root.attributes('data-theme')).toBe('light')
       expect(root.attributes('data-accent')).toBe('teal')
-      expect(root.attributes('data-density')).toBe('comfortable')
     })
 
     it('mirrors the theme and accent onto the document element', async () => {

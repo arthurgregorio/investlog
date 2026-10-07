@@ -257,19 +257,19 @@ function confirmDeleteWallet() {
             </div>
 
             <div class="wd-figures">
-              <div class="wd-figure">
+              <div>
                 <div class="kpi-label">Total investido</div>
                 <div class="wd-figure-value">
                   {{ fmt.money(detail.totalInvested, detail.currency) }}
                 </div>
               </div>
-              <div class="wd-figure">
+              <div>
                 <div class="kpi-label">Valor atual</div>
                 <div class="wd-figure-value">
                   {{ fmt.money(detail.currentValue, detail.currency) }}
                 </div>
               </div>
-              <div class="wd-figure">
+              <div>
                 <div class="kpi-label">Resultado</div>
                 <div class="wd-figure-value" :class="resultDirection">
                   {{ fmt.moneySigned(detail.gain, detail.currency) }}
@@ -576,7 +576,11 @@ function confirmDeleteWallet() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="move in walletMovesStore.rows" :key="move.id" data-testid="move-row">
+                      <tr
+                        v-for="move in walletMovesStore.rows"
+                        :key="move.id"
+                        data-testid="move-row"
+                      >
                         <td>{{ fmt.date(move.movedAt) }}</td>
                         <td>
                           <span class="t-ticker">{{ move.ticker ?? move.holdingName }}</span>
@@ -587,7 +591,9 @@ function confirmDeleteWallet() {
                             :class="move.direction === 'IN' ? 'is-in' : 'is-out'"
                           >
                             <b-icon
-                              :icon="move.direction === 'IN' ? 'arrow-bottom-left' : 'arrow-top-right'"
+                              :icon="
+                                move.direction === 'IN' ? 'arrow-bottom-left' : 'arrow-top-right'
+                              "
                               size="is-small"
                             />
                             {{ move.direction === 'IN' ? 'Entrada' : 'Saída' }}

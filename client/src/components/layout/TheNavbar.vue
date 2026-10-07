@@ -148,7 +148,7 @@ async function logout() {
 
         <hr class="dropdown-divider" />
 
-        <b-dropdown-item custom aria-role="menuitem" class="version-item">
+        <b-dropdown-item custom aria-role="menuitem">
           <div class="version-line">{{ versionLabel }}</div>
         </b-dropdown-item>
       </b-dropdown>

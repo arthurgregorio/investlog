@@ -106,7 +106,7 @@ async function mountView(options: {
 }
 
 function kpiCards(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('.kpi-card')
+  return wrapper.findAll('[data-testid="kpi"]')
 }
 
 function typeCard(wrapper: ReturnType<typeof mount>, label: string) {
@@ -129,7 +129,7 @@ describe('OverviewView', () => {
     const { wrapper } = await mountView({ summary: null })
 
     expect(wrapper.find('.page-title').text()).toBe('Visão geral')
-    expect(wrapper.find('.kpi-card').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="kpi"]').exists()).toBe(false)
     expect(wrapper.find('.type-card').exists()).toBe(false)
     expect(wrapper.find('.area-chart-stub').exists()).toBe(false)
   })
