@@ -182,7 +182,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 |---|---|
 | `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
-| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
+| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
@@ -315,5 +315,7 @@ existing access, not for handling new signups (those stay on approve/delete).
 - `useFormat` — pure pt-BR formatting helpers (money, signed money, percent, quantity, date).
 - `useAddInvestmentForm` — reactive form state/validation/submit for the add-investment modal;
   uses `walletsStore` + `typesListStore`; submits directly to the API.
+- `useReinvestForm` / `useMoveHoldingsForm` — form state, derived amounts, validation, `load()` and
+  `submit()` for `ReinvestModal` and `MoveHoldingsModal`; a server 400 lands in `error` inline.
 - `useChartTheme` — chart colors/options derived from the active theme and accent.
 - `useModals` — app-shell modal injection.
