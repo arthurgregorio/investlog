@@ -47,8 +47,11 @@ class AuthController(
         }
 
     @PostMapping("/totp/enroll")
-    fun enrollTotp(@RequestBody request: TotpEnrollRequest): ResponseEntity<TotpEnrollResponse> =
-        ResponseEntity.ok(authService.enrollTotp(request))
+    fun enrollTotp(
+        @RequestBody request: TotpEnrollRequest,
+        servletRequest: HttpServletRequest,
+    ): ResponseEntity<TotpEnrollResponse> =
+        ResponseEntity.ok(authService.enrollTotp(request, servletRequest))
 
     @PostMapping("/totp/verify")
     fun verifyTotp(
