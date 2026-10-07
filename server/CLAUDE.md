@@ -352,10 +352,27 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   is the client's `link` step. `POST /auth/google/link` consumes that token with the account's
   password and funnels through `establishSession` like every other login path. The store is
   in-memory, so pending links do not survive a restart and do not work across instances.
-- **Attempt limiting** — `LoginAttemptLimiter` and `TotpAttemptLimiter` wrap a shared
-  `AttemptLockoutTracker` with escalating lockouts, configured under
-  `investlog.security.login.*`. Both are keyed **per account** (email), not per IP; issue #209
-  tracks the resulting gaps (no IP-level limit, and targeted lockout as a DoS vector).
+- **The `prod` and `railway` profiles use `server.forward-headers-strategy: native`, not `framework`** (issue #207). With `framework` the forwarded scheme is applied by a servlet filter inside the application, which is too late for Tomcat's own session cookie: `JSESSIONID` came out without `Secure` behind the proxy while `ResponseCookie.secure(servletRequest.isSecure)` (the trusted-device cookie) was already right. `native` makes Tomcat's `RemoteIpValve` apply `X-Forwarded-Proto` before anything reads the request, so both cookies are `Secure` exactly when the proxy reports https, and the compose stack on plain `http://localhost` still gets cookies without it. The valve only trusts the header from internal addresses, and its default covers Docker's bridge network and Railway's private IPv6 range, so no `internal-proxies` override is needed. `SecureCookiesTest` pins both cookies against a real server.
+- **Attempt limiting** (issue #209) has two layers on one `AttemptLockoutTracker` with escalating
+  lockouts. `LoginAttemptLimiter` and `TotpAttemptLimiter` are keyed by **email and client address**
+  (`AttemptKeys.of`, `email|ip`), so an attacker can only lock their own address out of an account,
+  never the account's owner; the settings are `investlog.security.login.*` and `totp.*`. A
+  second, per-address limiter, `IpAttemptLimiter` (`investlog.security.ip-lockout.*`, default 20
+  failures inside a 15 minute `failure-window`), counts **every** failed login and failed TOTP
+  code, including attempts against unknown emails, which is what catches one password sprayed across
+  many accounts. It is never cleared by a success, otherwise an attacker could reset it with a login
+  to their own account, and its failures expire after the window because it is not tied to one
+  account. A locked address gets the same 429 `too_many_login_attempts` the per-account lockout
+  returns. The trade-off: a distributed attack on one account from many addresses is no longer slowed
+  by the per-account lockout, only by each address's own limit. An admin's TOTP or password reset
+  clears every key of that email (`clearAllFor`), whatever address it came from.
+- **`ClientIpResolver` decides which address that is.** It builds the chain `X-Forwarded-For` entries
+  plus `remoteAddr` and takes the entry `investlog.security.client-ip.trusted-proxy-count` positions
+  before the end: `0` by default (the compose stack, where nginx sees the client directly) and `1` on
+  the `railway` profile (the Railway edge in front of nginx). A count rather than an address list
+  is what keeps a forged leftmost `X-Forwarded-For` entry from being believed. This only works with
+  `forward-headers-strategy: native` (see above), which has already replaced `remoteAddr` with the last
+  untrusted hop and left the rest of the chain in the header.
 - Jackson 3 (Spring Boot 4): inject `tools.jackson.databind.json.JsonMapper`, not
   `tools.jackson.databind.ObjectMapper` — Spring auto-configures a `JsonMapper` bean as the
   concrete JSON mapper; `ObjectMapper` is now a more generic base type not meant for direct

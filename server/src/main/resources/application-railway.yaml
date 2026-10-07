@@ -11,7 +11,7 @@ spring:
 
 server:
   address: '::'
-  forward-headers-strategy: framework
+  forward-headers-strategy: native
 
 investlog:
   demo-mode:
@@ -20,3 +20,5 @@ investlog:
   security:
     totp:
       enabled: false
+    client-ip:
+      trusted-proxy-count: 1
