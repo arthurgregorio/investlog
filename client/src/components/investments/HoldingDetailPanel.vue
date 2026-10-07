@@ -262,26 +262,17 @@ async function savePurchaseDate(purchaseId: string, date: Date | null) {
   <div class="detail">
     <b-loading :is-full-page="false" :model-value="loading" />
 
-    <div v-if="fundDetail" class="detail-facts" data-testid="fund-fees">
-      <div class="detail-fact">
-        <span class="detail-fact-label">Taxa de administração (% a.a.)</span>
-        <span class="detail-fact-value" data-testid="administration-fee-rate">{{
+    <div v-if="fundDetail" class="fund-fees" data-testid="fund-fees">
+      <div class="fund-fee">
+        <span class="fund-fee-label">Taxa de administração (% a.a.)</span>
+        <span class="fund-fee-value" data-testid="administration-fee-rate">{{
           formatFeeRate(fundDetail.administrationFeeRate)
         }}</span>
       </div>
-      <div class="detail-fact">
-        <span class="detail-fact-label">Taxa de performance (%)</span>
-        <span class="detail-fact-value" data-testid="performance-fee-rate">{{
+      <div class="fund-fee">
+        <span class="fund-fee-label">Taxa de performance (%)</span>
+        <span class="fund-fee-value" data-testid="performance-fee-rate">{{
           formatFeeRate(fundDetail.performanceFeeRate)
-        }}</span>
-      </div>
-    </div>
-
-    <div v-if="stockDetail" class="detail-facts">
-      <div class="detail-fact">
-        <span class="detail-fact-label">Segmento</span>
-        <span class="detail-fact-value" data-testid="stock-segment">{{
-          stockDetail.stockSegmentName ?? 'Sem segmento'
         }}</span>
       </div>
     </div>
