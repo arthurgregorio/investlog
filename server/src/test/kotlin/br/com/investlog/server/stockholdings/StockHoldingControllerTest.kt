@@ -16,6 +16,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StockHoldingControllerTest : BaseIntegrationTest() {
@@ -364,4 +365,143 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .expectBody()
             .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
     }
+
+    @Test
+    @Order(21)
+    fun `creates a holding without a segment by default`() {
+        val holding = createHolding("SEGM3")
+
+        assertNull(holding.stockSegmentId)
+        assertNull(holding.stockSegmentName)
+    }
+
+    @Test
+    @Order(22)
+    fun `creates a holding with a segment`() {
+        val segment = createSegment("Energia")
+
+        val holding = restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "stockTypeId":"$stockTypeId",
+                  "stockSegmentId":"${segment.id}",
+                  "ticker":"TAEE11",
+                  "lot":{"lotDate":"2024-01-15","quantity":10,"price":35.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<StockHoldingResponse>()
+            .responseBody!!
+
+        assertEquals(segment.id, holding.stockSegmentId)
+        assertEquals("Energia", holding.stockSegmentName)
+    }
+
+    @Test
+    @Order(23)
+    fun `returns 404 with the segment id when creating a holding with an unknown segment`() {
+        val unknownSegmentId = UUID.randomUUID()
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "stockTypeId":"$stockTypeId",
+                  "stockSegmentId":"$unknownSegmentId",
+                  "ticker":"PETR4",
+                  "lot":{"lotDate":"2024-01-15","quantity":100,"price":35.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Segmento não encontrado: $unknownSegmentId")
+    }
+
+    @Test
+    @Order(24)
+    fun `sets, changes and clears the segment of a holding`() {
+        val holding = createHolding("WEGE3")
+        val industry = createSegment("Indústria")
+        val technology = createSegment("Tecnologia")
+
+        val withIndustry = updateSegment(holding.id, "\"${industry.id}\"")
+        assertEquals(industry.id, withIndustry.stockSegmentId)
+        assertEquals("Indústria", withIndustry.stockSegmentName)
+
+        val withTechnology = updateSegment(holding.id, "\"${technology.id}\"")
+        assertEquals(technology.id, withTechnology.stockSegmentId)
+        assertEquals("Tecnologia", withTechnology.stockSegmentName)
+
+        val cleared = updateSegment(holding.id, "null")
+        assertNull(cleared.stockSegmentId)
+        assertNull(cleared.stockSegmentName)
+
+        val fetched = restTestClient.get()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<StockHoldingResponse>()
+            .responseBody!!
+        assertNull(fetched.stockSegmentId)
+    }
+
+    @Test
+    @Order(25)
+    fun `returns 404 with the segment id when setting an unknown segment`() {
+        val holding = createHolding("ITSA4")
+        val unknownSegmentId = UUID.randomUUID()
+
+        restTestClient.put()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}/segment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"stockSegmentId":"$unknownSegmentId"}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Segmento não encontrado: $unknownSegmentId")
+    }
+
+    @Test
+    @Order(26)
+    fun `returns 404 with the holding id when setting the segment of an unknown holding`() {
+        val unknownHoldingId = UUID.randomUUID()
+
+        restTestClient.put()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId/segment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"stockSegmentId":null}""")
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
+    }
+
+    private fun createSegment(name: String): TypeResponse =
+        restTestClient.post()
+            .uri("/private/v1/stock-segments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"$name"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+
+    private fun updateSegment(holdingId: UUID, stockSegmentIdJson: String): StockHoldingResponse =
+        restTestClient.put()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId/segment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"stockSegmentId":$stockSegmentIdJson}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<StockHoldingResponse>()
+            .responseBody!!
 }

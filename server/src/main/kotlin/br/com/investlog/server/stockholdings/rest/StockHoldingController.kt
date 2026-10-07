@@ -6,6 +6,7 @@ import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
+import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingSegmentRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingUpdateRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -48,6 +50,14 @@ class StockHoldingController(private val service: StockHoldingService) {
         @Valid @RequestBody request: StockHoldingUpdateRequest,
     ): ResponseEntity<StockHoldingResponse> =
         ResponseEntity.ok(service.update(walletId, holdingId, request))
+
+    @PutMapping("/{holdingId}/segment")
+    fun updateSegment(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @RequestBody request: StockHoldingSegmentRequest,
+    ): ResponseEntity<StockHoldingResponse> =
+        ResponseEntity.ok(service.updateSegment(walletId, holdingId, request))
 
     @DeleteMapping("/{holdingId}")
     fun delete(@PathVariable walletId: UUID, @PathVariable holdingId: UUID): ResponseEntity<Void> {

@@ -71,6 +71,7 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
             name = position.get(overview.NAME)!!,
             ticker = position.get(overview.TICKER),
             typeId = findTypeId(kind, holdingId),
+            segmentId = findSegmentId(kind, holdingId),
             currentPrice = position.get(overview.CURRENT_PRICE),
             currentValue = position.get(overview.CURRENT_VALUE),
             quantity = position.get(overview.QUANTITY),
@@ -114,6 +115,7 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
         WalletKind.STOCKS -> dsl.insertInto(STOCK_HOLDINGS)
             .set(STOCK_HOLDINGS.WALLET_ID, walletInternalId)
             .set(STOCK_HOLDINGS.STOCK_TYPE_ID, holding.typeId)
+            .set(STOCK_HOLDINGS.STOCK_SEGMENT_ID, holding.segmentId)
             .set(STOCK_HOLDINGS.TICKER, holding.ticker)
             .set(STOCK_HOLDINGS.NAME, holding.name)
             .set(STOCK_HOLDINGS.CURRENT_PRICE, holding.currentPrice)
@@ -271,6 +273,14 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
 
         WalletKind.CRYPTO -> null
     }
+
+    private fun findSegmentId(kind: WalletKind, holdingId: Long): Long? =
+        if (kind == WalletKind.STOCKS) {
+            dsl.select(STOCK_HOLDINGS.STOCK_SEGMENT_ID)
+                .from(STOCK_HOLDINGS)
+                .where(STOCK_HOLDINGS.ID.eq(holdingId))
+                .fetchOne(STOCK_HOLDINGS.STOCK_SEGMENT_ID)
+        } else null
 
     private fun holdingColumnsOf(kind: WalletKind) = when (kind) {
         WalletKind.STOCKS -> HoldingColumns(

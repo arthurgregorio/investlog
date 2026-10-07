@@ -13,6 +13,7 @@ data class MovableHolding(
     val name: String,
     val ticker: String?,
     val typeId: Long?,
+    val segmentId: Long?,
     val currentPrice: BigDecimal?,
     val currentValue: BigDecimal?,
     val quantity: BigDecimal?,
