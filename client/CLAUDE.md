@@ -198,6 +198,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 | `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
 | `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect` |
+| `report/` | `InvestmentReportView`'s pieces — `ReportHeader`, `ReportTotalsLine` (the Investido / Atual / Resultado line in its `grand`, `kind` and `subgroup` variants) and `ReportWalletTable`, each with its report CSS scoped; the paper, page-break guides, kind and sub-group heads and every print rule stay in `styles.css` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
@@ -331,5 +332,6 @@ existing access, not for handling new signups (those stay on approve/delete).
   uses `walletsStore` + `typesListStore`; submits directly to the API.
 - `useReinvestForm` / `useMoveHoldingsForm` — form state, derived amounts, validation, `load()` and
   `submit()` for `ReinvestModal` and `MoveHoldingsModal`; a server 400 lands in `error` inline.
+- `useReportFilters` / `useReportPageBreaks` — the report's filters read from the route query, and the on-screen A4 page-break offsets kept current by a `ResizeObserver` on the paper.
 - `useChartTheme` — chart colors/options derived from the active theme and accent.
 - `useModals` — app-shell modal injection.

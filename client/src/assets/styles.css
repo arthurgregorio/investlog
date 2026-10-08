@@ -895,33 +895,6 @@ a {
   border-top: 1px solid var(--border);
 }
 
-.report-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-
-.report-table th,
-.report-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border-2);
-  text-align: left;
-}
-
-.report-table thead th {
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-.report-subtotal-row td {
-  font-weight: 700;
-  border-bottom: none;
-  border-top: 1px solid var(--border);
-}
-
 .inv-table {
   width: 100%;
   border-collapse: collapse;
@@ -1950,75 +1923,6 @@ a {
   border: 1px solid var(--border);
 }
 
-.report-header {
-  padding-bottom: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.report-header-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.report-brand {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.report-brand-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.report-brand-url {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-top: -5px;
-}
-
-.report-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 50px;
-}
-
-.report-title {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 0;
-  white-space: normal;
-}
-
-.report-meta {
-  font-size: 12.5px;
-  color: var(--text-muted);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  align-items: flex-end;
-  text-align: right;
-}
-
-.report-grand-total {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
 .report-kind-section {
   margin-top: 15px;
 }
@@ -2059,73 +1963,6 @@ h3.report-subgroup-title {
   color: var(--text-2);
   margin: 0;
   flex: 1;
-}
-
-/* report-kind-section and report-subgroup are deliberately NOT
-   break-inside: avoid — either can span several pages on its own (a
-   subgroup with more than one wallet especially), and forcing a big
-   block to stay together just pushes it entirely onto the next page,
-   leaving the previous one mostly blank. Only report-wallet-block (one
-   table, normally small enough to fit on one page) avoids splitting. */
-.report-wallet-block {
-  margin-bottom: 10px;
-  break-inside: avoid;
-}
-
-.report-wallet-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-  margin-top: 15px;
-}
-
-.report-subtotal-line {
-  display: flex;
-  gap: 20px;
-  justify-content: flex-end;
-}
-
-.report-figure {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  white-space: nowrap;
-}
-
-.report-figure-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-
-.report-figure-value,
-.report-figure .gl {
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.report-grand-total .report-figure {
-  gap: 1px;
-  white-space: normal;
-}
-
-.report-grand-total .report-figure-label {
-  font-size: 8px;
-  letter-spacing: 0.06em;
-}
-
-.report-subgroup-head .report-figure-label {
-  font-size: 9px;
-}
-
-.report-grand-total .report-figure-value,
-.report-grand-total .report-figure .gl,
-.report-subgroup-head .report-figure-value,
-.report-subgroup-head .report-figure .gl {
-  font-size: 12px;
 }
 
 .wd-breadcrumb {
