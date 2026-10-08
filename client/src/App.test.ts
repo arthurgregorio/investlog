@@ -211,7 +211,7 @@ describe('App', () => {
 
       expect(wrapper.find('.navbar-stub').exists()).toBe(true)
       expect(wrapper.find('.top-nav-stub').exists()).toBe(true)
-      expect(wrapper.find('.main .content .page-overview').exists()).toBe(true)
+      expect(wrapper.find('.main .app-content .page-overview').exists()).toBe(true)
     })
 
     it('renders only the routed page, with no chrome, when there is no session', async () => {

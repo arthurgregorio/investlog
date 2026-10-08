@@ -228,7 +228,7 @@ async function submit() {
           </div>
           <b-field
             v-if="takesQuantity(holding) && selected[holding.id] && !moveAll"
-            class="move-item-quantity"
+            class="move-item-quantity mb-0"
             :type="exceedsRemaining(holding) ? 'is-danger' : ''"
             :message="exceedsRemaining(holding) ? 'Maior que o disponível' : ''"
           >

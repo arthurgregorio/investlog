@@ -127,11 +127,13 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
 
 <template>
   <div class="page report-page">
-    <div class="is-flex is-align-items-center is-justify-content-space-between no-print">
-      <RouterLink to="/investments" class="back-link">
-        <b-icon icon="arrow-left" size="is-small" /> Voltar
-      </RouterLink>
-      <b-button type="is-primary" icon-left="printer" @click="print"> Imprimir </b-button>
+    <div class="no-print">
+      <div class="is-flex is-align-items-center is-justify-content-space-between">
+        <RouterLink to="/investments" class="back-link">
+          <b-icon icon="arrow-left" size="is-small" /> Voltar
+        </RouterLink>
+        <b-button type="is-primary" icon-left="printer" @click="print"> Imprimir </b-button>
+      </div>
     </div>
 
     <b-loading :is-full-page="false" :model-value="loading" />

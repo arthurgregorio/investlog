@@ -333,7 +333,7 @@ a {
   min-width: 0;
 }
 
-.navbar {
+.app-header {
   height: 64px;
   flex-shrink: 0;
   background: var(--surface);
@@ -345,7 +345,7 @@ a {
   z-index: 20;
 }
 
-.navbar-inner {
+.app-header-inner {
   width: 100%;
   max-width: 1920px;
   margin: 0 auto;
@@ -356,7 +356,7 @@ a {
   gap: 12px;
 }
 
-.navbar-spacer {
+.app-header-spacer {
   flex: 1;
 }
 
@@ -393,7 +393,7 @@ a {
   color: var(--primary-d);
 }
 
-.navbar-user {
+.app-header-user {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -406,7 +406,7 @@ a {
   transition: background 0.13s;
 }
 
-.navbar-user:hover {
+.app-header-user:hover {
   background: var(--surface-hover);
 }
 
@@ -436,7 +436,7 @@ a {
   color: var(--text-muted);
 }
 
-.content {
+.app-content {
   flex: 1;
   overflow-y: auto;
 }
@@ -511,10 +511,10 @@ a {
 }
 
 .card {
-  background: var(--surface);
+  --bulma-card-background-color: var(--surface);
+  --bulma-card-radius: var(--radius);
+  --bulma-card-shadow: var(--shadow);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
 }
 
 .card-body {
@@ -621,7 +621,6 @@ a {
 .alloc-legend {
   list-style: none;
   margin: 0;
-  margin-inline-start: 0 !important;
   padding: 0;
   width: 100%;
   display: flex;
@@ -748,7 +747,6 @@ a {
   position: relative;
   display: flex;
   flex-direction: column;
-  margin-bottom: 0 !important;
 }
 
 .entity-card .card-body {
@@ -1045,9 +1043,9 @@ a {
 }
 
 .inv-table > tbody > tr > td {
-  padding: 13px 16px !important;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--border-2);
-  vertical-align: middle !important;
+  vertical-align: middle;
 }
 
 .inv-row {
@@ -1209,34 +1207,30 @@ a {
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
-/* !important throughout: Buefy/Bulma ship a base table-cell reset (padding, border-color) that
-   targets bare <td>/<th> regardless of class, at equal-or-higher priority than a plain
-   ".sub-table td" rule can win on source order alone — the same fight ".inv-table td" above
-   already had to win the same way. */
-.sub-table th {
+.sub-table > thead > tr > th {
   text-align: left;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--text-muted);
-  padding: 9px 12px !important;
-  border-bottom: 1px solid var(--border-2) !important;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-2);
 }
 
-.sub-table td {
-  padding: 9px 12px !important;
-  border-bottom: 1px solid var(--border-2) !important;
+.sub-table > tbody > tr > td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-2);
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
-  vertical-align: middle !important;
+  vertical-align: middle;
 }
 
-.sub-table tbody tr:last-child td {
-  border-bottom: none !important;
+.sub-table > tbody > tr:last-child > td {
+  border-bottom: none;
 }
 
 .date-edit {
@@ -1344,11 +1338,6 @@ a {
   gap: 18px;
 }
 
-/* --- Password requirement hint: attaches directly below the field it validates ---
-   Selectors here are 3 classes deep on purpose: this list can render inside the app
-   shell's `.content` wrapper (modals), and Bulma's `.content ul:not(:first-child)`
-   (2 classes + 1 type = higher specificity than a single `.password-requirement-hint`
-   class) would otherwise win the cascade and re-indent/offset the box. */
 .form-stack > .field {
   margin-bottom: 0;
 }
@@ -1361,7 +1350,7 @@ a {
   border-radius: 8px 8px 0 0;
 }
 
-.form-stack .field-with-hint .password-requirement-hint {
+.password-requirement-hint {
   list-style: none;
   margin: -1px 0 0;
   padding: 10px 12px 11px;
@@ -1374,7 +1363,7 @@ a {
   background-color: var(--surface-2);
 }
 
-.form-stack .field-with-hint .password-requirement-hint li {
+.password-requirement-hint li {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1579,7 +1568,7 @@ a {
   position: absolute;
 }
 
-.navbar .button:not(.is-primary):not(.is-text) {
+.app-header .button:not(.is-primary):not(.is-text) {
   width: 38px;
   height: 38px;
   padding: 0;
@@ -1589,7 +1578,7 @@ a {
   box-shadow: none;
 }
 
-.navbar .button:not(.is-primary):not(.is-text):hover {
+.app-header .button:not(.is-primary):not(.is-text):hover {
   background-color: var(--surface-hover);
   border-color: transparent;
   color: var(--text);
@@ -1737,21 +1726,6 @@ a {
   letter-spacing: 0.01em;
 }
 
-.tag.is-link {
-  background-color: var(--wt-stocks-soft);
-  color: var(--wt-stocks);
-}
-
-.tag.is-warning {
-  background-color: var(--wt-crypto-soft);
-  color: var(--wt-crypto-text);
-}
-
-.tag.is-success {
-  background-color: var(--wt-funds-soft);
-  color: var(--wt-funds);
-}
-
 .modal-background {
   background-color: color-mix(in srgb, var(--ink) 42%, transparent);
   backdrop-filter: blur(2px);
@@ -1780,7 +1754,7 @@ a {
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text);
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
 .modal-card-body {
@@ -1840,7 +1814,7 @@ a {
   margin: auto;
 }
 
-.button {
+.button.is-ghost {
   --bulma-button-ghost-color: var(--bulma-text);
 }
 
@@ -2136,18 +2110,12 @@ a {
   margin-top: 50px;
 }
 
-/* Buefy bundles Bulma's `.content` typography helper, which sets its own
-   `color: var(--bulma-text-strong)` on every heading and table th/thead th —
-   and this app's own layout wrapper happens to also be named `.content`
-   (`.main > .content`, see below), so the report (nested inside it) collides
-   with Bulma's dark-mode-reactive color unless explicitly overridden here. */
-h1.report-title {
+.report-title {
   font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0;
   white-space: normal;
-  color: var(--text);
 }
 
 .report-meta {
@@ -2245,13 +2213,6 @@ h3.report-subgroup-title {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-}
-
-/* Bulma's `.content table thead th` (see the comment on h1.report-title
-   above) is *more* specific than a same-order `.report-table thead th`
-   rule, so source order alone can't win here — the extra `.report-paper`
-   class is needed to out-specificity it. */
-.report-paper .report-table thead th {
   color: var(--text-muted);
 }
 
@@ -2506,7 +2467,6 @@ h3.report-subgroup-title {
 
 .move-item-quantity {
   width: 150px;
-  margin-bottom: 0 !important;
 }
 
 .move-direction {
@@ -2584,20 +2544,20 @@ h3.report-subgroup-title {
     font-size: 22px;
   }
 
-  .navbar-inner,
+  .app-header-inner,
   .topnav-inner {
     padding: 0 16px;
   }
 
-  .navbar {
+  .app-header {
     gap: 8px;
   }
 
-  .navbar .base-chip {
+  .app-header .base-chip {
     display: none;
   }
 
-  .navbar-user .nu-meta {
+  .app-header-user .nu-meta {
     display: none;
   }
 
@@ -2634,9 +2594,9 @@ h3.report-subgroup-title {
 
 @media print {
   * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
   }
 
   html,
@@ -2653,13 +2613,13 @@ h3.report-subgroup-title {
     overflow: visible;
   }
 
-  .navbar,
+  .app-header,
   .topnav,
   .no-print {
-    display: none !important;
+    display: none;
   }
 
-  .content {
+  .app-content {
     overflow: visible;
   }
 
@@ -2677,9 +2637,9 @@ h3.report-subgroup-title {
   body,
   .app-root,
   .main,
-  .content,
+  .app-content,
   .report-page {
-    background: #fff !important;
+    background: #fff;
   }
 
   .report-page {
