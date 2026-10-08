@@ -248,7 +248,7 @@ a {
 }
 
 .base-chip b {
-  color: var(--text);
+  color: var(--base-chip-emphasis, var(--text));
   font-weight: 700;
 }
 
@@ -260,8 +260,9 @@ a {
     color 0.15s ease;
 }
 
-.currency-toggle:hover,
-.currency-toggle:hover b {
+.currency-toggle:hover {
+  --base-chip-emphasis: var(--primary-d);
+
   border-color: var(--primary);
   color: var(--primary-d);
 }
@@ -462,6 +463,13 @@ a {
   flex-direction: column;
 }
 
+.alloc-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
 .alloc-card .alloc-body {
   flex: 1;
   justify-content: center;
@@ -470,13 +478,6 @@ a {
 .chart-wrap {
   margin-top: 6px;
   overflow: hidden;
-}
-
-.alloc-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
 }
 
 .donut-center-label {
@@ -629,7 +630,7 @@ a {
   flex-direction: column;
 }
 
-.entity-card .entity-foot .button {
+.entity-foot .button {
   padding-right: 0;
 }
 
@@ -894,10 +895,44 @@ a {
   border-top: 1px solid var(--border);
 }
 
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-2);
+  text-align: left;
+}
+
+.report-table thead th {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.report-subtotal-row td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+}
+
 .inv-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13.5px;
+}
+
+/* expanded detail. Direct-child combinator on purpose: this only colors the one wrapping cell
+   the detail panel renders into — a descendant selector here also matches every <td> inside the
+   panel's own .sub-table, painting over its white background with this same grey. */
+.detail-row > td {
+  background: var(--surface-2);
 }
 
 /* Direct-child combinators throughout this block on purpose: .inv-table's rows nest
@@ -933,10 +968,6 @@ a {
 
 .inv-row.is-open {
   background: var(--surface-2);
-}
-
-.inv-table > tbody > tr:last-child > td {
-  border-bottom: none;
 }
 
 .sort-th {
@@ -1062,13 +1093,6 @@ a {
   width: 90px;
 }
 
-/* expanded detail. Direct-child combinator on purpose: this only colors the one wrapping cell
-   the detail panel renders into — a descendant selector here also matches every <td> inside the
-   panel's own .sub-table, painting over its white background with this same grey. */
-.detail-row > td {
-  background: var(--surface-2);
-}
-
 .detail {
   position: relative;
   padding-top: 4px;
@@ -1102,6 +1126,10 @@ a {
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
   vertical-align: middle;
+}
+
+.inv-table > tbody > tr:last-child > td {
+  border-bottom: none;
 }
 
 .sub-table > tbody > tr:last-child > td {
@@ -1215,34 +1243,6 @@ a {
 
 .form-stack > .field {
   margin-bottom: 0;
-}
-
-.field-with-hint .field {
-  margin-bottom: 0;
-}
-
-.field-with-hint .input {
-  border-radius: 8px 8px 0 0;
-}
-
-.password-requirement-hint {
-  list-style: none;
-  margin: -1px 0 0;
-  padding: 10px 12px 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  background-color: var(--surface-2);
-}
-
-.password-requirement-hint li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
 }
 
 .form-notice {
@@ -1443,23 +1443,7 @@ a {
   position: absolute;
 }
 
-.app-header .button:not(.is-primary):not(.is-text) {
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  background-color: transparent;
-  border-color: transparent;
-  color: var(--text-2);
-  box-shadow: none;
-}
-
-.app-header .button:not(.is-primary):not(.is-text):hover {
-  background-color: var(--surface-hover);
-  border-color: transparent;
-  color: var(--text);
-}
-
-.modal-card-head .button:not(.is-primary):not(.is-text) {
+.modal-card-head .button:not(.is-primary, .is-text) {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -1469,7 +1453,7 @@ a {
   box-shadow: none;
 }
 
-.modal-card-head .button:not(.is-primary):not(.is-text):hover {
+.modal-card-head .button:not(.is-primary, .is-text):hover {
   background-color: var(--surface-hover);
   border-color: transparent;
   color: var(--text);
@@ -1497,11 +1481,6 @@ a {
   border-start-end-radius: 0;
   border-end-end-radius: 0;
   border-inline-end: none;
-}
-
-.field.has-addons > .control:last-child .input {
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
 }
 
 .label {
@@ -1559,8 +1538,45 @@ a {
   color: var(--text-muted);
 }
 
+.field-with-hint .field {
+  margin-bottom: 0;
+}
+
+.field-with-hint .input {
+  border-radius: 8px 8px 0 0;
+}
+
+.password-requirement-hint {
+  list-style: none;
+  margin: -1px 0 0;
+  padding: 10px 12px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  background-color: var(--surface-2);
+}
+
+.password-requirement-hint li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.field.has-addons > .control:last-child .input {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
 .select {
   width: 100%;
+}
+
+.select:not(.is-multiple) {
+  --bulma-arrow-color: var(--text-muted);
 }
 
 .select select {
@@ -1584,10 +1600,6 @@ a {
 .select select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.select:not(.is-multiple):not(.is-loading)::after {
-  border-color: var(--text-muted);
 }
 
 .tag {
@@ -1877,7 +1889,7 @@ a {
   height: 200px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--bulma-white);
   padding: 10px;
 }
 
@@ -2066,33 +2078,6 @@ h3.report-subgroup-title {
   color: var(--text-muted);
   margin-bottom: 4px;
   margin-top: 15px;
-}
-
-.report-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-
-.report-table th,
-.report-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border-2);
-  text-align: left;
-}
-
-.report-table thead th {
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-.report-subtotal-row td {
-  font-weight: 700;
-  border-bottom: none;
-  border-top: 1px solid var(--border);
 }
 
 .report-subtotal-line {
@@ -2512,7 +2497,7 @@ h3.report-subgroup-title {
   .main,
   .app-content,
   .report-page {
-    background: #fff;
+    background: var(--bulma-white);
   }
 
   .report-page {
