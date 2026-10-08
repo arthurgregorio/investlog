@@ -25,7 +25,9 @@ vi.mock('@/api/holdings', () => ({
   },
 }))
 vi.mock('@/api/results', () => ({ resultsApi: {} }))
-vi.mock('@/api/reinvestments', () => ({ reinvestmentsApi: { findAll: vi.fn(), reinvest: vi.fn() } }))
+vi.mock('@/api/reinvestments', () => ({
+  reinvestmentsApi: { findAll: vi.fn(), reinvest: vi.fn() },
+}))
 vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { findAll: vi.fn(), move: vi.fn() } }))
 
 const stockRow: HoldingRow = {
@@ -214,15 +216,15 @@ async function mountView(options: MountOptions = {}) {
 }
 
 function tabLabels(wrapper: VueWrapper) {
-  return wrapper.findAll('.seg-tab').map((tab) => tab.text())
+  return wrapper.findAll('[role="tab"]').map((tab) => tab.text())
 }
 
 function activeTab(wrapper: VueWrapper) {
-  return wrapper.find('.seg-tab.active').text()
+  return wrapper.find('[role="tab"][aria-selected="true"]').text()
 }
 
 function tab(wrapper: VueWrapper, label: string) {
-  return wrapper.findAll('.seg-tab').find((candidate) => candidate.text() === label)!
+  return wrapper.findAll('[role="tab"]').find((candidate) => candidate.text() === label)!
 }
 
 function headerCell(wrapper: VueWrapper, label: string) {
@@ -262,7 +264,11 @@ describe('InvestmentsView', () => {
       expect(useCurrencyStore().load).toHaveBeenCalledTimes(1)
       expect(useRatesStore().load).toHaveBeenCalledTimes(1)
       expect(initialLoad).toEqual([
-        ['all', 0, { typeLabel: undefined, walletId: undefined, search: undefined, sort: undefined }],
+        [
+          'all',
+          0,
+          { typeLabel: undefined, walletId: undefined, search: undefined, sort: undefined },
+        ],
       ])
     })
 
@@ -284,7 +290,11 @@ describe('InvestmentsView', () => {
       })
 
       expect(initialLoad).toEqual([
-        ['all', 0, { typeLabel: undefined, walletId: undefined, search: undefined, sort: undefined }],
+        [
+          'all',
+          0,
+          { typeLabel: undefined, walletId: undefined, search: undefined, sort: undefined },
+        ],
       ])
       expect(activeTab(wrapper)).toBe('Todos')
     })
@@ -396,7 +406,6 @@ describe('InvestmentsView', () => {
       const tags = wrapper.findAll('.type-tag').map((tag) => tag.text())
       expect(tags).toEqual(['Fundo', 'Ação'])
     })
-
   })
 
   describe('empty state', () => {
