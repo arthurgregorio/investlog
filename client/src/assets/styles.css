@@ -890,22 +890,10 @@ a {
   overflow-x: auto;
 }
 
-.table-foot {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-}
-
 .inv-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13.5px;
-}
-
-/* expanded detail. Direct-child combinator on purpose: this only colors the one wrapping cell
-   the detail panel renders into — a descendant selector here also matches every <td> inside the
-   panel's own .sub-table, painting over its white background with this same grey. */
-.detail-row > td {
-  background: var(--surface-2);
 }
 
 /* Direct-child combinators throughout this block on purpose: .inv-table's rows nest
@@ -930,19 +918,6 @@ a {
   vertical-align: middle;
 }
 
-.inv-row {
-  cursor: pointer;
-  transition: 0.1s;
-}
-
-.inv-row:hover {
-  background: var(--surface-hover);
-}
-
-.inv-row.is-open {
-  background: var(--surface-2);
-}
-
 .sort-th {
   cursor: pointer;
   user-select: none;
@@ -961,10 +936,6 @@ a {
 .sort-icon-active {
   opacity: 1;
   color: var(--primary);
-}
-
-.name-meta {
-  min-width: 0;
 }
 
 .t-ticker {
@@ -1007,54 +978,13 @@ a {
   color: var(--wt-funds);
 }
 
-.inv-row.is-frozen {
-  --ice: var(--bulma-info-on-scheme);
-  --ice-tint: color-mix(in srgb, var(--ice) 5%, transparent);
-
-  background-image:
-    linear-gradient(var(--ice), var(--ice)), linear-gradient(var(--ice-tint), var(--ice-tint));
-  background-size:
-    3px 100%,
-    auto;
-  background-repeat: no-repeat;
-}
-
 .ticker-badge.frozen-badge {
   width: 36px;
   height: 36px;
 }
 
-.inv-row.is-frozen .ticker-badge {
-  border: 1.5px dashed;
-}
-
-.inv-row.is-frozen :is(.name-meta, .wallet-ref, td.c-num) {
-  opacity: 0.65;
-}
-
 .c-num {
   font-variant-numeric: tabular-nums;
-}
-
-.wallet-ref {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  color: var(--text-2);
-}
-
-.wref-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.chev {
-  color: var(--text-muted);
-  display: grid;
-  place-items: center;
 }
 
 .c-act {
@@ -1200,12 +1130,6 @@ a {
   font-size: 9.5px;
   color: var(--text-muted);
   margin-top: 1px;
-}
-
-.avg-note {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .form-stack {

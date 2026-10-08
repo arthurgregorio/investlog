@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import TablePagination from '@/components/ui/TablePagination.vue'
 import ReinvestmentsTable from '@/components/investments/ReinvestmentsTable.vue'
 import { useResultsStore } from '@/stores/results'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
@@ -20,7 +21,7 @@ onMounted(() => {
 })
 
 function onPageChange(page: number) {
-  reinvestmentsStore.load(page - 1, REINVESTMENTS_PAGE_SIZE)
+  reinvestmentsStore.load(page, REINVESTMENTS_PAGE_SIZE)
 }
 
 const summary = computed(() => resultsStore.summary)
@@ -130,16 +131,12 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
           </div>
           <div v-if="reinvestmentsStore.rows.length > 0" class="table-wrap">
             <ReinvestmentsTable :rows="reinvestmentsStore.rows" />
-            <div v-if="reinvestmentsStore.totalPages > 1" class="table-foot">
-              <b-pagination
-                :model-value="reinvestmentsStore.page + 1"
-                :total="reinvestmentsStore.totalElements"
-                :per-page="reinvestmentsStore.pageSize"
-                order="is-right"
-                simple
-                @change="onPageChange"
-              />
-            </div>
+            <TablePagination
+              :page="reinvestmentsStore.page"
+              :page-size="reinvestmentsStore.pageSize"
+              :total-elements="reinvestmentsStore.totalElements"
+              @page-change="onPageChange"
+            />
           </div>
           <div v-else-if="reinvestmentsStore.loaded" class="p-4">
             <EmptyState

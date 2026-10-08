@@ -46,4 +46,11 @@ describe('useDisplayMoney', () => {
 
     expect(formatConverted(100, 'BRL')).toBe(fmt.money(20, 'USD'))
   })
+
+  it('hands back the converted amount with the display currency', () => {
+    useCurrencyStore().hydrate('BRL')
+    const { toDisplayCurrency } = useDisplayMoney()
+
+    expect(toDisplayCurrency(20, 'USD')).toEqual({ amount: 100, currency: 'BRL' })
+  })
 })
