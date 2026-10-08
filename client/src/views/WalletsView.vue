@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import GainChip from '@/components/ui/GainChip.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
@@ -41,12 +42,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
   <div class="page">
     <b-loading :is-full-page="false" :model-value="walletsStore.loading" />
 
-    <div class="page-head page-head-row">
-      <div>
-        <h1 class="page-title">Carteiras</h1>
-        <p class="page-desc">Carteiras podem ter tipos e moedas distintas</p>
-      </div>
-    </div>
+    <PageHeader title="Carteiras" description="Carteiras podem ter tipos e moedas distintas" />
 
     <EmptyState
       v-if="walletsStore.loaded && walletsStore.wallets.length === 0"
