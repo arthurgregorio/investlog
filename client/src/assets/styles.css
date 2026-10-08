@@ -1,130 +1,3 @@
-:root {
-  --up: #15915b;
-  --down: #e0384f;
-  --up-soft: rgba(21, 145, 91, 0.12);
-  --down-soft: rgba(224, 56, 79, 0.12);
-  --wt-stocks: #2b6cb0;
-  --wt-crypto: #e0900a;
-  --wt-funds: #0ca678;
-  --wt-stocks-soft: rgba(43, 108, 176, 0.13);
-  --wt-crypto-soft: rgba(224, 144, 10, 0.15);
-  --wt-funds-soft: rgba(12, 166, 120, 0.14);
-  --chart-1: #2b6cb0;
-  --chart-2: #e8590c;
-  --chart-3: #0ca678;
-  --chart-4: #c2255c;
-  --chart-5: #7048e8;
-  --chart-6: #f08c00;
-  --chart-7: #1098ad;
-  --chart-8: #74b816;
-  --chart-9: #a5673f;
-  --chart-10: #5c7cfa;
-  --radius: 10px;
-  --radius-sm: 7px;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --ink: #0f172a;
-  --ticker-fallback: #5b6dd8;
-  --ticker-fallback-funds: #2a8f6f;
-  --withdrawal-soft: rgba(184, 134, 11, 0.14);
-  --bulma-modal-content-width: 460px;
-}
-
-[data-accent='blue'] {
-  --primary: #206bc4;
-  --primary-d: #1b5aa6;
-  --primary-soft: rgba(32, 107, 196, 0.12);
-  --bulma-primary-h: 213deg;
-  --bulma-primary-s: 72%;
-  --bulma-primary-l: 45%;
-}
-
-[data-accent='yellow'] {
-  --primary: #b8860b;
-  --primary-d: #9c7209;
-  --primary-soft: rgba(184, 134, 11, 0.12);
-  --bulma-primary-h: 43deg;
-  --bulma-primary-s: 89%;
-  --bulma-primary-l: 38%;
-}
-
-[data-accent='teal'] {
-  --primary: #0ca678;
-  --primary-d: #099268;
-  --primary-soft: rgba(12, 166, 120, 0.12);
-  --bulma-primary-h: 162deg;
-  --bulma-primary-s: 87%;
-  --bulma-primary-l: 35%;
-}
-
-[data-accent='indigo'] {
-  --primary: #4263eb;
-  --primary-d: #3950c8;
-  --primary-soft: rgba(66, 99, 235, 0.12);
-  --bulma-primary-h: 228deg;
-  --bulma-primary-s: 81%;
-  --bulma-primary-l: 59%;
-}
-
-[data-accent] {
-  --bulma-primary-invert-l: 100%;
-}
-
-/* Bulma's [data-theme=dark] selector matches any element, including .app-root[data-theme=dark],
-   so dark mode Bulma overrides apply automatically without an extra bridge rule. */
-
-[data-theme='light'] {
-  --bg: #f4f6fa;
-  --surface: #ffffff;
-  --surface-2: #f7f9fc;
-  --surface-hover: #f1f5fa;
-  --border: #e6e9ef;
-  --border-2: #eef1f6;
-  --text: #172033;
-  --text-2: #586375;
-  --text-muted: #8a96a8;
-  --chart-grid: #ecf0f5;
-  --tag-bg: #f0f3f8;
-  --wt-crypto-text: #b06f06;
-  --withdrawal-text: #9c7209;
-  --primary-text: var(--primary-d);
-  --nav-active-text: var(--primary-d);
-  --shadow-raised: 0 10px 40px rgba(15, 23, 42, 0.08);
-}
-
-[data-theme='dark'] {
-  --bg: #0e1620;
-  --surface: #18212e;
-  --surface-2: #1e2937;
-  --surface-hover: #212d3c;
-  --border: #2a3646;
-  --border-2: #222d3b;
-  --text: #e8ecf2;
-  --text-2: #9fabbd;
-  --text-muted: #71819a;
-  --chart-grid: #26344a;
-  --tag-bg: #222e3f;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --wt-stocks: #4a93de;
-  --wt-crypto: #f0a821;
-  --wt-funds: #1fc093;
-  --wt-crypto-text: var(--wt-crypto);
-  --withdrawal-text: #f0a821;
-  --primary-text: var(--primary);
-  --nav-active-text: #7fb3ec;
-  --shadow-raised: 0 12px 44px rgba(0, 0, 0, 0.32);
-  --chart-1: #4a93de;
-  --chart-2: #ff8a4c;
-  --chart-3: #1fc093;
-  --chart-4: #f06595;
-  --chart-5: #9775fa;
-  --chart-6: #fcc419;
-  --chart-7: #3bc9db;
-  --chart-8: #a9e34b;
-  --chart-9: #d9925f;
-  --chart-10: #748ffc;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -375,7 +248,7 @@ a {
 }
 
 .base-chip b {
-  color: var(--text);
+  color: var(--base-chip-emphasis, var(--text));
   font-weight: 700;
 }
 
@@ -387,8 +260,9 @@ a {
     color 0.15s ease;
 }
 
-.currency-toggle:hover,
-.currency-toggle:hover b {
+.currency-toggle:hover {
+  --base-chip-emphasis: var(--primary-d);
+
   border-color: var(--primary);
   color: var(--primary-d);
 }
@@ -462,11 +336,10 @@ a {
 }
 
 .page-head-row {
-  flex-direction: row;
+  flex-flow: row wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .page-title {
@@ -514,6 +387,7 @@ a {
   --bulma-card-background-color: var(--surface);
   --bulma-card-radius: var(--radius);
   --bulma-card-shadow: var(--shadow);
+
   border: 1px solid var(--border);
 }
 
@@ -571,6 +445,7 @@ a {
 
 .page > .fixed-grid > .grid {
   margin-bottom: 0;
+
   --bulma-grid-gap: 1rem;
 }
 
@@ -588,6 +463,13 @@ a {
   flex-direction: column;
 }
 
+.alloc-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
 .alloc-card .alloc-body {
   flex: 1;
   justify-content: center;
@@ -596,13 +478,6 @@ a {
 .chart-wrap {
   margin-top: 6px;
   overflow: hidden;
-}
-
-.alloc-body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
 }
 
 .donut-center-label {
@@ -755,7 +630,7 @@ a {
   flex-direction: column;
 }
 
-.entity-card .entity-foot .button {
+.entity-foot .button {
   padding-right: 0;
 }
 
@@ -1020,10 +895,44 @@ a {
   border-top: 1px solid var(--border);
 }
 
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border-2);
+  text-align: left;
+}
+
+.report-table thead th {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.report-subtotal-row td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+}
+
 .inv-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13.5px;
+}
+
+/* expanded detail. Direct-child combinator on purpose: this only colors the one wrapping cell
+   the detail panel renders into — a descendant selector here also matches every <td> inside the
+   panel's own .sub-table, painting over its white background with this same grey. */
+.detail-row > td {
+  background: var(--surface-2);
 }
 
 /* Direct-child combinators throughout this block on purpose: .inv-table's rows nest
@@ -1059,10 +968,6 @@ a {
 
 .inv-row.is-open {
   background: var(--surface-2);
-}
-
-.inv-table > tbody > tr:last-child > td {
-  border-bottom: none;
 }
 
 .sort-th {
@@ -1132,6 +1037,7 @@ a {
 .inv-row.is-frozen {
   --ice: var(--bulma-info-on-scheme);
   --ice-tint: color-mix(in srgb, var(--ice) 5%, transparent);
+
   background-image:
     linear-gradient(var(--ice), var(--ice)), linear-gradient(var(--ice-tint), var(--ice-tint));
   background-size:
@@ -1187,13 +1093,6 @@ a {
   width: 90px;
 }
 
-/* expanded detail. Direct-child combinator on purpose: this only colors the one wrapping cell
-   the detail panel renders into — a descendant selector here also matches every <td> inside the
-   panel's own .sub-table, painting over its white background with this same grey. */
-.detail-row > td {
-  background: var(--surface-2);
-}
-
 .detail {
   position: relative;
   padding-top: 4px;
@@ -1227,6 +1126,10 @@ a {
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
   vertical-align: middle;
+}
+
+.inv-table > tbody > tr:last-child > td {
+  border-bottom: none;
 }
 
 .sub-table > tbody > tr:last-child > td {
@@ -1340,34 +1243,6 @@ a {
 
 .form-stack > .field {
   margin-bottom: 0;
-}
-
-.field-with-hint .field {
-  margin-bottom: 0;
-}
-
-.field-with-hint .input {
-  border-radius: 8px 8px 0 0;
-}
-
-.password-requirement-hint {
-  list-style: none;
-  margin: -1px 0 0;
-  padding: 10px 12px 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  background-color: var(--surface-2);
-}
-
-.password-requirement-hint li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
 }
 
 .form-notice {
@@ -1568,23 +1443,7 @@ a {
   position: absolute;
 }
 
-.app-header .button:not(.is-primary):not(.is-text) {
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  background-color: transparent;
-  border-color: transparent;
-  color: var(--text-2);
-  box-shadow: none;
-}
-
-.app-header .button:not(.is-primary):not(.is-text):hover {
-  background-color: var(--surface-hover);
-  border-color: transparent;
-  color: var(--text);
-}
-
-.modal-card-head .button:not(.is-primary):not(.is-text) {
+.modal-card-head .button:not(.is-primary, .is-text) {
   width: 32px;
   height: 32px;
   padding: 0;
@@ -1594,7 +1453,7 @@ a {
   box-shadow: none;
 }
 
-.modal-card-head .button:not(.is-primary):not(.is-text):hover {
+.modal-card-head .button:not(.is-primary, .is-text):hover {
   background-color: var(--surface-hover);
   border-color: transparent;
   color: var(--text);
@@ -1624,11 +1483,6 @@ a {
   border-inline-end: none;
 }
 
-.field.has-addons > .control:last-child .input {
-  border-start-start-radius: 0;
-  border-end-start-radius: 0;
-}
-
 .label {
   font-size: 12.5px;
   font-weight: 600;
@@ -1654,8 +1508,7 @@ a {
   font-family: var(--font);
   padding-top: 0;
   padding-bottom: 0;
-  padding-inline-start: 12px;
-  padding-inline-end: 12px;
+  padding-inline: 12px;
   box-shadow: none;
   transition:
     border-color 0.12s,
@@ -1685,8 +1538,45 @@ a {
   color: var(--text-muted);
 }
 
+.field-with-hint .field {
+  margin-bottom: 0;
+}
+
+.field-with-hint .input {
+  border-radius: 8px 8px 0 0;
+}
+
+.password-requirement-hint {
+  list-style: none;
+  margin: -1px 0 0;
+  padding: 10px 12px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  background-color: var(--surface-2);
+}
+
+.password-requirement-hint li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.field.has-addons > .control:last-child .input {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+}
+
 .select {
   width: 100%;
+}
+
+.select:not(.is-multiple) {
+  --bulma-arrow-color: var(--text-muted);
 }
 
 .select select {
@@ -1700,8 +1590,7 @@ a {
   font-family: var(--font);
   padding-top: 0;
   padding-bottom: 0;
-  padding-inline-start: 12px;
-  padding-inline-end: 34px;
+  padding-inline: 12px 34px;
   box-shadow: none;
   transition:
     border-color 0.12s,
@@ -1711,10 +1600,6 @@ a {
 .select select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-.select:not(.is-multiple):not(.is-loading)::after {
-  border-color: var(--text-muted);
 }
 
 .tag {
@@ -2004,7 +1889,7 @@ a {
   height: 200px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--bulma-white);
   padding: 10px;
 }
 
@@ -2193,33 +2078,6 @@ h3.report-subgroup-title {
   color: var(--text-muted);
   margin-bottom: 4px;
   margin-top: 15px;
-}
-
-.report-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-
-.report-table th,
-.report-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border-2);
-  text-align: left;
-}
-
-.report-table thead th {
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-.report-subtotal-row td {
-  font-weight: 700;
-  border-bottom: none;
-  border-top: 1px solid var(--border);
 }
 
 .report-subtotal-line {
@@ -2489,7 +2347,7 @@ h3.report-subgroup-title {
   padding: 16px 20px 20px;
 }
 
-@media (max-width: 860px) {
+@media (width <= 860px) {
   .auth-aside {
     display: none;
   }
@@ -2517,7 +2375,7 @@ h3.report-subgroup-title {
   }
 }
 
-@media (max-width: 680px) {
+@media (width <= 680px) {
   .page {
     padding: 20px 16px 60px;
   }
@@ -2588,7 +2446,7 @@ h3.report-subgroup-title {
 }
 
 @page {
-  size: A4;
+  size: a4;
   margin: 14mm 12mm;
 }
 
@@ -2639,7 +2497,7 @@ h3.report-subgroup-title {
   .main,
   .app-content,
   .report-page {
-    background: #fff;
+    background: var(--bulma-white);
   }
 
   .report-page {
