@@ -65,13 +65,13 @@ async function logout() {
 </script>
 
 <template>
-  <header class="navbar">
-    <div class="navbar-inner">
+  <header class="app-header">
+    <div class="app-header-inner">
       <RouterLink to="/" class="brand">
         <span class="brand-mark"><LogoMark :size="19" /></span>
         <span class="brand-name">Invest<b>Log</b></span>
       </RouterLink>
-      <div class="navbar-spacer" />
+      <div class="app-header-spacer" />
       <button
         type="button"
         class="base-chip currency-toggle"
@@ -83,7 +83,7 @@ async function logout() {
       </button>
       <b-dropdown position="is-bottom-left" aria-role="menu" append-to-body>
         <template #trigger>
-          <div class="navbar-user" role="button" aria-label="Menu do usuário">
+          <div class="app-header-user" role="button" aria-label="Menu do usuário">
             <Avatar :initials="profile ? initials(profile.name) : '?'" />
             <div class="nu-meta">
               <div class="nu-name">{{ profile?.name ?? '...' }}</div>

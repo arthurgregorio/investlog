@@ -306,7 +306,7 @@ existing access, not for handling new signups (those stay on approve/delete).
   (`is-success`, `is-danger`, etc.) set `--bulma-button-h/s/l` HSL variables that modifiers like
   `is-outlined` consume to compute colors. A global override with static values fights this
   cascade and breaks every typed/modifier button in the app. Scope button styling tightly instead
-  (`.navbar .button`, `.modal-card-head .button`, `.button.is-static`).
+  (`.app-header .button`, `.modal-card-head .button`, `.button.is-static`, `.button.is-ghost`).
 - **Use `type="is-ghost"`, not `is-text"`,** for transparent/icon-only buttons (subtle inline
   triggers, link-like actions). For per-row destructive icon actions (e.g. delete in a table row),
   use `type="is-danger" outlined`.

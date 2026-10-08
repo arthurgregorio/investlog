@@ -101,7 +101,7 @@ function confirmDeleteUser(id: string, name: string) {
     </div>
 
     <div class="entity-grid">
-      <Card v-for="user in usersAdminStore.users" :key="user.id" class="entity-card">
+      <Card v-for="user in usersAdminStore.users" :key="user.id" class="entity-card mb-0">
         <CardBody>
           <div class="entity-head">
             <div class="entity-titles">

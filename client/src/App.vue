@@ -53,7 +53,7 @@ provide(ModalKey, {
     <div v-if="showAppShell" class="main">
       <TheNavbar />
       <TheTopNav />
-      <div class="content">
+      <div class="app-content">
         <RouterView />
       </div>
     </div>

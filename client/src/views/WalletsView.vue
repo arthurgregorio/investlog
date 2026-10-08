@@ -26,12 +26,6 @@ onMounted(() => {
   ratesStore.load()
 })
 
-const tagTypeFor: Record<WalletKind, string> = {
-  STOCKS: 'is-link',
-  CRYPTO: 'is-warning',
-  FUNDS: 'is-success',
-}
-
 function openWallet(walletId: string) {
   router.push({ name: 'wallet-detail', params: { id: walletId } })
 }
@@ -68,7 +62,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
     </EmptyState>
 
     <div v-else class="entity-grid">
-      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="entity-card">
+      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="entity-card mb-0">
         <div class="wallet-stripe" :style="{ background: WALLET_TYPES[wallet.kind].accent }" />
         <CardBody>
           <div class="entity-head">
@@ -78,7 +72,9 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
             <div class="entity-titles">
               <div class="entity-name">{{ wallet.name }}</div>
               <div class="is-flex is-align-items-center is-gap-1 mt-1">
-                <b-tag :type="tagTypeFor[wallet.kind]">{{ WALLET_TYPES[wallet.kind].label }}</b-tag>
+                <b-tag :class="`tt-${wallet.kind.toLowerCase()}`">{{
+                  WALLET_TYPES[wallet.kind].label
+                }}</b-tag>
                 <span class="cur-chip">{{ wallet.currency }}</span>
               </div>
             </div>
