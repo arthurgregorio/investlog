@@ -342,7 +342,10 @@ describe('InvestmentReportView', () => {
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined)
     const { wrapper } = await mountView()
 
-    await wrapper.find('.report-toolbar button').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Imprimir')!
+      .trigger('click')
 
     expect(printSpy).toHaveBeenCalledTimes(1)
   })

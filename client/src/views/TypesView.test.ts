@@ -71,7 +71,7 @@ async function confirmDialog(label: string) {
 }
 
 function tableNames(wrapper: VueWrapper) {
-  return wrapper.findAll('tbody .cell-strong').map((cell) => cell.text())
+  return wrapper.findAll('tbody td:first-child').map((cell) => cell.text())
 }
 
 function newTypeButton(wrapper: VueWrapper) {

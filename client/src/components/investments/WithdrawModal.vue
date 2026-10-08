@@ -103,34 +103,36 @@ async function submit() {
   >
     <p v-if="error" class="auth-error" data-testid="withdraw-error">{{ error }}</p>
 
-    <div class="form-grid">
-      <b-field label="Data" style="grid-column: 1/-1">
-        <DateInput v-model="date" />
-      </b-field>
-
-      <b-field v-if="isFund" label="Valor resgatado" style="grid-column: 1/-1">
-        <NumberInput v-model="amount" :prefix="symbol" placeholder="0,00" min="0" />
-      </b-field>
-      <template v-else>
-        <b-field label="Quantidade">
-          <NumberInput v-model="quantity" placeholder="0" min="0" />
+    <div class="fixed-grid has-2-cols">
+      <div class="grid is-gap-2">
+        <b-field label="Data" class="cell is-col-span-2">
+          <DateInput v-model="date" />
         </b-field>
-        <b-field label="Preço unitário">
-          <NumberInput v-model="unitPrice" :prefix="symbol" placeholder="0,00" min="0" />
+
+        <b-field v-if="isFund" label="Valor resgatado" class="cell is-col-span-2">
+          <NumberInput v-model="amount" :prefix="symbol" placeholder="0,00" min="0" />
         </b-field>
-      </template>
+        <template v-else>
+          <b-field label="Quantidade" class="cell is-col-span-2-mobile">
+            <NumberInput v-model="quantity" placeholder="0" min="0" />
+          </b-field>
+          <b-field label="Preço unitário" class="cell is-col-span-2-mobile">
+            <NumberInput v-model="unitPrice" :prefix="symbol" placeholder="0,00" min="0" />
+          </b-field>
+        </template>
 
-      <b-field label="Taxas (opcional)">
-        <NumberInput v-model="fees" :prefix="symbol" placeholder="0,00" min="0" />
-      </b-field>
-      <b-field label="Impostos (opcional)">
-        <NumberInput v-model="taxes" :prefix="symbol" placeholder="0,00" min="0" />
-      </b-field>
+        <b-field label="Taxas (opcional)" class="cell is-col-span-2-mobile">
+          <NumberInput v-model="fees" :prefix="symbol" placeholder="0,00" min="0" />
+        </b-field>
+        <b-field label="Impostos (opcional)" class="cell is-col-span-2-mobile">
+          <NumberInput v-model="taxes" :prefix="symbol" placeholder="0,00" min="0" />
+        </b-field>
 
-      <p v-if="!isFund" style="grid-column: 1/-1">
-        Valor bruto:
-        <strong>{{ fmt.money(grossAmount, walletCurrency) }}</strong>
-      </p>
+        <p v-if="!isFund" class="cell is-col-span-2">
+          Valor bruto:
+          <strong>{{ fmt.money(grossAmount, walletCurrency) }}</strong>
+        </p>
+      </div>
     </div>
 
     <template #footer>

@@ -127,7 +127,7 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
 
 <template>
   <div class="page report-page">
-    <div class="report-toolbar no-print">
+    <div class="is-flex is-align-items-center is-justify-content-space-between no-print">
       <RouterLink to="/investments" class="back-link">
         <b-icon icon="arrow-left" size="is-small" /> Voltar
       </RouterLink>
@@ -264,33 +264,33 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
               <thead>
                 <tr>
                   <th>Investimento</th>
-                  <th class="c-num">Qtd.</th>
-                  <th class="c-num">Preço atual</th>
-                  <th class="c-num">Investido</th>
-                  <th class="c-num">Valor atual</th>
-                  <th class="c-num">Resultado</th>
+                  <th class="c-num has-text-right">Qtd.</th>
+                  <th class="c-num has-text-right">Preço atual</th>
+                  <th class="c-num has-text-right">Investido</th>
+                  <th class="c-num has-text-right">Valor atual</th>
+                  <th class="c-num has-text-right">Resultado</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="row in walletGroup.rows" :key="row.holding.id">
                   <td>{{ row.holding.ticker ?? row.holding.name }}</td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     {{ row.holding.quantity == null ? '—' : fmt.qty(row.holding.quantity) }}
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     {{
                       row.currentPrice == null
                         ? '—'
                         : fmt.money(row.currentPrice, currencyStore.displayCurrency)
                     }}
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     {{ fmt.money(row.costBasis, currencyStore.displayCurrency) }}
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     {{ fmt.money(row.currentValue, currencyStore.displayCurrency) }}
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <GainChip
                       :value="row.gain"
                       :pct="row.gainPct"
@@ -300,13 +300,13 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
                 </tr>
                 <tr class="report-subtotal-row">
                   <td colspan="3"></td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     {{ fmt.money(walletGroup.totals.costBasis, currencyStore.displayCurrency) }}
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     {{ fmt.money(walletGroup.totals.currentValue, currencyStore.displayCurrency) }}
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <GainChip
                       :value="walletGroup.totals.gain"
                       :pct="walletGroup.totals.gainPct"
