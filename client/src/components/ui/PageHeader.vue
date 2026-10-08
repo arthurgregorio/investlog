@@ -22,11 +22,10 @@ defineProps<{ title: string; description?: string }>()
 }
 
 .page-head-row {
-  flex-direction: row;
+  flex-flow: row wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .page-desc {

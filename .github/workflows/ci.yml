@@ -73,6 +73,10 @@ jobs:
         working-directory: client
         run: npm run lint
 
+      - name: Lint CSS
+        working-directory: client
+        run: npm run lint:css
+
       - name: Type-check
         working-directory: client
         run: npm run type-check

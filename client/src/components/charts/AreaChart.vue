@@ -36,7 +36,7 @@ const props = withDefaults(
     xLabels?: string[]
   }>(),
   {
-    color: '#2fb344',
+    color: 'var(--primary)',
     height: 240,
     showGrid: true,
     fmtY: (v: number) => String(v),
@@ -204,7 +204,7 @@ onBeforeUnmount(() => chart?.destroy())
 </script>
 
 <template>
-  <div :style="{ position: 'relative', height: `${height}px` }">
+  <div class="is-relative" :style="{ height: `${height}px` }">
     <canvas ref="canvasElement"></canvas>
   </div>
 </template>

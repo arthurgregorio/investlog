@@ -26,12 +26,6 @@ onMounted(() => {
   ratesStore.load()
 })
 
-const tagTypeFor: Record<WalletKind, string> = {
-  STOCKS: 'is-link',
-  CRYPTO: 'is-warning',
-  FUNDS: 'is-success',
-}
-
 function openWallet(walletId: string) {
   router.push({ name: 'wallet-detail', params: { id: walletId } })
 }
@@ -61,18 +55,14 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
       text="Crie sua primeira carteira para começar a registrar investimentos."
     >
       <template #action>
-        <b-button
-          type="is-primary"
-          class="has-text-light"
-          icon-left="plus"
-          @click="modals.openCreateWallet()"
+        <b-button type="is-primary" icon-left="plus" @click="modals.openCreateWallet()"
           >Nova carteira</b-button
         >
       </template>
     </EmptyState>
 
     <div v-else class="entity-grid">
-      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="entity-card">
+      <Card v-for="wallet in walletsStore.wallets" :key="wallet.id" class="entity-card mb-0">
         <div class="wallet-stripe" :style="{ background: WALLET_TYPES[wallet.kind].accent }" />
         <CardBody>
           <div class="entity-head">
@@ -81,12 +71,14 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
             </span>
             <div class="entity-titles">
               <div class="entity-name">{{ wallet.name }}</div>
-              <div class="entity-tags">
-                <b-tag :type="tagTypeFor[wallet.kind]">{{ WALLET_TYPES[wallet.kind].label }}</b-tag>
+              <div class="is-flex is-align-items-center is-gap-1 mt-1">
+                <b-tag :class="`tt-${wallet.kind.toLowerCase()}`">{{
+                  WALLET_TYPES[wallet.kind].label
+                }}</b-tag>
                 <span class="cur-chip">{{ wallet.currency }}</span>
               </div>
             </div>
-            <div style="display: flex; gap: 6px; margin-left: auto">
+            <div class="is-flex is-gap-1 ml-auto">
               <b-tooltip label="Detalhes" position="is-left">
                 <b-button
                   outlined
@@ -108,11 +100,11 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
                 )
               }}
             </div>
-            <div class="wi-base">Investido</div>
+            <div class="sub-caption">Investido</div>
           </div>
-          <div class="wallet-result">
-            <div class="wallet-result-item">
-              <div class="wallet-result-value">
+          <div class="result-row">
+            <div class="result-item">
+              <div class="result-value">
                 {{
                   wallet.currentValue == null
                     ? '—'
@@ -122,9 +114,9 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
                       )
                 }}
               </div>
-              <div class="wallet-result-label">Valor atual</div>
+              <div class="result-label">Valor atual</div>
             </div>
-            <div class="wallet-result-item">
+            <div class="result-item">
               <GainChip
                 :value="
                   wallet.gain == null ? null : currencyStore.convert(wallet.gain, wallet.currency)
@@ -132,7 +124,7 @@ const iconFor = (kind: WalletKind): string => WALLET_TYPES[kind].icon
                 :pct="wallet.gainPct"
                 :cur="currencyStore.displayCurrency"
               />
-              <div class="wallet-result-label">Resultado</div>
+              <div class="result-label">Resultado</div>
             </div>
           </div>
           <div class="entity-foot">

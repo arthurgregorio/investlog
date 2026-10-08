@@ -72,7 +72,7 @@ function confirmRevoke(id: string, label: string) {
       </div>
     </div>
     <template #footer>
-      <b-button type="is-primary" class="has-text-light" @click="emit('close')">Fechar</b-button>
+      <b-button type="is-primary" @click="emit('close')">Fechar</b-button>
     </template>
   </AppModal>
 </template>

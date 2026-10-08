@@ -45,7 +45,7 @@ const registrationValid = computed(
       native-type="submit"
       :loading="submitting"
       :disabled="!registrationValid"
-      class="auth-submit has-text-light"
+      class="auth-submit"
     >
       Criar conta
     </b-button>

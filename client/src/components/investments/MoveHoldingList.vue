@@ -69,7 +69,7 @@ function displayName(holding: HoldingRow): string {
       </div>
       <b-field
         v-if="takesQuantity(holding) && selected[holding.id] && !moveAll"
-        class="move-item-quantity"
+        class="move-item-quantity mb-0"
         :type="exceedsRemaining(holding, quantities[holding.id]) ? 'is-danger' : ''"
         :message="exceedsRemaining(holding, quantities[holding.id]) ? 'Maior que o disponível' : ''"
       >
@@ -138,6 +138,5 @@ function displayName(holding: HoldingRow): string {
 
 .move-item-quantity {
   width: 150px;
-  margin-bottom: 0 !important;
 }
 </style>

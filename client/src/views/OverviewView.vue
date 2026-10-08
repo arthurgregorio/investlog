@@ -108,12 +108,8 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
         <h1 class="page-title">Visão geral</h1>
         <p class="page-desc">Uma visão consolidada dos seus investimentos</p>
       </div>
-      <div class="head-actions">
-        <b-button
-          type="is-primary"
-          class="has-text-light"
-          icon-left="wallet"
-          @click="router.push({ name: 'wallets' })"
+      <div class="is-flex is-gap-1">
+        <b-button type="is-primary" icon-left="wallet" @click="router.push({ name: 'wallets' })"
           >Carteiras</b-button
         >
       </div>
@@ -123,7 +119,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
       <div class="fixed-grid has-3-cols has-1-cols-mobile">
         <div class="grid">
           <div class="cell">
-            <Card class="kpi-card">
+            <Card data-testid="kpi">
               <CardBody>
                 <div class="kpi-label">Total investido</div>
                 <div class="kpi-value">
@@ -139,7 +135,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           </div>
 
           <div class="cell">
-            <Card class="kpi-card">
+            <Card data-testid="kpi">
               <CardBody>
                 <div class="kpi-label">Valor atual estimado</div>
                 <div class="kpi-value">
@@ -153,7 +149,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           </div>
 
           <div class="cell">
-            <Card class="kpi-card">
+            <Card data-testid="kpi">
               <CardBody>
                 <div class="kpi-label">Resultado</div>
                 <div class="kpi-value" :class="summary.totalGain >= 0 ? 'gl-up' : 'gl-down'">
@@ -176,10 +172,12 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           <div class="cell is-col-span-2">
             <Card class="chart-card">
               <CardBody>
-                <div class="card-title-row">
+                <div
+                  class="is-flex is-align-items-flex-start is-justify-content-space-between is-gap-1.5 mb-3"
+                >
                   <div>
                     <div class="chart-title">Evolução dos aportes</div>
-                    <div class="chart-sub">Capital investido acumulado · {{ baseCurrency }}</div>
+                    <div class="sub-caption">Capital investido acumulado · {{ baseCurrency }}</div>
                   </div>
                   <div class="chart-big">
                     {{ fmt.money(lastSeries, baseCurrency, { compact: true }) }}
@@ -201,7 +199,11 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           <div class="cell">
             <Card class="alloc-card">
               <CardBody>
-                <div class="card-title-row"><div class="chart-title">Alocação por tipo</div></div>
+                <div
+                  class="is-flex is-align-items-flex-start is-justify-content-space-between is-gap-1.5 mb-3"
+                >
+                  <div class="chart-title">Alocação por tipo</div>
+                </div>
                 <div class="alloc-body">
                   <DonutChart :segments="segments" :size="156" :thickness="22">
                     <div class="donut-center-label">Investido</div>
@@ -238,7 +240,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
           <div v-for="typeRow in typeRows" :key="typeRow.key" class="cell">
             <Card class="type-card" @click="gotoType(typeRow.key)">
               <CardBody>
-                <div class="type-card-head">
+                <div class="is-flex is-align-items-center is-gap-1 mb-3">
                   <span class="type-ic" :style="{ background: typeRow.accent }">
                     <b-icon :icon="iconFor(typeRow.key)" />
                   </span>
@@ -258,15 +260,15 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
                 <div class="type-value">
                   {{ fmt.money(typeRow.invested, baseCurrency, { compact: true }) }}
                 </div>
-                <div class="type-result-row">
-                  <div class="type-result-item">
-                    <div class="type-result-label">Valor atual</div>
-                    <div class="type-result-value">
+                <div class="result-row">
+                  <div class="result-item">
+                    <div class="result-label">Valor atual</div>
+                    <div class="result-value">
                       {{ fmt.money(typeRow.currentValue, baseCurrency, { compact: true }) }}
                     </div>
                   </div>
-                  <div class="type-result-item">
-                    <div class="type-result-label">Resultado</div>
+                  <div class="result-item">
+                    <div class="result-label">Resultado</div>
                     <GainChip
                       :value="typeRow.gain"
                       :pct="typeRow.gainPct"

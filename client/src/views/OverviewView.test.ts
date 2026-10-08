@@ -106,7 +106,7 @@ async function mountView(options: {
 }
 
 function kpiCards(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('.kpi-card')
+  return wrapper.findAll('[data-testid="kpi"]')
 }
 
 function typeCard(wrapper: ReturnType<typeof mount>, label: string) {
@@ -129,7 +129,7 @@ describe('OverviewView', () => {
     const { wrapper } = await mountView({ summary: null })
 
     expect(wrapper.find('.page-title').text()).toBe('Visão geral')
-    expect(wrapper.find('.kpi-card').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="kpi"]').exists()).toBe(false)
     expect(wrapper.find('.type-card').exists()).toBe(false)
     expect(wrapper.find('.area-chart-stub').exists()).toBe(false)
   })
@@ -189,7 +189,7 @@ describe('OverviewView', () => {
     expect(stocks.find('.type-meta').text()).toContain('2 carteiras')
     expect(stocks.find('.type-meta').text()).toContain('3 ativos')
     expect(stocks.find('.type-value').text()).toBe('R$ 6,0k')
-    expect(stocks.find('.type-result-value').text()).toBe('R$ 7,5k')
+    expect(stocks.find('.result-value').text()).toBe('R$ 7,5k')
     expect(stocks.find('.gl').text()).toContain('+R$ 1,5k')
     expect(stocks.find('.gl').text()).toContain('+25,00%')
 
@@ -262,7 +262,7 @@ describe('OverviewView', () => {
     expect(chart.props('data')).toEqual([1000, 4000, 10000])
     expect(chart.props('xLabels')).toEqual(['jan/26', 'fev/26', 'mar/26'])
     expect(wrapper.find('.chart-big').text()).toBe('R$ 10,0k')
-    expect(wrapper.find('.chart-sub').text()).toContain('BRL')
+    expect(wrapper.find('.sub-caption').text()).toContain('BRL')
   })
 
   it('pads a single-point series with a leading zero so the chart can draw a line', async () => {
@@ -300,7 +300,7 @@ describe('OverviewView', () => {
     const { wrapper } = await mountView({ summary: { ...summary, displayCurrency: 'USD' } })
 
     expect(kpiCards(wrapper)[0].find('.kpi-value').text()).toBe('US$ 10,0k')
-    expect(wrapper.find('.chart-sub').text()).toContain('USD')
+    expect(wrapper.find('.sub-caption').text()).toContain('USD')
   })
 
   it('opens the investments list filtered by kind when a type card is clicked', async () => {
@@ -316,7 +316,10 @@ describe('OverviewView', () => {
   it('navigates to the wallets page from the Carteiras button', async () => {
     const { wrapper, router } = await mountView({ summary: null })
 
-    await wrapper.find('.head-actions button').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Carteiras')!
+      .trigger('click')
     await flushPromises()
 
     expect(router.currentRoute.value.name).toBe('wallets')

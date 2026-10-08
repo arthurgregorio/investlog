@@ -65,7 +65,6 @@ async function submit() {
       <b-button
         type="is-success"
         icon-left="check"
-        class="has-text-light"
         :loading="submitting"
         data-testid="set-segment-submit"
         @click="submit"

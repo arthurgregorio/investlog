@@ -17,8 +17,8 @@ function sideLabel(side: ReinvestmentSide): string {
           <th>Data</th>
           <th>Origem</th>
           <th>Destino</th>
-          <th class="c-num">Reinvestido</th>
-          <th class="c-num">Resultado</th>
+          <th class="c-num has-text-right">Reinvestido</th>
+          <th class="c-num has-text-right">Resultado</th>
         </tr>
       </thead>
       <tbody>
@@ -32,9 +32,11 @@ function sideLabel(side: ReinvestmentSide): string {
             <div class="has-text-weight-bold">{{ sideLabel(reinvestment.destination) }}</div>
             <div class="is-size-7 has-text-grey">{{ reinvestment.destination.walletName }}</div>
           </td>
-          <td class="c-num">{{ fmt.money(reinvestment.amount, reinvestment.currency) }}</td>
+          <td class="c-num has-text-right">
+            {{ fmt.money(reinvestment.amount, reinvestment.currency) }}
+          </td>
           <td
-            class="c-num"
+            class="c-num has-text-right"
             :class="reinvestment.profit >= 0 ? 'has-text-success' : 'has-text-danger'"
           >
             {{ fmt.moneySigned(reinvestment.profit, reinvestment.currency) }}

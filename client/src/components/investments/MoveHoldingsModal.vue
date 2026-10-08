@@ -51,33 +51,35 @@ onMounted(load)
   >
     <p v-if="error" class="auth-error" data-testid="move-error">{{ error }}</p>
 
-    <div class="form-grid">
-      <b-field v-if="!originWalletId" label="Carteira de origem" style="grid-column: 1/-1">
-        <b-select
-          v-model="selectedOriginId"
-          placeholder="Selecione a carteira"
-          expanded
-          data-testid="move-origin"
-        >
-          <option v-for="wallet in walletsStore.wallets" :key="wallet.id" :value="wallet.id">
-            {{ wallet.name }} · {{ wallet.currency }}
-          </option>
-        </b-select>
-      </b-field>
+    <div class="fixed-grid has-2-cols mb-0">
+      <div class="grid is-gap-2">
+        <b-field v-if="!originWalletId" label="Carteira de origem" class="cell is-col-span-2">
+          <b-select
+            v-model="selectedOriginId"
+            placeholder="Selecione a carteira"
+            expanded
+            data-testid="move-origin"
+          >
+            <option v-for="wallet in walletsStore.wallets" :key="wallet.id" :value="wallet.id">
+              {{ wallet.name }} · {{ wallet.currency }}
+            </option>
+          </b-select>
+        </b-field>
 
-      <b-field label="Carteira de destino" style="grid-column: 1/-1">
-        <b-select
-          v-model="destinationId"
-          placeholder="Selecione a carteira"
-          expanded
-          :disabled="!origin"
-          data-testid="move-destination"
-        >
-          <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
-            {{ wallet.name }} · {{ wallet.currency }}
-          </option>
-        </b-select>
-      </b-field>
+        <b-field label="Carteira de destino" class="cell is-col-span-2">
+          <b-select
+            v-model="destinationId"
+            placeholder="Selecione a carteira"
+            expanded
+            :disabled="!origin"
+            data-testid="move-destination"
+          >
+            <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
+              {{ wallet.name }} · {{ wallet.currency }}
+            </option>
+          </b-select>
+        </b-field>
+      </div>
     </div>
 
     <p v-if="origin && destinations.length === 0" class="has-text-grey is-size-7 my-2">
@@ -101,7 +103,6 @@ onMounted(load)
       >
       <b-button
         type="is-primary"
-        class="has-text-light"
         icon-left="swap-horizontal"
         :disabled="!valid"
         :loading="submitting"

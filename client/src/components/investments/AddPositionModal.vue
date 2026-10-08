@@ -75,21 +75,23 @@ async function submit() {
     "
     @close="emit('close')"
   >
-    <div class="form-grid">
-      <b-field label="Data" style="grid-column: 1/-1">
-        <DateInput v-model="date" />
-      </b-field>
-      <b-field v-if="isFund" label="Valor aportado" style="grid-column: 1/-1">
-        <NumberInput v-model="amount" :prefix="sym" placeholder="0,00" />
-      </b-field>
-      <template v-else>
-        <b-field label="Quantidade">
-          <NumberInput v-model="quantity" placeholder="0" />
+    <div class="fixed-grid has-2-cols">
+      <div class="grid is-gap-2">
+        <b-field label="Data" class="cell is-col-span-2">
+          <DateInput v-model="date" />
         </b-field>
-        <b-field label="Preço">
-          <NumberInput v-model="price" :prefix="sym" placeholder="0,00" />
+        <b-field v-if="isFund" label="Valor aportado" class="cell is-col-span-2">
+          <NumberInput v-model="amount" :prefix="sym" placeholder="0,00" />
         </b-field>
-      </template>
+        <template v-else>
+          <b-field label="Quantidade" class="cell is-col-span-2-mobile">
+            <NumberInput v-model="quantity" placeholder="0" />
+          </b-field>
+          <b-field label="Preço" class="cell is-col-span-2-mobile">
+            <NumberInput v-model="price" :prefix="sym" placeholder="0,00" />
+          </b-field>
+        </template>
+      </div>
     </div>
     <template #footer>
       <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"
@@ -97,7 +99,6 @@ async function submit() {
       >
       <b-button
         type="is-success"
-        class="has-text-light"
         icon-left="check"
         :disabled="!valid"
         :loading="submitting"

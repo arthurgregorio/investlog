@@ -34,7 +34,7 @@ const totpCode = ref('')
       expanded
       native-type="submit"
       :loading="submitting"
-      class="auth-submit has-text-light"
+      class="auth-submit"
     >
       Confirmar
     </b-button>

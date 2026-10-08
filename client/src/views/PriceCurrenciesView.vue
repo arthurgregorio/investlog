@@ -122,7 +122,7 @@ async function commitRate(currencyCode: string) {
     <Card>
       <CardBody>
         <b-loading :is-full-page="false" :model-value="ratesStore.loading" />
-        <div class="set-head">
+        <div class="is-flex is-align-items-center is-justify-content-space-between is-gap-1.5">
           <h2 class="set-title">Moeda base e conversão</h2>
           <span class="base-chip">
             <b-icon icon="repeat" size="is-small" />Base <b>{{ ratesStore.baseCurrency }}</b>
@@ -134,7 +134,7 @@ async function commitRate(currencyCode: string) {
         </p>
         <div class="rate-list">
           <div v-for="rate in ratesStore.rates" :key="rate.currencyCode" class="rate-row">
-            <div class="rate-cur">
+            <div class="is-flex is-align-items-center is-gap-1">
               <span class="cur-chip lg">{{ rate.currencyCode }}</span>
               <span class="rate-sym">{{ fmt.sym(rate.currencyCode) }}</span>
             </div>
@@ -156,7 +156,9 @@ async function commitRate(currencyCode: string) {
     <Card>
       <CardBody>
         <b-loading :is-full-page="false" :model-value="configurationsStore.loading" />
-        <div class="set-head"><h2 class="set-title">Sincronização automática</h2></div>
+        <div class="is-flex is-align-items-center is-justify-content-space-between is-gap-1.5">
+          <h2 class="set-title">Sincronização automática</h2>
+        </div>
         <p class="set-desc">Ative ou desative funções do sistema.</p>
         <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
           Indisponível no modo demonstração.
@@ -175,7 +177,9 @@ async function commitRate(currencyCode: string) {
 
     <Card>
       <CardBody>
-        <div class="set-head"><h2 class="set-title">Ações administrativas</h2></div>
+        <div class="is-flex is-align-items-center is-justify-content-space-between is-gap-1.5">
+          <h2 class="set-title">Ações administrativas</h2>
+        </div>
         <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
         <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
           Indisponível no modo demonstração.

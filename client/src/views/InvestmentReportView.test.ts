@@ -160,7 +160,7 @@ function kindSection(wrapper: VueWrapper, label: string) {
 function subtotals(container: Pick<VueWrapper, 'find'>, selector: string) {
   return container
     .find(selector)
-    .findAll('.stotal-value')
+    .findAll('.report-figure-value')
     .map((value) => value.text())
 }
 
@@ -342,7 +342,10 @@ describe('InvestmentReportView', () => {
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined)
     const { wrapper } = await mountView()
 
-    await wrapper.find('.report-toolbar button').trigger('click')
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Imprimir')!
+      .trigger('click')
 
     expect(printSpy).toHaveBeenCalledTimes(1)
   })

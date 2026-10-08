@@ -103,7 +103,7 @@ const exclusionNote = computed(() => {
     >
       <div>
         <div class="chart-title">Distribuição</div>
-        <div class="wd-chart-sub">
+        <div class="sub-caption">
           Participação de cada {{ groupingBySegment ? 'segmento' : 'investimento' }} na carteira
         </div>
       </div>
@@ -139,16 +139,10 @@ const exclusionNote = computed(() => {
           :thickness="RING_THICKNESS"
           :spacing="SEGMENT_SPACING"
         >
-          <div
-            class="is-size-7 has-text-grey"
-            data-testid="allocation-center-label"
-          >
+          <div class="is-size-7 has-text-grey" data-testid="allocation-center-label">
             {{ activeMetricLabel }}
           </div>
-          <div
-            class="is-size-5 has-text-weight-bold mt-1"
-            data-testid="allocation-center-value"
-          >
+          <div class="is-size-5 has-text-weight-bold mt-1" data-testid="allocation-center-value">
             {{ fmt.money(allocation.total, currency, { compact: true }) }}
           </div>
           <div class="is-size-7 has-text-grey mt-1">{{ assetCount }}</div>
