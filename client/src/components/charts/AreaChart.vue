@@ -36,7 +36,7 @@ const props = withDefaults(
     xLabels?: string[]
   }>(),
   {
-    color: '#2fb344',
+    color: 'var(--primary)',
     height: 240,
     showGrid: true,
     fmtY: (v: number) => String(v),

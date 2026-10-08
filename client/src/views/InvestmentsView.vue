@@ -290,12 +290,7 @@ function openReport() {
           placeholder="Buscar por nome ou ticker"
           @update:model-value="onSearchChange"
         />
-        <b-button
-          type="is-primary"
-          class="has-text-light"
-          icon-left="plus"
-          @click="openAddInvestment"
-        >
+        <b-button type="is-primary" icon-left="plus" @click="openAddInvestment">
           Adicionar investimento
         </b-button>
         <b-tooltip label="Exportar" position="is-top">
@@ -319,12 +314,7 @@ function openReport() {
       text="Registre uma aquisição para vê-la no seu logbook."
     >
       <template #action>
-        <b-button
-          type="is-primary"
-          class="has-text-light"
-          icon-left="plus"
-          @click="openAddInvestment"
-        >
+        <b-button type="is-primary" icon-left="plus" @click="openAddInvestment">
           Adicionar investimento
         </b-button>
       </template>

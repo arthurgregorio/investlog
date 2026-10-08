@@ -181,6 +181,12 @@ describe('TheNavbar', () => {
         'Cor teal',
         'Cor yellow',
       ])
+      expect(swatches.map((swatch) => swatch.getAttribute('data-accent'))).toEqual([
+        'blue',
+        'indigo',
+        'teal',
+        'yellow',
+      ])
       const active = swatches.filter((swatch) => swatch.classList.contains('active'))
       expect(active.map((swatch) => swatch.getAttribute('aria-label'))).toEqual(['Cor teal'])
     })

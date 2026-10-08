@@ -93,13 +93,7 @@ async function submit() {
       <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"
         >Cancelar</b-button
       >
-      <b-button
-        type="is-success"
-        class="has-text-light"
-        :disabled="!valid"
-        :loading="submitting"
-        @click="submit"
-      >
+      <b-button type="is-success" :disabled="!valid" :loading="submitting" @click="submit">
         Criar carteira
       </b-button>
     </template>

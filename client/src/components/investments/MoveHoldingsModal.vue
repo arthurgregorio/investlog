@@ -251,7 +251,6 @@ async function submit() {
       >
       <b-button
         type="is-primary"
-        class="has-text-light"
         icon-left="swap-horizontal"
         :disabled="!valid"
         :loading="submitting"

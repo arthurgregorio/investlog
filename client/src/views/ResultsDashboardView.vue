@@ -47,10 +47,7 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
             text="Resgates e reinvestimentos aparecem aqui depois de registrados."
           >
             <template #action>
-              <b-button
-                type="is-primary"
-                class="has-text-light"
-                @click="router.push({ name: 'wallets' })"
+              <b-button type="is-primary" @click="router.push({ name: 'wallets' })"
                 >Ir para as carteiras</b-button
               >
             </template>

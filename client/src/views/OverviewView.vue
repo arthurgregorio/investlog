@@ -109,11 +109,7 @@ const iconFor = (key: WalletKind): string => WALLET_TYPES[key].icon
         <p class="page-desc">Uma visão consolidada dos seus investimentos</p>
       </div>
       <div class="is-flex is-gap-1">
-        <b-button
-          type="is-primary"
-          class="has-text-light"
-          icon-left="wallet"
-          @click="router.push({ name: 'wallets' })"
+        <b-button type="is-primary" icon-left="wallet" @click="router.push({ name: 'wallets' })"
           >Carteiras</b-button
         >
       </div>

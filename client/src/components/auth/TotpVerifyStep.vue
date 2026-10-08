@@ -32,7 +32,7 @@ const trustDevice = ref(false)
       expanded
       native-type="submit"
       :loading="submitting"
-      class="auth-submit has-text-light"
+      class="auth-submit"
     >
       Entrar
     </b-button>

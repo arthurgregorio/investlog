@@ -21,12 +21,7 @@ const auth = useAuthStore()
 const { openPasswordChange, openTrustedDevices } = useModals()
 const { dark } = storeToRefs(appearance)
 
-const accents: { key: AccentKey; hex: string }[] = [
-  { key: 'blue', hex: '#206bc4' },
-  { key: 'indigo', hex: '#4263eb' },
-  { key: 'teal', hex: '#0ca678' },
-  { key: 'yellow', hex: '#b8860b' },
-]
+const accents: AccentKey[] = ['blue', 'indigo', 'teal', 'yellow']
 
 const profile = ref<ProfileResponse | null>(null)
 
@@ -102,17 +97,17 @@ async function logout() {
           <div class="user-menu-label">Cor de destaque</div>
           <div class="accent-row">
             <button
-              v-for="accentOption in accents"
-              :key="accentOption.key"
+              v-for="accentKey in accents"
+              :key="accentKey"
               type="button"
               class="accent-swatch"
-              :class="{ active: appearance.accent === accentOption.key }"
-              :style="{ background: accentOption.hex }"
-              :aria-label="`Cor ${accentOption.key}`"
-              @click="appearance.setAccent(accentOption.key)"
+              :class="{ active: appearance.accent === accentKey }"
+              :data-accent="accentKey"
+              :aria-label="`Cor ${accentKey}`"
+              @click="appearance.setAccent(accentKey)"
             >
               <b-icon
-                v-if="appearance.accent === accentOption.key"
+                v-if="appearance.accent === accentKey"
                 icon="check"
                 size="is-small"
                 class="sw-check"
