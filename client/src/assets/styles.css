@@ -591,7 +591,7 @@ a {
 }
 
 /* Direct-child combinators throughout this block on purpose: .inv-table's rows nest
-   HoldingDetailPanel's own .sub-table inside the detail row's cell, and a plain descendant
+   HoldingLedgerTable's own .sub-table inside the detail row's cell, and a plain descendant
    selector here (".inv-table td") also matches every <td> of that nested table, forcing this
    outer table's padding/border onto the inner one's cells. */
 .inv-table > thead > tr > th {
@@ -690,140 +690,8 @@ a {
   width: 90px;
 }
 
-.detail {
-  position: relative;
-  padding-top: 4px;
-}
-
-.sub-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 0;
-}
-
-.sub-table > thead > tr > th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
-}
-
-.sub-table > tbody > tr > td {
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-  vertical-align: middle;
-}
-
 .inv-table > tbody > tr:last-child > td {
   border-bottom: none;
-}
-
-.sub-table > tbody > tr:last-child > td {
-  border-bottom: none;
-}
-
-.date-edit {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border-bottom: 1px dashed var(--border);
-}
-
-.date-edit:hover {
-  border-bottom-color: var(--primary);
-  color: var(--primary-d);
-}
-
-.fund-fees {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
-  margin: 4px 2px 12px;
-}
-
-.fund-fee {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.fund-fee-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.fund-fee-value {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.ledger-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 4px 2px 10px;
-}
-
-.ledger-title {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.ledger-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: var(--tag-bg);
-  color: var(--text-2);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.ledger-tag {
-  display: inline-flex;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 5px;
-}
-
-.lt-purchase {
-  background: var(--up-soft);
-  color: var(--up);
-}
-
-.lt-withdrawal {
-  background: var(--withdrawal-soft);
-  color: var(--withdrawal-text);
-}
-
-.ledger-costs-note {
-  font-size: 9.5px;
-  color: var(--text-muted);
-  margin-top: 1px;
 }
 
 .form-stack {
