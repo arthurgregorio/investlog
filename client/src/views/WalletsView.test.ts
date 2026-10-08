@@ -35,6 +35,7 @@ async function mountView(wallets: WalletResponse[]) {
     routes: [
       { path: '/wallets', name: 'wallets', component: WalletsView },
       { path: '/wallets/:id', name: 'wallet-detail', component: { template: '<div />' } },
+      { path: '/investments', name: 'investments', component: { template: '<div />' } },
     ],
   })
   router.push('/wallets')
@@ -46,21 +47,17 @@ async function mountView(wallets: WalletResponse[]) {
   walletsStore.loaded = true
   vi.mocked(useCurrencyStore().convert).mockImplementation((amount) => amount)
 
+  const modals = {
+    openAddInvestment: vi.fn(),
+    openCreateWallet: vi.fn(),
+    openPasswordChange: vi.fn(),
+    openTrustedDevices: vi.fn(),
+  }
   const wrapper = mount(WalletsView, {
-    global: {
-      plugins: [pinia, router],
-      provide: {
-        [ModalKey as symbol]: {
-          openAddInvestment: vi.fn(),
-          openCreateWallet: vi.fn(),
-          openPasswordChange: vi.fn(),
-          openTrustedDevices: vi.fn(),
-        },
-      },
-    },
+    global: { plugins: [pinia, router], provide: { [ModalKey as symbol]: modals } },
   })
   await flushPromises()
-  return { wrapper, router }
+  return { wrapper, router, modals }
 }
 
 describe('WalletsView', () => {
@@ -85,6 +82,37 @@ describe('WalletsView', () => {
 
     expect(router.currentRoute.value.name).toBe('wallet-detail')
     expect(router.currentRoute.value.params.id).toBe('wallet-1')
+  })
+
+  it('lists the wallet investments from the foot link', async () => {
+    const { wrapper, router } = await mountView([walletOf('wallet-1', 'Um')])
+
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Ver investimentos')!
+      .trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('investments')
+    expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', walletId: 'wallet-1' })
+  })
+
+  it('opens the create wallet modal from the add tile', async () => {
+    const { wrapper, modals } = await mountView([walletOf('wallet-1', 'Um')])
+
+    await wrapper.find('.wallet-add').trigger('click')
+
+    expect(modals.openCreateWallet).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers a first wallet from the empty state when there are none', async () => {
+    const { wrapper, modals } = await mountView([])
+
+    expect(wrapper.find('.entity-grid').exists()).toBe(false)
+
+    await wrapper.get('.empty button').trigger('click')
+
+    expect(modals.openCreateWallet).toHaveBeenCalledTimes(1)
   })
 
   it('shows the loading overlay only while the wallets store is loading', async () => {
