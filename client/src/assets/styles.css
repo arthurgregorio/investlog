@@ -271,12 +271,11 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-left: 12px;
+  padding: 4px 8px 4px 12px;
   margin-left: 4px;
   border-left: 1px solid var(--border-2);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  padding-right: 8px;
   transition: background 0.13s;
 }
 
