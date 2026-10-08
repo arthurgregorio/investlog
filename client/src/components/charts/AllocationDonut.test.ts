@@ -127,7 +127,7 @@ describe('AllocationDonut', () => {
     ])
 
     const swatches = wrapper
-      .findAll('.allocation-legend-swatch')
+      .findAll('.legend-dot')
       .map((swatch) => (swatch.element as HTMLElement).style.background)
     expect(swatches).toEqual(['var(--chart-1)', 'var(--chart-2)', 'var(--text-muted)'])
   })

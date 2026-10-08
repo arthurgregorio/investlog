@@ -9,6 +9,7 @@ import TickerBadge from '@/components/ui/TickerBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import SortTh from '@/components/ui/SortTh.vue'
 import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useTypesListStore } from '@/stores/typesList'
 import { useWalletsStore } from '@/stores/wallets'
@@ -244,10 +245,7 @@ function openReport() {
 
 <template>
   <div class="page">
-    <div class="page-head">
-      <h1 class="page-title">Investimentos</h1>
-      <p class="page-desc">Aqui você gerencia seus investimentos</p>
-    </div>
+    <PageHeader title="Investimentos" description="Aqui você gerencia seus investimentos" />
 
     <div class="inv-controls">
       <div class="seg-tabs">
