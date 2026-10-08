@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import FrozenBadge from '@/components/ui/FrozenBadge.vue'
-import TickerBadge from '@/components/ui/TickerBadge.vue'
-import GainChip from '@/components/ui/GainChip.vue'
-import SortTh from '@/components/ui/SortTh.vue'
-import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
+import HoldingsTable from '@/components/investments/HoldingsTable.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useTypesListStore } from '@/stores/typesList'
@@ -16,9 +12,8 @@ import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
 import { useModals } from '@/composables/useModals'
-import { fmt } from '@/composables/useFormat'
-import { badgeColor, WALLET_TYPES } from '@/utils/walletTypes'
-import type { HoldingRow, WalletKind } from '@/types'
+import { WALLET_TYPES } from '@/utils/walletTypes'
+import type { WalletKind } from '@/types'
 
 type Filter = 'all' | WalletKind
 type SortKey = 'wallet' | 'price' | 'invested' | 'current' | 'gain'
@@ -70,7 +65,6 @@ function queryFingerprint(query: LocationQuery | LocationQueryRaw): string {
 const initialSort = parseSort(route.query)
 
 const activeFilter = ref<Filter>(parseFilter(route.query))
-const openedDetails = ref<HoldingRow[]>([])
 const typeLabelFilter = ref<string | undefined>(
   typeof route.query.type === 'string' ? route.query.type : undefined,
 )
@@ -80,6 +74,7 @@ const walletIdFilter = ref<string | undefined>(
 const searchQuery = ref(typeof route.query.search === 'string' ? route.query.search : '')
 const sortKey = ref<SortKey | null>(initialSort.key)
 const sortDirection = ref<'asc' | 'desc'>(initialSort.direction)
+const holdingsTable = useTemplateRef('holdingsTable')
 
 // Tracks the query this component last wrote via router.replace, so the watcher below can tell
 // its own self-echo apart from a real external navigation (WalletsView link, back/forward, pasted
@@ -143,7 +138,7 @@ watch(
   (newQuery) => {
     if (queryFingerprint(newQuery) === lastWrittenQueryFingerprint) return
     hydrateFiltersFromRoute(newQuery)
-    openedDetails.value = []
+    holdingsTable.value?.collapse()
     reload(parsePage(newQuery))
   },
 )
@@ -162,19 +157,19 @@ function selectTab(filter: Filter) {
   typeLabelFilter.value = undefined
   walletIdFilter.value = undefined
   searchQuery.value = ''
-  openedDetails.value = []
+  holdingsTable.value?.collapse()
   reload(0)
 }
 
 function onTypeLabelChange(value: string) {
   typeLabelFilter.value = value || undefined
-  openedDetails.value = []
+  holdingsTable.value?.collapse()
   reload(0)
 }
 
 function onWalletIdChange(value: string) {
   walletIdFilter.value = value || undefined
-  openedDetails.value = []
+  holdingsTable.value?.collapse()
   reload(0)
 }
 
@@ -182,7 +177,7 @@ function onSearchChange(value: string) {
   searchQuery.value = value
   if (searchDebounceHandle) clearTimeout(searchDebounceHandle)
   searchDebounceHandle = setTimeout(() => {
-    openedDetails.value = []
+    holdingsTable.value?.collapse()
     reload(0)
   }, 300)
 }
@@ -195,35 +190,6 @@ function toggleSort(key: string) {
     sortDirection.value = 'asc'
   }
   reload(0)
-}
-
-function onPageChange(newPage: number) {
-  openedDetails.value = []
-  reload(newPage - 1)
-}
-
-function toggleRow(row: HoldingRow) {
-  const alreadyOpen = openedDetails.value.some((openRow) => openRow.id === row.id)
-  openedDetails.value = alreadyOpen ? [] : [row]
-}
-
-function isOpen(row: HoldingRow): boolean {
-  return openedDetails.value.some((openRow) => openRow.id === row.id)
-}
-
-function onHoldingDeleted() {
-  openedDetails.value = []
-  holdingsListStore.refresh()
-}
-
-function displayName(row: HoldingRow): string {
-  return row.ticker ?? row.name
-}
-
-function subLabel(row: HoldingRow): string {
-  if (row.kind === 'FUNDS') return row.typeLabel ?? 'Fundo'
-  if (row.kind === 'CRYPTO') return 'Cripto'
-  return row.typeLabel ?? 'Ação'
 }
 
 function openAddInvestment() {
@@ -319,185 +285,24 @@ function openReport() {
     </EmptyState>
 
     <Card v-else class="table-card">
-      <div class="table-wrap">
-        <b-loading :is-full-page="false" :model-value="holdingsListStore.loading" />
-        <div class="table-scroll">
-          <table class="inv-table">
-            <thead>
-              <tr>
-                <th>Investimento</th>
-                <SortTh
-                  sort-key="wallet"
-                  :active-key="sortKey"
-                  :direction="sortDirection"
-                  align="left"
-                  @toggle="toggleSort"
-                  >Carteira</SortTh
-                >
-                <th class="c-num has-text-right">Qtd.</th>
-                <SortTh
-                  sort-key="price"
-                  :active-key="sortKey"
-                  :direction="sortDirection"
-                  @toggle="toggleSort"
-                  >Preço atual</SortTh
-                >
-                <SortTh
-                  sort-key="invested"
-                  :active-key="sortKey"
-                  :direction="sortDirection"
-                  @toggle="toggleSort"
-                  >Investido</SortTh
-                >
-                <SortTh
-                  sort-key="current"
-                  :active-key="sortKey"
-                  :direction="sortDirection"
-                  @toggle="toggleSort"
-                  >Valor atual</SortTh
-                >
-                <SortTh
-                  sort-key="gain"
-                  :active-key="sortKey"
-                  :direction="sortDirection"
-                  @toggle="toggleSort"
-                  >Resultado</SortTh
-                >
-                <th class="c-act"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-for="row in holdingsListStore.rows" :key="row.id">
-                <tr
-                  class="inv-row"
-                  :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
-                  @click="toggleRow(row)"
-                >
-                  <td>
-                    <div class="is-flex is-align-items-center is-gap-1.5">
-                      <FrozenBadge v-if="row.frozen" />
-                      <TickerBadge
-                        v-else
-                        :ticker="displayName(row)"
-                        :color="badgeColor(row.ticker, row.kind)"
-                      />
-                      <div class="name-meta">
-                        <div class="is-flex is-align-items-center is-gap-1">
-                          <span class="t-ticker">{{ displayName(row) }}</span>
-                          <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
-                            subLabel(row)
-                          }}</span>
-                        </div>
-                        <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
-                          {{ row.name }}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span class="wallet-ref">
-                      <span
-                        class="wref-dot"
-                        :style="{ background: WALLET_TYPES[row.kind].accent }"
-                      />
-                      {{ row.walletName }}
-                    </span>
-                  </td>
-                  <td class="c-num has-text-right">
-                    {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
-                  </td>
-                  <td class="c-num has-text-right">
-                    <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.currentPrice, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </template>
-                    <template v-else-if="row.kind === 'FUNDS' && row.currentValue != null">
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.currentValue, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </template>
-                    <span v-else class="gl-empty">—</span>
-                    <div v-if="row.kind !== 'FUNDS' && row.quantity" class="avg-note">
-                      PM
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.costBasis / row.quantity, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </div>
-                  </td>
-                  <td class="c-num has-text-right">
-                    <div class="has-text-weight-bold">
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.costBasis, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </div>
-                  </td>
-                  <td class="c-num has-text-right">
-                    <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                    <template v-else>
-                      {{
-                        fmt.money(
-                          currencyStore.convert(row.currentValue, row.walletCurrency),
-                          currencyStore.displayCurrency,
-                        )
-                      }}
-                    </template>
-                  </td>
-                  <td class="c-num has-text-right">
-                    <GainChip
-                      :value="
-                        row.gain == null
-                          ? null
-                          : currencyStore.convert(row.gain, row.walletCurrency)
-                      "
-                      :pct="row.gainPct"
-                      :cur="currencyStore.displayCurrency"
-                      stacked
-                    />
-                  </td>
-                  <td class="c-act">
-                    <span class="chev">
-                      <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
-                    </span>
-                  </td>
-                </tr>
-                <tr v-if="isOpen(row)" class="detail-row">
-                  <td colspan="8">
-                    <HoldingDetailPanel
-                      :row="row"
-                      @deleted="onHoldingDeleted"
-                      @position-added="holdingsListStore.refresh()"
-                      @relocated="onHoldingDeleted"
-                    />
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-        <div v-if="holdingsListStore.totalPages > 1" class="table-foot">
-          <b-pagination
-            :model-value="holdingsListStore.page + 1"
-            :total="holdingsListStore.totalElements"
-            :per-page="holdingsListStore.pageSize"
-            order="is-right"
-            simple
-            @change="onPageChange"
-          />
-        </div>
-      </div>
+      <HoldingsTable
+        ref="holdingsTable"
+        :rows="holdingsListStore.rows"
+        :loading="holdingsListStore.loading"
+        :page="holdingsListStore.page"
+        :page-size="holdingsListStore.pageSize"
+        :total-elements="holdingsListStore.totalElements"
+        show-wallet-column
+        convert-to-display-currency
+        sortable
+        :sort-key="sortKey"
+        :sort-direction="sortDirection"
+        @sort="toggleSort"
+        @page-change="reload"
+        @holding-changed="holdingsListStore.refresh()"
+        @position-added="holdingsListStore.refresh()"
+        @relocated="holdingsListStore.refresh()"
+      />
     </Card>
   </div>
 </template>

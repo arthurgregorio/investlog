@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDialog, useToast } from 'buefy'
 import AllocationDonut from '@/components/charts/AllocationDonut.vue'
 import AreaChart from '@/components/charts/AreaChart.vue'
-import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
+import HoldingsTable from '@/components/investments/HoldingsTable.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import ReinvestModal from '@/components/investments/ReinvestModal.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import GainChip from '@/components/ui/GainChip.vue'
-import FrozenBadge from '@/components/ui/FrozenBadge.vue'
-import TickerBadge from '@/components/ui/TickerBadge.vue'
+import TablePagination from '@/components/ui/TablePagination.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { holdingsApi } from '@/api/holdings'
@@ -22,7 +21,7 @@ import { escapeHtml } from '@/utils/escapeHtml'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useWalletMovesStore } from '@/stores/walletMoves'
 import { fmt } from '@/composables/useFormat'
-import { badgeColor, WALLET_TYPES } from '@/utils/walletTypes'
+import { WALLET_TYPES } from '@/utils/walletTypes'
 import type { HoldingRow, WalletMoveRow } from '@/types'
 
 const HOLDINGS_PAGE_SIZE = 10
@@ -40,7 +39,7 @@ const walletMovesStore = useWalletMovesStore()
 
 const walletId = computed(() => route.params.id as string)
 const detail = computed(() => walletDetailStore.detail)
-const openedDetails = ref<string[]>([])
+const holdingsTable = useTemplateRef('holdingsTable')
 const activeTab = ref(0)
 const moveModalOpen = ref(false)
 const reinvestModalOpen = ref(false)
@@ -106,7 +105,7 @@ async function loadAllocationRows() {
 }
 
 async function loadAll() {
-  openedDetails.value = []
+  holdingsTable.value?.collapse()
   await Promise.all([
     loadAllocationRows(),
     walletDetailStore.load(walletId.value),
@@ -118,28 +117,11 @@ async function loadAll() {
 onMounted(loadAll)
 watch(walletId, loadAll)
 
-function isOpen(row: HoldingRow) {
-  return openedDetails.value.includes(row.id)
-}
-
-function toggleRow(row: HoldingRow) {
-  openedDetails.value = isOpen(row) ? [] : [row.id]
-}
-
-function displayName(row: HoldingRow): string {
-  return row.ticker ?? row.name
-}
-
 async function onPageChange(page: number) {
-  await holdingsListStore.loadKind('all', page - 1, {
+  await holdingsListStore.loadKind('all', page, {
     walletId: walletId.value,
     size: HOLDINGS_PAGE_SIZE,
   })
-}
-
-async function onHoldingChanged() {
-  openedDetails.value = []
-  await loadAll()
 }
 
 function openMove() {
@@ -147,7 +129,6 @@ function openMove() {
 }
 
 async function onPositionsChanged() {
-  openedDetails.value = []
   await Promise.all([loadAll(), walletsStore.refresh()])
 }
 
@@ -156,7 +137,7 @@ function openReinvest() {
 }
 
 async function onMovesPageChange(page: number) {
-  await walletMovesStore.load(walletId.value, page - 1)
+  await walletMovesStore.load(walletId.value, page)
 }
 
 function moveCounterpart(move: WalletMoveRow): string {
@@ -454,105 +435,19 @@ function confirmDeleteWallet() {
               text="Adicione um investimento para começar a acompanhar esta carteira."
             />
 
-            <div v-else class="table-wrap">
-              <b-loading :is-full-page="false" :model-value="holdingsListStore.loading" />
-              <div class="table-scroll">
-                <table class="inv-table">
-                  <thead>
-                    <tr>
-                      <th>Investimento</th>
-                      <th class="c-num has-text-right">Qtd.</th>
-                      <th class="c-num has-text-right">Preço atual</th>
-                      <th class="c-num has-text-right">Investido</th>
-                      <th class="c-num has-text-right">Valor atual</th>
-                      <th class="c-num has-text-right">Resultado</th>
-                      <th class="c-act"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template v-for="row in holdingsListStore.rows" :key="row.id">
-                      <tr
-                        class="inv-row"
-                        :class="{ 'is-open': isOpen(row), 'is-frozen': row.frozen }"
-                        @click="toggleRow(row)"
-                      >
-                        <td>
-                          <div class="is-flex is-align-items-center is-gap-1.5">
-                            <FrozenBadge v-if="row.frozen" />
-                            <TickerBadge
-                              v-else
-                              :ticker="displayName(row)"
-                              :color="badgeColor(row.ticker, row.kind)"
-                            />
-                            <div class="name-meta">
-                              <div class="is-flex is-align-items-center is-gap-1">
-                                <span class="t-ticker">{{ displayName(row) }}</span>
-                              </div>
-                              <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">
-                                {{ row.name }}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td class="c-num has-text-right">
-                          {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
-                        </td>
-                        <td class="c-num has-text-right">
-                          <span v-if="row.currentPrice == null" class="gl-empty">—</span>
-                          <template v-else>{{
-                            fmt.money(row.currentPrice, row.walletCurrency)
-                          }}</template>
-                        </td>
-                        <td class="c-num has-text-right">
-                          <div class="has-text-weight-bold">
-                            {{ fmt.money(row.costBasis, row.walletCurrency) }}
-                          </div>
-                        </td>
-                        <td class="c-num has-text-right">
-                          <span v-if="row.currentValue == null" class="gl-empty">—</span>
-                          <template v-else>{{
-                            fmt.money(row.currentValue, row.walletCurrency)
-                          }}</template>
-                        </td>
-                        <td class="c-num has-text-right">
-                          <GainChip
-                            :value="row.gain"
-                            :pct="row.gainPct"
-                            :cur="row.walletCurrency"
-                            stacked
-                          />
-                        </td>
-                        <td class="c-act">
-                          <span class="chev">
-                            <b-icon :icon="isOpen(row) ? 'chevron-up' : 'chevron-down'" />
-                          </span>
-                        </td>
-                      </tr>
-                      <tr v-if="isOpen(row)" class="detail-row">
-                        <td colspan="7">
-                          <HoldingDetailPanel
-                            :row="row"
-                            @deleted="onHoldingChanged"
-                            @position-added="onHoldingChanged"
-                            @relocated="onPositionsChanged"
-                          />
-                        </td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-              <div v-if="holdingsListStore.totalPages > 1" class="table-foot">
-                <b-pagination
-                  :model-value="holdingsListStore.page + 1"
-                  :total="holdingsListStore.totalElements"
-                  :per-page="holdingsListStore.pageSize"
-                  order="is-right"
-                  simple
-                  @change="onPageChange"
-                />
-              </div>
-            </div>
+            <HoldingsTable
+              v-else
+              ref="holdingsTable"
+              :rows="holdingsListStore.rows"
+              :loading="holdingsListStore.loading"
+              :page="holdingsListStore.page"
+              :page-size="holdingsListStore.pageSize"
+              :total-elements="holdingsListStore.totalElements"
+              @page-change="onPageChange"
+              @holding-changed="loadAll"
+              @position-added="loadAll"
+              @relocated="onPositionsChanged"
+            />
           </b-tab-item>
 
           <b-tab-item>
@@ -607,16 +502,12 @@ function confirmDeleteWallet() {
                     </tbody>
                   </table>
                 </div>
-                <div v-if="walletMovesStore.totalPages > 1" class="table-foot">
-                  <b-pagination
-                    :model-value="walletMovesStore.page + 1"
-                    :total="walletMovesStore.totalElements"
-                    :per-page="walletMovesStore.pageSize"
-                    order="is-right"
-                    simple
-                    @change="onMovesPageChange"
-                  />
-                </div>
+                <TablePagination
+                  :page="walletMovesStore.page"
+                  :page-size="walletMovesStore.pageSize"
+                  :total-elements="walletMovesStore.totalElements"
+                  @page-change="onMovesPageChange"
+                />
               </div>
               <div
                 v-else-if="walletMovesStore.loaded"
