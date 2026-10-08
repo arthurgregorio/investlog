@@ -335,11 +335,10 @@ a {
 }
 
 .page-head-row {
-  flex-direction: row;
+  flex-flow: row wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
 }
 
 .page-title {
@@ -387,6 +386,7 @@ a {
   --bulma-card-background-color: var(--surface);
   --bulma-card-radius: var(--radius);
   --bulma-card-shadow: var(--shadow);
+
   border: 1px solid var(--border);
 }
 
@@ -444,6 +444,7 @@ a {
 
 .page > .fixed-grid > .grid {
   margin-bottom: 0;
+
   --bulma-grid-gap: 1rem;
 }
 
@@ -1005,6 +1006,7 @@ a {
 .inv-row.is-frozen {
   --ice: var(--bulma-info-on-scheme);
   --ice-tint: color-mix(in srgb, var(--ice) 5%, transparent);
+
   background-image:
     linear-gradient(var(--ice), var(--ice)), linear-gradient(var(--ice-tint), var(--ice-tint));
   background-size:
@@ -1527,8 +1529,7 @@ a {
   font-family: var(--font);
   padding-top: 0;
   padding-bottom: 0;
-  padding-inline-start: 12px;
-  padding-inline-end: 12px;
+  padding-inline: 12px;
   box-shadow: none;
   transition:
     border-color 0.12s,
@@ -1573,8 +1574,7 @@ a {
   font-family: var(--font);
   padding-top: 0;
   padding-bottom: 0;
-  padding-inline-start: 12px;
-  padding-inline-end: 34px;
+  padding-inline: 12px 34px;
   box-shadow: none;
   transition:
     border-color 0.12s,
@@ -2362,7 +2362,7 @@ h3.report-subgroup-title {
   padding: 16px 20px 20px;
 }
 
-@media (max-width: 860px) {
+@media (width <= 860px) {
   .auth-aside {
     display: none;
   }
@@ -2390,7 +2390,7 @@ h3.report-subgroup-title {
   }
 }
 
-@media (max-width: 680px) {
+@media (width <= 680px) {
   .page {
     padding: 20px 16px 60px;
   }
@@ -2461,7 +2461,7 @@ h3.report-subgroup-title {
 }
 
 @page {
-  size: A4;
+  size: a4;
   margin: 14mm 12mm;
 }
 

@@ -1,14 +1,14 @@
 :root {
   --up: #15915b;
   --down: #e0384f;
-  --up-soft: rgba(21, 145, 91, 0.12);
-  --down-soft: rgba(224, 56, 79, 0.12);
+  --up-soft: rgb(21 145 91 / 12%);
+  --down-soft: rgb(224 56 79 / 12%);
   --wt-stocks: #2b6cb0;
   --wt-crypto: #e0900a;
   --wt-funds: #0ca678;
-  --wt-stocks-soft: rgba(43, 108, 176, 0.13);
-  --wt-crypto-soft: rgba(224, 144, 10, 0.15);
-  --wt-funds-soft: rgba(12, 166, 120, 0.14);
+  --wt-stocks-soft: rgb(43 108 176 / 13%);
+  --wt-crypto-soft: rgb(224 144 10 / 15%);
+  --wt-funds-soft: rgb(12 166 120 / 14%);
   --chart-1: #2b6cb0;
   --chart-2: #e8590c;
   --chart-3: #0ca678;
@@ -21,19 +21,19 @@
   --chart-10: #5c7cfa;
   --radius: 10px;
   --radius-sm: 7px;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow: 0 1px 2px rgb(15 23 42 / 4%), 0 1px 3px rgb(15 23 42 / 6%);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --ink: #0f172a;
   --ticker-fallback: #5b6dd8;
   --ticker-fallback-funds: #2a8f6f;
-  --withdrawal-soft: rgba(184, 134, 11, 0.14);
+  --withdrawal-soft: rgb(184 134 11 / 14%);
   --bulma-modal-content-width: 460px;
 }
 
 [data-accent='blue'] {
   --primary: #206bc4;
   --primary-d: #1b5aa6;
-  --primary-soft: rgba(32, 107, 196, 0.12);
+  --primary-soft: rgb(32 107 196 / 12%);
   --bulma-primary-h: 213deg;
   --bulma-primary-s: 72%;
   --bulma-primary-l: 45%;
@@ -42,7 +42,7 @@
 [data-accent='yellow'] {
   --primary: #b8860b;
   --primary-d: #9c7209;
-  --primary-soft: rgba(184, 134, 11, 0.12);
+  --primary-soft: rgb(184 134 11 / 12%);
   --bulma-primary-h: 43deg;
   --bulma-primary-s: 89%;
   --bulma-primary-l: 38%;
@@ -51,7 +51,7 @@
 [data-accent='teal'] {
   --primary: #0ca678;
   --primary-d: #099268;
-  --primary-soft: rgba(12, 166, 120, 0.12);
+  --primary-soft: rgb(12 166 120 / 12%);
   --bulma-primary-h: 162deg;
   --bulma-primary-s: 87%;
   --bulma-primary-l: 35%;
@@ -60,7 +60,7 @@
 [data-accent='indigo'] {
   --primary: #4263eb;
   --primary-d: #3950c8;
-  --primary-soft: rgba(66, 99, 235, 0.12);
+  --primary-soft: rgb(66 99 235 / 12%);
   --bulma-primary-h: 228deg;
   --bulma-primary-s: 81%;
   --bulma-primary-l: 59%;
@@ -75,7 +75,7 @@
 
 [data-theme='light'] {
   --bg: #f4f6fa;
-  --surface: #ffffff;
+  --surface: #fff;
   --surface-2: #f7f9fc;
   --surface-hover: #f1f5fa;
   --border: #e6e9ef;
@@ -89,7 +89,7 @@
   --withdrawal-text: #9c7209;
   --primary-text: var(--primary-d);
   --nav-active-text: var(--primary-d);
-  --shadow-raised: 0 10px 40px rgba(15, 23, 42, 0.08);
+  --shadow-raised: 0 10px 40px rgb(15 23 42 / 8%);
 }
 
 [data-theme='dark'] {
@@ -104,7 +104,7 @@
   --text-muted: #71819a;
   --chart-grid: #26344a;
   --tag-bg: #222e3f;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow: 0 1px 2px rgb(0 0 0 / 25%);
   --wt-stocks: #4a93de;
   --wt-crypto: #f0a821;
   --wt-funds: #1fc093;
@@ -112,7 +112,7 @@
   --withdrawal-text: #f0a821;
   --primary-text: var(--primary);
   --nav-active-text: #7fb3ec;
-  --shadow-raised: 0 12px 44px rgba(0, 0, 0, 0.32);
+  --shadow-raised: 0 12px 44px rgb(0 0 0 / 32%);
   --chart-1: #4a93de;
   --chart-2: #ff8a4c;
   --chart-3: #1fc093;
