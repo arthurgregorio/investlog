@@ -202,7 +202,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` (a compact layout, and a `detailed` one with share bars) |
 | `overview/` | `OverviewView`'s cards — `EvolutionCard` (the invested-capital `AreaChart`), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
 | `users/` | `UserCard` — one `UsersView` card on `EntityCard` with its own "Ações" dropdown, store calls and `useConfirmDialog` confirmations; it emits `reset-password` so the view owns `PasswordResetModal` |
-| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`) |
+| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`); `WalletDetailView`'s `WalletDetailHeader` (identity, figures and the **Ações** dropdown emitting `rename`, `remove`, `move`, `reinvest` and `view-holdings`, above a strip of three `WalletHighlightCard`s with an `up`, `down` or `largest` rail), `WalletPerformanceCard` (the Desempenho chart and delta chips), `WalletDetailTabs` (the tabbed card, investments in its slot) and `WalletMovesTable` (the Movimentações tab, reading the `walletMoves` store) |
 | `settings/` | The admin settings pieces — `SettingsSection` (the titled card frame with an optional `aside` slot and loading overlay), `CurrencyRateRow` (one rate with its own draft, emitting `commit` only for a rate above zero), `PriceSyncActions` (the manual price-sync buttons) and `TypesView`'s `AssetTypeTable` |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
@@ -335,6 +335,7 @@ existing access, not for handling new signups (those stay on approve/delete).
 - `useReinvestForm` / `useMoveHoldingsForm` — form state, derived amounts, validation, `load()` and
   `submit()` for `ReinvestModal` and `MoveHoldingsModal`; a server 400 lands in `error` inline.
 - `useReportFilters` / `useReportPageBreaks` — the report's filters read from the route query, and the on-screen A4 page-break offsets kept current by a `ResizeObserver` on the paper.
+- `useWalletActions` — the wallet detail page's rename prompt and remove confirmation; removing goes back to `/wallets`.
 - `useAssetTypeActions` — `TypesView`'s per-kind copy and tabs plus the create/rename prompts and the remove confirmation, routed to the `typesList` store action of the active kind.
 - `useChartTheme` — chart colors/options derived from the active theme and accent.
 - `useModals` — app-shell modal injection.
