@@ -86,21 +86,18 @@ onBeforeUnmount(() => chart?.destroy())
 </script>
 
 <template>
-  <div :style="{ position: 'relative', width: `${size}px`, height: `${size}px` }">
+  <div class="is-relative" :style="{ width: `${size}px`, height: `${size}px` }">
     <canvas ref="canvasElement" />
     <div
-      style="
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        pointer-events: none;
-      "
+      class="donut-center is-overlay is-flex is-flex-direction-column is-align-items-center is-justify-content-center has-text-centered"
     >
       <slot />
     </div>
   </div>
 </template>
+
+<style scoped>
+.donut-center {
+  pointer-events: none;
+}
+</style>

@@ -49,11 +49,11 @@ provide(ModalKey, {
 </script>
 
 <template>
-  <div class="app-root" :data-theme="theme" :data-accent="accent" data-density="comfortable">
+  <div class="app-root" :data-theme="theme" :data-accent="accent">
     <div v-if="showAppShell" class="main">
       <TheNavbar />
       <TheTopNav />
-      <div class="content">
+      <div class="app-content">
         <RouterView />
       </div>
     </div>
@@ -75,13 +75,7 @@ provide(ModalKey, {
         }
       "
     />
-    <PasswordChangeModal
-      v-if="showPasswordChangeModal"
-      @close="showPasswordChangeModal = false"
-    />
-    <TrustedDevicesModal
-      v-if="showTrustedDevicesModal"
-      @close="showTrustedDevicesModal = false"
-    />
+    <PasswordChangeModal v-if="showPasswordChangeModal" @close="showPasswordChangeModal = false" />
+    <TrustedDevicesModal v-if="showTrustedDevicesModal" @close="showTrustedDevicesModal = false" />
   </div>
 </template>

@@ -143,9 +143,7 @@ describe('AddInvestmentForm', () => {
       const form = buildForm()
       const wrapper = mountForm(form)
 
-      const [quantityInput, priceInput, currentPriceInput] = wrapper.findAll(
-        'input[type="number"]',
-      )
+      const [quantityInput, priceInput, currentPriceInput] = wrapper.findAll('input[type="number"]')
       await quantityInput.setValue('12.5')
       await priceInput.setValue('36.9')
       await currentPriceInput.setValue('40')
@@ -306,10 +304,7 @@ describe('AddInvestmentForm', () => {
     it('lists the wallets of the kind with their currency', () => {
       const wrapper = mountForm(
         buildForm({
-          walletsOfKind: [
-            wallet(),
-            wallet({ id: 'wallet-2', name: 'Exterior', currency: 'USD' }),
-          ],
+          walletsOfKind: [wallet(), wallet({ id: 'wallet-2', name: 'Exterior', currency: 'USD' })],
         }),
       )
 
@@ -328,7 +323,7 @@ describe('AddInvestmentForm', () => {
         const wrapper = mountForm(buildForm({ kind, walletsOfKind: [], walletId: '' }))
 
         expect(wrapper.text()).toContain(`Nenhuma carteira de ${label} ainda.`)
-        expect(wrapper.find('.form-grid').exists()).toBe(false)
+        expect(wrapper.find('.fixed-grid').exists()).toBe(false)
 
         await wrapper.find('.form-notice button').trigger('click')
 

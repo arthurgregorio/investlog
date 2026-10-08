@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 
 import 'buefy/dist/css/buefy.css'
 import '@mdi/font/css/materialdesignicons.min.css'
+import '@/assets/theme.css'
 import '@/assets/styles.css'
 
 const app = createApp(App)

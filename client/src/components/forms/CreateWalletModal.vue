@@ -55,45 +55,45 @@ async function submit() {
     subtitle="Agrupe seus investimentos por objetivo e moeda."
     @close="emit('close')"
   >
-    <div class="form-grid">
-      <b-field label="Nome da carteira" style="grid-column: 1/-1">
-        <b-input v-model="name" placeholder="ex.: Carteira de Dividendos" autofocus />
-      </b-field>
-      <b-field
-        label="Tipo"
-        message="Define quais investimentos a carteira aceita."
-        style="grid-column: 1/-1"
-      >
-        <b-field grouped>
-          <b-radio-button
-            v-for="opt in KIND_OPTS"
-            :key="opt.value"
-            v-model="kind"
-            :native-value="opt.value"
-            type="is-primary"
-          >
-            <b-icon :icon="opt.icon" size="is-small" />
-            <span>{{ opt.label }}</span>
-          </b-radio-button>
+    <div class="fixed-grid has-2-cols">
+      <div class="grid is-gap-2">
+        <b-field label="Nome da carteira" class="cell is-col-span-2">
+          <b-input v-model="name" placeholder="ex.: Carteira de Dividendos" autofocus />
         </b-field>
-      </b-field>
-      <b-field label="Moeda" message="Convertida para a moeda base na visão consolidada.">
-        <b-select v-model="currency">
-          <option v-for="code in currencyOptions" :key="code" :value="code">{{ code }}</option>
-        </b-select>
-      </b-field>
+        <b-field
+          label="Tipo"
+          message="Define quais investimentos a carteira aceita."
+          class="cell is-col-span-2"
+        >
+          <b-field grouped>
+            <b-radio-button
+              v-for="opt in KIND_OPTS"
+              :key="opt.value"
+              v-model="kind"
+              :native-value="opt.value"
+              type="is-primary"
+            >
+              <b-icon :icon="opt.icon" size="is-small" />
+              <span>{{ opt.label }}</span>
+            </b-radio-button>
+          </b-field>
+        </b-field>
+        <b-field
+          label="Moeda"
+          class="cell is-col-span-2-mobile"
+          message="Convertida para a moeda base na visão consolidada."
+        >
+          <b-select v-model="currency">
+            <option v-for="code in currencyOptions" :key="code" :value="code">{{ code }}</option>
+          </b-select>
+        </b-field>
+      </div>
     </div>
     <template #footer>
       <b-button outlined type="is-danger" :disabled="submitting" @click="emit('close')"
         >Cancelar</b-button
       >
-      <b-button
-        type="is-success"
-        class="has-text-light"
-        :disabled="!valid"
-        :loading="submitting"
-        @click="submit"
-      >
+      <b-button type="is-success" :disabled="!valid" :loading="submitting" @click="submit">
         Criar carteira
       </b-button>
     </template>

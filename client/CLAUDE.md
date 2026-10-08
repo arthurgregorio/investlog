@@ -17,6 +17,7 @@ npm run test       # vitest in watch mode — hangs a non-interactive shell, don
 npm run test:run   # vitest run (single pass, what CI runs)
 npm run test:coverage # vitest run --coverage (v8, writes client/coverage/)
 npm run lint       # eslint . --fix
+npm run lint:css   # stylelint over src/**/*.css and the <style> blocks of src/**/*.vue
 npm run format     # prettier --write src/
 ```
 
@@ -97,7 +98,21 @@ and composable locals. Examples:
 
 **Prefer Bulma classes and helpers; add custom CSS to `styles.css` only for what Bulma cannot express, and keep it minimal.** Reach for the Bulma 1.x helpers first: flex and alignment (`is-flex`, `is-justify-content-center`, `is-align-items-center`), colour (`has-text-info`, `has-text-grey`, `has-background-info-light`, and `has-text-info-on-scheme` for text that must stay readable on the page background in both themes), typography, size and spacing, plus the Buefy props that map onto them (`b-icon`'s `type="is-info"` and `size`). Colour custom rules with Bulma's CSS variables (`--bulma-info-on-scheme`, `--bulma-border`) rather than new hard-coded hex values, so they follow the theme without a dark-mode override.
 
-**`<style scoped>` is for CSS that is specific to a single component.** A rule goes in a component's scoped block only when that component is its sole user. Never put scoped styles in a route view, and never use them for anything application-wide: a rule needed by two or more components stays in `styles.css` (or becomes a shared component) so it is written once and not duplicated across scoped blocks. Buefy-rendered children inside a component are reached with `:deep()`. Theme tokens, Bulma overrides and print rules always stay in `styles.css`. A component keeps the SFC order `<script>`, `<template>`, `<style>`.
+**No inline `style` for static values.** A `style="…"` attribute or a `:style` binding whose value never changes belongs in a class: a Bulma helper first (`is-flex`, `is-gap-1`, `m-0`, `is-relative`, `has-text-weight-bold`), otherwise a modifier class in `styles.css` (`.modal-card.is-wide`). Modal forms lay out with Bulma's Smart Grid: `fixed-grid has-2-cols` around a `grid is-gap-2`, with `cell is-col-span-2` on full-width fields and `cell is-col-span-2-mobile` on half-width ones so they stack on phones. The fixed grid's own `-mobile` column counts are container queries, so they would always fire inside a modal. A `:style` binding is only for values computed at runtime: accent colours from data, chart dimensions from props, and the report's page-break offsets.
+
+**`<style scoped>` is for CSS that is specific to a single component.** A rule goes in a component's scoped block only when that component is its sole user. Never put scoped styles in a route view, and never use them for anything application-wide: a rule needed by two or more components stays in `styles.css` (or becomes a shared component) so it is written once and not duplicated across scoped blocks. Buefy-rendered children inside a component are reached with `:deep()`. Theme tokens always stay in `theme.css`; Bulma overrides and print rules always stay in `styles.css`. A component keeps the SFC order `<script>`, `<template>`, `<style>`.
+
+**The CSS conventions, enforced by `npm run lint:css` (`stylelint.config.js`, run in CI):**
+
+- Bulma helpers first; custom CSS only for what Bulma cannot express.
+- No inline `style` for static values; a static value is a class.
+- No `!important` (`declaration-no-important`). Win on specificity or source order instead.
+- No hex colour outside the theme tokens (`color-no-hex`). Every token lives in `src/assets/theme.css`, the one file the config exempts from that rule; everything else references a token or a Bulma variable.
+- Never redefine a Bulma class name (`.content`, `.navbar`, `.card`, `.tag`); give a custom rule its own name.
+- No global `.button` rule (see **Buefy/Bulma gotchas** below).
+- No duplicate selectors, no descending specificity, no id selectors, and class names in kebab-case.
+
+`src/assets/theme.css` holds the `:root`, `[data-accent]` and `[data-theme]` token blocks and is imported in `main.ts` right before `styles.css`, so the tokens come first in the cascade. A new token goes there, never into `styles.css`.
 
 ## Architecture
 
@@ -110,9 +125,9 @@ Backend: Spring Boot 4 / Kotlin at `http://localhost:8080`,
 proxied via `/private` by Vite dev server.
 
 The UI was ported pixel-for-pixel from a Claude Design React/Babel prototype handoff. `src/assets/styles.css`
-is that ported CSS spec (Tabler visual language) and holds the theme variables and every custom rule
-shared across components; a rule specific to one component belongs in that component's scoped
-style (see **Styling** above). What Bulma already expresses does not belong in either place.
+is that ported CSS spec (Tabler visual language) and holds every custom rule shared across
+components, with the theme variables in `src/assets/theme.css`; a rule specific to one component
+belongs in that component's scoped style (see **Styling** above). What Bulma already expresses does not belong in either place.
 
 ### API layer (`src/api/`)
 
@@ -182,7 +197,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 |---|---|
 | `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
-| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `PositionAdder`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
+| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
@@ -217,7 +232,7 @@ The chart and the delta chips render only when `series` is non-empty; otherwise 
 
 Sections run header card (identity, figures, **Ações** dropdown and, below them, a three-cell strip with the best performer, worst performer and largest position) → Desempenho → **Distribuição** → one tabbed card (`b-tabs`) holding **Investimentos** and **Movimentações**. Every `Card` on the page carries `mb-0`: Bulma gives `.card` a bottom margin, and the `.page` flex gap alone must set the spacing between blocks.
 
-**Distribuição** (#240) is `AllocationDonut`, fed by `holdingsApi.findAllForReport({ walletId })` — the unpaginated, ticker-merged report endpoint, not the paged `holdingsList` store. The math lives in `utils/allocation.ts` (`computeAllocation`): a Valor atual / Investido `SegmentedControl` recomputes shares from the same rows with no refetch, holdings with a null `currentValue` are left out of Valor atual and counted in an on-screen note, and every holding under `OTHERS_SHARE_CUTOFF` (3%) collapses into a single "Outros" entry that is always last in the legend. Segment colours come from a ten-colour categorical palette, the `--chart-1`…`--chart-10` variables in `styles.css` (brighter values under `[data-theme="dark"]`), handed out by `chartColor(index)` in largest-first order so neighbouring slices always differ; `Outros` is `--text-muted`. The colours travel as `var(--…)` strings, so `DonutChart` re-resolves them when the theme changes, and the ring leaves a 2px gap between slices (its `spacing` prop). The ring sits beside the legend; each legend row shows the ticker, the company name, a Bulma `progress` bar scaled to the largest share, the share and the value, and the footer states the combined share of the three largest positions (`topThreeShare`, only when there are more than three holdings). The card renders its own title row so the toggle can sit beside it. On a stock wallet (`groupable`) a second `SegmentedControl` switches between "Por ativo" and "Por segmento" (#343): `computeAllocation`'s `segment` grouping sums the rows per `segmentLabel`, unsegmented holdings fall into a "Sem segmento" slice coloured like "Outros", and the top-three note is dropped because it speaks of positions.
+**Distribuição** (#240) is `AllocationDonut`, fed by `holdingsApi.findAllForReport({ walletId })` — the unpaginated, ticker-merged report endpoint, not the paged `holdingsList` store. The math lives in `utils/allocation.ts` (`computeAllocation`): a Valor atual / Investido `SegmentedControl` recomputes shares from the same rows with no refetch, holdings with a null `currentValue` are left out of Valor atual and counted in an on-screen note, and every holding under `OTHERS_SHARE_CUTOFF` (3%) collapses into a single "Outros" entry that is always last in the legend. Segment colours come from a ten-colour categorical palette, the `--chart-1`…`--chart-10` variables in `theme.css` (brighter values under `[data-theme="dark"]`), handed out by `chartColor(index)` in largest-first order so neighbouring slices always differ; `Outros` is `--text-muted`. The colours travel as `var(--…)` strings, so `DonutChart` re-resolves them when the theme changes, and the ring leaves a 2px gap between slices (its `spacing` prop). The ring sits beside the legend; each legend row shows the ticker, the company name, a Bulma `progress` bar scaled to the largest share, the share and the value, and the footer states the combined share of the three largest positions (`topThreeShare`, only when there are more than three holdings). The card renders its own title row so the toggle can sit beside it. On a stock wallet (`groupable`) a second `SegmentedControl` switches between "Por ativo" and "Por segmento" (#343): `computeAllocation`'s `segment` grouping sums the rows per `segmentLabel`, unsegmented holdings fall into a "Sem segmento" slice coloured like "Outros", and the top-three note is dropped because it speaks of positions.
 
 The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the expanded row's own dropdown (see the investments table above).
 
@@ -254,9 +269,8 @@ unset).
 
 ### Theming
 
-`App.vue` sets `data-theme` (`light`/`dark`), `data-accent` (`blue`/`indigo`/`teal`/`yellow`)
-and a fixed `data-density="comfortable"` on `.app-root`. Accent color is the only
-user-configurable appearance setting.
+`App.vue` sets `data-theme` (`light`/`dark`) and `data-accent` (`blue`/`indigo`/`teal`/`yellow`)
+on `.app-root`. Accent color is the only user-configurable appearance setting.
 
 ### Authentication & Authorization
 
@@ -305,7 +319,7 @@ existing access, not for handling new signups (those stay on approve/delete).
   (`is-success`, `is-danger`, etc.) set `--bulma-button-h/s/l` HSL variables that modifiers like
   `is-outlined` consume to compute colors. A global override with static values fights this
   cascade and breaks every typed/modifier button in the app. Scope button styling tightly instead
-  (`.navbar .button`, `.modal-card-head .button`, `.button.is-static`).
+  (`.modal-card-head .button`, `.button.is-static`, `.button.is-ghost`).
 - **Use `type="is-ghost"`, not `is-text"`,** for transparent/icon-only buttons (subtle inline
   triggers, link-like actions). For per-row destructive icon actions (e.g. delete in a table row),
   use `type="is-danger" outlined`.

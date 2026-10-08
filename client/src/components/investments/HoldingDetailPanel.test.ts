@@ -738,12 +738,12 @@ describe('HoldingDetailPanel', () => {
       async ({ row, detail }) => {
         const wrapper = await mountLoadedPanel(frozenOf(row), detail())
 
-        const badge = wrapper.find('.ledger-head-info [data-testid="frozen-tag"]')
+        const badge = wrapper.find('.ledger-head [data-testid="frozen-tag"]')
         expect(badge.attributes('title')).toBe('Congelado')
         expect(badge.attributes('aria-label')).toBe('Congelado')
         expect(badge.find('.mdi-snowflake').exists()).toBe(true)
         expect(badge.text()).toBe('')
-        expect(wrapper.find('.ledger-head-info').text()).not.toContain('Congelado')
+        expect(wrapper.find('.ledger-head').text()).not.toContain('Congelado')
         expect(actionLabels()).toContain('Descongelar')
         expect(actionLabels()).not.toContain('Congelar')
       },
@@ -754,9 +754,9 @@ describe('HoldingDetailPanel', () => {
       async ({ row, detail }) => {
         await mountLoadedPanel(row, detail())
 
-        expect(isDisabled(row.kind === 'FUNDS' ? 'Registrar novo aporte' : 'Registrar nova compra')).toBe(
-          false,
-        )
+        expect(
+          isDisabled(row.kind === 'FUNDS' ? 'Registrar novo aporte' : 'Registrar nova compra'),
+        ).toBe(false)
       },
     )
 
@@ -825,10 +825,7 @@ describe('HoldingDetailPanel', () => {
 
     it('keeps every other action available on a frozen holding', async () => {
       vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
-      const wrapper = await mountLoadedPanel(
-        frozenOf(stockRow),
-        stockDetailWithoutWithdrawals(),
-      )
+      const wrapper = await mountLoadedPanel(frozenOf(stockRow), stockDetailWithoutWithdrawals())
 
       for (const label of ['Atualizar preço', 'Resgatar', 'Reinvestir', 'Mover', 'Remover']) {
         expect(isDisabled(label)).toBe(false)
@@ -924,7 +921,11 @@ describe('HoldingDetailPanel', () => {
       await ledgerRows(wrapper)[1].find('td.c-act button').trigger('click')
       await confirmDialog('Desfazer')
 
-      expect(resultsApi.deleteCryptoWithdrawal).toHaveBeenCalledWith('wallet-3', 'holding-3', 'cw-1')
+      expect(resultsApi.deleteCryptoWithdrawal).toHaveBeenCalledWith(
+        'wallet-3',
+        'holding-3',
+        'cw-1',
+      )
       expect(holdingsApi.getCryptoHolding).toHaveBeenCalledTimes(2)
     })
 
@@ -1022,7 +1023,7 @@ describe('HoldingDetailPanel', () => {
         'Congelar',
         'Remover',
       ])
-      expect(wrapper.find('.ledger-actions').findAll(':scope > button')).toHaveLength(0)
+      expect(wrapper.find('.ledger-head').findAll(':scope > div > button')).toHaveLength(0)
     })
 
     it('words the crypto actions as purchases and prices', async () => {

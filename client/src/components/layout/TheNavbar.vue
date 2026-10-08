@@ -21,12 +21,7 @@ const auth = useAuthStore()
 const { openPasswordChange, openTrustedDevices } = useModals()
 const { dark } = storeToRefs(appearance)
 
-const accents: { key: AccentKey; hex: string }[] = [
-  { key: 'blue', hex: '#206bc4' },
-  { key: 'indigo', hex: '#4263eb' },
-  { key: 'teal', hex: '#0ca678' },
-  { key: 'yellow', hex: '#b8860b' },
-]
+const accents: AccentKey[] = ['blue', 'indigo', 'teal', 'yellow']
 
 const profile = ref<ProfileResponse | null>(null)
 
@@ -70,13 +65,13 @@ async function logout() {
 </script>
 
 <template>
-  <header class="navbar">
-    <div class="navbar-inner">
+  <header class="app-header">
+    <div class="app-header-inner">
       <RouterLink to="/" class="brand">
         <span class="brand-mark"><LogoMark :size="19" /></span>
         <span class="brand-name">Invest<b>Log</b></span>
       </RouterLink>
-      <div class="navbar-spacer" />
+      <div class="app-header-spacer" />
       <button
         type="button"
         class="base-chip currency-toggle"
@@ -88,7 +83,7 @@ async function logout() {
       </button>
       <b-dropdown position="is-bottom-left" aria-role="menu" append-to-body>
         <template #trigger>
-          <div class="navbar-user" role="button" aria-label="Menu do usuário">
+          <div class="app-header-user" role="button" aria-label="Menu do usuário">
             <Avatar :initials="profile ? initials(profile.name) : '?'" />
             <div class="nu-meta">
               <div class="nu-name">{{ profile?.name ?? '...' }}</div>
@@ -102,17 +97,17 @@ async function logout() {
           <div class="user-menu-label">Cor de destaque</div>
           <div class="accent-row">
             <button
-              v-for="accentOption in accents"
-              :key="accentOption.key"
+              v-for="accentKey in accents"
+              :key="accentKey"
               type="button"
               class="accent-swatch"
-              :class="{ active: appearance.accent === accentOption.key }"
-              :style="{ background: accentOption.hex }"
-              :aria-label="`Cor ${accentOption.key}`"
-              @click="appearance.setAccent(accentOption.key)"
+              :class="{ active: appearance.accent === accentKey }"
+              :data-accent="accentKey"
+              :aria-label="`Cor ${accentKey}`"
+              @click="appearance.setAccent(accentKey)"
             >
               <b-icon
-                v-if="appearance.accent === accentOption.key"
+                v-if="appearance.accent === accentKey"
                 icon="check"
                 size="is-small"
                 class="sw-check"
@@ -148,7 +143,7 @@ async function logout() {
 
         <hr class="dropdown-divider" />
 
-        <b-dropdown-item custom aria-role="menuitem" class="version-item">
+        <b-dropdown-item custom aria-role="menuitem">
           <div class="version-line">{{ versionLabel }}</div>
         </b-dropdown-item>
       </b-dropdown>

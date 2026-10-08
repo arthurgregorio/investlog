@@ -7,7 +7,7 @@ export const WALLET_TYPES: Record<WalletKind, WalletTypeMeta> = {
 }
 
 export function badgeColor(ticker: string | null | undefined, kind: WalletKind): string {
-  if (!ticker) return kind === 'FUNDS' ? '#2a8f6f' : '#5b6dd8'
+  if (!ticker) return kind === 'FUNDS' ? 'var(--ticker-fallback-funds)' : 'var(--ticker-fallback)'
   let hash = 0
   for (let index = 0; index < ticker.length; index++) {
     hash = (hash * 31 + ticker.charCodeAt(index)) >>> 0

@@ -16,7 +16,10 @@ const isActive = computed(() => props.activeKey === props.sortKey)
 </script>
 
 <template>
-  <th :class="align === 'right' ? 'c-num sort-th' : 'sort-th'" @click="emit('toggle', sortKey)">
+  <th
+    :class="align === 'right' ? 'c-num has-text-right sort-th' : 'sort-th'"
+    @click="emit('toggle', sortKey)"
+  >
     <span class="sort-th-inner">
       <slot />
       <b-icon

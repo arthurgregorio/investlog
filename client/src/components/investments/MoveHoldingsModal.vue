@@ -59,7 +59,9 @@ function takesQuantity(holding: HoldingRow): boolean {
 
 function exceedsRemaining(holding: HoldingRow): boolean {
   const quantity = quantities.value[holding.id]
-  return quantity !== '' && quantity != null && holding.quantity != null && quantity > holding.quantity
+  return (
+    quantity !== '' && quantity != null && holding.quantity != null && quantity > holding.quantity
+  )
 }
 
 const items = computed<WalletMoveItemPayload[]>(() => {
@@ -99,7 +101,10 @@ async function loadHoldings(walletId: string) {
   try {
     const page = await holdingsApi.findAll({ walletId, size: MOVABLE_HOLDINGS_PAGE_SIZE })
     holdings.value = page.content
-    if (props.preselectedHoldingId && page.content.some((holding) => holding.id === props.preselectedHoldingId)) {
+    if (
+      props.preselectedHoldingId &&
+      page.content.some((holding) => holding.id === props.preselectedHoldingId)
+    ) {
       selected.value = { [props.preselectedHoldingId]: true }
     }
   } finally {
@@ -148,33 +153,35 @@ async function submit() {
   >
     <p v-if="error" class="auth-error" data-testid="move-error">{{ error }}</p>
 
-    <div class="form-grid">
-      <b-field v-if="!originWalletId" label="Carteira de origem" style="grid-column: 1/-1">
-        <b-select
-          v-model="selectedOriginId"
-          placeholder="Selecione a carteira"
-          expanded
-          data-testid="move-origin"
-        >
-          <option v-for="wallet in walletsStore.wallets" :key="wallet.id" :value="wallet.id">
-            {{ wallet.name }} · {{ wallet.currency }}
-          </option>
-        </b-select>
-      </b-field>
+    <div class="fixed-grid has-2-cols mb-0">
+      <div class="grid is-gap-2">
+        <b-field v-if="!originWalletId" label="Carteira de origem" class="cell is-col-span-2">
+          <b-select
+            v-model="selectedOriginId"
+            placeholder="Selecione a carteira"
+            expanded
+            data-testid="move-origin"
+          >
+            <option v-for="wallet in walletsStore.wallets" :key="wallet.id" :value="wallet.id">
+              {{ wallet.name }} · {{ wallet.currency }}
+            </option>
+          </b-select>
+        </b-field>
 
-      <b-field label="Carteira de destino" style="grid-column: 1/-1">
-        <b-select
-          v-model="destinationId"
-          placeholder="Selecione a carteira"
-          expanded
-          :disabled="!origin"
-          data-testid="move-destination"
-        >
-          <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
-            {{ wallet.name }} · {{ wallet.currency }}
-          </option>
-        </b-select>
-      </b-field>
+        <b-field label="Carteira de destino" class="cell is-col-span-2">
+          <b-select
+            v-model="destinationId"
+            placeholder="Selecione a carteira"
+            expanded
+            :disabled="!origin"
+            data-testid="move-destination"
+          >
+            <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
+              {{ wallet.name }} · {{ wallet.currency }}
+            </option>
+          </b-select>
+        </b-field>
+      </div>
     </div>
 
     <p v-if="origin && destinations.length === 0" class="move-hint">
@@ -206,7 +213,10 @@ async function submit() {
             :disabled="moveAll"
             @update:model-value="(checked: boolean) => (selected[holding.id] = checked)"
           />
-          <TickerBadge :ticker="displayName(holding)" :color="badgeColor(holding.ticker, holding.kind)" />
+          <TickerBadge
+            :ticker="displayName(holding)"
+            :color="badgeColor(holding.ticker, holding.kind)"
+          />
           <div class="move-item-meta">
             <div class="t-ticker">{{ displayName(holding) }}</div>
             <div class="t-name">
@@ -218,7 +228,7 @@ async function submit() {
           </div>
           <b-field
             v-if="takesQuantity(holding) && selected[holding.id] && !moveAll"
-            class="move-item-quantity"
+            class="move-item-quantity mb-0"
             :type="exceedsRemaining(holding) ? 'is-danger' : ''"
             :message="exceedsRemaining(holding) ? 'Maior que o disponível' : ''"
           >
@@ -241,7 +251,6 @@ async function submit() {
       >
       <b-button
         type="is-primary"
-        class="has-text-light"
         icon-left="swap-horizontal"
         :disabled="!valid"
         :loading="submitting"

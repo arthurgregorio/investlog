@@ -290,12 +290,7 @@ function openReport() {
           placeholder="Buscar por nome ou ticker"
           @update:model-value="onSearchChange"
         />
-        <b-button
-          type="is-primary"
-          class="has-text-light toolbar-add"
-          icon-left="plus"
-          @click="openAddInvestment"
-        >
+        <b-button type="is-primary" icon-left="plus" @click="openAddInvestment">
           Adicionar investimento
         </b-button>
         <b-tooltip label="Exportar" position="is-top">
@@ -319,12 +314,7 @@ function openReport() {
       text="Registre uma aquisição para vê-la no seu logbook."
     >
       <template #action>
-        <b-button
-          type="is-primary"
-          class="has-text-light"
-          icon-left="plus"
-          @click="openAddInvestment"
-        >
+        <b-button type="is-primary" icon-left="plus" @click="openAddInvestment">
           Adicionar investimento
         </b-button>
       </template>
@@ -346,7 +336,7 @@ function openReport() {
                   @toggle="toggleSort"
                   >Carteira</SortTh
                 >
-                <th class="c-num">Qtd.</th>
+                <th class="c-num has-text-right">Qtd.</th>
                 <SortTh
                   sort-key="price"
                   :active-key="sortKey"
@@ -386,7 +376,7 @@ function openReport() {
                   @click="toggleRow(row)"
                 >
                   <td>
-                    <div class="name-cell">
+                    <div class="is-flex is-align-items-center is-gap-1.5">
                       <FrozenBadge v-if="row.frozen" />
                       <TickerBadge
                         v-else
@@ -394,7 +384,7 @@ function openReport() {
                         :color="badgeColor(row.ticker, row.kind)"
                       />
                       <div class="name-meta">
-                        <div class="name-line">
+                        <div class="is-flex is-align-items-center is-gap-1">
                           <span class="t-ticker">{{ displayName(row) }}</span>
                           <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
                             subLabel(row)
@@ -415,8 +405,10 @@ function openReport() {
                       {{ row.walletName }}
                     </span>
                   </td>
-                  <td class="c-num">{{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}</td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
+                    {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
+                  </td>
+                  <td class="c-num has-text-right">
                     <template v-if="row.kind !== 'FUNDS' && row.currentPrice != null">
                       {{
                         fmt.money(
@@ -444,8 +436,8 @@ function openReport() {
                       }}
                     </div>
                   </td>
-                  <td class="c-num">
-                    <div class="cell-strong">
+                  <td class="c-num has-text-right">
+                    <div class="has-text-weight-bold">
                       {{
                         fmt.money(
                           currencyStore.convert(row.costBasis, row.walletCurrency),
@@ -454,7 +446,7 @@ function openReport() {
                       }}
                     </div>
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <span v-if="row.currentValue == null" class="gl-empty">—</span>
                     <template v-else>
                       {{
@@ -465,7 +457,7 @@ function openReport() {
                       }}
                     </template>
                   </td>
-                  <td class="c-num">
+                  <td class="c-num has-text-right">
                     <GainChip
                       :value="
                         row.gain == null

@@ -165,7 +165,7 @@ function confirmRemoveType(type: AssetType) {
       </div>
 
       <div v-if="auth.isAdmin" class="inv-toolbar">
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
+        <b-button type="is-primary" icon-left="plus" @click="addType">
           {{ activeConfig.newLabel }}
         </b-button>
       </div>
@@ -180,7 +180,7 @@ function confirmRemoveType(type: AssetType) {
       :text="activeConfig.emptyText"
     >
       <template v-if="auth.isAdmin" #action>
-        <b-button type="is-primary" class="has-text-light" icon-left="plus" @click="addType">
+        <b-button type="is-primary" icon-left="plus" @click="addType">
           {{ activeConfig.newLabel }}
         </b-button>
       </template>
@@ -193,16 +193,16 @@ function confirmRemoveType(type: AssetType) {
             <thead>
               <tr>
                 <th>Nome</th>
-                <th class="c-num">Investimentos</th>
-                <th v-if="auth.isAdmin" class="c-act" style="width: 90px">Ações</th>
+                <th class="c-num has-text-right">Investimentos</th>
+                <th v-if="auth.isAdmin" class="c-act is-wide">Ações</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="type in activeTypes" :key="type.id">
-                <td class="cell-strong">{{ type.name }}</td>
-                <td class="c-num">{{ type.usageCount }}</td>
+                <td class="has-text-weight-bold">{{ type.name }}</td>
+                <td class="c-num has-text-right">{{ type.usageCount }}</td>
                 <td v-if="auth.isAdmin" class="c-act">
-                  <div style="display: flex; gap: 6px; justify-content: center">
+                  <div class="is-flex is-gap-1 is-justify-content-center">
                     <b-button
                       outlined
                       type="is-primary"
@@ -215,7 +215,13 @@ function confirmRemoveType(type: AssetType) {
                       :label="`Não é possível remover: ${activeConfig.noun} em uso`"
                       position="is-left"
                     >
-                      <b-button outlined type="is-danger" size="is-small" icon-left="delete" disabled />
+                      <b-button
+                        outlined
+                        type="is-danger"
+                        size="is-small"
+                        icon-left="delete"
+                        disabled
+                      />
                     </b-tooltip>
                     <b-button
                       v-else
