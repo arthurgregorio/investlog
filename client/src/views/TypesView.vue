@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { useTypesListStore } from '@/stores/typesList'
 import { escapeHtml } from '@/utils/escapeHtml'
 import { useAuthStore } from '@/stores/auth'
@@ -142,14 +143,10 @@ function confirmRemoveType(type: AssetType) {
   <div class="page">
     <b-loading :is-full-page="false" :model-value="typesListStore.loading" />
 
-    <div class="page-head-row">
-      <div>
-        <h1 class="page-title">Tipos</h1>
-        <p class="page-desc">
-          Gerencie os tipos de ação, de fundo e os segmentos usados no cadastro.
-        </p>
-      </div>
-    </div>
+    <PageHeader
+      title="Tipos"
+      description="Gerencie os tipos de ação, de fundo e os segmentos usados no cadastro."
+    />
 
     <div class="inv-controls">
       <div class="seg-tabs">

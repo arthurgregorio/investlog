@@ -2,8 +2,9 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Card from '@/components/ui/Card.vue'
-import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import KpiCard from '@/components/ui/KpiCard.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import TablePagination from '@/components/ui/TablePagination.vue'
 import ReinvestmentsTable from '@/components/investments/ReinvestmentsTable.vue'
 import { useResultsStore } from '@/stores/results'
@@ -28,16 +29,19 @@ const summary = computed(() => resultsStore.summary)
 const currency = computed(() => summary.value?.displayCurrency ?? 'BRL')
 const hasResults = computed(() => (summary.value?.exitCount ?? 0) > 0)
 const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore.loading)
+const profitClass = computed(() =>
+  (summary.value?.totalProfit ?? 0) >= 0 ? 'has-text-success' : 'has-text-danger',
+)
 </script>
 
 <template>
   <div class="page">
     <b-loading :is-full-page="false" :model-value="loading" />
 
-    <div class="page-head">
-      <h1 class="page-title">Resultados</h1>
-      <p class="page-desc">O que já foi resgatado, o lucro realizado e o que foi pago em custos</p>
-    </div>
+    <PageHeader
+      title="Resultados"
+      description="O que já foi resgatado, o lucro realizado e o que foi pago em custos"
+    />
 
     <template v-if="summary">
       <Card v-if="!hasResults" data-testid="results-empty">
@@ -60,66 +64,52 @@ const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore
         <div class="fixed-grid has-4-cols has-1-cols-mobile">
           <div class="grid">
             <div class="cell">
-              <Card data-testid="kpi">
-                <CardBody>
-                  <div class="kpi-label">Total resgatado</div>
-                  <div class="kpi-value" data-testid="kpi-withdrawn">
-                    {{ fmt.money(summary.totalWithdrawn, currency, { compact: true }) }}
-                  </div>
-                  <div class="kpi-foot">
-                    <span class="kpi-sub">{{ summary.exitCount }} saídas registradas</span>
-                  </div>
-                </CardBody>
-              </Card>
+              <KpiCard
+                data-testid="kpi"
+                label="Total resgatado"
+                :value="fmt.money(summary.totalWithdrawn, currency, { compact: true })"
+                value-test-id="kpi-withdrawn"
+              >
+                <template #foot>
+                  <span class="kpi-sub">{{ summary.exitCount }} saídas registradas</span>
+                </template>
+              </KpiCard>
             </div>
-
             <div class="cell">
-              <Card data-testid="kpi">
-                <CardBody>
-                  <div class="kpi-label">Lucro realizado</div>
-                  <div
-                    class="kpi-value"
-                    :class="summary.totalProfit >= 0 ? 'has-text-success' : 'has-text-danger'"
-                    data-testid="kpi-profit"
-                  >
-                    {{ fmt.moneySigned(summary.totalProfit, currency, { compact: true }) }}
-                  </div>
-                  <div class="kpi-foot">
-                    <span class="kpi-sub">
-                      {{ fmt.money(summary.totalNetReceived, currency, { compact: true }) }}
-                      líquidos recebidos
-                    </span>
-                  </div>
-                </CardBody>
-              </Card>
+              <KpiCard
+                data-testid="kpi"
+                label="Lucro realizado"
+                :value="fmt.moneySigned(summary.totalProfit, currency, { compact: true })"
+                :value-class="profitClass"
+                value-test-id="kpi-profit"
+              >
+                <template #foot>
+                  <span class="kpi-sub">
+                    {{ fmt.money(summary.totalNetReceived, currency, { compact: true }) }}
+                    líquidos recebidos
+                  </span>
+                </template>
+              </KpiCard>
             </div>
-
             <div class="cell">
-              <Card data-testid="kpi">
-                <CardBody>
-                  <div class="kpi-label">Taxas pagas</div>
-                  <div class="kpi-value" data-testid="kpi-fees">
-                    {{ fmt.money(summary.totalFees, currency, { compact: true }) }}
-                  </div>
-                  <div class="kpi-foot">
-                    <span class="kpi-sub">corretagem e custos</span>
-                  </div>
-                </CardBody>
-              </Card>
+              <KpiCard
+                data-testid="kpi"
+                label="Taxas pagas"
+                :value="fmt.money(summary.totalFees, currency, { compact: true })"
+                value-test-id="kpi-fees"
+              >
+                <template #foot><span class="kpi-sub">corretagem e custos</span></template>
+              </KpiCard>
             </div>
-
             <div class="cell">
-              <Card data-testid="kpi">
-                <CardBody>
-                  <div class="kpi-label">Impostos pagos</div>
-                  <div class="kpi-value" data-testid="kpi-taxes">
-                    {{ fmt.money(summary.totalTaxes, currency, { compact: true }) }}
-                  </div>
-                  <div class="kpi-foot">
-                    <span class="kpi-sub">retidos nas saídas</span>
-                  </div>
-                </CardBody>
-              </Card>
+              <KpiCard
+                data-testid="kpi"
+                label="Impostos pagos"
+                :value="fmt.money(summary.totalTaxes, currency, { compact: true })"
+                value-test-id="kpi-taxes"
+              >
+                <template #foot><span class="kpi-sub">retidos nas saídas</span></template>
+              </KpiCard>
             </div>
           </div>
         </div>

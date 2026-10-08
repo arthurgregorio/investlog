@@ -199,7 +199,8 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
 | `investments/` | `HoldingsTable` with `HoldingsTableRow` (the expandable holdings table shared by `/investments` and `/wallets/:id`) and its satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect` |
 | `report/` | `InvestmentReportView`'s pieces — `ReportHeader`, `ReportTotalsLine` (the Investido / Atual / Resultado line in its `grand`, `kind` and `subgroup` variants) and `ReportWalletTable`, each with its report CSS scoped; the paper, page-break guides, kind and sub-group heads and every print rule stay in `styles.css` |
-| `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
+| `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` (a compact layout, and a `detailed` one with share bars) |
+| `overview/` | `OverviewView`'s cards — `EvolutionCard` (the invested-capital `AreaChart`), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
 

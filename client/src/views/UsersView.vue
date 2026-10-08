@@ -4,6 +4,7 @@ import { useDialog, useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import PasswordResetModal from '@/components/forms/PasswordResetModal.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 import { useAuthStore } from '@/stores/auth'
 import { escapeHtml } from '@/utils/escapeHtml'
@@ -93,12 +94,10 @@ function confirmDeleteUser(id: string, name: string) {
   <div class="page">
     <b-loading :is-full-page="false" :model-value="usersAdminStore.loading" />
 
-    <div class="page-head page-head-row">
-      <div>
-        <h1 class="page-title">Usuários</h1>
-        <p class="page-desc">Aprove, bloqueie ou gerencie o acesso de usuários locais.</p>
-      </div>
-    </div>
+    <PageHeader
+      title="Usuários"
+      description="Aprove, bloqueie ou gerencie o acesso de usuários locais."
+    />
 
     <div class="entity-grid">
       <Card v-for="user in usersAdminStore.users" :key="user.id" class="entity-card mb-0">

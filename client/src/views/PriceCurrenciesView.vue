@@ -4,6 +4,7 @@ import { useToast } from 'buefy'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import { useRatesStore } from '@/stores/rates'
 import { useConfigurationsStore } from '@/stores/configurations'
 import { useAuthStore } from '@/stores/auth'
@@ -114,10 +115,10 @@ async function commitRate(currencyCode: string) {
 
 <template>
   <div class="page page-narrow">
-    <div class="page-head">
-      <h1 class="page-title">Preços e Moedas</h1>
-      <p class="page-desc">Defina as taxas de conversão e a sincronização automática de preços.</p>
-    </div>
+    <PageHeader
+      title="Preços e Moedas"
+      description="Defina as taxas de conversão e a sincronização automática de preços."
+    />
 
     <Card>
       <CardBody>

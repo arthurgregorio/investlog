@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import AllocationLegend from '@/components/charts/AllocationLegend.vue'
 import DonutChart from '@/components/charts/DonutChart.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
@@ -65,6 +66,18 @@ const segments = computed(() =>
     value: entry.value,
     label: entry.label,
     color: entry.color,
+  })),
+)
+
+const legendEntries = computed(() =>
+  coloredEntries.value.map((entry) => ({
+    key: entry.key,
+    label: entry.label,
+    name: entry.name,
+    color: entry.color,
+    share: fmt.pct(entry.share),
+    value: entry.value,
+    relativeShare: entry.relativeShare,
   })),
 )
 
@@ -149,28 +162,7 @@ const exclusionNote = computed(() => {
         </DonutChart>
 
         <div class="allocation-summary">
-          <ul class="allocation-legend" data-testid="allocation-legend">
-            <li
-              v-for="entry in coloredEntries"
-              :key="entry.key"
-              class="allocation-legend-row"
-              data-testid="allocation-legend-entry"
-            >
-              <span class="allocation-legend-swatch" :style="{ background: entry.color }" />
-              <span class="allocation-legend-name">
-                <span class="has-text-weight-semibold">{{ entry.label }}</span>
-                <span v-if="entry.name" class="is-size-7 has-text-grey ml-2">{{ entry.name }}</span>
-              </span>
-              <progress
-                class="progress mb-0"
-                max="100"
-                :value="entry.relativeShare"
-                :style="{ '--bulma-progress-value-background-color': entry.color }"
-              />
-              <span class="has-text-grey has-text-right">{{ fmt.pct(entry.share) }}</span>
-              <span class="has-text-right">{{ fmt.money(entry.value, currency) }}</span>
-            </li>
-          </ul>
+          <AllocationLegend :entries="legendEntries" :currency="currency" detailed />
 
           <p
             v-if="concentrationNote"
@@ -210,44 +202,5 @@ const exclusionNote = computed(() => {
 .allocation-summary {
   flex: 1 1 480px;
   min-width: 0;
-}
-
-.allocation-legend {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.allocation-legend-row {
-  display: grid;
-  grid-template-columns: 12px minmax(0, 1.1fr) minmax(60px, 1fr) 64px 110px;
-  align-items: center;
-  gap: 12px;
-  min-height: 38px;
-  padding: 0 4px;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  border-bottom: 1px solid var(--bulma-border-weak);
-}
-
-.allocation-legend-row:last-child {
-  border-bottom: none;
-}
-
-.allocation-legend-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-}
-
-.allocation-legend-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.allocation-legend-row .progress {
-  height: 6px;
 }
 </style>
