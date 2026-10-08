@@ -30,6 +30,18 @@ defineProps<{ name: string }>()
 </template>
 
 <style scoped>
+.entity-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.entity-card .card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .entity-head {
   display: flex;
   align-items: center;

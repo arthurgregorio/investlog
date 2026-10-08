@@ -474,63 +474,6 @@ a {
   gap: 16px;
 }
 
-.entity-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-.entity-card .card-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.entity-foot .button {
-  padding-right: 0;
-}
-
-.entity-head {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin-bottom: 14px;
-}
-
-.entity-titles {
-  min-width: 0;
-}
-
-.entity-name {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.entity-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-}
-
-.action-trigger {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--primary);
-  cursor: pointer;
-}
-
-.action-trigger:hover {
-  color: var(--primary-d);
-}
-
 .trusted-device-row {
   display: flex;
   align-items: center;
@@ -553,15 +496,6 @@ a {
   font-size: 0.85rem;
 }
 
-.wallet-stripe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-
 .cur-chip {
   font-size: 11px;
   font-weight: 700;
@@ -570,59 +504,6 @@ a {
   border-radius: 6px;
   padding: 2px 7px;
   letter-spacing: 0.02em;
-}
-
-.cur-chip.lg {
-  font-size: 13px;
-  padding: 4px 10px;
-  color: var(--text);
-}
-
-.wallet-invested {
-  margin-bottom: 14px;
-}
-
-.wi-value {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.entity-card .result-row {
-  margin-bottom: 14px;
-}
-
-.entity-card .result-item:last-child {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.wallet-count {
-  font-size: 12.5px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.wallet-add {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 180px;
-  border: 1.5px dashed var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--text-2);
-  font-size: 13.5px;
-  font-weight: 600;
-  transition: 0.14s;
-}
-
-.wallet-add:hover {
-  border-color: var(--primary);
-  color: var(--primary-d);
-  background: var(--primary-soft);
 }
 
 .ticker-badge {
@@ -1133,88 +1014,11 @@ a {
   margin-top: 6px;
 }
 
-.set-title {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0;
-}
-
 .set-desc {
   font-size: 13px;
   color: var(--text-2);
   margin: 5px 0 16px;
   line-height: 1.5;
-}
-
-.rate-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.rate-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  min-height: 52px;
-}
-
-.rate-sym {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.rate-base {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.rate-input {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 13px;
-  color: var(--text-2);
-  font-weight: 500;
-}
-
-.rate-input .field {
-  width: 150px;
-}
-
-/* Buefy renders the addon button and input as inline-flex controls, whose line-box
-   strut adds phantom height below them and breaks vertical alignment with the row
-   text. Zeroing the control font-size collapses the strut; the button and input keep
-   their own font-size for content. */
-.rate-input .field .control {
-  font-size: 0;
-}
-
-.set-action-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-}
-
-.set-action-item::marker {
-  color: var(--text-2);
-  font-size: 13px;
-}
-
-.set-action-sentence {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--text-2);
 }
 
 .user-menu-label {

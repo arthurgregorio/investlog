@@ -100,7 +100,7 @@ describe('TypesView', () => {
     expect(tableNames(wrapper)).toEqual(['Ordinária', 'Preferencial'])
     expect(wrapper.findAll('tbody .c-num').map((cell) => cell.text())).toEqual(['0', '3'])
 
-    await wrapper.findAll('.seg-tab')[1].trigger('click')
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
 
     expect(tableNames(wrapper)).toEqual(['Multimercado'])
     expect(wrapper.find('.set-desc').text()).toContain('fundo')
@@ -145,7 +145,7 @@ describe('TypesView', () => {
   it('creates a fund type when the fund tab is active', async () => {
     const { wrapper, typesListStore } = await mountView()
 
-    await wrapper.findAll('.seg-tab')[1].trigger('click')
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
     await newTypeButton(wrapper).trigger('click')
     await answerPrompt('Renda fixa', 'Criar')
 
@@ -184,7 +184,7 @@ describe('TypesView', () => {
   it('renames a fund type through the fund action', async () => {
     const { wrapper, typesListStore } = await mountView()
 
-    await wrapper.findAll('.seg-tab')[1].trigger('click')
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
     await wrapper.findAll('tbody tr')[0].find('button').trigger('click')
     await answerPrompt('Multimercado macro', 'Salvar')
 
@@ -216,7 +216,7 @@ describe('TypesView', () => {
   it('removes a fund type through the fund action', async () => {
     const { wrapper, typesListStore } = await mountView()
 
-    await wrapper.findAll('.seg-tab')[1].trigger('click')
+    await wrapper.findAll('[role="tab"]')[1].trigger('click')
     await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
     await confirmDialog('Remover')
 
@@ -262,14 +262,14 @@ describe('TypesView', () => {
 
     async function openSegments() {
       const mounted = await mountView()
-      await mounted.wrapper.findAll('.seg-tab')[2].trigger('click')
+      await mounted.wrapper.findAll('[role="tab"]')[2].trigger('click')
       return mounted
     }
 
     it('is the third tab and lists the segments with their usage counts', async () => {
       const { wrapper } = await openSegments()
 
-      expect(wrapper.findAll('.seg-tab').map((tab) => tab.text())).toEqual([
+      expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual([
         'Tipos de ação',
         'Tipos de fundo',
         'Segmentos',

@@ -201,6 +201,9 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 | `report/` | `InvestmentReportView`'s pieces — `ReportHeader`, `ReportTotalsLine` (the Investido / Atual / Resultado line in its `grand`, `kind` and `subgroup` variants) and `ReportWalletTable`, each with its report CSS scoped; the paper, page-break guides, kind and sub-group heads and every print rule stay in `styles.css` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` (a compact layout, and a `detailed` one with share bars) |
 | `overview/` | `OverviewView`'s cards — `EvolutionCard` (the invested-capital `AreaChart`), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
+| `users/` | `UserCard` — one `UsersView` card on `EntityCard` with its own "Ações" dropdown, store calls and `useConfirmDialog` confirmations; it emits `reset-password` so the view owns `PasswordResetModal` |
+| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`) |
+| `settings/` | The admin settings pieces — `SettingsSection` (the titled card frame with an optional `aside` slot and loading overlay), `CurrencyRateRow` (one rate with its own draft, emitting `commit` only for a rate above zero), `PriceSyncActions` (the manual price-sync buttons) and `TypesView`'s `AssetTypeTable` |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
 
@@ -265,7 +268,7 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 
 The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
 400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
-requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `reportGrouping.ts` (groups `HoldingRow[]`
+requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `userStatus.ts` (`statusTagType`, the tag colour per `UserStatus`), `reportGrouping.ts` (groups `HoldingRow[]`
 for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
 unset).
 
@@ -307,10 +310,10 @@ they refresh — the server-side revocation (next action, not next login) is the
 guarantee; this view is UX, not enforcement.
 
 `UsersView.vue` (route `/settings/users`, admin-only like the rest of `/settings/*`) is the local-user management screen,
-laid out with `.entity-grid`/`.entity-card`. The acting
-admin's own row offers no actions at all while `APPROVED`: `hasActions` is false for a
-self row with that status, and every action except approve (shown only on `PENDING` rows) sits
-under `!isSelf(user.email)`, so role-change, block, TOTP-reset, password-reset and delete are
+an `.entity-grid` of `UserCard`s. The acting
+admin's own card offers no actions at all while `APPROVED`: `hasActions` is false for a
+self card with that status, and every action except approve (shown only on `PENDING` cards) sits
+under `!isSelf`, so role-change, block, TOTP-reset, password-reset and delete are
 unreachable on your own account. `Block` is only offered on currently-`APPROVED` rows and
 `Unblock` only on currently-`BLOCKED` rows — blocking is for revoking
 existing access, not for handling new signups (those stay on approve/delete).
@@ -334,5 +337,6 @@ existing access, not for handling new signups (those stay on approve/delete).
 - `useReinvestForm` / `useMoveHoldingsForm` — form state, derived amounts, validation, `load()` and
   `submit()` for `ReinvestModal` and `MoveHoldingsModal`; a server 400 lands in `error` inline.
 - `useReportFilters` / `useReportPageBreaks` — the report's filters read from the route query, and the on-screen A4 page-break offsets kept current by a `ResizeObserver` on the paper.
+- `useAssetTypeActions` — `TypesView`'s per-kind copy and tabs plus the create/rename prompts and the remove confirmation, routed to the `typesList` store action of the active kind.
 - `useChartTheme` — chart colors/options derived from the active theme and accent.
 - `useModals` — app-shell modal injection.

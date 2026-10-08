@@ -1,24 +1,27 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useToast } from 'buefy'
-import Card from '@/components/ui/Card.vue'
-import CardBody from '@/components/ui/CardBody.vue'
-import NumberInput from '@/components/ui/NumberInput.vue'
+import CurrencyRateRow from '@/components/settings/CurrencyRateRow.vue'
+import PriceSyncActions from '@/components/settings/PriceSyncActions.vue'
+import SettingsSection from '@/components/settings/SettingsSection.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { useRatesStore } from '@/stores/rates'
 import { useConfigurationsStore } from '@/stores/configurations'
 import { useAuthStore } from '@/stores/auth'
-import { fmt } from '@/composables/useFormat'
-import { stockPriceSyncApi } from '@/api/stockPriceSync'
-import { cryptoPriceSyncApi } from '@/api/cryptoPriceSync'
+
+const SYNC_TOGGLES = [
+  {
+    key: 'stock_price_sync_enabled',
+    label: 'Atualizar preços das ações brasileiras automaticamente',
+  },
+  { key: 'crypto_price_sync_enabled', label: 'Atualizar preços das criptomoedas automaticamente' },
+  { key: 'usd_price_sync_enabled', label: 'Atualizar cotação do dólar automaticamente' },
+]
 
 const toast = useToast()
 const ratesStore = useRatesStore()
 const configurationsStore = useConfigurationsStore()
 const auth = useAuthStore()
-
-const triggeringStockSync = ref(false)
-const triggeringCryptoSync = ref(false)
 
 const demoModeEnabled = computed(() => auth.session?.demoModeEnabled === true)
 
@@ -26,89 +29,16 @@ onMounted(() => {
   Promise.all([ratesStore.load(), configurationsStore.load()])
 })
 
-const stockPriceSyncEnabled = computed({
-  get: () => configurationsStore.values['stock_price_sync_enabled'] === 'true',
-  set: async (enabled: boolean) => {
-    await configurationsStore.updateConfiguration(
-      'stock_price_sync_enabled',
-      enabled ? 'true' : 'false',
-    )
-    toast.open({
-      message: enabled
-        ? 'Sincronização automática ativada.'
-        : 'Sincronização automática desativada.',
-      type: 'is-success',
-    })
-  },
-})
-
-const cryptoPriceSyncEnabled = computed({
-  get: () => configurationsStore.values['crypto_price_sync_enabled'] === 'true',
-  set: async (enabled: boolean) => {
-    await configurationsStore.updateConfiguration(
-      'crypto_price_sync_enabled',
-      enabled ? 'true' : 'false',
-    )
-    toast.open({
-      message: enabled
-        ? 'Sincronização automática ativada.'
-        : 'Sincronização automática desativada.',
-      type: 'is-success',
-    })
-  },
-})
-
-const usdPriceSyncEnabled = computed({
-  get: () => configurationsStore.values['usd_price_sync_enabled'] === 'true',
-  set: async (enabled: boolean) => {
-    await configurationsStore.updateConfiguration(
-      'usd_price_sync_enabled',
-      enabled ? 'true' : 'false',
-    )
-    toast.open({
-      message: enabled
-        ? 'Sincronização automática ativada.'
-        : 'Sincronização automática desativada.',
-      type: 'is-success',
-    })
-  },
-})
-
-async function forceStockPriceSync() {
-  triggeringStockSync.value = true
-  try {
-    await stockPriceSyncApi.forceSync()
-    toast.open({ message: 'Preços de ações atualizados.', type: 'is-success' })
-  } finally {
-    triggeringStockSync.value = false
-  }
+async function setSyncEnabled(key: string, enabled: boolean) {
+  await configurationsStore.updateConfiguration(key, enabled ? 'true' : 'false')
+  toast.open({
+    message: enabled ? 'Sincronização automática ativada.' : 'Sincronização automática desativada.',
+    type: 'is-success',
+  })
 }
 
-async function forceCryptoPriceSync() {
-  triggeringCryptoSync.value = true
-  try {
-    await cryptoPriceSyncApi.forceSync()
-    toast.open({ message: 'Preços de criptomoedas atualizados.', type: 'is-success' })
-  } finally {
-    triggeringCryptoSync.value = false
-  }
-}
-
-const rateDrafts = reactive<Record<string, number | ''>>({})
-
-function rateDisplayValue(currencyCode: string, storedRate: number) {
-  return currencyCode in rateDrafts ? rateDrafts[currencyCode] : storedRate
-}
-
-function draftRate(currencyCode: string, value: number | '') {
-  rateDrafts[currencyCode] = value
-}
-
-async function commitRate(currencyCode: string) {
-  const value = rateDrafts[currencyCode]
-  delete rateDrafts[currencyCode]
-  if (value === undefined || value === '' || value <= 0) return
-  await ratesStore.upsertRate(currencyCode, Number(value), false)
+async function updateRate(currencyCode: string, rate: number) {
+  await ratesStore.upsertRate(currencyCode, rate, false)
   toast.open({ message: 'Taxa de conversão atualizada.', type: 'is-success' })
 }
 </script>
@@ -120,100 +50,53 @@ async function commitRate(currencyCode: string) {
       description="Defina as taxas de conversão e a sincronização automática de preços."
     />
 
-    <Card>
-      <CardBody>
-        <b-loading :is-full-page="false" :model-value="ratesStore.loading" />
-        <div class="is-flex is-align-items-center is-justify-content-space-between is-gap-1.5">
-          <h2 class="set-title">Moeda base e conversão</h2>
-          <span class="base-chip">
-            <b-icon icon="repeat" size="is-small" />Base <b>{{ ratesStore.baseCurrency }}</b>
-          </span>
-        </div>
-        <p class="set-desc">
-          A visão consolidada converte cada carteira para {{ ratesStore.baseCurrency }} usando estas
-          taxas.
-        </p>
-        <div class="rate-list">
-          <div v-for="rate in ratesStore.rates" :key="rate.currencyCode" class="rate-row">
-            <div class="is-flex is-align-items-center is-gap-1">
-              <span class="cur-chip lg">{{ rate.currencyCode }}</span>
-              <span class="rate-sym">{{ fmt.sym(rate.currencyCode) }}</span>
-            </div>
-            <span v-if="rate.isBase" class="rate-base">Moeda base · 1,00</span>
-            <label v-else class="rate-input">
-              <span>1 {{ rate.currencyCode }} =</span>
-              <NumberInput
-                :model-value="rateDisplayValue(rate.currencyCode, rate.rate)"
-                :prefix="fmt.sym(ratesStore.baseCurrency)"
-                @update:model-value="(v) => draftRate(rate.currencyCode, v)"
-                @blur="commitRate(rate.currencyCode)"
-              />
-            </label>
-          </div>
-        </div>
-      </CardBody>
-    </Card>
+    <SettingsSection
+      title="Moeda base e conversão"
+      :description="`A visão consolidada converte cada carteira para ${ratesStore.baseCurrency} usando estas taxas.`"
+      :loading="ratesStore.loading"
+    >
+      <template #aside>
+        <span class="base-chip">
+          <b-icon icon="repeat" size="is-small" />Base <b>{{ ratesStore.baseCurrency }}</b>
+        </span>
+      </template>
+      <CurrencyRateRow
+        v-for="rate in ratesStore.rates"
+        :key="rate.currencyCode"
+        :rate="rate"
+        :base-currency="ratesStore.baseCurrency"
+        @commit="updateRate(rate.currencyCode, $event)"
+      />
+    </SettingsSection>
 
-    <Card>
-      <CardBody>
-        <b-loading :is-full-page="false" :model-value="configurationsStore.loading" />
-        <div class="is-flex is-align-items-center is-justify-content-space-between is-gap-1.5">
-          <h2 class="set-title">Sincronização automática</h2>
-        </div>
-        <p class="set-desc">Ative ou desative funções do sistema.</p>
-        <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
-          Indisponível no modo demonstração.
-        </b-notification>
-        <b-switch v-model="stockPriceSyncEnabled" class="pb-3" :disabled="demoModeEnabled">
-          Atualizar preços das ações brasileiras automaticamente
-        </b-switch>
-        <b-switch v-model="cryptoPriceSyncEnabled" class="pb-3" :disabled="demoModeEnabled">
-          Atualizar preços das criptomoedas automaticamente
-        </b-switch>
-        <b-switch v-model="usdPriceSyncEnabled" :disabled="demoModeEnabled">
-          Atualizar cotação do dólar automaticamente
-        </b-switch>
-      </CardBody>
-    </Card>
+    <SettingsSection
+      title="Sincronização automática"
+      description="Ative ou desative funções do sistema."
+      :loading="configurationsStore.loading"
+    >
+      <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
+        Indisponível no modo demonstração.
+      </b-notification>
+      <b-switch
+        v-for="(toggle, index) in SYNC_TOGGLES"
+        :key="toggle.key"
+        :class="{ 'pb-3': index < SYNC_TOGGLES.length - 1 }"
+        :model-value="configurationsStore.values[toggle.key] === 'true'"
+        :disabled="demoModeEnabled"
+        @update:model-value="(enabled: boolean) => setSyncEnabled(toggle.key, enabled)"
+      >
+        {{ toggle.label }}
+      </b-switch>
+    </SettingsSection>
 
-    <Card>
-      <CardBody>
-        <div class="is-flex is-align-items-center is-justify-content-space-between is-gap-1.5">
-          <h2 class="set-title">Ações administrativas</h2>
-        </div>
-        <p class="set-desc">Execute ações manuais de manutenção quando necessário.</p>
-        <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
-          Indisponível no modo demonstração.
-        </b-notification>
-        <ol class="set-action-list">
-          <li class="set-action-item">
-            <span class="set-action-sentence">
-              Clique para
-              <b-button
-                :loading="triggeringStockSync"
-                :disabled="demoModeEnabled"
-                @click="forceStockPriceSync"
-              >
-                atualizar as cotações
-              </b-button>
-              das ações agora
-            </span>
-          </li>
-          <li class="set-action-item">
-            <span class="set-action-sentence">
-              Clique para
-              <b-button
-                :loading="triggeringCryptoSync"
-                :disabled="demoModeEnabled"
-                @click="forceCryptoPriceSync"
-              >
-                atualizar as cotações
-              </b-button>
-              das criptomoedas agora
-            </span>
-          </li>
-        </ol>
-      </CardBody>
-    </Card>
+    <SettingsSection
+      title="Ações administrativas"
+      description="Execute ações manuais de manutenção quando necessário."
+    >
+      <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
+        Indisponível no modo demonstração.
+      </b-notification>
+      <PriceSyncActions :disabled="demoModeEnabled" />
+    </SettingsSection>
   </div>
 </template>
