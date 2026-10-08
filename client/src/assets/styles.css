@@ -563,55 +563,12 @@ a {
   gap: 12px;
 }
 
-.seg-tabs {
-  display: inline-flex;
-  gap: 3px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 3px;
-  flex-shrink: 0;
-}
-
-.seg-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 14px;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 600;
-  transition: 0.12s;
-}
-
-.seg-tab svg {
-  opacity: 0.85;
-}
-
-.seg-tab:hover {
-  color: var(--text);
-}
-
-.seg-tab.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow);
-}
-
 .inv-toolbar {
   display: flex;
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
   margin-left: auto;
-}
-
-.inv-toolbar .search-input {
-  max-width: 280px;
 }
 
 .table-card {
@@ -1755,17 +1712,8 @@ h3.report-subgroup-title {
     align-items: stretch;
   }
 
-  .seg-tabs {
-    justify-content: space-between;
-  }
-
   .inv-toolbar {
     margin-left: 0;
-  }
-
-  .inv-toolbar .search-input {
-    flex: 1 1 160px;
-    max-width: none;
   }
 
   .page-title {
