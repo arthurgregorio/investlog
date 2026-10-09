@@ -1,64 +1,35 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import LogoMark from '@/components/icons/LogoMark.vue'
+import { computed, onMounted, ref } from 'vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import GainChip from '@/components/ui/GainChip.vue'
+import ReportHeader from '@/components/report/ReportHeader.vue'
+import ReportTotalsLine from '@/components/report/ReportTotalsLine.vue'
+import ReportWalletTable from '@/components/report/ReportWalletTable.vue'
 import { holdingsApi } from '@/api/holdings'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
 import { useWalletsStore } from '@/stores/wallets'
-import { fmt } from '@/composables/useFormat'
+import { useReportFilters } from '@/composables/useReportFilters'
+import { useReportPageBreaks } from '@/composables/useReportPageBreaks'
 import { groupHoldingsForReport } from '@/utils/reportGrouping'
-import { WALLET_TYPES } from '@/utils/walletTypes'
-import type { HoldingRow, WalletKind } from '@/types'
+import type { HoldingRow } from '@/types'
 
-const VALID_KINDS: WalletKind[] = ['STOCKS', 'CRYPTO', 'FUNDS']
-const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
-
-const route = useRoute()
 const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
 const walletsStore = useWalletsStore()
+const { kindFilter, walletIdFilter, typeLabelFilter, searchFilter, activeFilterLabels } =
+  useReportFilters()
 
 const loading = ref(true)
 const holdings = ref<HoldingRow[]>([])
 const generatedAt = new Date()
 
-const kindFilter = computed<WalletKind | undefined>(() => {
-  const filterParam = route.query.filter
-  return typeof filterParam === 'string' && VALID_KINDS.includes(filterParam as WalletKind)
-    ? (filterParam as WalletKind)
-    : undefined
-})
-const walletIdFilter = computed(() =>
-  typeof route.query.walletId === 'string' ? route.query.walletId : undefined,
-)
-const typeLabelFilter = computed(() =>
-  typeof route.query.type === 'string' ? route.query.type : undefined,
-)
-const searchFilter = computed(() =>
-  typeof route.query.search === 'string' ? route.query.search : undefined,
-)
-
 const grouping = computed(() => groupHoldingsForReport(holdings.value, currencyStore.convert))
 
-const formattedGeneratedAt = computed(() => {
-  const hours = String(generatedAt.getHours()).padStart(2, '0')
-  const minutes = String(generatedAt.getMinutes()).padStart(2, '0')
-  return `${generatedAt.getDate()} ${MONTHS[generatedAt.getMonth()]} ${generatedAt.getFullYear()} às ${hours}:${minutes}`
-})
-
-const activeFilterLabels = computed(() => {
-  const labels: string[] = []
-  if (kindFilter.value) labels.push(WALLET_TYPES[kindFilter.value].label)
-  if (typeLabelFilter.value) labels.push(typeLabelFilter.value)
-  if (walletIdFilter.value) {
-    labels.push(walletsStore.walletById(walletIdFilter.value)?.name ?? 'Carteira selecionada')
-  }
-  if (searchFilter.value) labels.push(`"${searchFilter.value}"`)
-  return labels
-})
+const reportPaperRef = ref<HTMLElement | null>(null)
+const { pageBreakOffsets } = useReportPageBreaks(
+  reportPaperRef,
+  () => [loading.value, holdings.value.length] as const,
+)
 
 async function load() {
   loading.value = true
@@ -80,49 +51,6 @@ onMounted(load)
 function print() {
   window.print()
 }
-
-// Mirrors the `@page { size: A4; margin: 14mm 12mm }` rule in styles.css so the
-// on-screen guide lines land at the same height print pagination would break at.
-const MM_TO_PX = 96 / 25.4
-const PAGE_HEIGHT_MM = 297
-const PAGE_MARGIN_Y_MM = 14
-const PAGE_CONTENT_HEIGHT_PX = (PAGE_HEIGHT_MM - PAGE_MARGIN_Y_MM * 2) * MM_TO_PX
-const PAGE_TOP_PADDING_PX = PAGE_MARGIN_Y_MM * MM_TO_PX
-
-const reportPaperRef = ref<HTMLElement | null>(null)
-const pageBreakOffsets = ref<number[]>([])
-let paperResizeObserver: ResizeObserver | undefined
-
-function recomputePageBreaks() {
-  const paperElement = reportPaperRef.value
-  if (!paperElement) {
-    pageBreakOffsets.value = []
-    return
-  }
-  const pageCount = Math.max(
-    1,
-    Math.ceil((paperElement.scrollHeight - PAGE_TOP_PADDING_PX) / PAGE_CONTENT_HEIGHT_PX),
-  )
-  pageBreakOffsets.value = Array.from(
-    { length: pageCount - 1 },
-    (_, index) => PAGE_TOP_PADDING_PX + (index + 1) * PAGE_CONTENT_HEIGHT_PX,
-  )
-}
-
-watch(reportPaperRef, (paperElement) => {
-  paperResizeObserver?.disconnect()
-  paperResizeObserver = undefined
-  if (!paperElement) return
-  paperResizeObserver = new ResizeObserver(recomputePageBreaks)
-  paperResizeObserver.observe(paperElement)
-})
-
-watch(
-  () => [loading.value, holdings.value.length] as const,
-  () => nextTick(recomputePageBreaks),
-)
-
-onBeforeUnmount(() => paperResizeObserver?.disconnect())
 </script>
 
 <template>
@@ -155,48 +83,11 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
         <span class="report-page-break-label">Página {{ index + 2 }}</span>
       </div>
 
-      <header class="report-header">
-        <div class="report-header-top">
-          <div class="report-brand">
-            <span class="brand-mark"><LogoMark :size="22" /></span>
-            <div class="report-brand-text">
-              <span class="brand-name">Invest<b>Log</b></span>
-              <span class="report-brand-url">investlog.com.br</span>
-            </div>
-          </div>
-          <div class="report-meta">
-            <span>Gerado em {{ formattedGeneratedAt }}</span>
-            <span v-if="activeFilterLabels.length > 0"
-              >Filtros: {{ activeFilterLabels.join(', ') }}</span
-            >
-          </div>
-        </div>
-        <div class="report-title-row">
-          <h1 class="report-title">Relatório de investimentos</h1>
-          <div class="report-grand-total">
-            <div class="report-figure">
-              <span class="report-figure-label">Investido</span>
-              <span class="report-figure-value">
-                {{ fmt.money(grouping.grandTotals.costBasis, currencyStore.displayCurrency) }}
-              </span>
-            </div>
-            <div class="report-figure">
-              <span class="report-figure-label">Atual</span>
-              <span class="report-figure-value">
-                {{ fmt.money(grouping.grandTotals.currentValue, currencyStore.displayCurrency) }}
-              </span>
-            </div>
-            <div class="report-figure">
-              <span class="report-figure-label">Resultado</span>
-              <GainChip
-                :value="grouping.grandTotals.gain"
-                :pct="grouping.grandTotals.gainPct"
-                :cur="currencyStore.displayCurrency"
-              />
-            </div>
-          </div>
-        </div>
-      </header>
+      <ReportHeader
+        :generated-at="generatedAt"
+        :filter-labels="activeFilterLabels"
+        :grand-totals="grouping.grandTotals"
+      />
 
       <section
         v-for="kindGroup in grouping.kindGroups"
@@ -205,120 +96,20 @@ onBeforeUnmount(() => paperResizeObserver?.disconnect())
       >
         <div class="report-kind-head">
           <h2>{{ kindGroup.label }}</h2>
-          <div class="report-subtotal-line">
-            <div class="report-figure">
-              <span class="report-figure-label">Investido</span>
-              <span class="report-figure-value">{{
-                fmt.money(kindGroup.totals.costBasis, currencyStore.displayCurrency)
-              }}</span>
-            </div>
-            <div class="report-figure">
-              <span class="report-figure-label">Atual</span>
-              <span class="report-figure-value">{{
-                fmt.money(kindGroup.totals.currentValue, currencyStore.displayCurrency)
-              }}</span>
-            </div>
-            <div class="report-figure">
-              <span class="report-figure-label">Resultado</span>
-              <GainChip
-                :value="kindGroup.totals.gain"
-                :pct="kindGroup.totals.gainPct"
-                :cur="currencyStore.displayCurrency"
-              />
-            </div>
-          </div>
+          <ReportTotalsLine :totals="kindGroup.totals" variant="kind" />
         </div>
 
         <div v-for="subGroup in kindGroup.subGroups" :key="subGroup.key" class="report-subgroup">
           <div class="report-subgroup-head">
             <h3 class="report-subgroup-title">{{ subGroup.label }}</h3>
-            <div class="report-subtotal-line">
-              <div class="report-figure">
-                <span class="report-figure-label">Investido</span>
-                <span class="report-figure-value">{{
-                  fmt.money(subGroup.totals.costBasis, currencyStore.displayCurrency)
-                }}</span>
-              </div>
-              <div class="report-figure">
-                <span class="report-figure-label">Atual</span>
-                <span class="report-figure-value">{{
-                  fmt.money(subGroup.totals.currentValue, currencyStore.displayCurrency)
-                }}</span>
-              </div>
-              <div class="report-figure">
-                <span class="report-figure-label">Resultado</span>
-                <GainChip
-                  :value="subGroup.totals.gain"
-                  :pct="subGroup.totals.gainPct"
-                  :cur="currencyStore.displayCurrency"
-                />
-              </div>
-            </div>
+            <ReportTotalsLine :totals="subGroup.totals" variant="subgroup" />
           </div>
 
-          <div
+          <ReportWalletTable
             v-for="walletGroup in subGroup.walletGroups"
             :key="walletGroup.walletId"
-            class="report-wallet-block"
-          >
-            <div class="report-wallet-name">{{ walletGroup.walletName }}</div>
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th>Investimento</th>
-                  <th class="c-num has-text-right">Qtd.</th>
-                  <th class="c-num has-text-right">Preço atual</th>
-                  <th class="c-num has-text-right">Investido</th>
-                  <th class="c-num has-text-right">Valor atual</th>
-                  <th class="c-num has-text-right">Resultado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in walletGroup.rows" :key="row.holding.id">
-                  <td>{{ row.holding.ticker ?? row.holding.name }}</td>
-                  <td class="c-num has-text-right">
-                    {{ row.holding.quantity == null ? '—' : fmt.qty(row.holding.quantity) }}
-                  </td>
-                  <td class="c-num has-text-right">
-                    {{
-                      row.currentPrice == null
-                        ? '—'
-                        : fmt.money(row.currentPrice, currencyStore.displayCurrency)
-                    }}
-                  </td>
-                  <td class="c-num has-text-right">
-                    {{ fmt.money(row.costBasis, currencyStore.displayCurrency) }}
-                  </td>
-                  <td class="c-num has-text-right">
-                    {{ fmt.money(row.currentValue, currencyStore.displayCurrency) }}
-                  </td>
-                  <td class="c-num has-text-right">
-                    <GainChip
-                      :value="row.gain"
-                      :pct="row.gainPct"
-                      :cur="currencyStore.displayCurrency"
-                    />
-                  </td>
-                </tr>
-                <tr class="report-subtotal-row">
-                  <td colspan="3"></td>
-                  <td class="c-num has-text-right">
-                    {{ fmt.money(walletGroup.totals.costBasis, currencyStore.displayCurrency) }}
-                  </td>
-                  <td class="c-num has-text-right">
-                    {{ fmt.money(walletGroup.totals.currentValue, currencyStore.displayCurrency) }}
-                  </td>
-                  <td class="c-num has-text-right">
-                    <GainChip
-                      :value="walletGroup.totals.gain"
-                      :pct="walletGroup.totals.gainPct"
-                      :cur="currencyStore.displayCurrency"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            :wallet-group="walletGroup"
+          />
         </div>
       </section>
     </div>

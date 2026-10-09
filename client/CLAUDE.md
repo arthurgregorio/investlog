@@ -195,25 +195,28 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 
 | Directory | Holds |
 |---|---|
-| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
+| `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `TablePagination` (the `.table-foot` pager every paginated table uses, zero-based `page`/`page-change`), `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
-| `investments/` | The investments table's satellites — `HoldingDetailPanel` (the lazy-loaded expansion row), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal`, `ReinvestModal` |
-| `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation |
+| `investments/` | `InvestmentsToolbar` (the `/investments` controls row: the kind `SegmentedTabs`, wallet and type selects, search, add and export buttons, all props in and events out), `HoldingsTable` with `HoldingsTableRow` (the expandable holdings table shared by `/investments` and `/wallets/:id`) and its satellites — `HoldingDetailPanel` (the lazy-loaded expansion row, which keeps the modals and the event wiring and renders `FundFeeSummary`, `HoldingLedgerTable` with the ledger head and its scoped `.sub-table`/`.ledger-*` CSS, and `HoldingActionsDropdown`), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect` |
+| `report/` | `InvestmentReportView`'s pieces — `ReportHeader`, `ReportTotalsLine` (the Investido / Atual / Resultado line in its `grand`, `kind` and `subgroup` variants) and `ReportWalletTable`, each with its report CSS scoped; the paper, page-break guides, kind and sub-group heads and every print rule stay in `styles.css` |
+| `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` (a compact layout, and a `detailed` one with share bars) |
+| `overview/` | `OverviewView`'s cards — `EvolutionCard` (the invested-capital `AreaChart`), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
+| `users/` | `UserCard` — one `UsersView` card on `EntityCard` with its own "Ações" dropdown, store calls and `useConfirmDialog` confirmations; it emits `reset-password` so the view owns `PasswordResetModal` |
+| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`); `WalletDetailView`'s `WalletDetailHeader` (identity, figures and the **Ações** dropdown emitting `rename`, `remove`, `move`, `reinvest` and `view-holdings`, above a strip of three `WalletHighlightCard`s with an `up`, `down` or `largest` rail), `WalletPerformanceCard` (the Desempenho chart and delta chips), `WalletDetailTabs` (the tabbed card, investments in its slot) and `WalletMovesTable` (the Movimentações tab, reading the `walletMoves` store) |
+| `settings/` | The admin settings pieces — `SettingsSection` (the titled card frame with an optional `aside` slot and loading overlay), `CurrencyRateRow` (one rate with its own draft, emitting `commit` only for a rate above zero), `PriceSyncActions` (the manual price-sync buttons) and `TypesView`'s `AssetTypeTable` |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
 
 A new component belongs in the directory matching its role, not the view that first happens to need
 it. Anything reusable and presentational goes in `ui/` rather than next to its first caller.
 
-### Investments table (`InvestmentsView.vue`)
+### Investments table (`HoldingsTable.vue`)
 
-Uses Buefy `b-table` with `backend-pagination` (Spring `PagedModel`) and `detailed` row
-expansion. Tab changes call `holdingsListStore.loadKind(kind, 0)`. Row expansion renders
-`HoldingDetailPanel` which lazy-fetches the full holding detail from the individual endpoint.
+`InvestmentsView` and `WalletDetailView` both render `HoldingsTable`, a plain `.inv-table` fed by the `holdingsList` store's page (Spring `PagedModel`) with `TablePagination` below it; each view keeps its own data loading. Props switch the per-view differences: `show-wallet-column`, `sortable` (with `sort-key`/`sort-direction`, investments only) and `convert-to-display-currency` (investments converts every figure into the display currency through `useDisplayMoney`; the wallet page shows the wallet's own currency, matching its header). The table owns the open row through `useExpandedRow`: one row at a time, collapsed on a page change and when the panel reports `deleted` or `relocated`, kept open on `position-added`. A view collapses it on its own reloads (filters, tab, route change) through the exposed `collapse()`. Row expansion renders `HoldingDetailPanel`, which lazy-fetches the full holding detail from the individual endpoint. Tab changes call `holdingsListStore.loadKind(kind, 0)`.
 
-**A frozen holding** (#233) has no text tag. Its row carries `is-frozen` and swaps the ticker square for `FrozenBadge` (`ui/`), a template-only wrapper around `b-icon`: a snowflake coloured by Bulma's `has-text-info-on-scheme` (`--bulma-info-on-scheme`, which already lightens itself in the dark theme), sized to the 36px ticker slot and reusing the `ticker-badge` class for the shape. The ticker stays in the name column. The only custom CSS is one `.inv-row.is-frozen` block in `styles.css`, written with that Bulma variable: a faint ice tint and a 3px ice strip as background layers on the `<tr>` (so the hover and open backgrounds still show through), the dashed border on the badge (Bulma has no dashed-border helper), and 65% opacity on the name text, wallet reference and numeric cells. The badge and the actions column stay opaque, so opacity is never put on the `<tr>`. The badge has `title` and `aria-label` "Congelado" and keeps `data-testid="frozen-tag"`; `HoldingDetailPanel` shows its `compact` variant (a small bare icon) next to "Movimentações". `WalletDetailView` uses the same row treatment.
+**A frozen holding** (#233) has no text tag. Its row carries `is-frozen` and swaps the ticker square for `FrozenBadge` (`ui/`), a template-only wrapper around `b-icon`: a snowflake coloured by Bulma's `has-text-info-on-scheme` (`--bulma-info-on-scheme`, which already lightens itself in the dark theme), sized to the 36px ticker slot and reusing the `ticker-badge` class for the shape. The ticker stays in the name column. The only custom CSS is one `.inv-row.is-frozen` block in `HoldingsTableRow`'s scoped style, written with that Bulma variable: a faint ice tint and a 3px ice strip as background layers on the `<tr>` (so the hover and open backgrounds still show through), the dashed border on the badge (Bulma has no dashed-border helper), and 65% opacity on the name text, wallet reference and numeric cells. The badge and the actions column stay opaque, so opacity is never put on the `<tr>`. The badge has `title` and `aria-label` "Congelado" and keeps `data-testid="frozen-tag"`; `HoldingDetailPanel` shows its `compact` variant (a small bare icon) next to "Movimentações". `WalletDetailView` uses the same row treatment.
 
-**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, definir segmento (stocks only, `SetSegmentModal`, #343), resgatar, reinvestir, mover, congelar/descongelar (#237) and, for admins, remover. Closed rows carry no action buttons. A frozen holding (`frozen` on `HoldingRow` and the detail types) shows the snowflake badge in the table row and the panel, and its buy/aporte action is disabled; the server answers a buy or a reinvestment into it with a 409 whose `detail` the api client's interceptor already toasts, and `ReinvestModal` does not list frozen holdings as destinations. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
+**Every holding action lives in `HoldingDetailPanel`'s single "Ações" dropdown** (#295, rendered by `HoldingActionsDropdown`), shared by this view and the wallet detail page: registrar compra/aporte, atualizar preço/valor, definir segmento (stocks only, `SetSegmentModal`, #343), resgatar, reinvestir, mover, congelar/descongelar (#237) and, for admins, remover. Closed rows carry no action buttons. A frozen holding (`frozen` on `HoldingRow` and the detail types) shows the snowflake badge in the table row and the panel, and its buy/aporte action is disabled; the server answers a buy or a reinvestment into it with a 409 whose `detail` the api client's interceptor already toasts, and `ReinvestModal` does not list frozen holdings as destinations. "Reinvestir" and "Mover" open `ReinvestModal`/`MoveHoldingsModal` with the holding preselected in its own wallet, and the panel emits `relocated` on success so the parent collapses and reloads.
 
 ### Routes and their views (`src/router/index.ts`)
 
@@ -263,7 +266,7 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 
 The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
 400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
-requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `reportGrouping.ts` (groups `HoldingRow[]`
+requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `userStatus.ts` (`statusTagType`, the tag colour per `UserStatus`), `reportGrouping.ts` (groups `HoldingRow[]`
 for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
 unset).
 
@@ -305,10 +308,10 @@ they refresh — the server-side revocation (next action, not next login) is the
 guarantee; this view is UX, not enforcement.
 
 `UsersView.vue` (route `/settings/users`, admin-only like the rest of `/settings/*`) is the local-user management screen,
-laid out with `.entity-grid`/`.entity-card`. The acting
-admin's own row offers no actions at all while `APPROVED`: `hasActions` is false for a
-self row with that status, and every action except approve (shown only on `PENDING` rows) sits
-under `!isSelf(user.email)`, so role-change, block, TOTP-reset, password-reset and delete are
+an `.entity-grid` of `UserCard`s. The acting
+admin's own card offers no actions at all while `APPROVED`: `hasActions` is false for a
+self card with that status, and every action except approve (shown only on `PENDING` cards) sits
+under `!isSelf`, so role-change, block, TOTP-reset, password-reset and delete are
 unreachable on your own account. `Block` is only offered on currently-`APPROVED` rows and
 `Unblock` only on currently-`BLOCKED` rows — blocking is for revoking
 existing access, not for handling new signups (those stay on approve/delete).
@@ -329,5 +332,14 @@ existing access, not for handling new signups (those stay on approve/delete).
 - `useFormat` — pure pt-BR formatting helpers (money, signed money, percent, quantity, date).
 - `useAddInvestmentForm` — reactive form state/validation/submit for the add-investment modal;
   uses `walletsStore` + `typesListStore`; submits directly to the API.
+- `useReinvestForm` / `useMoveHoldingsForm` — form state, derived amounts, validation, `load()` and
+  `submit()` for `ReinvestModal` and `MoveHoldingsModal`; a server 400 lands in `error` inline.
+- `useInvestmentFilters` — `/investments`' filter, wallet, type, search and sort state kept in sync with the URL query (`filter`, `walletId`, `type`, `search`, `sort`, `page`): it hydrates from the route, writes every change back with `router.replace`, recognises its own echo by a query fingerprint so only a real navigation re-hydrates, debounces search by 300 ms, and hands each load to the view's `onReload` (plus `onFiltersChange`, where the view collapses the open row). `reportQuery()` is the same query minus sort and page, for the report link.
+- `useReportFilters` / `useReportPageBreaks` — the report's filters read from the route query, and the on-screen A4 page-break offsets kept current by a `ResizeObserver` on the paper.
+- `useWalletActions` — the wallet detail page's rename prompt and remove confirmation; removing goes back to `/wallets`.
+- `useAssetTypeActions` — `TypesView`'s per-kind copy and tabs plus the create/rename prompts and the remove confirmation, routed to the `typesList` store action of the active kind.
 - `useChartTheme` — chart colors/options derived from the active theme and accent.
 - `useModals` — app-shell modal injection.
+- `useHoldingDetail` — `HoldingDetailPanel`'s detail, ledger and actions (fetch, freeze, remove the holding, remove a purchase or contribution, undo a withdrawal, edit a purchase date), routed through one `HOLDING_KIND_OPERATIONS` table keyed by `STOCKS`/`CRYPTO`/`FUNDS`; the panel calls its `load()` in `onMounted`.
+- `useExpandedRow` — the single open row of an expandable table (`isExpanded`, `toggle`, `collapse`).
+- `useDisplayMoney` — `formatConverted` and `toDisplayCurrency` for amounts shown in the user's display currency.

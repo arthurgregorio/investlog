@@ -12,7 +12,10 @@ export default {
       'lower',
       { ignoreKeywords: ['BlinkMacSystemFont', 'Roboto', 'optimizeLegibility'] },
     ],
-    'selector-pseudo-class-no-unknown': [true, { ignorePseudoClasses: ['deep'] }],
+    'selector-pseudo-class-no-unknown': [
+      true,
+      { ignorePseudoClasses: ['deep', 'slotted', 'global'] },
+    ],
   },
   overrides: [
     {
