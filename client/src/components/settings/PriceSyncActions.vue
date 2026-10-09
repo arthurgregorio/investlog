@@ -64,13 +64,18 @@ async function forceSync(sync: PriceSync) {
   margin: 0;
 }
 
+.set-action-item {
+  list-style-position: inside;
+}
+
 .set-action-item::marker {
   color: var(--text-2);
   font-size: 13px;
 }
 
 .set-action-sentence {
-  display: flex;
+  display: inline-flex;
+  vertical-align: middle;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
