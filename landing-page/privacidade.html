@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Política de Privacidade — InvestLog</title>
+  <meta name="description" content="Como o InvestLog trata os dados de quem visita a página inicial e usa a demonstração em demo.investlog.com.br." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="3.6" y="17.7" width="16.8" height="2.2" rx="1.1" opacity=".5"></rect>
+          <rect x="5.4" y="12.4" width="3.1" height="5.6" rx="1.2"></rect>
+          <rect x="10.45" y="8.2" width="3.1" height="9.8" rx="1.2"></rect>
+          <rect x="15.5" y="3.6" width="3.1" height="14.4" rx="1.2"></rect>
+          <circle cx="17.05" cy="3.6" r="2.05"></circle>
+        </svg>
+      </span>
+      <span class="brand-name">Invest<b>Log</b></span>
+    </a>
+    <div class="header-spacer"></div>
+    <div class="header-cta">
+      <a class="btn btn-primary btn-md" href="https://demo.investlog.com.br" target="_blank" rel="noopener">Testar
+        demo</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <article class="legal">
+    <h1>Política de Privacidade</h1>
+    <p class="legal-updated">Última atualização: 10 de outubro de 2026</p>
+
+    <p>Esta política explica quais dados pessoais são tratados na página inicial do InvestLog
+      (<a href="https://investlog.com.br">investlog.com.br</a>) e na instância oficial de demonstração
+      (<a href="https://demo.investlog.com.br">demo.investlog.com.br</a>), para que são usados, com quem são
+      compartilhados e quais são os seus direitos segundo a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018).</p>
+
+    <h2>1. A quem esta política se aplica</h2>
+    <p>Esta política cobre apenas a página inicial e a demonstração oficial, mantidas pelos mantenedores do projeto
+      InvestLog.</p>
+    <p>O InvestLog é um software de código aberto que qualquer pessoa pode instalar no próprio servidor. Instâncias
+      auto-hospedadas são operadas por quem as instala, que é o controlador dos dados tratados nelas. O software não
+      envia dados de usuários aos mantenedores do projeto.</p>
+
+    <h2>2. Dados tratados na demonstração</h2>
+    <p><strong>Dados de conta</strong></p>
+    <ul>
+      <li>Nome e e-mail.</li>
+      <li>Em contas com e-mail e senha: o hash da senha. A senha em si nunca é armazenada.</li>
+      <li>Em contas criadas com o Google: o identificador da conta Google (<code>sub</code>), nome, e-mail e o
+        endereço da foto de perfil.</li>
+      <li>Preferências: cor de destaque e moeda preferida. Preferências de aparência, como o tema escuro, também ficam
+        salvas no armazenamento local do seu navegador.</li>
+      <li>Somente se você ativar a autenticação em dois fatores: o segredo TOTP e os tokens dos dispositivos que você
+        marcar como confiáveis.</li>
+    </ul>
+    <p><strong>Dados que você insere</strong></p>
+    <ul>
+      <li>Carteiras, ativos, aportes, resgates, reinvestimentos e qualquer outra informação que você registrar no
+        aplicativo.</li>
+    </ul>
+    <p><strong>Dados técnicos</strong></p>
+    <ul>
+      <li>Um cookie de sessão, essencial para manter você conectado.</li>
+      <li>Se você marcar um dispositivo como confiável na autenticação em dois fatores, um cookie essencial que dispensa
+        o código por 30 dias naquele navegador.</li>
+      <li>O endereço IP, usado de forma transitória para limitar tentativas de login e presente nos registros (logs) da
+        hospedagem.</li>
+    </ul>
+    <p><strong>Conta de demonstração compartilhada.</strong> A página inicial divulga publicamente o login de uma conta
+      de administrador para testes. Tudo o que for registrado nessa conta fica visível para qualquer pessoa que entre
+      com ela.</p>
+
+    <h2>3. Dados tratados na página inicial</h2>
+    <p>A página inicial não tem formulários, não usa cookies e não coleta dados diretamente. Como qualquer site, ela é
+      entregue pelo seu provedor de hospedagem (GitHub Pages), que recebe o seu endereço IP. A fonte Inter é carregada
+      do Google Fonts, que também recebe o seu endereço IP.</p>
+
+    <h2>4. Dados de usuário do Google</h2>
+    <p>Ao entrar com o Google, o InvestLog solicita apenas os escopos <code>openid</code>, <code>email</code> e
+      <code>profile</code>. Com eles, recebe o identificador da sua conta Google, seu nome, seu e-mail e o endereço da
+      sua foto de perfil.</p>
+    <p>Esses dados são usados exclusivamente para autenticar você e para exibir seu nome e sua foto dentro do
+      aplicativo. Eles nunca são vendidos, compartilhados com terceiros, usados para publicidade ou usados para treinar
+      modelos de inteligência artificial ou aprendizado de máquina.</p>
+    <p>O uso e a transferência, pelo InvestLog, de informações recebidas das APIs do Google seguem a
+      <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google
+        API Services User Data Policy</a> (Política de Dados do Usuário dos Serviços de API do Google), incluindo os
+      requisitos de Uso Limitado (Limited Use).</p>
+    <p>Você pode revogar o acesso do InvestLog à sua conta Google a qualquer momento em
+      <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</p>
+
+    <h2>5. Finalidade e base legal</h2>
+    <ul>
+      <li><strong>Prestar o serviço que você pediu</strong> — criar e manter sua conta, autenticar você e manter sua
+        sessão (LGPD, art. 7º, V).</li>
+      <li><strong>Legítimo interesse em segurança</strong> — limitar tentativas de login, prevenir abusos e manter
+        registros técnicos da hospedagem (LGPD, art. 7º, IX).</li>
+    </ul>
+
+    <h2>6. Compartilhamento e operadores</h2>
+    <p>Os dados não são vendidos nem compartilhados para fins comerciais. Eles são tratados apenas pelos provedores
+      necessários para operar o serviço:</p>
+    <ul>
+      <li><strong>Railway</strong> — hospedagem da demonstração e do seu banco de dados.</li>
+      <li><strong>GitHub Pages</strong> — hospedagem da página inicial.</li>
+      <li><strong>Google</strong> — login com o Google, exibição da foto de perfil e Google Fonts, que recebe o endereço
+        IP de quem acessa a página inicial ou a demonstração.</li>
+    </ul>
+    <p>Esses provedores podem processar dados em servidores fora do Brasil. Não usamos ferramentas de análise
+      (analytics), anúncios ou cookies de rastreamento. Dados também podem ser divulgados quando exigido por lei ou por
+      ordem de autoridade competente.</p>
+
+    <h2>7. Retenção</h2>
+    <p>O banco de dados da demonstração é reiniciado todos os dias às 03:00 UTC (meia-noite no horário de Brasília).
+      O reinício apaga todas as contas, exceto a conta de administrador compartilhada da demonstração, e todos os dados
+      inseridos, inclusive os registrados na conta compartilhada. Você pode pedir a exclusão dos seus dados antes disso
+      pelo contato abaixo.</p>
+    <p>Os registros técnicos da hospedagem seguem os prazos de retenção de cada provedor.</p>
+
+    <h2>8. Segurança</h2>
+    <p>As senhas são armazenadas apenas como hash, o acesso é feito por conexão criptografada (HTTPS) e as tentativas de
+      login são limitadas. Ainda assim, nenhum sistema é totalmente seguro — por isso a demonstração não deve receber
+      dados financeiros reais.</p>
+
+    <h2>9. Seus direitos</h2>
+    <p>Pelo art. 18 da LGPD, você pode solicitar a qualquer momento:</p>
+    <ul>
+      <li>a confirmação de que seus dados são tratados e o acesso a eles;</li>
+      <li>a correção de dados incompletos, inexatos ou desatualizados;</li>
+      <li>a anonimização, o bloqueio ou a eliminação de dados desnecessários ou tratados em desconformidade com a lei;</li>
+      <li>a portabilidade dos dados;</li>
+      <li>a eliminação dos seus dados;</li>
+      <li>informações sobre com quem seus dados são compartilhados;</li>
+      <li>informações sobre a possibilidade de não fornecer consentimento e suas consequências;</li>
+      <li>a revogação do consentimento.</li>
+    </ul>
+    <p>Você também pode apresentar reclamação à Autoridade Nacional de Proteção de Dados (ANPD).</p>
+
+    <h2>10. Contato</h2>
+    <p>Para exercer seus direitos ou tirar dúvidas sobre esta política, escreva para
+      <a href="mailto:contato@consusoft.com.br">contato@consusoft.com.br</a>. Para dúvidas que não envolvam dados
+      pessoais, você também pode abrir uma issue em
+      <a href="https://github.com/arthurgregorio/investlog/issues" target="_blank" rel="noopener">github.com/arthurgregorio/investlog/issues</a>.</p>
+
+    <h2>11. Alterações</h2>
+    <p>Esta política pode ser atualizada. A data de “Última atualização” no topo da página indica a versão em vigor.</p>
+
+    <p>Veja também os <a href="termos.html">Termos de Uso</a>.</p>
+  </article>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand-mark">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="3.6" y="17.7" width="16.8" height="2.2" rx="1.1" opacity=".5"></rect>
+          <rect x="5.4" y="12.4" width="3.1" height="5.6" rx="1.2"></rect>
+          <rect x="10.45" y="8.2" width="3.1" height="9.8" rx="1.2"></rect>
+          <rect x="15.5" y="3.6" width="3.1" height="14.4" rx="1.2"></rect>
+          <circle cx="17.05" cy="3.6" r="2.05"></circle>
+        </svg>
+      </span>
+      InvestLog
+    </div>
+    <div class="footer-links">
+      <a href="https://demo.investlog.com.br" target="_blank" rel="noopener">Demo</a>
+      <a href="https://github.com/arthurgregorio/investlog" target="_blank" rel="noopener">GitHub</a>
+      <a href="privacidade.html" aria-current="page">Privacidade</a>
+      <a href="termos.html">Termos</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
