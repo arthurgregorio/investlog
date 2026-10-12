@@ -62,9 +62,14 @@ describe('query parsing', () => {
     expect(parseSort({ sort: 'price' })).toEqual({ key: 'price', direction: 'desc' })
   })
 
-  it('drops an unknown or missing sort key', () => {
-    expect(parseSort({ sort: 'ticker,asc' })).toEqual({ key: null, direction: 'desc' })
-    expect(parseSort({})).toEqual({ key: null, direction: 'desc' })
+  it('reads the gain percentage and asset sort keys', () => {
+    expect(parseSort({ sort: 'gainPct,asc' })).toEqual({ key: 'gainPct', direction: 'asc' })
+    expect(parseSort({ sort: 'asset,desc' })).toEqual({ key: 'asset', direction: 'desc' })
+  })
+
+  it('falls back to the gain percentage descending for an unknown or missing sort key', () => {
+    expect(parseSort({ sort: 'ticker,asc' })).toEqual({ key: 'gainPct', direction: 'desc' })
+    expect(parseSort({})).toEqual({ key: 'gainPct', direction: 'desc' })
   })
 
   it('turns the one-based page into a zero-based one, ignoring anything below two', () => {
@@ -113,6 +118,43 @@ describe('useInvestmentFilters', () => {
     expect(onFiltersChange).not.toHaveBeenCalled()
   })
 
+  it('loads by gain percentage descending when the URL has no sort, without writing it', async () => {
+    const { filters, router, onReload } = await mountFilters()
+
+    expect(filters.sortKey.value).toBe('gainPct')
+    expect(filters.sortDirection.value).toBe('desc')
+    expect(onReload).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ page: 0, sort: 'gainPct,desc' }),
+    )
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
+  it('replaces an unknown sort key in the URL with the default', async () => {
+    const { router, onReload } = await mountFilters('?sort=colour,asc')
+
+    expect(onReload).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ sort: 'gainPct,desc' }),
+    )
+    expect(router.currentRoute.value.query).toEqual({})
+  })
+
+  it('writes a flip of the default column to the URL and drops it again on the way back', async () => {
+    const { filters, router, onReload } = await mountFilters()
+    onReload.mockClear()
+
+    filters.toggleSort('gainPct')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ sort: 'gainPct,asc' })
+
+    filters.toggleSort('gainPct')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({})
+    expect(onReload.mock.calls.map(([request]) => request.sort)).toEqual([
+      'gainPct,asc',
+      'gainPct,desc',
+    ])
+  })
+
   it('writes a tab change to the URL without reloading again for its own echo', async () => {
     const { filters, router, onReload, onFiltersChange } = await mountFilters(
       '?walletId=wallet-1&search=petr&sort=price,desc&page=3',
@@ -152,7 +194,8 @@ describe('useInvestmentFilters', () => {
 
     expect(filters.activeFilter.value).toBe('FUNDS')
     expect(filters.typeLabelFilter.value).toBe('Renda Fixa')
-    expect(filters.sortKey.value).toBeNull()
+    expect(filters.sortKey.value).toBe('gainPct')
+    expect(filters.sortDirection.value).toBe('desc')
     expect(onFiltersChange).toHaveBeenCalledTimes(1)
     expect(onReload).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ kind: 'FUNDS', page: 1, typeLabel: 'Renda Fixa' }),
