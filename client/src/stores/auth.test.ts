@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useAuthStore } from './auth'
 import { authApi } from '@/api/auth'
+import { router } from '@/router'
+import { resetUserStores } from '@/stores/resetUserStores'
 
 vi.mock('@/api/auth', () => ({
   authApi: {
@@ -15,12 +17,18 @@ vi.mock('@/api/auth', () => ({
   },
 }))
 
+vi.mock('@/router', () => ({
+  router: { replace: vi.fn() },
+}))
+
+vi.mock('@/stores/resetUserStores', () => ({
+  resetUserStores: vi.fn(),
+}))
+
 describe('auth store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    delete (window as unknown as { location?: unknown }).location
-    window.location = { href: '' } as unknown as string & Location
   })
 
   it('sets the session after a successful login', async () => {
@@ -48,7 +56,7 @@ describe('auth store', () => {
       authProvider: 'LOCAL',
       demoModeEnabled: false,
     })
-    expect(window.location.href).toBe('/overview')
+    expect(router.replace).toHaveBeenCalledWith({ name: 'overview' })
   })
 
   it('does not set a session or navigate when enrollment is required', async () => {
@@ -59,10 +67,10 @@ describe('auth store', () => {
 
     expect(status).toBe('needs_enrollment')
     expect(store.session).toBeNull()
-    expect(window.location.href).toBe('')
+    expect(router.replace).not.toHaveBeenCalled()
   })
 
-  it('clears the session on logout', async () => {
+  it('navigates to the login page before clearing the session on logout', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
       status: 'authenticated',
       session: {
@@ -75,13 +83,46 @@ describe('auth store', () => {
       },
     })
     vi.mocked(authApi.logout).mockResolvedValue(undefined)
-
     const store = useAuthStore()
     await store.login('admin@admin.com', 'admin')
+    const stateAtNavigation: { email?: string; endingSession?: boolean; storeResets?: number } = {}
+    vi.mocked(router.replace).mockImplementationOnce(async () => {
+      stateAtNavigation.email = store.session?.email
+      stateAtNavigation.endingSession = store.endingSession
+      stateAtNavigation.storeResets = vi.mocked(resetUserStores).mock.calls.length
+    })
+
     await store.logout()
 
+    expect(router.replace).toHaveBeenLastCalledWith({ name: 'login' })
+    expect(stateAtNavigation).toEqual({
+      email: 'admin@admin.com',
+      endingSession: true,
+      storeResets: 0,
+    })
     expect(store.session).toBeNull()
-    expect(window.location.href).toBe('/login')
+    expect(store.endingSession).toBe(false)
+    expect(resetUserStores).toHaveBeenCalledOnce()
+  })
+
+  it('still clears the session and the user stores when the logout navigation fails', async () => {
+    vi.mocked(authApi.logout).mockResolvedValue(undefined)
+    vi.mocked(router.replace).mockRejectedValueOnce(new Error('navigation aborted'))
+    const store = useAuthStore()
+    store.session = {
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    }
+
+    await expect(store.logout()).rejects.toThrow('navigation aborted')
+
+    expect(store.session).toBeNull()
+    expect(store.endingSession).toBe(false)
+    expect(resetUserStores).toHaveBeenCalledOnce()
   })
 
   it('restoreSession leaves the session null when unauthenticated', async () => {
@@ -137,7 +178,7 @@ describe('auth store', () => {
 
     expect(authApi.verify).toHaveBeenCalledWith('admin@admin.com', 'admin', '123456')
     expect(store.session?.email).toBe('admin@admin.com')
-    expect(window.location.href).toBe('/overview')
+    expect(router.replace).toHaveBeenCalledWith({ name: 'overview' })
   })
 
   it('linkGoogleAccount sets the session and navigates to the overview', async () => {
@@ -155,7 +196,7 @@ describe('auth store', () => {
 
     expect(authApi.linkGoogleAccount).toHaveBeenCalledWith('link-token', 'admin')
     expect(store.session?.email).toBe('admin@admin.com')
-    expect(window.location.href).toBe('/overview')
+    expect(router.replace).toHaveBeenCalledWith({ name: 'overview' })
   })
 
   it('register delegates to the API', async () => {

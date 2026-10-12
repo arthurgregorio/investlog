@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, provide, ref, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRoute } from 'vue-router'
 import TheNavbar from '@/components/layout/TheNavbar.vue'
 import TheTopNav from '@/components/layout/TheTopNav.vue'
 import CreateWalletModal from '@/components/forms/CreateWalletModal.vue'
@@ -10,13 +11,17 @@ import TrustedDevicesModal from '@/components/forms/TrustedDevicesModal.vue'
 import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { ModalKey } from '@/composables/useModals'
+import { isPublicRoute } from '@/router/publicRoutes'
 import type { WalletKind } from '@/types'
 
 const appearance = useAppearanceStore()
 const auth = useAuthStore()
 const { dark, accent } = storeToRefs(appearance)
 const theme = computed(() => (dark.value ? 'dark' : 'light'))
-const showAppShell = computed(() => auth.session?.status === 'APPROVED')
+const route = useRoute()
+const showAppShell = computed(
+  () => auth.session?.status === 'APPROVED' && !isPublicRoute(route.name),
+)
 
 watchEffect(() => {
   document.documentElement.setAttribute('data-theme', theme.value)
@@ -50,14 +55,24 @@ provide(ModalKey, {
 
 <template>
   <div class="app-root" :data-theme="theme" :data-accent="accent">
-    <div v-if="showAppShell" class="main">
-      <TheNavbar />
-      <TheTopNav />
-      <div class="app-content">
-        <RouterView />
+    <Transition name="page" mode="out-in">
+      <div v-if="showAppShell" class="main">
+        <TheNavbar />
+        <TheTopNav />
+        <div class="app-content">
+          <RouterView v-slot="{ Component, route: currentRoute }">
+            <Transition name="page" mode="out-in">
+              <component :is="Component" :key="currentRoute.path" />
+            </Transition>
+          </RouterView>
+        </div>
       </div>
-    </div>
-    <RouterView v-else />
+      <RouterView v-else v-slot="{ Component, route: currentRoute }">
+        <Transition name="page" mode="out-in">
+          <component :is="Component" :key="currentRoute.path" />
+        </Transition>
+      </RouterView>
+    </Transition>
 
     <CreateWalletModal
       v-if="walletModal"
