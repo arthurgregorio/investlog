@@ -16,6 +16,7 @@ const SYNC_TOGGLES = [
   },
   { key: 'crypto_price_sync_enabled', label: 'Atualizar preços das criptomoedas automaticamente' },
   { key: 'usd_price_sync_enabled', label: 'Atualizar cotação do dólar automaticamente' },
+  { key: 'wallet_snapshot_enabled', label: 'Registrar o valor das carteiras ao fim do dia' },
 ]
 
 const toast = useToast()
@@ -32,7 +33,7 @@ onMounted(() => {
 async function setSyncEnabled(key: string, enabled: boolean) {
   await configurationsStore.updateConfiguration(key, enabled ? 'true' : 'false')
   toast.open({
-    message: enabled ? 'Sincronização automática ativada.' : 'Sincronização automática desativada.',
+    message: enabled ? 'Rotina automática ativada.' : 'Rotina automática desativada.',
     type: 'is-success',
   })
 }
@@ -70,7 +71,7 @@ async function updateRate(currencyCode: string, rate: number) {
     </SettingsSection>
 
     <SettingsSection
-      title="Sincronização automática"
+      title="Rotinas automáticas"
       description="Ative ou desative funções do sistema."
       :loading="configurationsStore.loading"
     >

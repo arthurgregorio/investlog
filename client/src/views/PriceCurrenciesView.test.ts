@@ -131,10 +131,36 @@ describe('PriceCurrenciesView', () => {
         stock_price_sync_enabled: 'true',
         crypto_price_sync_enabled: 'false',
         usd_price_sync_enabled: 'true',
+        wallet_snapshot_enabled: 'false',
       },
     })
 
-    expect(switches(wrapper).map((toggle) => toggle.element.checked)).toEqual([true, false, true])
+    expect(switches(wrapper).map((toggle) => toggle.element.checked)).toEqual([
+      true,
+      false,
+      true,
+      false,
+    ])
+  })
+
+  it('reflects a stored enabled wallet snapshot value on its switch', async () => {
+    const { wrapper } = await mountView({ configurations: { wallet_snapshot_enabled: 'true' } })
+
+    expect(switches(wrapper)[3].element.checked).toBe(true)
+  })
+
+  it('lists every automatic routine, the wallet snapshot last, under "Rotinas automáticas"', async () => {
+    const { wrapper } = await mountView()
+
+    const routinesSection = wrapper
+      .findAll('.card')
+      .find((card) => card.find('.settings-title').text() === 'Rotinas automáticas')!
+    expect(routinesSection.findAll('.switch').map((toggle) => toggle.text())).toEqual([
+      'Atualizar preços das ações brasileiras automaticamente',
+      'Atualizar preços das criptomoedas automaticamente',
+      'Atualizar cotação do dólar automaticamente',
+      'Registrar o valor das carteiras ao fim do dia',
+    ])
   })
 
   it('writes the stock toggle through the configurations store', async () => {
@@ -147,7 +173,7 @@ describe('PriceCurrenciesView', () => {
       'stock_price_sync_enabled',
       'true',
     )
-    expect(document.body.textContent).toContain('Sincronização automática ativada.')
+    expect(document.body.textContent).toContain('Rotina automática ativada.')
   })
 
   it('writes the crypto toggle through the configurations store', async () => {
@@ -162,7 +188,7 @@ describe('PriceCurrenciesView', () => {
       'crypto_price_sync_enabled',
       'false',
     )
-    expect(document.body.textContent).toContain('Sincronização automática desativada.')
+    expect(document.body.textContent).toContain('Rotina automática desativada.')
   })
 
   it('writes the dollar toggle through the configurations store', async () => {
@@ -175,6 +201,34 @@ describe('PriceCurrenciesView', () => {
       'usd_price_sync_enabled',
       'true',
     )
+  })
+
+  it('turns the wallet snapshot on through the configurations store', async () => {
+    const { wrapper, configurationsStore } = await mountView()
+
+    await switches(wrapper)[3].setValue(true)
+    await flushPromises()
+
+    expect(configurationsStore.updateConfiguration).toHaveBeenCalledWith(
+      'wallet_snapshot_enabled',
+      'true',
+    )
+    expect(document.body.textContent).toContain('Rotina automática ativada.')
+  })
+
+  it('turns the wallet snapshot off through the configurations store', async () => {
+    const { wrapper, configurationsStore } = await mountView({
+      configurations: { wallet_snapshot_enabled: 'true' },
+    })
+
+    await switches(wrapper)[3].setValue(false)
+    await flushPromises()
+
+    expect(configurationsStore.updateConfiguration).toHaveBeenCalledWith(
+      'wallet_snapshot_enabled',
+      'false',
+    )
+    expect(document.body.textContent).toContain('Rotina automática desativada.')
   })
 
   it('forces a stock price sync and confirms with a toast', async () => {
