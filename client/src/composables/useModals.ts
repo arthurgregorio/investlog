@@ -4,7 +4,7 @@ import { inject, type InjectionKey } from 'vue'
 import type { WalletKind } from '@/types'
 
 export interface ModalControls {
-  openAddInvestment: (kind?: WalletKind) => void
+  openAddInvestment: (kind?: WalletKind, walletId?: string) => void
   openCreateWallet: (type?: WalletKind) => void
   openPasswordChange: () => void
   openTrustedDevices: () => void

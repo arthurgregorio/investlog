@@ -8,7 +8,7 @@ import { useTypesListStore } from '@/stores/typesList'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import type { WalletKind } from '@/types'
 
-const props = defineProps<{ initialKind?: WalletKind }>()
+const props = defineProps<{ initialKind?: WalletKind; initialWalletId?: string }>()
 const emit = defineEmits<{ close: []; 'create-wallet': [WalletKind] }>()
 
 const walletsStore = useWalletsStore()
@@ -19,10 +19,14 @@ onMounted(() => {
   Promise.all([walletsStore.load(), typesListStore.load()])
 })
 
-const { form, submit } = useAddInvestmentForm(props.initialKind ?? 'STOCKS', () => {
-  holdingsListStore.refresh()
-  emit('close')
-})
+const { form, submit } = useAddInvestmentForm(
+  props.initialKind ?? 'STOCKS',
+  props.initialWalletId,
+  () => {
+    holdingsListStore.refresh()
+    emit('close')
+  },
+)
 </script>
 
 <template>

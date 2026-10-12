@@ -23,13 +23,13 @@ watchEffect(() => {
   document.documentElement.setAttribute('data-accent', accent.value)
 })
 
-const addModal = ref<{ kind: WalletKind } | null>(null)
+const addModal = ref<{ kind: WalletKind; walletId?: string } | null>(null)
 const walletModal = ref<{ type: WalletKind } | null>(null)
 const showPasswordChangeModal = ref(false)
 const showTrustedDevicesModal = ref(false)
 
-function openAddInvestment(kind: WalletKind = 'STOCKS') {
-  addModal.value = { kind }
+function openAddInvestment(kind: WalletKind = 'STOCKS', walletId?: string) {
+  addModal.value = { kind, walletId }
 }
 function openCreateWallet(type: WalletKind = 'STOCKS') {
   walletModal.value = { type }
@@ -67,6 +67,7 @@ provide(ModalKey, {
     <AddInvestmentModal
       v-if="addModal"
       :initial-kind="addModal.kind"
+      :initial-wallet-id="addModal.walletId"
       @close="addModal = null"
       @create-wallet="
         (type: WalletKind) => {
