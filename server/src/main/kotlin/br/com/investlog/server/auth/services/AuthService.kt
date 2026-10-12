@@ -213,7 +213,10 @@ class AuthService(
         )
     }
 
-    fun authConfig(): AuthConfigResponse = AuthConfigResponse(googleAuthEnabled = googleAuthEnabled)
+    fun authConfig(): AuthConfigResponse = AuthConfigResponse(
+        googleAuthEnabled = googleAuthEnabled,
+        demoModeEnabled = demoModeEnabled,
+    )
 
     fun logout(servletRequest: HttpServletRequest) {
         servletRequest.getSession(false)?.invalidate()
