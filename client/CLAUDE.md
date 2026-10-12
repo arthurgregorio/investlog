@@ -18,13 +18,19 @@ npm run test:run   # vitest run (single pass, what CI runs)
 npm run test:coverage # vitest run --coverage (v8, writes client/coverage/)
 npm run lint       # eslint . --fix
 npm run lint:css   # stylelint over src/**/*.css and the <style> blocks of src/**/*.vue
-npm run format     # prettier --write src/
 ```
+
+**Prettier runs on touched files only.** `src/` is not prettier-clean, so never run
+`prettier --write src/` or the `npm run format` script that wraps it: on #345 it rewrote ~160
+unrelated files that had to be undone by hand. Format only the files you changed (`npx prettier --write <files>`).
+If a touched file was already unformatted at `HEAD`, keep only your own hunks formatted rather than
+reformatting the whole file.
 
 Code style is enforced by `.prettierrc.json` (no semicolons, single quotes, trailing commas) and
 `eslint.config.js` (Vue + TypeScript + Prettier, flat config). Point WebStorm's formatter at
 Prettier (Settings → Languages & Frameworks → JavaScript → Prettier → set package path, enable
-"On code reformat" and "On save") so `Ctrl+Alt+L` matches `npm run format`/`npm run lint`.
+"On code reformat" and "On save") so `Ctrl+Alt+L` applies the same rules as `npx prettier --write`
+and `npm run lint`, one file at a time; the touched-files-only rule above applies to it too.
 
 `tsconfig.app.json` has `strict`, `noUnusedLocals` and `noUnusedParameters` enabled,
 so unused imports/variables fail `npm run build` / `npm run type-check`.
@@ -274,6 +280,12 @@ unset).
 
 `App.vue` sets `data-theme` (`light`/`dark`) and `data-accent` (`blue`/`indigo`/`teal`/`yellow`)
 on `.app-root`. Accent color is the only user-configurable appearance setting.
+
+Accent and light/dark live in the navbar user-menu dropdown (`TheNavbar.vue`), never on the
+Configurações pages or in a floating panel. Layout density is fixed and not user-configurable. The
+add-investment flow is always a modal (`AddInvestmentModal`); there is no dedicated add-investment
+page or route. The design prototype's "Tweaks" panel was a Claude Design tool artifact, not product
+UI, so it is not built.
 
 ### Authentication & Authorization
 
