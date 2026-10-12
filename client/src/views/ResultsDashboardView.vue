@@ -7,28 +7,40 @@ import KpiCard from '@/components/ui/KpiCard.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import TablePagination from '@/components/ui/TablePagination.vue'
 import ReinvestmentsTable from '@/components/investments/ReinvestmentsTable.vue'
+import WithdrawalsTable from '@/components/investments/WithdrawalsTable.vue'
 import { useResultsStore } from '@/stores/results'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { fmt } from '@/composables/useFormat'
 
 const REINVESTMENTS_PAGE_SIZE = 10
+const WITHDRAWALS_PAGE_SIZE = 10
 
 const resultsStore = useResultsStore()
 const reinvestmentsStore = useReinvestmentsStore()
 const router = useRouter()
 
 onMounted(() => {
-  Promise.all([resultsStore.loadSummary(), reinvestmentsStore.load(0, REINVESTMENTS_PAGE_SIZE)])
+  Promise.all([
+    resultsStore.loadSummary(),
+    reinvestmentsStore.load(0, REINVESTMENTS_PAGE_SIZE),
+    resultsStore.load(0, WITHDRAWALS_PAGE_SIZE),
+  ])
 })
 
 function onPageChange(page: number) {
   reinvestmentsStore.load(page, REINVESTMENTS_PAGE_SIZE)
 }
 
+function onWithdrawalsPageChange(page: number) {
+  resultsStore.load(page, WITHDRAWALS_PAGE_SIZE)
+}
+
 const summary = computed(() => resultsStore.summary)
 const currency = computed(() => summary.value?.displayCurrency ?? 'BRL')
 const hasResults = computed(() => (summary.value?.exitCount ?? 0) > 0)
-const loading = computed(() => resultsStore.summaryLoading || reinvestmentsStore.loading)
+const loading = computed(
+  () => resultsStore.summaryLoading || reinvestmentsStore.loading || resultsStore.loading,
+)
 const profitClass = computed(() =>
   (summary.value?.totalProfit ?? 0) >= 0 ? 'has-text-success' : 'has-text-danger',
 )
@@ -133,6 +145,29 @@ const profitClass = computed(() =>
               icon="swap-horizontal"
               title="Nenhum reinvestimento"
               text="Reinvestimentos de um investimento em outro aparecem aqui."
+            />
+          </div>
+        </Card>
+
+        <Card class="table-card" data-testid="withdrawals">
+          <div class="px-5 pt-4">
+            <div class="chart-title">Resgates</div>
+            <div class="is-size-7 has-text-grey mt-1">Do mais recente para o mais antigo</div>
+          </div>
+          <div v-if="resultsStore.rows.length > 0" class="table-wrap">
+            <WithdrawalsTable :rows="resultsStore.rows" />
+            <TablePagination
+              :page="resultsStore.page"
+              :page-size="resultsStore.pageSize"
+              :total-elements="resultsStore.totalElements"
+              @page-change="onWithdrawalsPageChange"
+            />
+          </div>
+          <div v-else-if="resultsStore.loaded" class="p-4">
+            <EmptyState
+              icon="cash-minus"
+              title="Nenhum resgate"
+              text="Resgates de investimentos aparecem aqui depois de registrados."
             />
           </div>
         </Card>

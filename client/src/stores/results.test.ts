@@ -55,13 +55,17 @@ describe('useResultsStore', () => {
     expect(store.totalElements).toBe(0)
   })
 
-  it('load() fetches the first page and records the totals', async () => {
+  it('load() fetches the first page of withdrawals and records the totals', async () => {
     vi.mocked(resultsApi.findAll).mockResolvedValue(pageOf([mockResult], 1))
     const store = useResultsStore()
 
     await store.load()
 
-    expect(resultsApi.findAll).toHaveBeenCalledWith({ page: 0, size: 20 })
+    expect(resultsApi.findAll).toHaveBeenCalledWith({
+      page: 0,
+      size: 20,
+      resultType: 'WITHDRAWAL',
+    })
     expect(store.rows).toEqual([mockResult])
     expect(store.totalElements).toBe(1)
     expect(store.totalPages).toBe(1)
@@ -75,19 +79,42 @@ describe('useResultsStore', () => {
 
     await store.load(2)
 
-    expect(resultsApi.findAll).toHaveBeenCalledWith({ page: 2, size: 20 })
+    expect(resultsApi.findAll).toHaveBeenCalledWith({
+      page: 2,
+      size: 20,
+      resultType: 'WITHDRAWAL',
+    })
     expect(store.page).toBe(2)
   })
 
-  it('refresh() re-requests the page currently held', async () => {
+  it('load(pageNumber, size) requests that page size and remembers it', async () => {
+    vi.mocked(resultsApi.findAll).mockResolvedValue(pageOf([mockResult], 25))
+    const store = useResultsStore()
+
+    await store.load(1, 10)
+
+    expect(resultsApi.findAll).toHaveBeenCalledWith({
+      page: 1,
+      size: 10,
+      resultType: 'WITHDRAWAL',
+    })
+    expect(store.page).toBe(1)
+    expect(store.pageSize).toBe(10)
+  })
+
+  it('refresh() re-requests the page and page size currently held', async () => {
     vi.mocked(resultsApi.findAll).mockResolvedValue(pageOf([mockResult]))
     const store = useResultsStore()
-    await store.load(3)
+    await store.load(3, 10)
     vi.mocked(resultsApi.findAll).mockClear()
 
     await store.refresh()
 
-    expect(resultsApi.findAll).toHaveBeenCalledWith({ page: 3, size: 20 })
+    expect(resultsApi.findAll).toHaveBeenCalledWith({
+      page: 3,
+      size: 10,
+      resultType: 'WITHDRAWAL',
+    })
   })
 
   it('clears loading when the request fails', async () => {

@@ -65,8 +65,8 @@ a snapshot nobody reads passes while the feature is broken.
 Coverage is measured with `npm run test:coverage` (v8 provider, report in `client/coverage/`) and
 **enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
 functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
-drops any of the four below its floor fails the build. The floor today is **96% statements, 97%
-lines, 94% functions and 93% branches** (the suite reaches 96.16 / 97.3 / 94.12 / 93.45), and every
+drops any of the four below its floor fails the build. The floor today is **98% statements, 98%
+lines, 96% functions and 96% branches** (the suite reaches 98.17 / 98.78 / 96.72 / 96.34), and every
 file under `src/views/` is above 80% statements.
 
 `src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
@@ -176,7 +176,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
 | `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
 | `walletMoves` | `GET/POST /wallets/{id}/moves` | `rows[]` for one wallet, `load(walletId, page)`, `move(originWalletId, payload)` |
-| `results` | `GET /results`, `GET /results/summary` | `rows[]`, `summary`, `load(page)`, `loadSummary()` |
+| `results` | `GET /results?resultType=WITHDRAWAL`, `GET /results/summary` | `rows[]` (withdrawals only), `summary`, `load(page, size)`, `loadSummary()` |
 | `reinvestments` | `GET/POST /reinvestments` | `rows[]`, `load(page, size)` — a small `size` serves a recent list, the default the full history — and `reinvest(payload)` |
 | `typesList` | `GET /stock-types` + `/fund-types` + `/stock-segments` | `stockTypes[]`, `fundTypes[]`, `stockSegments[]`, CRUD actions |
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
@@ -197,7 +197,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 |---|---|
 | `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `TablePagination` (the `.table-foot` pager every paginated table uses, zero-based `page`/`page-change`), `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
-| `investments/` | `InvestmentsToolbar` (the `/investments` controls row: the kind `SegmentedTabs`, wallet and type selects, search, add and export buttons, all props in and events out), `HoldingsTable` with `HoldingsTableRow` (the expandable holdings table shared by `/investments` and `/wallets/:id`) and its satellites — `HoldingDetailPanel` (the lazy-loaded expansion row, which keeps the modals and the event wiring and renders `FundFeeSummary`, `HoldingLedgerTable` with the ledger head and its scoped `.sub-table`/`.ledger-*` CSS, and `HoldingActionsDropdown`), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect` |
+| `investments/` | `InvestmentsToolbar` (the `/investments` controls row: the kind `SegmentedTabs`, wallet and type selects, search, add and export buttons, all props in and events out), `HoldingsTable` with `HoldingsTableRow` (the expandable holdings table shared by `/investments` and `/wallets/:id`) and its satellites — `HoldingDetailPanel` (the lazy-loaded expansion row, which keeps the modals and the event wiring and renders `FundFeeSummary`, `HoldingLedgerTable` with the ledger head and its scoped `.sub-table`/`.ledger-*` CSS, and `HoldingActionsDropdown`), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect`, and the results dashboard's read-only `ReinvestmentsTable` and `WithdrawalsTable` |
 | `report/` | `InvestmentReportView`'s pieces — `ReportHeader`, `ReportTotalsLine` (the Investido / Atual / Resultado line in its `grand`, `kind` and `subgroup` variants) and `ReportWalletTable`, each with its report CSS scoped; the paper, page-break guides, kind and sub-group heads and every print rule stay in `styles.css` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` (a compact layout, and a `detailed` one with share bars) |
 | `overview/` | `OverviewView`'s cards — `EvolutionCard` (the invested-capital `AreaChart`), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
@@ -243,7 +243,7 @@ It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fi
 
 ### Results dashboard (`ResultsDashboardView.vue`)
 
-"Dashboards" in `TheTopNav` (sack icon) is a dropdown holding "Visão geral", the existing overview at `/overview` that is still the landing page, and "Resultados" at `/overview/resultados`. The dashboard shows four KPI cards from `GET /results/summary` (withdrawn, realised profit, fees, taxes, in the user's display currency) and a paginated table of reinvestments (ten per page, newest first) from the `reinvestments` store, rendered through `ReinvestmentsTable`. A user with no recorded results sees one `EmptyState` instead of zeroed cards; a user with withdrawals but no reinvestments sees the cards and an empty reinvestments card. Wallet moves never appear here, since they realise nothing.
+"Dashboards" in `TheTopNav` (sack icon) is a dropdown holding "Visão geral", the existing overview at `/overview` that is still the landing page, and "Resultados" at `/overview/resultados`. The dashboard shows four KPI cards from `GET /results/summary` (withdrawn, realised profit, fees, taxes, in the user's display currency) and a paginated table of reinvestments (ten per page, newest first) from the `reinvestments` store, rendered through `ReinvestmentsTable`, then a "Resgates" card with the withdrawals alone (ten per page, newest first) from the `results` store, rendered through `WithdrawalsTable`: each row shows quantity and the unit price at the time (`grossAmount / quantity`, a dash for funds), gross, costs, net, cost basis and the profit with its percentage of the cost basis, all in the wallet's own currency. A user with no recorded results sees one `EmptyState` instead of zeroed cards; a user with withdrawals but no reinvestments (or the reverse) sees the cards and an empty state in the table card that has nothing to list. Wallet moves never appear here, since they realise nothing.
 
 ### Reinvesting (`ReinvestModal.vue`)
 
