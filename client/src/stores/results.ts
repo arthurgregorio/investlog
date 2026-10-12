@@ -14,11 +14,12 @@ export const useResultsStore = defineStore('results', () => {
   const summary = ref<ResultSummary | null>(null)
   const summaryLoading = ref(false)
 
-  async function load(pageNumber = 0) {
+  async function load(pageNumber = 0, size = pageSize.value) {
     loading.value = true
     page.value = pageNumber
+    pageSize.value = size
     try {
-      const result = await resultsApi.findAll({ page: pageNumber, size: pageSize.value })
+      const result = await resultsApi.findAll({ page: pageNumber, size, resultType: 'WITHDRAWAL' })
       rows.value = result.content
       totalElements.value = result.page.totalElements
       totalPages.value = result.page.totalPages
