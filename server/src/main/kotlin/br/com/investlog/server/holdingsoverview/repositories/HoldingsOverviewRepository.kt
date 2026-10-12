@@ -46,6 +46,8 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                 "invested" -> overview.COST_BASIS
                 "current" -> overview.CURRENT_VALUE
                 "gain" -> overview.GAIN
+                "gainPct" -> overview.GAIN_PCT
+                "asset" -> DSL.lower(DSL.coalesce(overview.TICKER, overview.NAME))
                 else -> null
             }
             field?.let { if (order.isAscending) it.asc().nullsLast() else it.desc().nullsLast() }
