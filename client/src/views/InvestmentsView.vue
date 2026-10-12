@@ -56,7 +56,10 @@ const walletOptions = computed(() => {
 })
 
 function openAddInvestment() {
-  modals.openAddInvestment(activeFilter.value !== 'all' ? activeFilter.value : undefined)
+  const walletId = walletIdFilter.value
+  const filteredWallet = walletsStore.wallets.find((wallet) => wallet.id === walletId)
+  const kind = activeFilter.value !== 'all' ? activeFilter.value : filteredWallet?.kind
+  modals.openAddInvestment(kind, walletId)
 }
 
 function openReport() {

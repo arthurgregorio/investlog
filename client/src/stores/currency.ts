@@ -42,5 +42,11 @@ export const useCurrencyStore = defineStore('currency', () => {
     return amount * (rateToAnchor(fromCurrency) / rateToAnchor(displayCurrency.value))
   }
 
-  return { displayCurrency, loaded, loading, load, setDisplayCurrency, convert, hydrate }
+  function reset() {
+    displayCurrency.value = 'BRL'
+    loaded.value = false
+    loading.value = false
+  }
+
+  return { displayCurrency, loaded, loading, load, setDisplayCurrency, convert, hydrate, reset }
 })

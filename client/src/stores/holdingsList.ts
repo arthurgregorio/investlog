@@ -72,6 +72,22 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
     })
   }
 
+  function reset() {
+    rows.value = []
+    currentKind.value = 'all'
+    currentTypeLabel.value = undefined
+    currentWalletId.value = undefined
+    currentSearch.value = undefined
+    currentSort.value = undefined
+    currentHideFrozen.value = undefined
+    page.value = 0
+    pageSize.value = DEFAULT_PAGE_SIZE
+    totalElements.value = 0
+    totalPages.value = 0
+    loading.value = false
+    loaded.value = false
+  }
+
   return {
     rows,
     currentKind,
@@ -83,5 +99,6 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
     loaded,
     loadKind,
     refresh,
+    reset,
   }
 })

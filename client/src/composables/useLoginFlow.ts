@@ -1,10 +1,19 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authApi } from '@/api/auth'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, type SessionEndReason } from '@/stores/auth'
 import { fieldValidationMessage } from '@/utils/apiErrors'
 
 export type LoginStep = 'credentials' | 'register' | 'enroll' | 'totp' | 'link'
+
+const SESSION_END_NOTICES: Record<SessionEndReason, string> = {
+  inactivity: 'Sua sessão foi encerrada por inatividade. Entre novamente.',
+  expired: 'Sua sessão expirou. Entre novamente.',
+}
+
+function sessionEndNotice(reason: unknown): string {
+  return reason === 'inactivity' || reason === 'expired' ? SESSION_END_NOTICES[reason] : ''
+}
 
 export function useLoginFlow() {
   const router = useRouter()
@@ -20,6 +29,7 @@ export function useLoginFlow() {
   const qrCodeDataUri = ref('')
   const linkToken = ref('')
   const linkEmail = ref('')
+  const sessionNotice = ref(sessionEndNotice(route.query.reason))
 
   onMounted(async () => {
     const queryLinkToken = route.query.linkToken
@@ -62,6 +72,7 @@ export function useLoginFlow() {
 
   async function submit(action: () => Promise<void>) {
     error.value = ''
+    sessionNotice.value = ''
     submitting.value = true
     try {
       await action()
@@ -146,6 +157,7 @@ export function useLoginFlow() {
     email,
     password,
     error,
+    sessionNotice,
     submitting,
     googleAuthEnabled,
     qrCodeDataUri,

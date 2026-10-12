@@ -200,4 +200,31 @@ describe('useHoldingsListStore', () => {
       size: 20,
     })
   })
+
+  it('reset forgets every filter, so the next refresh asks for all holdings', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
+
+    const store = useHoldingsListStore()
+    await store.loadKind('CRYPTO', 2, {
+      typeLabel: 'Altcoin',
+      walletId: 'wallet-1',
+      search: 'BTC',
+      sort: 'invested,asc',
+      hideFrozen: true,
+      size: 10,
+    })
+    store.reset()
+    await store.refresh()
+
+    expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({
+      kind: undefined,
+      typeLabel: undefined,
+      walletId: undefined,
+      search: undefined,
+      sort: undefined,
+      hideFrozen: undefined,
+      page: 0,
+      size: 20,
+    })
+  })
 })
