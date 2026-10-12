@@ -1,3 +1,6 @@
 package br.com.investlog.server.auth.rest.payloads
 
-data class AuthConfigResponse(val googleAuthEnabled: Boolean)
+data class AuthConfigResponse(
+    val googleAuthEnabled: Boolean,
+    val demoModeEnabled: Boolean,
+)
