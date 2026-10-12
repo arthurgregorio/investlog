@@ -103,12 +103,24 @@ describe('HoldingsTable', () => {
     expect(mountTable({ showWalletColumn: true }).find('.sort-th').exists()).toBe(false)
 
     expect(mountTable({ sortable: true, showWalletColumn: true }).findAll('.sort-th')).toHaveLength(
-      5,
+      6,
     )
   })
 
+  it('sorts the Investimento column by asset only when the table is sortable', async () => {
+    expect(headerCell(mountTable(), 'Investimento').classes()).not.toContain('sort-th')
+
+    const wrapper = mountTable({ sortable: true })
+    const investmentHeader = headerCell(wrapper, 'Investimento')
+    expect(investmentHeader.classes()).toEqual(['sort-th'])
+
+    await investmentHeader.trigger('click')
+
+    expect(wrapper.emitted('sort')).toEqual([['asset']])
+  })
+
   it('emits the sort key of the clicked header and marks the active one', async () => {
-    const wrapper = mountTable({ sortable: true, sortKey: 'gain', sortDirection: 'asc' })
+    const wrapper = mountTable({ sortable: true, sortKey: 'gainPct', sortDirection: 'asc' })
 
     expect(headerCell(wrapper, 'Resultado').find('.sort-icon-active').exists()).toBe(true)
     expect(headerCell(wrapper, 'Investido').find('.sort-icon-active').exists()).toBe(false)

@@ -40,7 +40,7 @@ const numericColumns = [
   { key: 'price', label: 'Preço atual' },
   { key: 'invested', label: 'Investido' },
   { key: 'current', label: 'Valor atual' },
-  { key: 'gain', label: 'Resultado' },
+  { key: 'gainPct', label: 'Resultado' },
 ]
 
 const { isExpanded, toggle, collapse } = useExpandedRow()
@@ -72,7 +72,16 @@ defineExpose({ collapse })
       <table class="inv-table">
         <thead>
           <tr>
-            <th>Investimento</th>
+            <SortTh
+              v-if="sortable"
+              sort-key="asset"
+              :active-key="sortKey"
+              :direction="sortDirection"
+              align="left"
+              @toggle="emit('sort', $event)"
+              >Investimento</SortTh
+            >
+            <th v-else>Investimento</th>
             <template v-if="showWalletColumn">
               <SortTh
                 v-if="sortable"

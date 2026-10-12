@@ -21,6 +21,7 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
     lateinit var restTestClient: RestTestClient
 
     lateinit var walletId: UUID
+    lateinit var sortWalletId: UUID
     lateinit var fundsWalletId: UUID
     lateinit var stockTypeId: UUID
     lateinit var fundTypeId: UUID
@@ -81,12 +82,50 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
         createStockHolding("GNPRC3", currentPrice = "50.00", quantity = "10", price = "45.00")
         createStockHolding("GNZRO3", currentPrice = "50.00", quantity = "10", price = "0")
         createStockHolding("GNNPR3", currentPrice = null, quantity = "10", price = "45.00")
+
+        sortWalletId = restTestClient.post()
+            .uri("/private/v1/wallets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Gain Sort Wallet","kind":"STOCKS","currency":"BRL"}""")
+            .exchange()
+            .returnResult<WalletResponse>()
+            .responseBody!!
+            .id
+
+        createStockHolding("SRTSML3", currentPrice = "20.00", quantity = "1", price = "10.00", inWalletId = sortWalletId)
+        createStockHolding("SRTLRG3", currentPrice = "15.00", quantity = "100", price = "10.00", inWalletId = sortWalletId)
+        createStockHolding("SRTNEG3", currentPrice = "8.00", quantity = "10", price = "10.00", inWalletId = sortWalletId)
+        createStockHolding("SRTNUL3", currentPrice = null, quantity = "10", price = "10.00", inWalletId = sortWalletId)
+
+        createStockHolding("SRTQA3", currentPrice = "10.00", quantity = "1", price = "10.00")
+        createStockHolding("SRTQC3", currentPrice = "10.00", quantity = "1", price = "10.00")
+        createFundHolding("srtqb fund")
+        createFundHolding("SRTQD Fund")
     }
 
-    private fun createStockHolding(ticker: String, currentPrice: String?, quantity: String, price: String) {
+    private fun createFundHolding(name: String) {
+        restTestClient.post()
+            .uri("/private/v1/wallets/$fundsWalletId/fund-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"fundTypeId":"$fundTypeId","name":"$name",
+                   "currentValue":100.00,
+                   "contribution":{"contributionDate":"2025-01-15","amount":100.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
+    }
+
+    private fun createStockHolding(
+        ticker: String,
+        currentPrice: String?,
+        quantity: String,
+        price: String,
+        inWalletId: UUID = walletId,
+    ) {
         val currentPriceField = currentPrice?.let { """"currentPrice":$it,""" } ?: ""
         restTestClient.post()
-            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .uri("/private/v1/wallets/$inWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
                 """{"stockTypeId":"$stockTypeId","ticker":"$ticker",$currentPriceField
@@ -203,5 +242,68 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
 
         assertContains(body, """"gain":100.00""")
         assertContains(body, """"gainPct":10.0000000000""")
+    }
+
+    @Test
+    @Order(12)
+    fun `GET holdings sorted by gainPct descending orders by percentage with nulls last`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={walletId}&sort=gainPct,desc", sortWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[*].ticker").isEqualTo(listOf("SRTSML3", "SRTLRG3", "SRTNEG3", "SRTNUL3"))
+    }
+
+    @Test
+    @Order(13)
+    fun `GET holdings sorted by gainPct ascending orders by percentage with nulls last`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={walletId}&sort=gainPct,asc", sortWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[*].ticker").isEqualTo(listOf("SRTNEG3", "SRTLRG3", "SRTSML3", "SRTNUL3"))
+    }
+
+    @Test
+    @Order(14)
+    fun `GET holdings sorted by gain descending still orders by absolute gain`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={walletId}&sort=gain,desc", sortWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[*].ticker").isEqualTo(listOf("SRTLRG3", "SRTSML3", "SRTNEG3", "SRTNUL3"))
+    }
+
+    @Test
+    @Order(15)
+    fun `GET holdings sorted by asset ascending interleaves tickers and fund names ignoring case`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?search=srtq&sort=asset,asc")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content.length()").isEqualTo(4)
+            .jsonPath("$.content[0].ticker").isEqualTo("SRTQA3")
+            .jsonPath("$.content[1].name").isEqualTo("srtqb fund")
+            .jsonPath("$.content[2].ticker").isEqualTo("SRTQC3")
+            .jsonPath("$.content[3].name").isEqualTo("SRTQD Fund")
+    }
+
+    @Test
+    @Order(16)
+    fun `GET holdings sorted by asset descending reverses the alphabetical order`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?search=srtq&sort=asset,desc")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content.length()").isEqualTo(4)
+            .jsonPath("$.content[0].name").isEqualTo("SRTQD Fund")
+            .jsonPath("$.content[1].ticker").isEqualTo("SRTQC3")
+            .jsonPath("$.content[2].name").isEqualTo("srtqb fund")
+            .jsonPath("$.content[3].ticker").isEqualTo("SRTQA3")
     }
 }
