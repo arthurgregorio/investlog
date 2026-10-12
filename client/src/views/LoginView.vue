@@ -13,6 +13,7 @@ const {
   email,
   password,
   error,
+  sessionNotice,
   submitting,
   googleAuthEnabled,
   qrCodeDataUri,
@@ -42,6 +43,14 @@ const {
           <h1 class="auth-title">{{ title }}</h1>
           <p class="auth-sub">{{ subtitle }}</p>
         </div>
+
+        <p
+          v-if="sessionNotice && step === 'credentials'"
+          class="notification is-info is-light"
+          data-testid="session-notice"
+        >
+          {{ sessionNotice }}
+        </p>
 
         <p v-if="error" class="auth-error">{{ error }}</p>
 

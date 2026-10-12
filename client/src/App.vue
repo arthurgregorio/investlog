@@ -11,6 +11,7 @@ import TrustedDevicesModal from '@/components/forms/TrustedDevicesModal.vue'
 import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
 import { ModalKey } from '@/composables/useModals'
+import { useInactivityLogout } from '@/composables/useInactivityLogout'
 import { isPublicRoute } from '@/router/publicRoutes'
 import type { WalletKind } from '@/types'
 
@@ -22,6 +23,8 @@ const route = useRoute()
 const showAppShell = computed(
   () => auth.session?.status === 'APPROVED' && !isPublicRoute(route.name),
 )
+
+useInactivityLogout()
 
 watchEffect(() => {
   document.documentElement.setAttribute('data-theme', theme.value)

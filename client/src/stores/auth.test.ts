@@ -125,6 +125,71 @@ describe('auth store', () => {
     expect(resetUserStores).toHaveBeenCalledOnce()
   })
 
+  describe('expireSession', () => {
+    function signedInStore() {
+      const store = useAuthStore()
+      store.session = {
+        name: 'Administrador',
+        email: 'admin@admin.com',
+        role: 'ADMIN',
+        status: 'APPROVED',
+        authProvider: 'LOCAL',
+        demoModeEnabled: false,
+      }
+      return store
+    }
+
+    it('ends the session through the logout path, with the reason on the login route', async () => {
+      vi.mocked(authApi.logout).mockResolvedValue(undefined)
+      const store = signedInStore()
+      let emailAtNavigation: string | undefined
+      vi.mocked(router.replace).mockImplementationOnce(async () => {
+        emailAtNavigation = store.session?.email
+      })
+
+      await store.expireSession('inactivity')
+
+      expect(authApi.logout).toHaveBeenCalledOnce()
+      expect(router.replace).toHaveBeenCalledWith({
+        name: 'login',
+        query: { reason: 'inactivity' },
+      })
+      expect(emailAtNavigation).toBe('admin@admin.com')
+      expect(store.session).toBeNull()
+      expect(resetUserStores).toHaveBeenCalledOnce()
+    })
+
+    it('ignores a failing server logout, since the server session is already gone', async () => {
+      vi.mocked(authApi.logout).mockRejectedValue({ response: { status: 401 } })
+      const store = signedInStore()
+
+      await store.expireSession('expired')
+
+      expect(router.replace).toHaveBeenCalledWith({ name: 'login', query: { reason: 'expired' } })
+      expect(store.session).toBeNull()
+    })
+
+    it('does nothing without a session', async () => {
+      const store = useAuthStore()
+
+      await store.expireSession('expired')
+
+      expect(authApi.logout).not.toHaveBeenCalled()
+      expect(router.replace).not.toHaveBeenCalled()
+    })
+
+    it('does nothing while a session is already ending', async () => {
+      vi.mocked(authApi.logout).mockResolvedValue(undefined)
+      const store = signedInStore()
+      store.endingSession = true
+
+      await store.expireSession('expired')
+
+      expect(authApi.logout).not.toHaveBeenCalled()
+      expect(router.replace).not.toHaveBeenCalled()
+    })
+  })
+
   it('restoreSession leaves the session null when unauthenticated', async () => {
     vi.mocked(authApi.fetchSession).mockRejectedValue({ response: { status: 401 } })
 

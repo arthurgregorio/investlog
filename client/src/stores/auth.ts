@@ -11,6 +11,8 @@ export type LoginStatus =
   | 'totp_required'
   | 'invalid_totp_code'
 
+export type SessionEndReason = 'inactivity' | 'expired'
+
 async function enrollTotp(email: string, password: string): Promise<TotpEnrollResponse> {
   return authApi.enroll(email, password)
 }
@@ -30,10 +32,10 @@ export const useAuthStore = defineStore('auth', () => {
     await router.replace({ name: 'overview' })
   }
 
-  async function endSession() {
+  async function endSession(reason?: SessionEndReason) {
     endingSession.value = true
     try {
-      await router.replace({ name: 'login' })
+      await router.replace(reason ? { name: 'login', query: { reason } } : { name: 'login' })
     } finally {
       endingSession.value = false
       session.value = null
@@ -67,6 +69,12 @@ export const useAuthStore = defineStore('auth', () => {
     await endSession()
   }
 
+  async function expireSession(reason: SessionEndReason) {
+    if (!session.value || endingSession.value) return
+    authApi.logout().catch(() => undefined)
+    await endSession(reason)
+  }
+
   async function restoreSession() {
     loading.value = true
     try {
@@ -89,6 +97,7 @@ export const useAuthStore = defineStore('auth', () => {
     linkGoogleAccount,
     register,
     logout,
+    expireSession,
     restoreSession,
   }
 })
