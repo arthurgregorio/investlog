@@ -80,6 +80,8 @@
   --surface-hover: #f1f5fa;
   --border: #e6e9ef;
   --border-2: #eef1f6;
+  --border-strong: #c3cbd8;
+  --down-faint: rgb(224 56 79 / 6%);
   --text: #172033;
   --text-2: #586375;
   --text-muted: #8a96a8;
@@ -99,6 +101,8 @@
   --surface-hover: #212d3c;
   --border: #2a3646;
   --border-2: #222d3b;
+  --border-strong: #43536a;
+  --down-faint: rgb(224 56 79 / 10%);
   --text: #e8ecf2;
   --text-2: #9fabbd;
   --text-muted: #71819a;

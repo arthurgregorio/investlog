@@ -68,12 +68,14 @@ const {
           v-else-if="step === 'enroll'"
           :submitting="submitting"
           :qr-code-data-uri="qrCodeDataUri"
+          :invalid="Boolean(error)"
           @submit="submitEnrollment"
         />
 
         <TotpVerifyStep
           v-else-if="step === 'totp'"
           :submitting="submitting"
+          :invalid="Boolean(error)"
           @submit="submitTotpCode"
         />
 

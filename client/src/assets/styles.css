@@ -1274,6 +1274,74 @@ a {
   padding: 10px;
 }
 
+.totp-code {
+  gap: 6px;
+}
+
+.totp-code-box {
+  flex: 0 1 46px;
+  min-width: 0;
+  height: 56px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.totp-code-box.is-filled {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+
+.totp-code-box.is-active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.totp-code.is-invalid .totp-code-box {
+  border-color: var(--down);
+  background: var(--down-faint);
+}
+
+.totp-code.is-disabled {
+  opacity: 0.55;
+}
+
+.totp-code-caret {
+  width: 2px;
+  height: 24px;
+  border-radius: 1px;
+  background: var(--primary);
+  animation: totp-code-caret-blink 1s step-end infinite;
+}
+
+@keyframes totp-code-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.totp-code-separator {
+  flex: none;
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--text-muted);
+}
+
+.totp-code-input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  font-size: 16px;
+  caret-color: transparent;
+  cursor: text;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;
