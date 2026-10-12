@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import GoogleMark from '@/components/icons/GoogleMark.vue'
+
 defineProps<{
   submitting: boolean
   googleAuthEnabled: boolean
@@ -11,6 +14,17 @@ const emit = defineEmits<{
 
 const email = defineModel<string>('email', { required: true })
 const password = defineModel<string>('password', { required: true })
+
+const redirectingToGoogle = ref(false)
+
+function resetAfterBackForwardRestore(event: PageTransitionEvent) {
+  if (event.persisted) {
+    redirectingToGoogle.value = false
+  }
+}
+
+onMounted(() => window.addEventListener('pageshow', resetAfterBackForwardRestore))
+onBeforeUnmount(() => window.removeEventListener('pageshow', resetAfterBackForwardRestore))
 </script>
 
 <template>
@@ -45,10 +59,27 @@ const password = defineModel<string>('password', { required: true })
       tag="a"
       href="/private/oauth2/authorization/google"
       expanded
-      class="auth-submit"
+      class="auth-submit google-signin"
       data-testid="google-login"
+      @click="redirectingToGoogle = true"
     >
-      Continuar com Google
+      <span class="google-signin-content is-flex is-align-items-center">
+        <svg
+          v-if="redirectingToGoogle"
+          class="google-signin-spinner"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          data-testid="google-spinner"
+        >
+          <circle class="google-signin-spinner-track" cx="12" cy="12" r="9" stroke-width="3" />
+          <path d="M21 12a9 9 0 0 0-9-9" stroke="#4285F4" stroke-width="3" stroke-linecap="round" />
+        </svg>
+        <GoogleMark v-else />
+        <span>{{ redirectingToGoogle ? 'Redirecionando…' : 'Continuar com o Google' }}</span>
+      </span>
     </b-button>
   </form>
 </template>
