@@ -117,6 +117,29 @@ describe('useResultsStore', () => {
     })
   })
 
+  it('reset() forgets the loaded withdrawals and the remembered page size', async () => {
+    vi.mocked(resultsApi.findAll).mockResolvedValue(pageOf([mockResult], 25))
+    const store = useResultsStore()
+    await store.load(1, 10)
+
+    store.reset()
+
+    expect(store.rows).toEqual([])
+    expect(store.page).toBe(0)
+    expect(store.pageSize).toBe(20)
+    expect(store.totalElements).toBe(0)
+    expect(store.loaded).toBe(false)
+
+    vi.mocked(resultsApi.findAll).mockClear()
+    await store.load()
+
+    expect(resultsApi.findAll).toHaveBeenCalledWith({
+      page: 0,
+      size: 20,
+      resultType: 'WITHDRAWAL',
+    })
+  })
+
   it('clears loading when the request fails', async () => {
     vi.mocked(resultsApi.findAll).mockRejectedValue(new Error('boom'))
     const store = useResultsStore()

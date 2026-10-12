@@ -72,7 +72,7 @@ Coverage is measured with `npm run test:coverage` (v8 provider, report in `clien
 **enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
 functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
 drops any of the four below its floor fails the build. The floor today is **98% statements, 98%
-lines, 96% functions and 96% branches** (the suite reaches 98.25 / 98.86 / 96.76 / 96.41), and every
+lines, 96% functions and 96% branches** (the suite reaches 98.32 / 98.92 / 96.85 / 96.55), and every
 file under `src/views/` is above 80% statements.
 
 `src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
