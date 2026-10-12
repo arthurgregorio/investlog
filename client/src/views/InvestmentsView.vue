@@ -32,7 +32,7 @@ onMounted(() => {
 
 const filters = useInvestmentFilters({
   onReload: ({ kind, page, ...options }) => holdingsListStore.loadKind(kind, page, options),
-  onFiltersChange: () => holdingsTable.value?.collapse(),
+  onFiltersChange: () => holdingsTable.value?.closeDrawer(),
 })
 const {
   activeFilter,

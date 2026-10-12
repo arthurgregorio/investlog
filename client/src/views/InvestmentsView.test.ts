@@ -235,6 +235,14 @@ function bodyRows(wrapper: VueWrapper) {
   return wrapper.findAll('tbody tr.inv-row')
 }
 
+function drawerOpen() {
+  return document.body.querySelector('[data-testid="holding-drawer"]') !== null
+}
+
+function drawerText() {
+  return document.body.querySelector('[data-testid="holding-drawer"]')?.textContent ?? ''
+}
+
 function selectOptions(select: ReturnType<VueWrapper['find']>) {
   return select.findAll('option').map((option) => option.text())
 }
@@ -321,17 +329,19 @@ describe('InvestmentsView', () => {
       expect(rows[1].text()).toContain('Carteira Cripto')
     })
 
-    it('shows quantity, current price, average price, invested, current value and result of a stock', async () => {
+    it('shows quantity, average price, current price, current value and result of a stock, without the invested amount', async () => {
       const { wrapper } = await mountView({ rows: [stockRow] })
 
-      const text = bodyRows(wrapper)[0].text()
-      expect(text).toContain('200')
-      expect(text).toContain('R$ 34,80')
-      expect(text).toContain('PM R$ 28,26')
-      expect(text).toContain('R$ 5.652,00')
-      expect(text).toContain('R$ 6.960,00')
-      expect(text).toContain('+R$ 1.308,00')
-      expect(text).toContain('+23,10%')
+      const cells = bodyRows(wrapper)[0]
+        .findAll('td.c-num')
+        .map((cell) => cell.text())
+      expect(cells[0]).toBe('200')
+      expect(cells[1]).toBe('R$ 28,26')
+      expect(cells[2]).toBe('R$ 34,80')
+      expect(cells[3]).toBe('R$ 6.960,00')
+      expect(cells[4]).toContain('+R$ 1.308,00')
+      expect(cells[4]).toContain('+23,10%')
+      expect(bodyRows(wrapper)[0].text()).not.toContain('R$ 5.652,00')
     })
 
     it('shows a loss as a negative result and a fractional quantity in full', async () => {
@@ -343,16 +353,16 @@ describe('InvestmentsView', () => {
       expect(text).toContain('−10,00%')
     })
 
-    it('shows a fund by its name, its current value as the price and no quantity or average price', async () => {
+    it('shows a fund by its name, with its current value and dashes for quantity and prices', async () => {
       const { wrapper } = await mountView({ rows: [fundRow] })
 
       const row = bodyRows(wrapper)[0]
       expect(row.find('.t-ticker').text()).toBe('Tesouro IPCA+')
       expect(row.find('.type-tag').text()).toBe('Renda Fixa')
-      expect(row.find('.t-name').exists()).toBe(false)
-      expect(row.text()).toContain('R$ 3.300,00')
-      expect(row.text()).not.toContain('PM')
-      expect(row.findAll('td')[2].text()).toBe('—')
+      expect(row.find('.t-name').text()).toBe('Fundo de investimento')
+      const cells = row.findAll('td.c-num').map((cell) => cell.text())
+      expect(cells.slice(0, 3)).toEqual(['—', '—', '—'])
+      expect(cells[3]).toBe('R$ 3.300,00')
     })
 
     it('falls back to dashes for a holding without price, value or result', async () => {
@@ -381,7 +391,7 @@ describe('InvestmentsView', () => {
       expect(rows[1].find('[data-testid="frozen-tag"]').exists()).toBe(false)
       expect(rows[1].find('.ticker-badge').exists()).toBe(true)
       expect(rows[1].classes()).not.toContain('is-frozen')
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
 
     it('swaps a frozen fund square for the snowflake badge too', async () => {
@@ -747,21 +757,21 @@ describe('InvestmentsView', () => {
     it('flips the direction when the same column is clicked again', async () => {
       const { wrapper, holdingsListStore } = await mountView()
 
-      await headerCell(wrapper, 'Investido').trigger('click')
-      await headerCell(wrapper, 'Investido').trigger('click')
+      await headerCell(wrapper, 'Preço atual').trigger('click')
+      await headerCell(wrapper, 'Preço atual').trigger('click')
       await flushPromises()
 
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
         'all',
         0,
-        expect.objectContaining({ sort: 'invested,desc' }),
+        expect.objectContaining({ sort: 'price,desc' }),
       )
     })
 
     it('starts ascending again on a different column', async () => {
       const { wrapper, holdingsListStore } = await mountView({ query: '?sort=gain,desc' })
 
-      await headerCell(wrapper, 'Carteira').trigger('click')
+      await headerCell(wrapper, 'Carteira · tipo').trigger('click')
       await flushPromises()
 
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
@@ -795,10 +805,10 @@ describe('InvestmentsView', () => {
       expect(router.currentRoute.value.query).toEqual({ sort: 'gainPct,asc' })
     })
 
-    it('sorts by asset from A to Z, then Z to A, on the Investimento header', async () => {
+    it('sorts by asset from A to Z, then Z to A, on the Ativo header', async () => {
       const { wrapper, holdingsListStore } = await mountView()
 
-      await headerCell(wrapper, 'Investimento').trigger('click')
+      await headerCell(wrapper, 'Ativo').trigger('click')
       await flushPromises()
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
         'all',
@@ -806,7 +816,7 @@ describe('InvestmentsView', () => {
         expect.objectContaining({ sort: 'asset,asc' }),
       )
 
-      await headerCell(wrapper, 'Investimento').trigger('click')
+      await headerCell(wrapper, 'Ativo').trigger('click')
       await flushPromises()
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
         'all',
@@ -891,7 +901,7 @@ describe('InvestmentsView', () => {
       expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 1, expect.any(Object))
     })
 
-    it('collapses the open row when the page changes', async () => {
+    it('closes the drawer when the page changes', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView({
         rows: [stockRow],
@@ -902,12 +912,12 @@ describe('InvestmentsView', () => {
       })
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+      expect(drawerOpen()).toBe(true)
 
       await wrapper.find('.pagination-next').trigger('click')
       await flushPromises()
 
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
   })
 
@@ -928,16 +938,17 @@ describe('InvestmentsView', () => {
       expect(activeTab(wrapper)).toBe('Fundos')
     })
 
-    it('collapses the open row on an external navigation', async () => {
+    it('closes the drawer on an external navigation', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper, router } = await mountView({ rows: [stockRow] })
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
+      expect(drawerOpen()).toBe(true)
 
       await router.push('/investments?filter=STOCKS')
       await flushPromises()
 
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
 
     it('does not reload a second time for the URL it wrote itself', async () => {
@@ -952,19 +963,42 @@ describe('InvestmentsView', () => {
     })
   })
 
-  describe('row expansion', () => {
-    it('expands a row into the holding detail panel and fetches that holding', async () => {
+  describe('holding drawer', () => {
+    const fundDetail = {
+      id: 'holding-3',
+      walletId: 'wallet-3',
+      fundTypeId: 'type-3',
+      name: 'Tesouro IPCA+',
+      currentValue: 3300,
+      administrationFeeRate: null,
+      performanceFeeRate: null,
+      contributions: [],
+      frozen: false,
+      withdrawals: [],
+    }
+
+    it('opens a row in the drawer and fetches that holding', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView()
 
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
 
-      expect(wrapper.findAll('tr.detail-row')).toHaveLength(1)
-      expect(bodyRows(wrapper)[0].classes()).toContain('is-open')
+      expect(drawerOpen()).toBe(true)
+      expect(bodyRows(wrapper)[0].classes()).toContain('is-current')
       expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(1)
       expect(holdingsApi.getStockHolding).toHaveBeenCalledWith('wallet-1', 'holding-1')
-      expect(wrapper.find('tr.detail-row').text()).toContain('Movimentações')
+      expect(drawerText()).toContain('Movimentações')
+    })
+
+    it('shows the figures in the display currency, as the table does', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
+      const { wrapper } = await mountView({ rows: [stockRow] })
+
+      await bodyRows(wrapper)[0].trigger('click')
+      await flushPromises()
+
+      expect(drawerText()).toContain('R$ 6.960,00')
     })
 
     it('fetches a crypto and a fund holding through their own endpoints', async () => {
@@ -978,18 +1012,7 @@ describe('InvestmentsView', () => {
         frozen: false,
         withdrawals: [],
       })
-      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue({
-        id: 'holding-3',
-        walletId: 'wallet-3',
-        fundTypeId: 'type-3',
-        name: 'Tesouro IPCA+',
-        currentValue: 3300,
-        administrationFeeRate: null,
-        performanceFeeRate: null,
-        contributions: [],
-        frozen: false,
-        withdrawals: [],
-      })
+      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue(fundDetail)
       const { wrapper } = await mountView()
 
       await bodyRows(wrapper)[1].trigger('click')
@@ -1001,44 +1024,9 @@ describe('InvestmentsView', () => {
       expect(holdingsApi.getFundHolding).toHaveBeenCalledWith('wallet-3', 'holding-3')
     })
 
-    it('flips the chevron while a row is open', async () => {
+    it('keeps a single drawer open at a time', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
-      const { wrapper } = await mountView()
-      const chevron = () => bodyRows(wrapper)[0].find('.chev .mdi')
-
-      expect(chevron().classes()).toContain('mdi-chevron-down')
-
-      await bodyRows(wrapper)[0].trigger('click')
-
-      expect(chevron().classes()).toContain('mdi-chevron-up')
-    })
-
-    it('collapses the panel when the open row is clicked again', async () => {
-      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
-      const { wrapper } = await mountView()
-
-      await bodyRows(wrapper)[0].trigger('click')
-      await flushPromises()
-      await bodyRows(wrapper)[0].trigger('click')
-
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
-      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-open')
-    })
-
-    it('keeps a single row open at a time', async () => {
-      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
-      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue({
-        id: 'holding-3',
-        walletId: 'wallet-3',
-        fundTypeId: 'type-3',
-        name: 'Tesouro IPCA+',
-        currentValue: 3300,
-        administrationFeeRate: null,
-        performanceFeeRate: null,
-        contributions: [],
-        frozen: false,
-        withdrawals: [],
-      })
+      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue(fundDetail)
       const { wrapper } = await mountView()
 
       await bodyRows(wrapper)[0].trigger('click')
@@ -1046,44 +1034,62 @@ describe('InvestmentsView', () => {
       await bodyRows(wrapper)[2].trigger('click')
       await flushPromises()
 
-      expect(wrapper.findAll('tr.detail-row')).toHaveLength(1)
-      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-open')
-      expect(bodyRows(wrapper)[2].classes()).toContain('is-open')
+      expect(document.body.querySelectorAll('[data-testid="holding-drawer"]')).toHaveLength(1)
+      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-current')
+      expect(bodyRows(wrapper)[2].classes()).toContain('is-current')
+      expect(drawerText()).toContain('Tesouro IPCA+')
     })
 
-    it('collapses the open row when the kind tab changes', async () => {
+    it('closes the drawer from its close button', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView()
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
 
+      document.body
+        .querySelector<HTMLElement>('[data-drawer-close]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushPromises()
+
+      expect(drawerOpen()).toBe(false)
+      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-current')
+    })
+
+    it('closes the drawer when the kind tab changes', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
+      const { wrapper } = await mountView()
+      await bodyRows(wrapper)[0].trigger('click')
+      await flushPromises()
+      expect(drawerOpen()).toBe(true)
+
       await tab(wrapper, 'Ações').trigger('click')
       await flushPromises()
 
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
 
-    it('collapses the open row when a wallet or type filter changes', async () => {
+    it('closes the drawer when a wallet or type filter changes', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView({ query: '?filter=STOCKS' })
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+      expect(drawerOpen()).toBe(true)
 
       await selects(wrapper)[1].setValue('FII')
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
 
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
+      expect(drawerOpen()).toBe(true)
       await selects(wrapper)[0].setValue('wallet-1')
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
   })
 
-  describe('reacting to the detail panel', () => {
-    async function openStockPanel() {
+  describe('reacting to the drawer', () => {
+    async function openStockDrawer() {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const context = await mountView({ rows: [stockRow] })
       await bodyRows(context.wrapper)[0].trigger('click')
@@ -1097,9 +1103,9 @@ describe('InvestmentsView', () => {
       ) as HTMLButtonElement
     }
 
-    it('collapses the panel and refreshes the list after the holding is removed', async () => {
+    it('closes the drawer and refreshes the list after the holding is removed', async () => {
       vi.mocked(holdingsApi.deleteStockHolding).mockResolvedValue(undefined)
-      const { wrapper, holdingsListStore } = await openStockPanel()
+      const { holdingsListStore } = await openStockDrawer()
 
       document.body
         .querySelector<HTMLElement>('[data-testid="holding-remove"]')!
@@ -1110,12 +1116,12 @@ describe('InvestmentsView', () => {
 
       expect(holdingsApi.deleteStockHolding).toHaveBeenCalledWith('wallet-1', 'holding-1')
       expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
 
-    it('freezes the holding from the panel and shows the new state once the list reloads', async () => {
+    it('freezes the holding from the drawer and shows the new state once the list reloads', async () => {
       vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue({ ...stockDetail, frozen: true })
-      const { wrapper, holdingsListStore } = await openStockPanel()
+      const { wrapper, holdingsListStore } = await openStockDrawer()
       vi.mocked(holdingsListStore.refresh).mockImplementation(async () => {
         holdingsListStore.rows = [{ ...stockRow, frozen: true }]
       })
@@ -1130,24 +1136,41 @@ describe('InvestmentsView', () => {
         frozen: true,
       })
       expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
-      expect(wrapper.findAll('[data-testid="frozen-tag"]')).toHaveLength(2)
+      expect(drawerOpen()).toBe(true)
+      expect(bodyRows(wrapper)[0].find('[data-testid="frozen-tag"]').exists()).toBe(true)
+      expect(
+        document.body.querySelector('[data-testid="holding-drawer"] [data-testid="frozen-tag"]'),
+      ).not.toBeNull()
       expect(document.body.querySelector('[data-testid="holding-freeze"]')!.textContent).toContain(
         'Descongelar',
       )
     })
-    it('refreshes the list but keeps the panel open after a position changes', async () => {
-      vi.mocked(holdingsApi.deleteStockLot).mockResolvedValue(undefined)
-      const { wrapper, holdingsListStore } = await openStockPanel()
 
-      await wrapper.find('tr.detail-row td.c-act button').trigger('click')
+    it('refreshes the list but keeps the drawer open after a position changes', async () => {
+      vi.mocked(holdingsApi.deleteStockLot).mockResolvedValue(undefined)
+      const { holdingsListStore } = await openStockDrawer()
+
+      document.body
+        .querySelector<HTMLElement>('[data-testid="ledger-delete"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await flushPromises()
       dialogButton('Remover').click()
       await flushPromises()
 
       expect(holdingsApi.deleteStockLot).toHaveBeenCalledWith('wallet-1', 'holding-1', 'lot-1')
       expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+      expect(drawerOpen()).toBe(true)
+    })
+
+    it('opens the purchase modal from the row without opening the drawer', async () => {
+      const { wrapper, holdingsListStore } = await mountView({ rows: [stockRow] })
+
+      await bodyRows(wrapper)[0].get('[data-testid="row-add-position"]').trigger('click')
+      await flushPromises()
+
+      expect(drawerOpen()).toBe(false)
+      expect(document.body.querySelector('.modal-card-title')?.textContent).toBe('Registrar compra')
+      expect(holdingsListStore.refresh).not.toHaveBeenCalled()
     })
   })
 

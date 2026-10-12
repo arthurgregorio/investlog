@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import DateInput from '@/components/ui/DateInput.vue'
-import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import { fmt } from '@/composables/useFormat'
 import { useDisplayMoney } from '@/composables/useDisplayMoney'
@@ -38,8 +37,21 @@ function movementLabel(type: LedgerMovementType): string {
   return props.isFund ? 'Aporte' : 'Compra'
 }
 
-function signedQuantity(value: number): string {
-  return (value >= 0 ? '+' : '−') + fmt.qty(Math.abs(value))
+function tagClass(type: LedgerMovementType): string {
+  if (type === 'PURCHASE') return 'lt-purchase'
+  return type === 'REINVESTMENT' ? 'lt-reinvestment' : 'lt-withdrawal'
+}
+
+const AMOUNT_ONLY_LABELS: Record<LedgerMovementType, string> = {
+  PURCHASE: 'Valor aportado',
+  WITHDRAWAL: 'Valor resgatado',
+  REINVESTMENT: 'Valor reinvestido',
+}
+
+function movementDetail(entry: LedgerRow): string {
+  if (entry.quantity == null) return AMOUNT_ONLY_LABELS[entry.type]
+  const signedQuantity = (entry.quantity >= 0 ? '+' : '−') + fmt.qty(Math.abs(entry.quantity))
+  return entry.unitPrice == null ? signedQuantity : `${signedQuantity} × ${money(entry.unitPrice)}`
 }
 
 function parseDate(iso: string): Date {
@@ -57,109 +69,65 @@ function deleteEntry(entry: LedgerRow) {
 </script>
 
 <template>
-  <div class="ledger-head">
-    <div class="is-flex is-align-items-center is-gap-1">
-      <span class="ledger-title">Movimentações</span>
-      <span class="ledger-count">{{ entries.length }}</span>
-      <FrozenBadge v-if="row.frozen" compact />
-    </div>
-    <div class="is-flex is-align-items-center is-flex-wrap-wrap is-gap-1">
-      <slot name="actions" />
-    </div>
+  <div class="is-flex is-align-items-center is-gap-1 mb-1">
+    <h3 class="ledger-title">Movimentações</h3>
+    <span class="ledger-count">{{ entries.length }}</span>
   </div>
 
-  <table class="sub-table">
-    <thead>
-      <tr>
-        <th>Tipo</th>
-        <th>{{ isFund ? 'Data do aporte' : 'Data da compra' }}</th>
-        <th v-if="!isFund" class="c-num has-text-right">Qtd.</th>
-        <th v-if="!isFund" class="c-num has-text-right">Preço unit.</th>
-        <th class="c-num has-text-right">Custos</th>
-        <th class="c-num has-text-right">Valor</th>
-        <th class="c-num has-text-right">Resultado</th>
-        <th v-if="!isFund" class="c-num has-text-right">Saldo</th>
-        <th class="c-act"></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="entry in entries" :key="entry.id">
-        <td>
-          <span
-            class="ledger-tag"
-            :class="entry.type === 'PURCHASE' ? 'lt-purchase' : 'lt-withdrawal'"
-          >
-            {{ movementLabel(entry.type) }}
-          </span>
-        </td>
-        <td>
-          <template v-if="entry.type === 'PURCHASE'">
-            <DateInput
-              v-if="editingEntryId === entry.id"
-              :model-value="parseDate(entry.date)"
-              @update:model-value="(date) => changeDate(entry.id, date)"
-            />
-            <button v-else class="date-edit" @click.stop="editingEntryId = entry.id">
-              {{ fmt.date(entry.date) }}
-            </button>
-          </template>
-          <template v-else>{{ fmt.date(entry.date) }}</template>
-        </td>
-        <td v-if="!isFund" class="c-num has-text-right">
-          {{ entry.quantity == null ? '—' : signedQuantity(entry.quantity) }}
-        </td>
-        <td v-if="!isFund" class="c-num has-text-right">
-          <template v-if="entry.unitPrice != null">{{ money(entry.unitPrice) }}</template>
-          <span v-else class="gl-empty">—</span>
-        </td>
-        <td class="c-num has-text-right">
-          <template v-if="entry.costs != null">
-            {{ money(entry.costs) }}
-            <div class="ledger-costs-note">
-              taxa {{ money(entry.fees ?? 0) }} + imp. {{ money(entry.taxes ?? 0) }}
-            </div>
-          </template>
-          <span v-else class="gl-empty">—</span>
-        </td>
-        <td class="c-num has-text-right">{{ money(entry.amount) }}</td>
-        <td class="c-num has-text-right">
-          <GainChip
-            v-if="entry.profit != null"
-            :value="displayAmount(entry.profit).amount"
-            :cur="displayAmount(entry.profit).currency"
+  <ul class="ledger-list">
+    <li v-for="entry in entries" :key="entry.id" class="ledger-item c-num">
+      <div class="is-flex is-flex-direction-column is-align-items-flex-start is-gap-0.5">
+        <span class="ledger-tag" :class="tagClass(entry.type)">
+          {{ movementLabel(entry.type) }}
+        </span>
+        <template v-if="entry.type === 'PURCHASE'">
+          <DateInput
+            v-if="editingEntryId === entry.id"
+            :model-value="parseDate(entry.date)"
+            @update:model-value="(date) => changeDate(entry.id, date)"
           />
-          <span v-else class="gl-empty">—</span>
-        </td>
-        <td v-if="!isFund" class="c-num has-text-right">
-          {{ entry.balance == null ? '—' : fmt.qty(entry.balance) }}
-        </td>
-        <td class="c-act">
-          <b-button
-            v-if="isAdmin && entry.type !== 'REINVESTMENT'"
-            outlined
-            type="is-danger"
-            size="is-small"
-            icon-left="delete"
-            @click.stop="deleteEntry(entry)"
-          />
-        </td>
-      </tr>
-    </tbody>
-  </table>
+          <button v-else type="button" class="date-edit" @click="editingEntryId = entry.id">
+            {{ fmt.date(entry.date) }}
+          </button>
+        </template>
+        <span v-else class="has-text-grey">{{ fmt.date(entry.date) }}</span>
+      </div>
+      <div class="is-flex is-flex-direction-column is-gap-0.5">
+        <span data-testid="ledger-detail">{{ movementDetail(entry) }}</span>
+        <span v-if="entry.costs != null" class="ledger-note" data-testid="ledger-costs">
+          taxas + impostos {{ money(entry.costs) }}
+        </span>
+      </div>
+      <div class="is-flex is-flex-direction-column is-align-items-flex-end is-gap-0.5">
+        <span class="has-text-weight-bold" data-testid="ledger-amount">{{
+          money(entry.amount)
+        }}</span>
+        <GainChip
+          v-if="entry.profit != null"
+          :value="displayAmount(entry.profit).amount"
+          :cur="displayAmount(entry.profit).currency"
+          data-testid="ledger-result"
+        />
+      </div>
+      <div class="is-flex is-justify-content-flex-end">
+        <b-button
+          v-if="isAdmin && entry.type !== 'REINVESTMENT'"
+          outlined
+          type="is-danger"
+          size="is-small"
+          icon-left="delete"
+          :aria-label="`Remover ${movementLabel(entry.type).toLowerCase()} de ${fmt.date(entry.date)}`"
+          data-testid="ledger-delete"
+          @click="deleteEntry(entry)"
+        />
+      </div>
+    </li>
+  </ul>
 </template>
 
 <style scoped>
-.ledger-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 4px 2px 10px;
-}
-
 .ledger-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -177,53 +145,24 @@ function deleteEntry(entry: LedgerRow) {
   font-weight: 700;
 }
 
-.sub-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 0;
-}
-
-.sub-table > thead > tr > th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-muted);
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
-}
-
-.sub-table > tbody > tr > td {
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border-2);
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-  vertical-align: middle;
-}
-
-.sub-table > tbody > tr:last-child > td {
-  border-bottom: none;
-}
-
-.date-edit {
-  background: none;
-  border: none;
+.ledger-list {
+  margin: 0;
   padding: 0;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border-bottom: 1px dashed var(--border);
+  list-style: none;
 }
 
-.date-edit:hover {
-  border-bottom-color: var(--primary);
-  color: var(--primary-d);
+.ledger-item {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) minmax(120px, 1.3fr) minmax(110px, 1fr) 34px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-2);
+  font-size: 13px;
+}
+
+.ledger-item:last-child {
+  border-bottom: none;
 }
 
 .ledger-tag {
@@ -246,9 +185,28 @@ function deleteEntry(entry: LedgerRow) {
   color: var(--withdrawal-text);
 }
 
-.ledger-costs-note {
-  font-size: 9.5px;
+.lt-reinvestment {
+  background: var(--primary-soft);
+  color: var(--primary-text);
+}
+
+.date-edit {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1px dashed var(--border);
+}
+
+.date-edit:hover {
+  border-bottom-color: var(--primary);
+  color: var(--primary-d);
+}
+
+.ledger-note {
+  font-size: 11px;
   color: var(--text-muted);
-  margin-top: 1px;
 }
 </style>
