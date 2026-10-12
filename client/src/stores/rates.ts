@@ -44,5 +44,11 @@ export const useRatesStore = defineStore('rates', () => {
     }
   }
 
-  return { rates, loaded, loading, baseCurrency, currencyCodes, load, refresh, upsertRate }
+  function reset() {
+    rates.value = []
+    loaded.value = false
+    loading.value = false
+  }
+
+  return { rates, loaded, loading, baseCurrency, currencyCodes, load, refresh, upsertRate, reset }
 })

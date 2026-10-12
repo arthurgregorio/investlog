@@ -3,11 +3,13 @@ import { ref } from 'vue'
 import { walletMovesApi, type WalletMovePayload } from '@/api/walletMoves'
 import type { WalletMoveRow } from '@/types'
 
+const DEFAULT_PAGE_SIZE = 10
+
 export const useWalletMovesStore = defineStore('walletMoves', () => {
   const rows = ref<WalletMoveRow[]>([])
   const walletId = ref<string | null>(null)
   const page = ref(0)
-  const pageSize = ref(10)
+  const pageSize = ref(DEFAULT_PAGE_SIZE)
   const totalElements = ref(0)
   const totalPages = ref(0)
   const loading = ref(false)
@@ -40,6 +42,17 @@ export const useWalletMovesStore = defineStore('walletMoves', () => {
     }
   }
 
+  function reset() {
+    rows.value = []
+    walletId.value = null
+    page.value = 0
+    pageSize.value = DEFAULT_PAGE_SIZE
+    totalElements.value = 0
+    totalPages.value = 0
+    loading.value = false
+    loaded.value = false
+  }
+
   return {
     rows,
     walletId,
@@ -51,5 +64,6 @@ export const useWalletMovesStore = defineStore('walletMoves', () => {
     loaded,
     load,
     move,
+    reset,
   }
 })
