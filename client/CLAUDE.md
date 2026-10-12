@@ -18,13 +18,19 @@ npm run test:run   # vitest run (single pass, what CI runs)
 npm run test:coverage # vitest run --coverage (v8, writes client/coverage/)
 npm run lint       # eslint . --fix
 npm run lint:css   # stylelint over src/**/*.css and the <style> blocks of src/**/*.vue
-npm run format     # prettier --write src/
 ```
+
+**Prettier runs on touched files only.** `src/` is not prettier-clean, so never run
+`prettier --write src/` or the `npm run format` script that wraps it: on #345 it rewrote ~160
+unrelated files that had to be undone by hand. Format only the files you changed (`npx prettier --write <files>`).
+If a touched file was already unformatted at `HEAD`, keep only your own hunks formatted rather than
+reformatting the whole file.
 
 Code style is enforced by `.prettierrc.json` (no semicolons, single quotes, trailing commas) and
 `eslint.config.js` (Vue + TypeScript + Prettier, flat config). Point WebStorm's formatter at
 Prettier (Settings → Languages & Frameworks → JavaScript → Prettier → set package path, enable
-"On code reformat" and "On save") so `Ctrl+Alt+L` matches `npm run format`/`npm run lint`.
+"On code reformat" and "On save") so `Ctrl+Alt+L` applies the same rules as `npx prettier --write`
+and `npm run lint`, one file at a time; the touched-files-only rule above applies to it too.
 
 `tsconfig.app.json` has `strict`, `noUnusedLocals` and `noUnusedParameters` enabled,
 so unused imports/variables fail `npm run build` / `npm run type-check`.
@@ -247,7 +253,7 @@ It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fi
 
 ### Reinvesting (`ReinvestModal.vue`)
 
-"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
+"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A "Tudo" checkbox beside that field (#408, also in `WithdrawModal`) fills it with the whole position (`quantity`, or the fund's `currentValue`) and disables it; it is itself disabled when that amount is unknown, and changing the source unchecks it. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
 
 ### Moving holdings (`MoveHoldingsModal.vue`)
 
@@ -267,13 +273,20 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
 400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
 requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `userStatus.ts` (`statusTagType`, the tag colour per `UserStatus`), `reportGrouping.ts` (groups `HoldingRow[]`
-for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
+for `InvestmentReportView`), `sortHoldingsByDisplayName.ts` (`holdingDisplayName`, ticker or else name, and the
+pt-BR case-insensitive, numeric-aware A→Z order every holding picker uses), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
 unset).
 
 ### Theming
 
 `App.vue` sets `data-theme` (`light`/`dark`) and `data-accent` (`blue`/`indigo`/`teal`/`yellow`)
 on `.app-root`. Accent color is the only user-configurable appearance setting.
+
+Accent and light/dark live in the navbar user-menu dropdown (`TheNavbar.vue`), never on the
+Configurações pages or in a floating panel. Layout density is fixed and not user-configurable. The
+add-investment flow is always a modal (`AddInvestmentModal`); there is no dedicated add-investment
+page or route. The design prototype's "Tweaks" panel was a Claude Design tool artifact, not product
+UI, so it is not built.
 
 ### Authentication & Authorization
 

@@ -123,7 +123,9 @@ describe('ReinvestModal', () => {
     expect((control(wrapper, 'reinvest-source').element as HTMLSelectElement).value).toBe(
       'holding-petr4',
     )
-    expect((control(wrapper, 'reinvest-unit-price').element as HTMLInputElement).value).toBe('38.5')
+    expect((control(wrapper, 'reinvest-unit-price').element as HTMLInputElement).value).toBe(
+      '38.50',
+    )
   })
 
   it('offers the wallet holdings as sources when opened without one', async () => {
@@ -143,7 +145,7 @@ describe('ReinvestModal', () => {
       preselectedHoldingId: 'holding-petr4',
     })
 
-    expect(optionTexts(wrapper, 'reinvest-destination')).toEqual(['VALE3', 'Tesouro Selic', 'BTC'])
+    expect(optionTexts(wrapper, 'reinvest-destination')).toEqual(['VALE3', 'BTC', 'Tesouro Selic'])
   })
 
   it('asks for a quantity on a stock source and for an amount on a fund source', async () => {
@@ -320,5 +322,113 @@ describe('ReinvestModal', () => {
     })
     await flushPromises()
     expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
+
+  describe('"Tudo" checkbox', () => {
+    async function mountFundModal(fund: HoldingRow) {
+      vi.mocked(holdingsApi.findAll).mockImplementation(async (params) => {
+        const content = params.walletId ? [fund] : [fund, ...allHoldings]
+        return {
+          content,
+          page: { size: 500, number: 0, totalElements: content.length, totalPages: 1 },
+        }
+      })
+      const pinia = createTestingPinia()
+      const reinvestmentsStore = useReinvestmentsStore()
+      const wrapper = mount(ReinvestModal, {
+        props: { walletId: 'wallet-funds', preselectedHoldingId: fund.id },
+        global: { plugins: [pinia] },
+      })
+      await flushPromises()
+      return { wrapper, reinvestmentsStore }
+    }
+
+    const fundWithValue = holdingOf({
+      ...treasury,
+      id: 'holding-cdb',
+      name: 'CDB Liquidez',
+      currentValue: 1234.56,
+    })
+
+    it('fills and locks the quantity with the whole position of a stock source', async () => {
+      const { wrapper } = await mountModal({
+        walletId: 'wallet-stocks',
+        preselectedHoldingId: 'holding-petr4',
+      })
+
+      await control(wrapper, 'reinvest-whole-position').setValue(true)
+
+      const quantityInput = control(wrapper, 'reinvest-quantity')
+      expect((quantityInput.element as HTMLInputElement).value).toBe('100')
+      expect(quantityInput.attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="reinvest-summary"]').text()).toContain('3.850,00')
+    })
+
+    it('fills and locks the amount with the current value of a fund source', async () => {
+      const { wrapper } = await mountFundModal(fundWithValue)
+
+      await control(wrapper, 'reinvest-whole-position').setValue(true)
+
+      const amountInput = control(wrapper, 'reinvest-amount')
+      expect((amountInput.element as HTMLInputElement).value).toBe('1234.56')
+      expect(amountInput.attributes('disabled')).toBeDefined()
+    })
+
+    it('re-enables the field and keeps the value when unchecked', async () => {
+      const { wrapper } = await mountModal({
+        walletId: 'wallet-stocks',
+        preselectedHoldingId: 'holding-petr4',
+      })
+      const checkbox = control(wrapper, 'reinvest-whole-position')
+
+      await checkbox.setValue(true)
+      await checkbox.setValue(false)
+
+      const quantityInput = control(wrapper, 'reinvest-quantity')
+      expect(quantityInput.attributes('disabled')).toBeUndefined()
+      expect((quantityInput.element as HTMLInputElement).value).toBe('100')
+    })
+
+    it('resets when the source changes', async () => {
+      const { wrapper } = await mountModal({
+        walletId: 'wallet-stocks',
+        preselectedHoldingId: 'holding-petr4',
+      })
+
+      await control(wrapper, 'reinvest-whole-position').setValue(true)
+      await control(wrapper, 'reinvest-source').setValue('holding-vale3')
+
+      expect(
+        (control(wrapper, 'reinvest-whole-position').element as HTMLInputElement).checked,
+      ).toBe(false)
+      const quantityInput = control(wrapper, 'reinvest-quantity')
+      expect(quantityInput.attributes('disabled')).toBeUndefined()
+      expect((quantityInput.element as HTMLInputElement).value).toBe('')
+    })
+
+    it('is disabled when the available amount is unknown', async () => {
+      const { wrapper } = await mountFundModal(
+        holdingOf({ ...treasury, id: 'holding-unvalued', currentValue: null }),
+      )
+
+      expect(control(wrapper, 'reinvest-whole-position').attributes('disabled')).toBeDefined()
+    })
+
+    it('submits the whole fund value', async () => {
+      const { wrapper, reinvestmentsStore } = await mountFundModal(fundWithValue)
+
+      await control(wrapper, 'reinvest-whole-position').setValue(true)
+      await control(wrapper, 'reinvest-destination').setValue('holding-treasury')
+      await submit(wrapper)
+
+      expect(reinvestmentsStore.reinvest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourceKind: 'FUNDS',
+          sourceHoldingId: 'holding-cdb',
+          destinationHoldingId: 'holding-treasury',
+          amount: 1234.56,
+        }),
+      )
+    })
   })
 })
