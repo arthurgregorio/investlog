@@ -234,7 +234,7 @@ A stock or crypto destination buys at its own `current_price`, so one without a 
 
 ### Frozen holdings
 
-`frozen` on `stock_holdings`, `crypto_holdings` and `fund_holdings` (issue #236) is a buy-side flag: it blocks a new position and nothing else. It is toggled through the holding's existing `PATCH`, and `holdings_overview` and `holdings_report_rows` both expose it (`bool_or(frozen)` on the report view, so a merged row reads as frozen when any part is).
+`frozen` on `stock_holdings`, `crypto_holdings` and `fund_holdings` (issue #236) is a buy-side flag: it blocks a new position and nothing else. It is toggled through the holding's existing `PATCH`, and `holdings_overview` and `holdings_report_rows` both expose it (`bool_or(frozen)` on the report view, so a merged row reads as frozen when any part is). `GET /holdings` and `GET /holdings/report` take an optional `hideFrozen` flag (#416) that drops frozen rows, totals included.
 
 The check lives in the three holding services, in `addLot` / `addContribution` through each repository's `isFrozen`, and in `ReinvestmentService.validate` for the destination. All of them throw `FrozenHoldingException`, which `GlobalExceptionHandler` maps to 409. Editing, repricing, deleting, removing a lot, withdrawals and wallet moves stay allowed, and creating a brand-new holding for an already-frozen ticker is deliberately not blocked.
 
