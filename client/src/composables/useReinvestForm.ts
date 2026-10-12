@@ -3,6 +3,7 @@ import { useToast } from 'buefy'
 import { holdingsApi } from '@/api/holdings'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { problemDetailMessage } from '@/utils/apiErrors'
+import { compareDisplayNames, sortHoldingsByDisplayName } from '@/utils/sortHoldingsByDisplayName'
 import type { HoldingRow } from '@/types'
 
 const HOLDINGS_PAGE_SIZE = 500
@@ -10,10 +11,6 @@ const HOLDINGS_PAGE_SIZE = 500
 export interface DestinationGroup {
   walletName: string
   holdings: HoldingRow[]
-}
-
-export function holdingDisplayName(holding: HoldingRow): string {
-  return holding.ticker ?? holding.name
 }
 
 export function useReinvestForm(onDone?: () => void) {
@@ -59,7 +56,9 @@ export function useReinvestForm(onDone?: () => void) {
       group.holdings.push(holding)
       groups.set(holding.walletId, group)
     }
-    return [...groups.values()]
+    return [...groups.values()].sort((first, second) =>
+      compareDisplayNames(first.walletName, second.walletName),
+    )
   })
 
   const destinationUnpriced = computed(() => {
@@ -125,8 +124,8 @@ export function useReinvestForm(onDone?: () => void) {
         holdingsApi.findAll({ walletId, size: HOLDINGS_PAGE_SIZE }),
         holdingsApi.findAll({ size: HOLDINGS_PAGE_SIZE }),
       ])
-      sources.value = walletPage.content
-      candidates.value = allPage.content
+      sources.value = sortHoldingsByDisplayName(walletPage.content)
+      candidates.value = sortHoldingsByDisplayName(allPage.content)
       if (
         preselectedHoldingId &&
         walletPage.content.some((holding) => holding.id === preselectedHoldingId)

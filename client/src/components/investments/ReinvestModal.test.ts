@@ -145,7 +145,7 @@ describe('ReinvestModal', () => {
       preselectedHoldingId: 'holding-petr4',
     })
 
-    expect(optionTexts(wrapper, 'reinvest-destination')).toEqual(['VALE3', 'Tesouro Selic', 'BTC'])
+    expect(optionTexts(wrapper, 'reinvest-destination')).toEqual(['VALE3', 'BTC', 'Tesouro Selic'])
   })
 
   it('asks for a quantity on a stock source and for an amount on a fund source', async () => {
