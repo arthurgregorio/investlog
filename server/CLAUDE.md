@@ -175,13 +175,16 @@ In detail:
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
   invested amounts for chart display). `findSeries` is one query against
   `finances.contributions_timeline`, a `UNION ALL` of stock lots, crypto lots and fund
-  contributions with one row per purchase: it groups by the real `DATE` month and takes the running
+  contributions with one row per purchase, plus one negative row per `finances.results` exit: it groups by the real `DATE` month and takes the running
   total with `SUM(SUM(...)) OVER (ORDER BY month)`, so nothing is grouped, sorted or accumulated in
   Kotlin. The view carries `wallet_amount` (the purchase in the wallet's own currency), `rate` and
   `amount` (`wallet_amount` restated in the anchor currency); like `findSummary` below, `findSeries`
   multiplies `wallet_amount * (rate / displayRate)` instead of dividing `amount`, to keep every
-  digit of the payload unchanged. The series charts money put in, so it counts every lot, completed
-  holdings included, and ignores withdrawals. `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
+  digit of the payload unchanged. The series charts the money invested at each month (issue #419):
+  every purchase adds in its month, and every exit, withdrawal or reinvestment, subtracts its
+  `cost_basis` in the month of its `result_date`, so a fully exited holding nets to zero from its
+  exit month while its earlier months keep what it held, and its last point matches the summary's
+  `totalCostBasis`. `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
   holding of `holdings_overview` with its wallet currency's `rate` (1 when it has no
   `currency_rates` row) and `cost_basis_anchor` / `current_value_anchor`, the amounts restated in
   the rates-anchor currency, the one whose own row stores rate 1. The display currency is a runtime
@@ -224,7 +227,7 @@ A wallet whose holdings have all been completed reports the same shape as an emp
 
 ### Reinvestments
 
-`reinvestments` exits part or all of one holding and lands the net proceeds in another, atomically (issue #205, called "Reinvestir" in the UI). `POST /private/v1/reinvestments` writes a `REINVESTMENT` result for the source through `PositionExitService`, then an ordinary lot or contribution on the destination, then a `finances.reinvestments` row linking the result to the destination holding. `GET /private/v1/reinvestments` pages the history newest first with both sides labelled. Because the money arrives as a normal lot or contribution, the views, the Overview and the monthly series need nothing special.
+`reinvestments` exits part or all of one holding and lands the net proceeds in another, atomically (issue #205, called "Reinvestir" in the UI). `POST /private/v1/reinvestments` writes a `REINVESTMENT` result for the source through `PositionExitService`, then an ordinary lot or contribution on the destination, then a `finances.reinvestments` row linking the result to the destination holding. `GET /private/v1/reinvestments` pages the history newest first with both sides labelled. Because the money arrives as a normal lot or contribution, the views and the Overview need nothing special. The monthly series subtracts the source's exited `cost_basis` like any other result and picks the destination's lot or contribution up as a purchase, so reinvested money is counted once, in the destination.
 
 A stock or crypto destination buys at its own `current_price`, so one without a price is rejected; a fund destination gets a contribution and its `current_value` rises by the same amount. Both wallets must share a currency.
 

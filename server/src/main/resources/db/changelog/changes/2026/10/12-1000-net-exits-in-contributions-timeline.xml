@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="12-1000-1" author="${claude}">
+        <comment>
+            The invested series charts the money invested at each month, not the money ever put in
+            (issue #419). Every purchase still adds one row in the month it happened in: stock
+            lots, crypto lots and fund contributions, unchanged. A fourth branch adds one row per
+            finances.results exit, withdrawals and reinvestments alike, subtracting its cost_basis
+            in the month of its result_date, so a fully exited holding nets to zero from its exit
+            month on while its earlier months keep the money it held then. A reinvestment's
+            destination lot or contribution already adds the reinvested amount in its own branch,
+            so reinvested money is counted once, in the destination, from the reinvestment date.
+            The columns and their order are unchanged, which is what lets CREATE OR REPLACE work.
+        </comment>
+        <sql>
+            CREATE OR REPLACE VIEW finances.contributions_timeline AS
+            SELECT
+                wallets.id AS wallet_id,
+                wallets.user_id,
+                'STOCKS'::finances.wallet_kind AS kind,
+                date_trunc('month', stock_lots.lot_date::TIMESTAMP)::DATE AS month,
+                stock_lots.quantity * stock_lots.price AS wallet_amount,
+                COALESCE(currency_rates.rate, 1) AS rate,
+                stock_lots.quantity * stock_lots.price * COALESCE(currency_rates.rate, 1) AS amount
+            FROM finances.stock_lots
+            JOIN finances.stock_holdings ON stock_holdings.id = stock_lots.stock_holding_id
+            JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+
+            UNION ALL
+
+            SELECT
+                wallets.id AS wallet_id,
+                wallets.user_id,
+                'CRYPTO'::finances.wallet_kind AS kind,
+                date_trunc('month', crypto_lots.lot_date::TIMESTAMP)::DATE AS month,
+                crypto_lots.quantity * crypto_lots.price AS wallet_amount,
+                COALESCE(currency_rates.rate, 1) AS rate,
+                crypto_lots.quantity * crypto_lots.price * COALESCE(currency_rates.rate, 1) AS amount
+            FROM finances.crypto_lots
+            JOIN finances.crypto_holdings ON crypto_holdings.id = crypto_lots.crypto_holding_id
+            JOIN finances.wallets ON wallets.id = crypto_holdings.wallet_id
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+
+            UNION ALL
+
+            SELECT
+                wallets.id AS wallet_id,
+                wallets.user_id,
+                'FUNDS'::finances.wallet_kind AS kind,
+                date_trunc('month', fund_contributions.contribution_date::TIMESTAMP)::DATE AS month,
+                fund_contributions.amount AS wallet_amount,
+                COALESCE(currency_rates.rate, 1) AS rate,
+                fund_contributions.amount * COALESCE(currency_rates.rate, 1) AS amount
+            FROM finances.fund_contributions
+            JOIN finances.fund_holdings ON fund_holdings.id = fund_contributions.fund_holding_id
+            JOIN finances.wallets ON wallets.id = fund_holdings.wallet_id
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+
+            UNION ALL
+
+            SELECT
+                wallets.id AS wallet_id,
+                wallets.user_id,
+                CASE
+                    WHEN results.stock_holding_id IS NOT NULL THEN 'STOCKS'::finances.wallet_kind
+                    WHEN results.crypto_holding_id IS NOT NULL THEN 'CRYPTO'::finances.wallet_kind
+                    ELSE 'FUNDS'::finances.wallet_kind
+                END AS kind,
+                date_trunc('month', results.result_date::TIMESTAMP)::DATE AS month,
+                -results.cost_basis AS wallet_amount,
+                COALESCE(currency_rates.rate, 1) AS rate,
+                -results.cost_basis * COALESCE(currency_rates.rate, 1) AS amount
+            FROM finances.results
+            LEFT JOIN finances.stock_holdings ON stock_holdings.id = results.stock_holding_id
+            LEFT JOIN finances.crypto_holdings ON crypto_holdings.id = results.crypto_holding_id
+            LEFT JOIN finances.fund_holdings ON fund_holdings.id = results.fund_holding_id
+            JOIN finances.wallets ON wallets.id = COALESCE(
+                stock_holdings.wallet_id, crypto_holdings.wallet_id, fund_holdings.wallet_id
+            )
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency;
+        </sql>
+        <rollback>
+            <sql>
+                CREATE OR REPLACE VIEW finances.contributions_timeline AS
+                SELECT
+                    wallets.id AS wallet_id,
+                    wallets.user_id,
+                    'STOCKS'::finances.wallet_kind AS kind,
+                    date_trunc('month', stock_lots.lot_date::TIMESTAMP)::DATE AS month,
+                    stock_lots.quantity * stock_lots.price AS wallet_amount,
+                    COALESCE(currency_rates.rate, 1) AS rate,
+                    stock_lots.quantity * stock_lots.price * COALESCE(currency_rates.rate, 1) AS amount
+                FROM finances.stock_lots
+                JOIN finances.stock_holdings ON stock_holdings.id = stock_lots.stock_holding_id
+                JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+                LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+
+                UNION ALL
+
+                SELECT
+                    wallets.id AS wallet_id,
+                    wallets.user_id,
+                    'CRYPTO'::finances.wallet_kind AS kind,
+                    date_trunc('month', crypto_lots.lot_date::TIMESTAMP)::DATE AS month,
+                    crypto_lots.quantity * crypto_lots.price AS wallet_amount,
+                    COALESCE(currency_rates.rate, 1) AS rate,
+                    crypto_lots.quantity * crypto_lots.price * COALESCE(currency_rates.rate, 1) AS amount
+                FROM finances.crypto_lots
+                JOIN finances.crypto_holdings ON crypto_holdings.id = crypto_lots.crypto_holding_id
+                JOIN finances.wallets ON wallets.id = crypto_holdings.wallet_id
+                LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+
+                UNION ALL
+
+                SELECT
+                    wallets.id AS wallet_id,
+                    wallets.user_id,
+                    'FUNDS'::finances.wallet_kind AS kind,
+                    date_trunc('month', fund_contributions.contribution_date::TIMESTAMP)::DATE AS month,
+                    fund_contributions.amount AS wallet_amount,
+                    COALESCE(currency_rates.rate, 1) AS rate,
+                    fund_contributions.amount * COALESCE(currency_rates.rate, 1) AS amount
+                FROM finances.fund_contributions
+                JOIN finances.fund_holdings ON fund_holdings.id = fund_contributions.fund_holding_id
+                JOIN finances.wallets ON wallets.id = fund_holdings.wallet_id
+                LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

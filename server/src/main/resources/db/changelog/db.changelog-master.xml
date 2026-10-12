@@ -43,5 +43,6 @@
     <include file="db/changelog/changes/2026/10/06-1100-create-wallet-totals-view.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/10/06-1200-create-holdings-valued-view.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/10/06-1300-create-contributions-timeline-view.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/10/12-1000-net-exits-in-contributions-timeline.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
