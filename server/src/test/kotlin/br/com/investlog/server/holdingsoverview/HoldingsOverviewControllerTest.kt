@@ -23,6 +23,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
     lateinit var walletId: UUID
     lateinit var stockTypeId: UUID
     lateinit var holdingId: UUID
+    lateinit var secondWalletId: UUID
 
     @BeforeAll
     fun setup() {
@@ -195,5 +196,146 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .expectStatus().isOk()
             .expectBody()
             .jsonPath("$.content[0].ticker").isEqualTo("OVSML3")
+    }
+
+    @Test
+    @Order(12)
+    fun `GET holdings with two walletId values returns the holdings of both wallets`() {
+        createSecondWalletHolding()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={first}&walletId={second}", walletId, secondWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(3)
+            .jsonPath("$.content[?(@.ticker == 'OVTST3')]").isNotEmpty()
+            .jsonPath("$.content[?(@.ticker == 'OVSML3')]").isNotEmpty()
+            .jsonPath("$.content[?(@.ticker == 'OVSEC3')]").isNotEmpty()
+    }
+
+    @Test
+    @Order(13)
+    fun `GET holdings with a single walletId value still returns only that wallet`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={walletId}", secondWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].ticker").isEqualTo("OVSEC3")
+    }
+
+    @Test
+    @Order(14)
+    fun `GET holdings with two typeLabel values returns both types`() {
+        restTestClient.get()
+            .uri(
+                "/private/v1/holdings?kind=STOCKS&typeLabel={first}&typeLabel={second}",
+                "Overview Test Type", "Overview Second Type"
+            )
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(3)
+            .jsonPath("$.content[?(@.typeLabel == 'Overview Test Type')]").isNotEmpty()
+            .jsonPath("$.content[?(@.typeLabel == 'Overview Second Type')]").isNotEmpty()
+    }
+
+    @Test
+    @Order(15)
+    fun `GET holdings with a single typeLabel value still returns only that type`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?typeLabel={typeLabel}", "Overview Second Type")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].ticker").isEqualTo("OVSEC3")
+    }
+
+    @Test
+    @Order(16)
+    fun `GET holdings combines the lists with kind and search`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId={first}&walletId={second}&search=ovsec", walletId, secondWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].ticker").isEqualTo("OVSEC3")
+
+        restTestClient.get()
+            .uri(
+                "/private/v1/holdings?kind=FUNDS&walletId={first}&walletId={second}&typeLabel={type}",
+                walletId, secondWalletId, "Overview Second Type"
+            )
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(0)
+    }
+
+    @Test
+    @Order(17)
+    fun `GET holdings with a single typeLabel containing a comma matches it whole`() {
+        val commaStockTypeId = restTestClient.post()
+            .uri("/private/v1/stock-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Overview, Comma Type"}""")
+            .exchange()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$secondWalletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"stockTypeId":"$commaStockTypeId","ticker":"OVCOM3",
+                   "currentPrice":20.00,
+                   "lot":{"lotDate":"2025-03-01","quantity":5,"price":18.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?typeLabel={typeLabel}", "Overview, Comma Type")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].ticker").isEqualTo("OVCOM3")
+    }
+
+    private fun createSecondWalletHolding() {
+        secondWalletId = restTestClient.post()
+            .uri("/private/v1/wallets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Overview Second Wallet","kind":"STOCKS","currency":"BRL"}""")
+            .exchange()
+            .returnResult<WalletResponse>()
+            .responseBody!!
+            .id
+
+        val secondStockTypeId = restTestClient.post()
+            .uri("/private/v1/stock-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Overview Second Type"}""")
+            .exchange()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$secondWalletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"stockTypeId":"$secondStockTypeId","ticker":"OVSEC3",
+                   "currentPrice":20.00,
+                   "lot":{"lotDate":"2025-03-01","quantity":5,"price":18.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
     }
 }

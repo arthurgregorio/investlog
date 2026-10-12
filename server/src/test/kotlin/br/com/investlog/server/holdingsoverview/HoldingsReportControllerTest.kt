@@ -216,6 +216,64 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
             .jsonPath("$.content[?(@.ticker == 'RPSEG3' && @.segmentLabel == null)]").isNotEmpty()
     }
 
+    @Test
+    @Order(8)
+    fun `GET holdings report honors two walletId values`() {
+        restTestClient.get()
+            .uri("/private/v1/holdings/report?walletId={first}&walletId={second}", cryptoWalletId, stockWalletId)
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.length()").isEqualTo(2)
+            .jsonPath("$[?(@.ticker == '$mergedHoldingTicker' && @.walletId == '$cryptoWalletId')].quantity").isEqualTo(3)
+            .jsonPath("$[?(@.id == '$stockHoldingId')].ticker").isEqualTo("RPTST3")
+            .jsonPath("$[?(@.walletId == '$otherCryptoWalletId')]").isEmpty()
+    }
+
+    @Test
+    @Order(9)
+    fun `GET holdings report honors two typeLabel values`() {
+        val secondStockTypeId = restTestClient.post()
+            .uri("/private/v1/stock-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Report Second Type"}""")
+            .exchange()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$stockWalletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """{"stockTypeId":"$secondStockTypeId","ticker":"RPSEC3",
+                   "currentPrice":20.00,
+                   "lot":{"lotDate":"2025-03-01","quantity":5,"price":18.00}}"""
+            )
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.get()
+            .uri(
+                "/private/v1/holdings/report?walletId={walletId}&typeLabel={first}&typeLabel={second}",
+                stockWalletId, "Report Test Type", "Report Second Type"
+            )
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.length()").isEqualTo(2)
+            .jsonPath("$[?(@.ticker == 'RPTST3')]").isNotEmpty()
+            .jsonPath("$[?(@.ticker == 'RPSEC3')]").isNotEmpty()
+
+        restTestClient.get()
+            .uri("/private/v1/holdings/report?walletId={walletId}&typeLabel={typeLabel}", stockWalletId, "Report Second Type")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.length()").isEqualTo(1)
+            .jsonPath("$[0].ticker").isEqualTo("RPSEC3")
+    }
+
     private fun createStockHolding(walletId: UUID, ticker: String, segmentId: UUID?) {
         val segmentJson = segmentId?.let { "\"$it\"" } ?: "null"
         restTestClient.post()
