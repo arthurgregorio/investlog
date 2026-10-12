@@ -1126,7 +1126,7 @@ describe('HoldingDetailPanel', () => {
 
         await chooseAction('Atualizar preço')
         const priceInput = modalNumberInputs(wrapper)[0]
-        expect((priceInput.element as HTMLInputElement).value).toBe('34.8')
+        expect((priceInput.element as HTMLInputElement).value).toBe('34.80')
         await priceInput.setValue('40')
         await modalButton(wrapper, 'Salvar').trigger('click')
         await flushPromises()
@@ -1144,7 +1144,7 @@ describe('HoldingDetailPanel', () => {
 
         await chooseAction('Atualizar preço')
         const priceInput = modalNumberInputs(wrapper)[0]
-        expect((priceInput.element as HTMLInputElement).value).toBe('180000')
+        expect((priceInput.element as HTMLInputElement).value).toBe('180000.00')
         await priceInput.setValue('185000')
         await modalButton(wrapper, 'Salvar').trigger('click')
         await flushPromises()
@@ -1160,7 +1160,7 @@ describe('HoldingDetailPanel', () => {
 
         await chooseAction('Atualizar valor atual')
         const valueInput = modalNumberInputs(wrapper)[0]
-        expect((valueInput.element as HTMLInputElement).value).toBe('3000')
+        expect((valueInput.element as HTMLInputElement).value).toBe('3000.00')
         await valueInput.setValue('3300')
         await modalButton(wrapper, 'Salvar').trigger('click')
         await flushPromises()

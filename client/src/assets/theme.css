@@ -80,6 +80,8 @@
   --surface-hover: #f1f5fa;
   --border: #e6e9ef;
   --border-2: #eef1f6;
+  --border-strong: #c3cbd8;
+  --down-faint: rgb(224 56 79 / 6%);
   --text: #172033;
   --text-2: #586375;
   --text-muted: #8a96a8;
@@ -90,6 +92,12 @@
   --primary-text: var(--primary-d);
   --nav-active-text: var(--primary-d);
   --shadow-raised: 0 10px 40px rgb(15 23 42 / 8%);
+  --google-button-background: #fff;
+  --google-button-border: #747775;
+  --google-button-text: #1f1f1f;
+  --google-button-hover: #eee;
+  --google-button-pressed: #e6e6e6;
+  --google-spinner-track: #e3e3e3;
 }
 
 [data-theme='dark'] {
@@ -99,6 +107,8 @@
   --surface-hover: #212d3c;
   --border: #2a3646;
   --border-2: #222d3b;
+  --border-strong: #43536a;
+  --down-faint: rgb(224 56 79 / 10%);
   --text: #e8ecf2;
   --text-2: #9fabbd;
   --text-muted: #71819a;
@@ -113,6 +123,12 @@
   --primary-text: var(--primary);
   --nav-active-text: #7fb3ec;
   --shadow-raised: 0 12px 44px rgb(0 0 0 / 32%);
+  --google-button-background: #131314;
+  --google-button-border: #8e918f;
+  --google-button-text: #e3e3e3;
+  --google-button-hover: #242425;
+  --google-button-pressed: #2c2c2d;
+  --google-spinner-track: #3c4043;
   --chart-1: #4a93de;
   --chart-2: #ff8a4c;
   --chart-3: #1fc093;

@@ -12,6 +12,7 @@ import UsersView from '@/views/UsersView.vue'
 import LoginView from '@/views/LoginView.vue'
 import PendingApprovalView from '@/views/PendingApprovalView.vue'
 import { useAuthStore } from '@/stores/auth'
+import { isPublicRoute } from '@/router/publicRoutes'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -43,7 +44,6 @@ export const router = createRouter({
   },
 })
 
-const PUBLIC_ROUTE_NAMES = new Set(['login', 'pending-approval'])
 const ADMIN_ONLY_ROUTE_NAMES = new Set([
   'settings-price-currencies',
   'settings-types',
@@ -53,19 +53,19 @@ const ADMIN_ONLY_ROUTE_NAMES = new Set([
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
-  if (!PUBLIC_ROUTE_NAMES.has(to.name as string) && !auth.session) {
+  if (!isPublicRoute(to.name) && !auth.session) {
     return { name: 'login' }
+  }
+
+  if (to.name === 'login' && auth.endingSession) {
+    return true
   }
 
   if (to.name === 'login' && auth.session) {
     return auth.session.status === 'APPROVED' ? { name: 'overview' } : { name: 'pending-approval' }
   }
 
-  if (
-    auth.session &&
-    auth.session.status !== 'APPROVED' &&
-    !PUBLIC_ROUTE_NAMES.has(to.name as string)
-  ) {
+  if (auth.session && auth.session.status !== 'APPROVED' && !isPublicRoute(to.name)) {
     return { name: 'pending-approval' }
   }
 
