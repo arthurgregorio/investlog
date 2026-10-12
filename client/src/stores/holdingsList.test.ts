@@ -184,4 +184,20 @@ describe('useHoldingsListStore', () => {
     expect(store.pageSize).toBe(20)
     expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({ page: 0, size: 20 })
   })
+
+  it('loadKind asks the API to hide frozen holdings and refresh keeps asking', async () => {
+    vi.mocked(holdingsApiModule.holdingsApi.findAll).mockResolvedValue(makePagedResponse([]))
+
+    const store = useHoldingsListStore()
+    await store.loadKind('CRYPTO', 0, { hideFrozen: true })
+    await store.refresh()
+
+    expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenCalledTimes(2)
+    expect(holdingsApiModule.holdingsApi.findAll).toHaveBeenLastCalledWith({
+      kind: 'CRYPTO',
+      hideFrozen: true,
+      page: 0,
+      size: 20,
+    })
+  })
 })

@@ -59,6 +59,12 @@ describe('useReportFilters', () => {
     ])
   })
 
+  it('hides frozen holdings only when the query says hideFrozen=true', async () => {
+    expect((await filtersFor('')).hideFrozenFilter.value).toBe(false)
+    expect((await filtersFor('?hideFrozen=yes')).hideFrozenFilter.value).toBe(false)
+    expect((await filtersFor('?hideFrozen=true')).hideFrozenFilter.value).toBe(true)
+  })
+
   it('ignores a kind that is not a wallet kind', async () => {
     const filters = await filtersFor('?filter=BONDS')
 

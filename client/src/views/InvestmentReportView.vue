@@ -16,8 +16,14 @@ import type { HoldingRow } from '@/types'
 const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
 const walletsStore = useWalletsStore()
-const { kindFilter, walletIdFilter, typeLabelFilter, searchFilter, activeFilterLabels } =
-  useReportFilters()
+const {
+  kindFilter,
+  walletIdFilter,
+  typeLabelFilter,
+  searchFilter,
+  hideFrozenFilter,
+  activeFilterLabels,
+} = useReportFilters()
 
 const loading = ref(true)
 const holdings = ref<HoldingRow[]>([])
@@ -40,6 +46,7 @@ async function load() {
       typeLabel: typeLabelFilter.value,
       walletId: walletIdFilter.value,
       search: searchFilter.value,
+      hideFrozen: hideFrozenFilter.value || undefined,
     })
   } finally {
     loading.value = false
