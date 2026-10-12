@@ -30,5 +30,12 @@ export const useOverviewStore = defineStore('overview', () => {
     await load()
   }
 
-  return { summary, series, loaded, loading, load, refresh }
+  function reset() {
+    summary.value = null
+    series.value = []
+    loaded.value = false
+    loading.value = false
+  }
+
+  return { summary, series, loaded, loading, load, refresh, reset }
 })

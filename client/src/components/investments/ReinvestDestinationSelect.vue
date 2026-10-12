@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { holdingDisplayName, type DestinationGroup } from '@/composables/useReinvestForm'
+import type { DestinationGroup } from '@/composables/useReinvestForm'
+import { holdingDisplayName } from '@/utils/sortHoldingsByDisplayName'
 import type { HoldingRow } from '@/types'
 
 const props = defineProps<{

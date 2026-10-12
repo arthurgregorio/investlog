@@ -29,5 +29,11 @@ export const useWalletsStore = defineStore('wallets', () => {
     return wallets.value.find((wallet) => wallet.id === id)
   }
 
-  return { wallets, loaded, loading, load, refresh, walletById }
+  function reset() {
+    wallets.value = []
+    loaded.value = false
+    loading.value = false
+  }
+
+  return { wallets, loaded, loading, load, refresh, walletById, reset }
 })

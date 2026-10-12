@@ -23,7 +23,7 @@ describe('CurrencyRateRow', () => {
 
     expect(wrapper.get('.rate-input').text()).toContain('1 USD =')
     expect(wrapper.get('.button.is-static').text()).toBe('R$')
-    expect(wrapper.get('input').element.value).toBe('5.2')
+    expect(wrapper.get('input').element.value).toBe('5.20')
   })
 
   it('commits an edited rate on blur and then shows the stored rate again', async () => {
@@ -34,7 +34,7 @@ describe('CurrencyRateRow', () => {
     await input.trigger('blur')
 
     expect(wrapper.emitted('commit')).toEqual([[5.5]])
-    expect(input.element.value).toBe('5.2')
+    expect(input.element.value).toBe('5.20')
   })
 
   it.each([['0'], ['-3'], ['']])('discards the draft "%s"', async (draft) => {

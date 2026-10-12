@@ -439,7 +439,7 @@ describe('InvestmentsView', () => {
         .find((button) => button.text() === 'Adicionar investimento')!
       await addButton.trigger('click')
 
-      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined)
+      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined, undefined)
     })
   })
 
@@ -1114,7 +1114,7 @@ describe('InvestmentsView', () => {
         .find((button) => button.text() === 'Adicionar investimento')!
       await addButton.trigger('click')
 
-      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined)
+      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined, undefined)
     })
 
     it('opens the add-investment modal pre-set to the active kind', async () => {
@@ -1125,7 +1125,29 @@ describe('InvestmentsView', () => {
         .find((button) => button.text() === 'Adicionar investimento')!
       await addButton.trigger('click')
 
-      expect(modals.openAddInvestment).toHaveBeenCalledWith('FUNDS')
+      expect(modals.openAddInvestment).toHaveBeenCalledWith('FUNDS', undefined)
+    })
+
+    it('opens the add-investment modal on the filtered kind and wallet', async () => {
+      const { wrapper, modals } = await mountView({ query: '?filter=STOCKS&walletId=wallet-1' })
+
+      const addButton = wrapper
+        .findAll('.inv-toolbar button')
+        .find((button) => button.text() === 'Adicionar investimento')!
+      await addButton.trigger('click')
+
+      expect(modals.openAddInvestment).toHaveBeenCalledWith('STOCKS', 'wallet-1')
+    })
+
+    it("opens the add-investment modal on the filtered wallet's kind when no kind is filtered", async () => {
+      const { wrapper, modals } = await mountView({ query: '?walletId=wallet-2' })
+
+      const addButton = wrapper
+        .findAll('.inv-toolbar button')
+        .find((button) => button.text() === 'Adicionar investimento')!
+      await addButton.trigger('click')
+
+      expect(modals.openAddInvestment).toHaveBeenCalledWith('CRYPTO', 'wallet-2')
     })
 
     it('opens the report in a new tab carrying the active filters but not the sort or page', async () => {

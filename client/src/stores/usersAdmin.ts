@@ -24,6 +24,12 @@ export const useUsersAdminStore = defineStore('usersAdmin', () => {
     await load()
   }
 
+  function reset() {
+    users.value = []
+    loaded.value = false
+    loading.value = false
+  }
+
   function replaceUser(updated: UserAdminResponse) {
     users.value = users.value.map((user) => (user.id === updated.id ? updated : user))
   }
@@ -70,5 +76,6 @@ export const useUsersAdminStore = defineStore('usersAdmin', () => {
     resetTotp,
     resetPassword,
     remove,
+    reset,
   }
 })
