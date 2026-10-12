@@ -64,7 +64,7 @@ describe('UpdatePriceModal', () => {
   it('pre-fills the current price of the holding', () => {
     const wrapper = mountModal({ initialValue: 38.5 })
 
-    expect((priceInput(wrapper).element as HTMLInputElement).value).toBe('38.5')
+    expect((priceInput(wrapper).element as HTMLInputElement).value).toBe('38.50')
     expect(buttonLabelled(wrapper, 'Salvar').attributes('disabled')).toBeUndefined()
   })
 
@@ -142,7 +142,7 @@ describe('UpdatePriceModal', () => {
       })
 
       const { valueInput, administrationInput, performanceInput } = fundInputs(wrapper)
-      expect(inputValue(valueInput)).toBe('1000')
+      expect(inputValue(valueInput)).toBe('1000.00')
       expect(inputValue(administrationInput)).toBe('1.5')
       expect(inputValue(performanceInput)).toBe('20')
     })

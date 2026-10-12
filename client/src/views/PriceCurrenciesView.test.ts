@@ -85,8 +85,8 @@ describe('PriceCurrenciesView', () => {
     expect(wrapper.find('.base-chip').text()).toContain('BRL')
     expect(rateRow(wrapper, 'BRL').find('.rate-base').text()).toContain('Moeda base')
     expect(rateRow(wrapper, 'BRL').find('input').exists()).toBe(false)
-    expect(rateRow(wrapper, 'USD').find('input').element.value).toBe('5.2')
-    expect(rateRow(wrapper, 'EUR').find('input').element.value).toBe('6.1')
+    expect(rateRow(wrapper, 'USD').find('input').element.value).toBe('5.20')
+    expect(rateRow(wrapper, 'EUR').find('input').element.value).toBe('6.10')
   })
 
   it('upserts an edited rate as a non-base rate when the input loses focus', async () => {
