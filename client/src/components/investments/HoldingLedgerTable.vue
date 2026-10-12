@@ -153,7 +153,7 @@ function deleteEntry(entry: LedgerRow) {
 
 .ledger-item {
   display: grid;
-  grid-template-columns: minmax(100px, 1fr) minmax(120px, 1.3fr) minmax(110px, 1fr) 34px;
+  grid-template-columns: minmax(84px, 1fr) minmax(0, 1.3fr) auto 34px;
   gap: 12px;
   align-items: center;
   padding: 10px 0;
