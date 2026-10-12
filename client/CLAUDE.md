@@ -266,7 +266,8 @@ Opened from the wallets view's "Mover" button with no origin, or from the wallet
 
 `AddInvestmentModal` and `CreateWalletModal` are rendered once in `App.vue`, outside the
 router views, and controlled via `provide`/`inject`. Any view calls `useModals()` to get
-`{ openAddInvestment, openCreateWallet }`.
+`{ openAddInvestment, openCreateWallet }`. `openAddInvestment(kind?, walletId?)` preselects both in
+the modal; `InvestmentsView` passes its active type and wallet filters (#415).
 
 ### Static presentation maps (`src/utils/walletTypes.ts`)
 

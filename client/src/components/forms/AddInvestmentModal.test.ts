@@ -33,7 +33,9 @@ function wallet(id: string, kind: WalletKind): WalletResponse {
   }
 }
 
-function mountModal(options: { initialKind?: WalletKind; wallets?: WalletResponse[] } = {}) {
+function mountModal(
+  options: { initialKind?: WalletKind; initialWalletId?: string; wallets?: WalletResponse[] } = {},
+) {
   const pinia = createTestingPinia({
     initialState: {
       wallets: { wallets: options.wallets ?? [wallet('stocks-1', 'STOCKS')] },
@@ -44,7 +46,7 @@ function mountModal(options: { initialKind?: WalletKind; wallets?: WalletRespons
     },
   })
   activeWrapper = mount(AddInvestmentModal, {
-    props: { initialKind: options.initialKind },
+    props: { initialKind: options.initialKind, initialWalletId: options.initialWalletId },
     global: { plugins: [pinia] },
     attachTo: document.body,
   })
@@ -110,6 +112,29 @@ describe('AddInvestmentModal', () => {
     )
     expect(useHoldingsListStore().refresh).toHaveBeenCalled()
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('opens on the given wallet and submits into it', async () => {
+    vi.mocked(holdingsApi.createStockHolding).mockResolvedValue({} as never)
+    const wrapper = mountModal({
+      initialKind: 'STOCKS',
+      initialWalletId: 'stocks-2',
+      wallets: [wallet('stocks-1', 'STOCKS'), wallet('stocks-2', 'STOCKS')],
+    })
+
+    expect(wrapper.get<HTMLSelectElement>('select').element.value).toBe('stocks-2')
+
+    await wrapper.find('input[placeholder="PETR4"]').setValue('itub4')
+    const [quantityInput, priceInput] = wrapper.findAll('input[type="number"]')
+    await quantityInput.setValue('5')
+    await priceInput.setValue('30')
+    await buttonLabelled(wrapper, 'Adicionar').trigger('click')
+    await flushPromises()
+
+    expect(holdingsApi.createStockHolding).toHaveBeenCalledWith(
+      'stocks-2',
+      expect.objectContaining({ ticker: 'ITUB4' }),
+    )
   })
 
   it('submits a fund contribution when opened on the funds kind', async () => {
