@@ -18,13 +18,19 @@ npm run test:run   # vitest run (single pass, what CI runs)
 npm run test:coverage # vitest run --coverage (v8, writes client/coverage/)
 npm run lint       # eslint . --fix
 npm run lint:css   # stylelint over src/**/*.css and the <style> blocks of src/**/*.vue
-npm run format     # prettier --write src/
 ```
+
+**Prettier runs on touched files only.** `src/` is not prettier-clean, so never run
+`prettier --write src/` or the `npm run format` script that wraps it: on #345 it rewrote ~160
+unrelated files that had to be undone by hand. Format only the files you changed (`npx prettier --write <files>`).
+If a touched file was already unformatted at `HEAD`, keep only your own hunks formatted rather than
+reformatting the whole file.
 
 Code style is enforced by `.prettierrc.json` (no semicolons, single quotes, trailing commas) and
 `eslint.config.js` (Vue + TypeScript + Prettier, flat config). Point WebStorm's formatter at
 Prettier (Settings → Languages & Frameworks → JavaScript → Prettier → set package path, enable
-"On code reformat" and "On save") so `Ctrl+Alt+L` matches `npm run format`/`npm run lint`.
+"On code reformat" and "On save") so `Ctrl+Alt+L` applies the same rules as `npx prettier --write`
+and `npm run lint`, one file at a time; the touched-files-only rule above applies to it too.
 
 `tsconfig.app.json` has `strict`, `noUnusedLocals` and `noUnusedParameters` enabled,
 so unused imports/variables fail `npm run build` / `npm run type-check`.
@@ -66,7 +72,7 @@ Coverage is measured with `npm run test:coverage` (v8 provider, report in `clien
 **enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
 functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
 drops any of the four below its floor fails the build. The floor today is **98% statements, 98%
-lines, 96% functions and 96% branches** (the suite reaches 98.17 / 98.78 / 96.72 / 96.34), and every
+lines, 96% functions and 96% branches** (the suite reaches 98.25 / 98.86 / 96.76 / 96.41), and every
 file under `src/views/` is above 80% statements.
 
 `src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
@@ -190,6 +196,9 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 **Pessimistic updates**: every mutation awaits the API response before updating store state.
 **Lazy loading**: each store is loaded by the view/component that needs it, in `onMounted`.
 Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`.
+**Reset on session end**: every store holding user data has a `reset()` action, and
+`stores/resetUserStores.ts` calls all of them when the session ends (logout is an in-app navigation,
+not a reload, so nothing else clears them). A new user-data store gets a `reset()` and a line there.
 
 ### Components (`src/components/`)
 
@@ -247,7 +256,7 @@ It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fi
 
 ### Reinvesting (`ReinvestModal.vue`)
 
-"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
+"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A "Tudo" checkbox beside that field (#408, also in `WithdrawModal`) fills it with the whole position (`quantity`, or the fund's `currentValue`) and disables it; it is itself disabled when that amount is unknown, and changing the source unchecks it. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
 
 ### Moving holdings (`MoveHoldingsModal.vue`)
 
@@ -257,7 +266,8 @@ Opened from the wallets view's "Mover" button with no origin, or from the wallet
 
 `AddInvestmentModal` and `CreateWalletModal` are rendered once in `App.vue`, outside the
 router views, and controlled via `provide`/`inject`. Any view calls `useModals()` to get
-`{ openAddInvestment, openCreateWallet }`.
+`{ openAddInvestment, openCreateWallet }`. `openAddInvestment(kind?, walletId?)` preselects both in
+the modal; `InvestmentsView` passes its active type and wallet filters (#415).
 
 ### Static presentation maps (`src/utils/walletTypes.ts`)
 
@@ -267,7 +277,8 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
 400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
 requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `userStatus.ts` (`statusTagType`, the tag colour per `UserStatus`), `reportGrouping.ts` (groups `HoldingRow[]`
-for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
+for `InvestmentReportView`), `sortHoldingsByDisplayName.ts` (`holdingDisplayName`, ticker or else name, and the
+pt-BR case-insensitive, numeric-aware A→Z order every holding picker uses), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
 unset).
 
 ### Theming
@@ -275,13 +286,23 @@ unset).
 `App.vue` sets `data-theme` (`light`/`dark`) and `data-accent` (`blue`/`indigo`/`teal`/`yellow`)
 on `.app-root`. Accent color is the only user-configurable appearance setting.
 
+Accent and light/dark live in the navbar user-menu dropdown (`TheNavbar.vue`), never on the
+Configurações pages or in a floating panel. Layout density is fixed and not user-configurable. The
+add-investment flow is always a modal (`AddInvestmentModal`); there is no dedicated add-investment
+page or route. The design prototype's "Tweaks" panel was a Claude Design tool artifact, not product
+UI, so it is not built.
+
 ### Authentication & Authorization
 
 `router/index.ts`'s `beforeEach` guard drives the whole flow off `auth.session`: no session on a
 non-public route → `/login`; session with `status !== 'APPROVED'` → `/pending-approval`; non-admin
-on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` is the allow-list for routes reachable without
+on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` (`router/publicRoutes.ts`) is the allow-list for routes reachable without
 (or despite) an approved session — extend it rather than adding one-off exceptions in the guard
-body. `LoginView.vue` is a single 5-step state machine (`credentials`/`register`/`enroll`/`totp`/`link`)
+body. `App.vue` renders the shell only for an approved session on a non-public route. Login and
+logout navigate in-app: logout replaces the route with `/login` while `auth.endingSession` lets it
+past the guard, and only then clears the session and calls `resetUserStores()`, so a protected page
+never renders without its shell. Both `<RouterView>`s fade their page (`.page-*` in `styles.css`,
+keyed by `route.path` so query-only changes don't fade). `LoginView.vue` is a single 5-step state machine (`credentials`/`register`/`enroll`/`totp`/`link`)
 driven by one `step` ref, not five separate views. The Google button starts from the `credentials`
 step, but `link` **is** a real step: the server redirects there with `?error=email_in_use&linkToken=…`
 when the Google account's email already belongs to a local account, and the step collects that
@@ -343,3 +364,4 @@ existing access, not for handling new signups (those stay on approve/delete).
 - `useHoldingDetail` — `HoldingDetailPanel`'s detail, ledger and actions (fetch, freeze, remove the holding, remove a purchase or contribution, undo a withdrawal, edit a purchase date), routed through one `HOLDING_KIND_OPERATIONS` table keyed by `STOCKS`/`CRYPTO`/`FUNDS`; the panel calls its `load()` in `onMounted`.
 - `useExpandedRow` — the single open row of an expandable table (`isExpanded`, `toggle`, `collapse`).
 - `useDisplayMoney` — `formatConverted` and `toDisplayCurrency` for amounts shown in the user's display currency.
+- `useInactivityLogout` — started once in `App.vue`; while a session exists it checks every 30 s, and on `visibilitychange` back to visible, whether `SESSION_IDLE_TIMEOUT_MINUTES` (30, the server's default servlet session timeout — change both together) have passed since the last API response (`api/serverActivity.ts`, stamped by the `api/client.ts` interceptor on every response), and calls `auth.expireSession('inactivity')`. A 401 on a live session calls `expireSession('expired')`. Both end on `/login?reason=…`, where `LoginView` shows a notice until the next submit.

@@ -46,6 +46,45 @@ describe('router auth guard', () => {
     expect(router.currentRoute.value.name).toBe('wallets')
   })
 
+  it('redirects an approved session away from /login', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    }
+
+    const { router } = await import('./index')
+    router.push('/login')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
+
+  it('lets a session that is ending reach /login', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    }
+    auth.endingSession = true
+
+    const { router } = await import('./index')
+    router.push('/login')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('login')
+  })
+
   it('redirects a pending session to /pending-approval', async () => {
     vi.resetModules()
     const auth = useAuthStore()

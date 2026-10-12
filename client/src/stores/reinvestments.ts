@@ -3,10 +3,12 @@ import { ref } from 'vue'
 import { reinvestmentsApi, type ReinvestmentPayload } from '@/api/reinvestments'
 import type { ReinvestmentRow } from '@/types'
 
+const DEFAULT_PAGE_SIZE = 20
+
 export const useReinvestmentsStore = defineStore('reinvestments', () => {
   const rows = ref<ReinvestmentRow[]>([])
   const page = ref(0)
-  const pageSize = ref(20)
+  const pageSize = ref(DEFAULT_PAGE_SIZE)
   const totalElements = ref(0)
   const totalPages = ref(0)
   const loading = ref(false)
@@ -34,6 +36,16 @@ export const useReinvestmentsStore = defineStore('reinvestments', () => {
     }
   }
 
+  function reset() {
+    rows.value = []
+    page.value = 0
+    pageSize.value = DEFAULT_PAGE_SIZE
+    totalElements.value = 0
+    totalPages.value = 0
+    loading.value = false
+    loaded.value = false
+  }
+
   return {
     rows,
     page,
@@ -44,5 +56,6 @@ export const useReinvestmentsStore = defineStore('reinvestments', () => {
     loaded,
     load,
     reinvest,
+    reset,
   }
 })

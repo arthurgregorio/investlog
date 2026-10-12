@@ -3,6 +3,7 @@ import { useToast } from 'buefy'
 import { holdingsApi } from '@/api/holdings'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { problemDetailMessage } from '@/utils/apiErrors'
+import { compareDisplayNames, sortHoldingsByDisplayName } from '@/utils/sortHoldingsByDisplayName'
 import type { HoldingRow } from '@/types'
 
 const HOLDINGS_PAGE_SIZE = 500
@@ -10,10 +11,6 @@ const HOLDINGS_PAGE_SIZE = 500
 export interface DestinationGroup {
   walletName: string
   holdings: HoldingRow[]
-}
-
-export function holdingDisplayName(holding: HoldingRow): string {
-  return holding.ticker ?? holding.name
 }
 
 export function useReinvestForm(onDone?: () => void) {
@@ -31,6 +28,7 @@ export function useReinvestForm(onDone?: () => void) {
   const amount = ref<number | ''>('')
   const fees = ref<number | ''>('')
   const taxes = ref<number | ''>('')
+  const wholePosition = ref(false)
   const submitting = ref(false)
   const error = ref('')
 
@@ -40,6 +38,11 @@ export function useReinvestForm(onDone?: () => void) {
   )
   const isFundSource = computed(() => source.value?.kind === 'FUNDS')
   const currency = computed(() => source.value?.walletCurrency ?? 'BRL')
+  const availableAmount = computed(() => {
+    const currentSource = source.value
+    if (!currentSource) return null
+    return isFundSource.value ? currentSource.currentValue : currentSource.quantity
+  })
 
   const destinations = computed(() => {
     const currentSource = source.value
@@ -59,7 +62,9 @@ export function useReinvestForm(onDone?: () => void) {
       group.holdings.push(holding)
       groups.set(holding.walletId, group)
     }
-    return [...groups.values()]
+    return [...groups.values()].sort((first, second) =>
+      compareDisplayNames(first.walletName, second.walletName),
+    )
   })
 
   const destinationUnpriced = computed(() => {
@@ -113,9 +118,17 @@ export function useReinvestForm(onDone?: () => void) {
     if (!destinations.value.some((holding) => holding.id === destinationId.value)) {
       destinationId.value = ''
     }
+    wholePosition.value = false
     quantity.value = ''
     amount.value = ''
     unitPrice.value = source.value?.currentPrice ?? ''
+  })
+
+  watch(wholePosition, (checked) => {
+    const available = availableAmount.value
+    if (!checked || available == null) return
+    if (isFundSource.value) amount.value = available
+    else quantity.value = available
   })
 
   async function load(walletId: string, preselectedHoldingId?: string) {
@@ -125,8 +138,8 @@ export function useReinvestForm(onDone?: () => void) {
         holdingsApi.findAll({ walletId, size: HOLDINGS_PAGE_SIZE }),
         holdingsApi.findAll({ size: HOLDINGS_PAGE_SIZE }),
       ])
-      sources.value = walletPage.content
-      candidates.value = allPage.content
+      sources.value = sortHoldingsByDisplayName(walletPage.content)
+      candidates.value = sortHoldingsByDisplayName(allPage.content)
       if (
         preselectedHoldingId &&
         walletPage.content.some((holding) => holding.id === preselectedHoldingId)
@@ -178,12 +191,14 @@ export function useReinvestForm(onDone?: () => void) {
     amount,
     fees,
     taxes,
+    wholePosition,
     submitting,
     error,
     source,
     destination,
     isFundSource,
     currency,
+    availableAmount,
     destinations,
     destinationGroups,
     destinationUnpriced,

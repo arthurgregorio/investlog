@@ -1,13 +1,49 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h, type Component } from 'vue'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import App from './App.vue'
+import { authApi } from '@/api/auth'
+import { router as appRouter } from '@/router'
 import { useAppearanceStore } from '@/stores/appearance'
 import { useAuthStore } from '@/stores/auth'
+import { useWalletsStore } from '@/stores/wallets'
 import { useModals } from '@/composables/useModals'
 import type { SessionResponse } from '@/types'
+
+const pageMounts = vi.hoisted(() => ({ overview: 0 }))
+
+vi.mock('@/api/auth', () => ({
+  authApi: { logout: vi.fn() },
+}))
+
+vi.mock('@/router', async () => {
+  const { createMemoryHistory, createRouter } = await import('vue-router')
+  return {
+    router: createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: '/overview',
+          name: 'overview',
+          component: {
+            template: '<div class="page-overview" />',
+            mounted() {
+              pageMounts.overview += 1
+            },
+          },
+        },
+        {
+          path: '/wallets',
+          name: 'wallets',
+          component: { template: '<div class="page-wallets" />' },
+        },
+        { path: '/login', name: 'login', component: { template: '<div class="page-login" />' } },
+      ],
+    }),
+  }
+})
 
 const NavbarStub: Component = {
   name: 'TheNavbar',
@@ -134,12 +170,15 @@ async function mountApp(options: {
   session: SessionResponse | null
   path?: string
   initialState?: Record<string, unknown>
+  router?: Router
+  stubActions?: boolean
 }) {
   const pinia: TestingPinia = createTestingPinia({
     initialState: { appearance: { dark: false, accent: 'teal' }, ...options.initialState },
+    stubActions: options.stubActions ?? true,
   })
   useAuthStore().session = options.session
-  const router = makeRouter()
+  const router = options.router ?? makeRouter()
   router.push(options.path ?? '/overview')
   await router.isReady()
   activeWrapper = mount(App, {
@@ -230,6 +269,13 @@ describe('App', () => {
       expect(wrapper.find('.page-overview').exists()).toBe(true)
     })
 
+    it('keeps the chrome off a public page even while an approved session exists', async () => {
+      const wrapper = await mountApp({ session: sessionWithStatus('APPROVED'), path: '/login' })
+
+      expect(wrapper.find('.main').exists()).toBe(false)
+      expect(wrapper.find('.page-login').exists()).toBe(true)
+    })
+
     it('renders no modal until one is opened', async () => {
       const wrapper = await mountApp({ session: sessionWithStatus('APPROVED') })
 
@@ -237,6 +283,91 @@ describe('App', () => {
       expect(wrapper.find('.create-wallet-stub').exists()).toBe(false)
       expect(wrapper.find('.password-change-stub').exists()).toBe(false)
       expect(wrapper.find('.trusted-devices-stub').exists()).toBe(false)
+    })
+  })
+
+  describe('page changes', () => {
+    beforeEach(() => {
+      pageMounts.overview = 0
+    })
+
+    it('keeps the page mounted when only the query changes', async () => {
+      await mountApp({ session: sessionWithStatus('APPROVED'), router: appRouter })
+
+      await appRouter.push('/overview?page=2')
+      await flushPromises()
+
+      expect(pageMounts.overview).toBe(1)
+    })
+
+    it('swaps the page inside the chrome when the path changes', async () => {
+      const wrapper = await mountApp({ session: sessionWithStatus('APPROVED'), router: appRouter })
+
+      await appRouter.push('/wallets')
+      await flushPromises()
+
+      expect(wrapper.find('.main .app-content .page-wallets').exists()).toBe(true)
+      expect(wrapper.find('.page-overview').exists()).toBe(false)
+    })
+  })
+
+  describe('logout', () => {
+    beforeEach(() => {
+      pageMounts.overview = 0
+      vi.mocked(authApi.logout).mockResolvedValue(undefined)
+    })
+
+    it('goes to the login page without ever rendering the protected page outside the chrome', async () => {
+      const wrapper = await mountApp({
+        session: sessionWithStatus('APPROVED'),
+        router: appRouter,
+        stubActions: false,
+      })
+      const auth = useAuthStore()
+      let sessionWhenLoginWasReached: SessionResponse | null = null
+      const removeHook = appRouter.afterEach((to) => {
+        if (to.name === 'login') sessionWhenLoginWasReached = auth.session
+      })
+
+      await auth.logout()
+      await flushPromises()
+      removeHook()
+
+      expect(sessionWhenLoginWasReached).not.toBeNull()
+      expect(auth.session).toBeNull()
+      expect(pageMounts.overview).toBe(1)
+      expect(wrapper.find('.main').exists()).toBe(false)
+      expect(wrapper.find('.page-login').exists()).toBe(true)
+    })
+
+    it('drops the previous user data held in the stores', async () => {
+      await mountApp({
+        session: sessionWithStatus('APPROVED'),
+        router: appRouter,
+        stubActions: false,
+      })
+      const wallets = useWalletsStore()
+      wallets.wallets = [
+        {
+          id: 'wallet-1',
+          name: 'Carteira',
+          kind: 'STOCKS',
+          currency: 'BRL',
+          holdingCount: 1,
+          totalInvested: 100,
+          currentValue: 110,
+          gain: 10,
+          gainPct: 10,
+          createdAt: '2026-01-01',
+        },
+      ]
+      wallets.loaded = true
+
+      await useAuthStore().logout()
+      await flushPromises()
+
+      expect(wallets.wallets).toEqual([])
+      expect(wallets.loaded).toBe(false)
     })
   })
 

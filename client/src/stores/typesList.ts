@@ -33,6 +33,14 @@ export const useTypesListStore = defineStore('typesList', () => {
     await load()
   }
 
+  function reset() {
+    stockTypes.value = []
+    fundTypes.value = []
+    stockSegments.value = []
+    loaded.value = false
+    loading.value = false
+  }
+
   async function addStockType(name: string): Promise<AssetType> {
     const created = await assetTypesApi.createStockType(name)
     stockTypes.value = [...stockTypes.value, created]
@@ -94,6 +102,7 @@ export const useTypesListStore = defineStore('typesList', () => {
     loading,
     load,
     refresh,
+    reset,
     addStockType,
     updateStockType,
     removeStockType,

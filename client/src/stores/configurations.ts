@@ -26,5 +26,11 @@ export const useConfigurationsStore = defineStore('configurations', () => {
     values.value = { ...values.value, [updated.key]: updated.value }
   }
 
-  return { values, loaded, loading, load, updateConfiguration }
+  function reset() {
+    values.value = {}
+    loaded.value = false
+    loading.value = false
+  }
+
+  return { values, loaded, loading, load, updateConfiguration, reset }
 })

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
-import { holdingDisplayName, useReinvestForm } from './useReinvestForm'
+import { useReinvestForm } from './useReinvestForm'
 import { holdingsApi } from '@/api/holdings'
 import { reinvestmentsApi } from '@/api/reinvestments'
 import type { HoldingRow } from '@/types'
@@ -88,18 +88,13 @@ describe('useReinvestForm', () => {
     vi.clearAllMocks()
   })
 
-  it('names a holding by ticker, falling back to its name', () => {
-    expect(holdingDisplayName(petrobras)).toBe('PETR4')
-    expect(holdingDisplayName(treasury)).toBe('Tesouro Selic')
-  })
-
   it('loads the wallet holdings as sources and leaves the source empty without a preselection', async () => {
     const { form } = await loadedForm()
 
     expect(form.sources.value.map((holding) => holding.id)).toEqual([
       'holding-petr4',
-      'holding-vale3',
       'holding-treasury',
+      'holding-vale3',
     ])
     expect(form.sourceId.value).toBe('')
     expect(form.destinations.value).toEqual([])
@@ -123,15 +118,177 @@ describe('useReinvestForm', () => {
     const { form } = await loadedForm('holding-petr4')
 
     expect(form.destinations.value.map((holding) => holding.id)).toEqual([
-      'holding-vale3',
-      'holding-treasury',
       'holding-btc',
+      'holding-treasury',
+      'holding-vale3',
     ])
     expect(form.destinationGroups.value.map((group) => group.walletName)).toEqual([
       'Ações',
-      'Fundos',
       'Cripto',
+      'Fundos',
     ])
+  })
+
+  describe('whole position', () => {
+    it('fills the quantity with everything available on a stock source', async () => {
+      const { form } = await loadedForm('holding-petr4')
+
+      form.wholePosition.value = true
+      await nextTick()
+
+      expect(form.availableAmount.value).toBe(100)
+      expect(form.quantity.value).toBe(100)
+      expect(form.grossAmount.value).toBe(3850)
+    })
+
+    it('fills the amount with the current value on a fund source', async () => {
+      const { form } = await loadedForm('holding-treasury')
+
+      form.wholePosition.value = true
+      await nextTick()
+
+      expect(form.amount.value).toBe(1200)
+      expect(form.quantity.value).toBe('')
+    })
+
+    it('keeps the filled value when unchecked', async () => {
+      const { form } = await loadedForm('holding-petr4')
+
+      form.wholePosition.value = true
+      await nextTick()
+      form.wholePosition.value = false
+      await nextTick()
+
+      expect(form.quantity.value).toBe(100)
+    })
+
+    it('unchecks and clears the field when the source changes', async () => {
+      const { form } = await loadedForm('holding-petr4')
+      form.wholePosition.value = true
+      await nextTick()
+
+      form.sourceId.value = 'holding-vale3'
+      await nextTick()
+
+      expect(form.wholePosition.value).toBe(false)
+      expect(form.quantity.value).toBe('')
+    })
+
+    it('has no available amount without a source or for a fund without a current value', async () => {
+      const unvaluedFund = holdingOf({ ...treasury, id: 'holding-unvalued', currentValue: null })
+      const { form } = await loadedForm(undefined, [petrobras, unvaluedFund])
+
+      expect(form.availableAmount.value).toBeNull()
+
+      form.sourceId.value = 'holding-unvalued'
+      await nextTick()
+      form.wholePosition.value = true
+      await nextTick()
+
+      expect(form.availableAmount.value).toBeNull()
+      expect(form.amount.value).toBe('')
+    })
+
+    it('submits the full quantity', async () => {
+      const { form } = await loadedForm('holding-petr4')
+      form.destinationId.value = 'holding-vale3'
+      form.wholePosition.value = true
+      await nextTick()
+
+      await form.submit()
+
+      expect(reinvestmentsApi.reinvest).toHaveBeenCalledWith(
+        expect.objectContaining({ sourceHoldingId: 'holding-petr4', quantity: 100 }),
+      )
+    })
+  })
+
+  describe('picker order', () => {
+    const itausa10 = holdingOf({ id: 'holding-itsa10', ticker: 'ITSA10', name: 'Itaúsa' })
+    const itausa4 = holdingOf({ id: 'holding-itsa4', ticker: 'ITSA4', name: 'Itaúsa' })
+    const lowercaseBank = holdingOf({
+      id: 'holding-bbas3',
+      ticker: 'bbas3',
+      name: 'Banco do Brasil',
+    })
+    const reitFund = holdingOf({
+      id: 'holding-hglg',
+      kind: 'FUNDS',
+      ticker: null,
+      name: 'Fundo HGLG',
+      walletId: 'wallet-reits',
+      walletName: 'Zeta FIIs',
+      quantity: null,
+      currentPrice: null,
+    })
+    const bondFund = holdingOf({
+      id: 'holding-bond',
+      kind: 'FUNDS',
+      ticker: null,
+      name: 'CDB Banco',
+      walletId: 'wallet-reits',
+      walletName: 'Zeta FIIs',
+      quantity: null,
+      currentPrice: null,
+    })
+    const lowercaseWalletHolding = holdingOf({
+      id: 'holding-wege3',
+      ticker: 'WEGE3',
+      walletId: 'wallet-lowercase',
+      walletName: 'banco inter',
+    })
+
+    async function loadedOutOfOrderForm() {
+      vi.mocked(holdingsApi.findAll).mockImplementation(async (params) =>
+        pageOf(
+          params.walletId
+            ? [vale, itausa10, treasury, itausa4, lowercaseBank]
+            : [
+                reitFund,
+                vale,
+                lowercaseWalletHolding,
+                itausa10,
+                bondFund,
+                lowercaseBank,
+                itausa4,
+                petrobras,
+              ],
+        ),
+      )
+      const form = useReinvestForm()
+      await form.load('wallet-stocks', 'holding-petr4')
+      await nextTick()
+      return form
+    }
+
+    it('lists the sources A to Z, ignoring case and comparing numeric suffixes naturally', async () => {
+      const form = await loadedOutOfOrderForm()
+
+      expect(form.sources.value.map((holding) => holding.id)).toEqual([
+        'holding-bbas3',
+        'holding-itsa4',
+        'holding-itsa10',
+        'holding-treasury',
+        'holding-vale3',
+      ])
+    })
+
+    it('lists the destination wallets A to Z with each wallet holdings A to Z', async () => {
+      const form = await loadedOutOfOrderForm()
+      form.sourceId.value = 'holding-vale3'
+      await nextTick()
+
+      expect(
+        form.destinationGroups.value.map((group) => [
+          group.walletName,
+          group.holdings.map((holding) => holding.id),
+        ]),
+      ).toEqual([
+        ['Ações', ['holding-bbas3', 'holding-itsa4', 'holding-itsa10', 'holding-petr4']],
+        ['banco inter', ['holding-wege3']],
+        ['Zeta FIIs', ['holding-bond', 'holding-hglg']],
+      ])
+    })
   })
 
   it('computes gross, net and the destination quantity for a stock source', async () => {

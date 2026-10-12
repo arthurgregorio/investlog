@@ -204,6 +204,38 @@ describe('LoginView flow', () => {
 
     expect(wrapper.text()).toContain('Senha incorreta ou link expirado')
   })
+
+  it('explains a logout caused by inactivity', async () => {
+    const wrapper = await openLogin('?reason=inactivity')
+
+    expect(wrapper.find('[data-testid="session-notice"]').text()).toBe(
+      'Sua sessão foi encerrada por inatividade. Entre novamente.',
+    )
+  })
+
+  it('explains a session that expired on the server', async () => {
+    const wrapper = await openLogin('?reason=expired')
+
+    expect(wrapper.find('[data-testid="session-notice"]').text()).toBe(
+      'Sua sessão expirou. Entre novamente.',
+    )
+  })
+
+  it('shows no session notice for an unknown reason', async () => {
+    const wrapper = await openLogin('?reason=something-else')
+
+    expect(wrapper.find('[data-testid="session-notice"]').exists()).toBe(false)
+  })
+
+  it('clears the session notice once the visitor submits', async () => {
+    const store = useAuthStore()
+    vi.spyOn(store, 'login').mockRejectedValue(new Error('bad credentials'))
+
+    const wrapper = await openLogin('?reason=inactivity')
+    await submitCredentials(wrapper)
+
+    expect(wrapper.find('[data-testid="session-notice"]').exists()).toBe(false)
+  })
 })
 
 function flushPromises() {

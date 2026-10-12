@@ -100,6 +100,54 @@ describe('useAddInvestmentForm', () => {
     expect(form.walletsOfKind.map((wallet) => wallet.id)).toEqual(['wallet-funds-1'])
   })
 
+  describe('initial wallet', () => {
+    const secondStockWallet: WalletResponse = {
+      ...mockWallet,
+      id: 'wallet-stocks-2',
+      name: 'Carteira Ações 2',
+    }
+
+    beforeEach(() => {
+      useWalletsStore().wallets = [mockWallet, secondStockWallet, mockFundWallet]
+    })
+
+    it('starts on the given wallet when it belongs to the selected kind', () => {
+      const { form } = useAddInvestmentForm('STOCKS', 'wallet-stocks-2')
+
+      expect(form.walletId).toBe('wallet-stocks-2')
+    })
+
+    it('falls back to the first wallet of the kind when the given wallet is of another kind', () => {
+      const { form } = useAddInvestmentForm('STOCKS', 'wallet-funds-1')
+
+      expect(form.walletId).toBe('wallet-stocks-1')
+    })
+
+    it('selects the given wallet once a late wallets load brings it in', async () => {
+      const walletsStore = useWalletsStore()
+      walletsStore.wallets = []
+      const { form } = useAddInvestmentForm('STOCKS', 'wallet-stocks-2')
+      expect(form.walletId).toBe('')
+
+      walletsStore.wallets = [mockWallet, secondStockWallet, mockFundWallet]
+      await nextTick()
+
+      expect(form.walletId).toBe('wallet-stocks-2')
+    })
+
+    it('still moves to the first wallet of a newly chosen kind', async () => {
+      const { form } = useAddInvestmentForm('STOCKS', 'wallet-stocks-2')
+
+      form.kind = 'FUNDS'
+      await nextTick()
+      expect(form.walletId).toBe('wallet-funds-1')
+
+      form.kind = 'STOCKS'
+      await nextTick()
+      expect(form.walletId).toBe('wallet-stocks-1')
+    })
+  })
+
   it('valid=false for funds when name is empty', () => {
     const { form } = useAddInvestmentForm('FUNDS')
     form.walletId = 'wallet-funds-1'
@@ -127,7 +175,7 @@ describe('useAddInvestmentForm', () => {
     ]
     const onDone = vi.fn()
 
-    const { form, submit } = useAddInvestmentForm('CRYPTO', onDone)
+    const { form, submit } = useAddInvestmentForm('CRYPTO', undefined, onDone)
     form.ticker = ' btc '
     form.quantity = 0.5
     form.price = 300000
@@ -152,7 +200,7 @@ describe('useAddInvestmentForm', () => {
   it('submit calls createFundHolding with the contribution and the optional current value', async () => {
     const onDone = vi.fn()
 
-    const { form, submit } = useAddInvestmentForm('FUNDS', onDone)
+    const { form, submit } = useAddInvestmentForm('FUNDS', undefined, onDone)
     form.name = '  Tesouro Direto  '
     form.amount = 500
     form.currentValue = 520
@@ -299,7 +347,7 @@ describe('useAddInvestmentForm', () => {
   it('submit does nothing while the form is invalid', async () => {
     const onDone = vi.fn()
 
-    const { form, submit } = useAddInvestmentForm('STOCKS', onDone)
+    const { form, submit } = useAddInvestmentForm('STOCKS', undefined, onDone)
     form.ticker = ''
 
     await submit()
@@ -315,7 +363,7 @@ describe('useAddInvestmentForm', () => {
     )
     const onDone = vi.fn()
 
-    const { form, submit } = useAddInvestmentForm('STOCKS', onDone)
+    const { form, submit } = useAddInvestmentForm('STOCKS', undefined, onDone)
     form.ticker = 'PETR4'
     form.quantity = 10
     form.price = 36.5
