@@ -1346,7 +1346,7 @@ a {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--text-2);
+  color: var(--text-muted);
   font-size: 12px;
   text-align: center;
 }
@@ -1357,6 +1357,52 @@ a {
   flex: 1;
   height: 1px;
   background: var(--border);
+}
+
+.button.google-signin {
+  background-color: var(--google-button-background);
+  border-color: var(--google-button-border);
+  color: var(--google-button-text);
+  font-family: Roboto, var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+}
+
+.button.google-signin:hover {
+  background-color: var(--google-button-hover);
+  border-color: var(--google-button-border);
+  color: var(--google-button-text);
+}
+
+.button.google-signin:active {
+  background-color: var(--google-button-pressed);
+}
+
+.button.google-signin:focus-visible {
+  border-color: var(--google-button-border);
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px color-mix(in srgb, var(--primary) 45%, transparent);
+  outline: none;
+}
+
+.google-signin-content {
+  gap: 10px;
+}
+
+.google-signin-spinner {
+  animation: google-signin-spin 0.8s linear infinite;
+}
+
+.google-signin-spinner-track {
+  stroke: var(--google-spinner-track);
+}
+
+@keyframes google-signin-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .report-page {
