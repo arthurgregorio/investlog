@@ -129,6 +129,80 @@ describe('useReinvestForm', () => {
     ])
   })
 
+  describe('whole position', () => {
+    it('fills the quantity with everything available on a stock source', async () => {
+      const { form } = await loadedForm('holding-petr4')
+
+      form.wholePosition.value = true
+      await nextTick()
+
+      expect(form.availableAmount.value).toBe(100)
+      expect(form.quantity.value).toBe(100)
+      expect(form.grossAmount.value).toBe(3850)
+    })
+
+    it('fills the amount with the current value on a fund source', async () => {
+      const { form } = await loadedForm('holding-treasury')
+
+      form.wholePosition.value = true
+      await nextTick()
+
+      expect(form.amount.value).toBe(1200)
+      expect(form.quantity.value).toBe('')
+    })
+
+    it('keeps the filled value when unchecked', async () => {
+      const { form } = await loadedForm('holding-petr4')
+
+      form.wholePosition.value = true
+      await nextTick()
+      form.wholePosition.value = false
+      await nextTick()
+
+      expect(form.quantity.value).toBe(100)
+    })
+
+    it('unchecks and clears the field when the source changes', async () => {
+      const { form } = await loadedForm('holding-petr4')
+      form.wholePosition.value = true
+      await nextTick()
+
+      form.sourceId.value = 'holding-vale3'
+      await nextTick()
+
+      expect(form.wholePosition.value).toBe(false)
+      expect(form.quantity.value).toBe('')
+    })
+
+    it('has no available amount without a source or for a fund without a current value', async () => {
+      const unvaluedFund = holdingOf({ ...treasury, id: 'holding-unvalued', currentValue: null })
+      const { form } = await loadedForm(undefined, [petrobras, unvaluedFund])
+
+      expect(form.availableAmount.value).toBeNull()
+
+      form.sourceId.value = 'holding-unvalued'
+      await nextTick()
+      form.wholePosition.value = true
+      await nextTick()
+
+      expect(form.availableAmount.value).toBeNull()
+      expect(form.amount.value).toBe('')
+    })
+
+    it('submits the full quantity', async () => {
+      const { form } = await loadedForm('holding-petr4')
+      form.destinationId.value = 'holding-vale3'
+      form.wholePosition.value = true
+      await nextTick()
+
+      await form.submit()
+
+      expect(reinvestmentsApi.reinvest).toHaveBeenCalledWith(
+        expect.objectContaining({ sourceHoldingId: 'holding-petr4', quantity: 100 }),
+      )
+    })
+  })
+
   describe('picker order', () => {
     const itausa10 = holdingOf({ id: 'holding-itsa10', ticker: 'ITSA10', name: 'Itaúsa' })
     const itausa4 = holdingOf({ id: 'holding-itsa4', ticker: 'ITSA4', name: 'Itaúsa' })
