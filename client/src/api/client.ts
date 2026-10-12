@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { ToastProgrammatic } from 'buefy'
 import { router } from '@/router'
+import { recordServerActivity } from '@/api/serverActivity'
+import { useAuthStore } from '@/stores/auth'
 
 const toast = new ToastProgrammatic()
 
@@ -44,10 +46,19 @@ function isWithdrawalRequest(url: string | undefined): boolean {
 }
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    recordServerActivity()
+    return response
+  },
   (error) => {
+    if (error.response) {
+      recordServerActivity()
+    }
     if (error.response?.status === 401 && !isAuthFormRequest(error.config?.url)) {
-      if (router.currentRoute.value.name !== 'login') {
+      const auth = useAuthStore()
+      if (auth.session) {
+        void auth.expireSession('expired')
+      } else if (router.currentRoute.value.name !== 'login') {
         router.push({ name: 'login' })
       }
       return Promise.reject(error)
