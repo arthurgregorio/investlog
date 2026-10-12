@@ -25,6 +25,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         typeLabel: String?,
         walletId: UUID?,
         search: String?,
+        hideFrozen: Boolean,
         pageable: Pageable,
     ): PagedModel<HoldingRowResponse> {
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
@@ -33,6 +34,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         val kindCondition = if (kind != null) overview.KIND.eq(kind) else DSL.noCondition()
         val typeLabelCondition = if (typeLabel != null) overview.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
         val walletIdCondition = if (walletId != null) overview.WALLET_EXTERNAL_ID.eq(walletId) else DSL.noCondition()
+        val frozenCondition = if (hideFrozen) overview.FROZEN.isFalse() else DSL.noCondition()
         val searchCondition = if (!search.isNullOrBlank()) {
             overview.NAME.likeIgnoreCase("%$search%").or(overview.TICKER.likeIgnoreCase("%$search%"))
         } else {
@@ -72,7 +74,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             overview.SEGMENT_LABEL,
         )
             .from(overview)
-            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
+            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(frozenCondition).and(searchCondition)
             .orderBy(sortFields)
             .limit(pageable.pageSize)
             .offset(pageable.offset.toInt())
@@ -100,7 +102,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         val total = dsl.fetchCount(
             dsl.select(DSL.one())
                 .from(overview)
-                .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
+                .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(frozenCondition).and(searchCondition)
         )
 
         return pagedModelOf(content, pageable, total.toLong())
@@ -112,6 +114,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         typeLabel: String?,
         walletId: UUID?,
         search: String?,
+        hideFrozen: Boolean,
     ): List<HoldingRowResponse> {
         val reportRows = HOLDINGS_REPORT_ROWS.`as`("report_rows")
 
@@ -119,6 +122,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         val kindCondition = if (kind != null) reportRows.KIND.eq(kind) else DSL.noCondition()
         val typeLabelCondition = if (typeLabel != null) reportRows.TYPE_LABEL.eq(typeLabel) else DSL.noCondition()
         val walletIdCondition = if (walletId != null) reportRows.WALLET_EXTERNAL_ID.eq(walletId) else DSL.noCondition()
+        val frozenCondition = if (hideFrozen) reportRows.FROZEN.isFalse() else DSL.noCondition()
         val searchCondition = if (!search.isNullOrBlank()) {
             reportRows.NAME.likeIgnoreCase("%$search%").or(reportRows.TICKER.likeIgnoreCase("%$search%"))
         } else {
@@ -144,7 +148,7 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             reportRows.SEGMENT_LABEL,
         )
             .from(reportRows)
-            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(searchCondition)
+            .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(frozenCondition).and(searchCondition)
             .orderBy(reportRows.WALLET_NAME, reportRows.COST_BASIS.desc().nullsLast())
             .fetch { record ->
                 HoldingRowResponse(

@@ -9,6 +9,7 @@ defineProps<{
   walletId?: string
   typeLabel?: string
   search: string
+  hideFrozen: boolean
   walletOptions: WalletResponse[]
   typeLabelOptions: AssetType[]
 }>()
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   'change-wallet': [walletId: string]
   'change-type': [typeLabel: string]
   'change-search': [search: string]
+  'change-hide-frozen': [value: boolean]
   'add-investment': []
   export: []
 }>()
@@ -67,6 +69,12 @@ const KIND_TABS: { value: InvestmentKindFilter; label: string; icon: string }[] 
         placeholder="Buscar por nome ou ticker"
         @update:model-value="emit('change-search', $event)"
       />
+      <b-checkbox
+        :model-value="hideFrozen"
+        @update:model-value="emit('change-hide-frozen', $event)"
+      >
+        Ocultar congelados
+      </b-checkbox>
       <b-button type="is-primary" icon-left="plus" @click="emit('add-investment')">
         Adicionar investimento
       </b-button>

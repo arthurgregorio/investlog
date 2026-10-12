@@ -204,6 +204,18 @@ describe('InvestmentReportView', () => {
     })
   })
 
+  it('asks the report request to hide frozen holdings when the list did', async () => {
+    await mountView({ query: '?filter=STOCKS&hideFrozen=true' })
+
+    expect(holdingsApi.findAllForReport).toHaveBeenCalledWith({
+      kind: 'STOCKS',
+      typeLabel: undefined,
+      walletId: undefined,
+      search: undefined,
+      hideFrozen: true,
+    })
+  })
+
   it('ignores a kind filter that is not a valid wallet kind', async () => {
     const { wrapper } = await mountView({ query: '?filter=BONDS' })
 

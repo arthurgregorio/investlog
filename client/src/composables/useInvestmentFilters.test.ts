@@ -4,6 +4,7 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import {
   parseFilter,
+  parseHideFrozen,
   parsePage,
   parseSort,
   queryFingerprint,
@@ -79,9 +80,17 @@ describe('query parsing', () => {
     expect(parsePage({})).toBe(0)
   })
 
+  it('hides frozen holdings only for an explicit true', () => {
+    expect(parseHideFrozen({ hideFrozen: 'true' })).toBe(true)
+    expect(parseHideFrozen({ hideFrozen: 'false' })).toBe(false)
+    expect(parseHideFrozen({ hideFrozen: '1' })).toBe(false)
+    expect(parseHideFrozen({ hideFrozen: ['true'] })).toBe(false)
+    expect(parseHideFrozen({})).toBe(false)
+  })
+
   it('fingerprints only the page query keys, in a fixed order', () => {
     expect(queryFingerprint({ page: '2', filter: 'FUNDS', unrelated: 'x' })).toBe(
-      'filter=FUNDS&walletId=&type=&search=&sort=&page=2',
+      'filter=FUNDS&walletId=&type=&search=&hideFrozen=&sort=&page=2',
     )
   })
 })
@@ -278,6 +287,66 @@ describe('useInvestmentFilters', () => {
     expect(onReload).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ kind: 'CRYPTO', page: 2 }),
     )
+  })
+
+  it('hides frozen holdings from the first page, keeping the flag in the URL only while it is on', async () => {
+    const { filters, router, onReload, onFiltersChange } =
+      await mountFilters('?filter=STOCKS&page=3')
+    expect(filters.hideFrozenFilter.value).toBe(false)
+    onReload.mockClear()
+
+    filters.changeHideFrozen(true)
+    await flushPromises()
+
+    expect(filters.hideFrozenFilter.value).toBe(true)
+    expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', hideFrozen: 'true' })
+    expect(onFiltersChange).toHaveBeenCalledTimes(1)
+    expect(onReload).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ kind: 'STOCKS', page: 0, hideFrozen: true }),
+    )
+
+    filters.changeHideFrozen(false)
+    await flushPromises()
+
+    expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS' })
+    expect(onReload).toHaveBeenCalledTimes(2)
+    expect(onReload.mock.lastCall?.[0].hideFrozen).toBeUndefined()
+  })
+
+  it('reads the hide-frozen flag from the URL and keeps it across a tab change', async () => {
+    const { filters, router, onReload } = await mountFilters('?hideFrozen=true')
+
+    expect(filters.hideFrozenFilter.value).toBe(true)
+    expect(onReload).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ kind: 'all', page: 0, hideFrozen: true }),
+    )
+    onReload.mockClear()
+
+    filters.selectTab('CRYPTO')
+    await flushPromises()
+
+    expect(router.currentRoute.value.query).toEqual({ filter: 'CRYPTO', hideFrozen: 'true' })
+    expect(onReload).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ kind: 'CRYPTO', hideFrozen: true }),
+    )
+  })
+
+  it('drops the hide-frozen flag on a navigation without it', async () => {
+    const { filters, router, onReload } = await mountFilters('?hideFrozen=true')
+    onReload.mockClear()
+
+    await router.push('/investments')
+    await flushPromises()
+
+    expect(filters.hideFrozenFilter.value).toBe(false)
+    expect(onReload).toHaveBeenCalledTimes(1)
+    expect(onReload.mock.lastCall?.[0].hideFrozen).toBeUndefined()
+  })
+
+  it('carries the hide-frozen flag into the report query', async () => {
+    const { filters } = await mountFilters('?filter=FUNDS&hideFrozen=true&page=2')
+
+    expect(filters.reportQuery()).toEqual({ filter: 'FUNDS', hideFrozen: 'true' })
   })
 
   it('builds the report query from the filters, without sort or page', async () => {

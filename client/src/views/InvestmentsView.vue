@@ -34,8 +34,15 @@ const filters = useInvestmentFilters({
   onReload: ({ kind, page, ...options }) => holdingsListStore.loadKind(kind, page, options),
   onFiltersChange: () => holdingsTable.value?.collapse(),
 })
-const { activeFilter, typeLabelFilter, walletIdFilter, searchQuery, sortKey, sortDirection } =
-  filters
+const {
+  activeFilter,
+  typeLabelFilter,
+  walletIdFilter,
+  searchQuery,
+  hideFrozenFilter,
+  sortKey,
+  sortDirection,
+} = filters
 
 const typeLabelOptions = computed(() => {
   if (activeFilter.value === 'STOCKS') return typesListStore.stockTypes
@@ -70,12 +77,14 @@ function openReport() {
       :wallet-id="walletIdFilter"
       :type-label="typeLabelFilter"
       :search="searchQuery"
+      :hide-frozen="hideFrozenFilter"
       :wallet-options="walletOptions"
       :type-label-options="typeLabelOptions"
       @select-tab="filters.selectTab"
       @change-wallet="filters.changeWallet"
       @change-type="filters.changeType"
       @change-search="filters.changeSearch"
+      @change-hide-frozen="filters.changeHideFrozen"
       @add-investment="openAddInvestment"
       @export="openReport"
     />

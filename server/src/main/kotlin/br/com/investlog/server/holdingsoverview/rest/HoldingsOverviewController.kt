@@ -26,13 +26,14 @@ class HoldingsOverviewController(
         @RequestParam(required = false) typeLabel: String?,
         @RequestParam(required = false) walletId: UUID?,
         @RequestParam(required = false) search: String?,
+        @RequestParam(required = false, defaultValue = "false") hideFrozen: Boolean,
         pageable: Pageable,
     ): ResponseEntity<PagedModel<HoldingRowResponse>> {
 
         val userId = currentUserProvider.getCurrentUser().id
 
         val holdings = holdingsOverviewRepository.findAll(
-            userId, kind?.jooqWalletKind, typeLabel, walletId, search, pageable
+            userId, kind?.jooqWalletKind, typeLabel, walletId, search, hideFrozen, pageable
         )
 
         return ResponseEntity.ok(holdings)
@@ -44,12 +45,13 @@ class HoldingsOverviewController(
         @RequestParam(required = false) typeLabel: String?,
         @RequestParam(required = false) walletId: UUID?,
         @RequestParam(required = false) search: String?,
+        @RequestParam(required = false, defaultValue = "false") hideFrozen: Boolean,
     ): ResponseEntity<List<HoldingRowResponse>> {
 
         val userId = currentUserProvider.getCurrentUser().id
 
         val holdings = holdingsOverviewRepository.findAllForReport(
-            userId, kind?.jooqWalletKind, typeLabel, walletId, search
+            userId, kind?.jooqWalletKind, typeLabel, walletId, search, hideFrozen
         )
 
         return ResponseEntity.ok(holdings)

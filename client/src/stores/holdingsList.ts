@@ -10,6 +10,7 @@ export interface HoldingsListOptions {
   walletId?: string
   search?: string
   sort?: string
+  hideFrozen?: boolean
   size?: number
 }
 
@@ -22,6 +23,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
   const currentWalletId = ref<string | undefined>(undefined)
   const currentSearch = ref<string | undefined>(undefined)
   const currentSort = ref<string | undefined>(undefined)
+  const currentHideFrozen = ref<boolean | undefined>(undefined)
   const page = ref(0)
   const pageSize = ref(DEFAULT_PAGE_SIZE)
   const totalElements = ref(0)
@@ -36,6 +38,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
     currentWalletId.value = options.walletId
     currentSearch.value = options.search
     currentSort.value = options.sort
+    currentHideFrozen.value = options.hideFrozen
     page.value = pageNumber
     pageSize.value = options.size ?? DEFAULT_PAGE_SIZE
     try {
@@ -45,6 +48,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
         walletId: options.walletId,
         search: options.search,
         sort: options.sort,
+        hideFrozen: options.hideFrozen,
         page: pageNumber,
         size: pageSize.value,
       })
@@ -63,6 +67,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
       walletId: currentWalletId.value,
       search: currentSearch.value,
       sort: currentSort.value,
+      hideFrozen: currentHideFrozen.value,
       size: pageSize.value,
     })
   }
@@ -74,6 +79,7 @@ export const useHoldingsListStore = defineStore('holdingsList', () => {
     currentWalletId.value = undefined
     currentSearch.value = undefined
     currentSort.value = undefined
+    currentHideFrozen.value = undefined
     page.value = 0
     pageSize.value = DEFAULT_PAGE_SIZE
     totalElements.value = 0

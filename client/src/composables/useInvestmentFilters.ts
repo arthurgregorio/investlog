@@ -19,6 +19,7 @@ export interface InvestmentsLoadRequest {
   walletId?: string
   search?: string
   sort?: string
+  hideFrozen?: boolean
 }
 
 export interface InvestmentFiltersOptions {
@@ -38,7 +39,7 @@ const VALID_SORT_KEYS: InvestmentSortKey[] = [
 ]
 const DEFAULT_SORT: InvestmentSort = { key: 'gainPct', direction: 'desc' }
 const DEFAULT_SORT_PARAM = `${DEFAULT_SORT.key},${DEFAULT_SORT.direction}`
-const QUERY_KEYS = ['filter', 'walletId', 'type', 'search', 'sort', 'page'] as const
+const QUERY_KEYS = ['filter', 'walletId', 'type', 'search', 'hideFrozen', 'sort', 'page'] as const
 const SEARCH_DEBOUNCE_MILLISECONDS = 300
 
 function queryString(query: LocationQuery, key: string): string | undefined {
@@ -60,6 +61,10 @@ export function parseSort(query: LocationQuery): InvestmentSort {
   return { key, direction: directionParam === 'asc' ? 'asc' : 'desc' }
 }
 
+export function parseHideFrozen(query: LocationQuery): boolean {
+  return queryString(query, 'hideFrozen') === 'true'
+}
+
 export function parsePage(query: LocationQuery): number {
   const pageParam = queryString(query, 'page')
   const pageNumber = pageParam === undefined ? NaN : parseInt(pageParam, 10)
@@ -79,6 +84,7 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
   const typeLabelFilter = ref(queryString(route.query, 'type'))
   const walletIdFilter = ref(queryString(route.query, 'walletId'))
   const searchQuery = ref(queryString(route.query, 'search') ?? '')
+  const hideFrozenFilter = ref(parseHideFrozen(route.query))
   const sortKey = ref<InvestmentSortKey>(initialSort.key)
   const sortDirection = ref<SortDirection>(initialSort.direction)
 
@@ -100,6 +106,7 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
     if (typeLabelFilter.value) query.type = typeLabelFilter.value
     const search = trimmedSearch()
     if (search) query.search = search
+    if (hideFrozenFilter.value) query.hideFrozen = 'true'
     return query
   }
 
@@ -122,6 +129,7 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
       walletId: walletIdFilter.value,
       search: trimmedSearch(),
       sort: sortParam(),
+      hideFrozen: hideFrozenFilter.value || undefined,
     })
   }
 
@@ -135,6 +143,7 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
     walletIdFilter.value = queryString(query, 'walletId')
     typeLabelFilter.value = queryString(query, 'type')
     searchQuery.value = queryString(query, 'search') ?? ''
+    hideFrozenFilter.value = parseHideFrozen(query)
     const sort = parseSort(query)
     sortKey.value = sort.key
     sortDirection.value = sort.direction
@@ -156,6 +165,11 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
 
   function changeWallet(walletId: string) {
     walletIdFilter.value = walletId || undefined
+    reloadWithNewFilters()
+  }
+
+  function changeHideFrozen(hideFrozen: boolean) {
+    hideFrozenFilter.value = hideFrozen
     reloadWithNewFilters()
   }
 
@@ -199,12 +213,14 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
     typeLabelFilter: readonly(typeLabelFilter),
     walletIdFilter: readonly(walletIdFilter),
     searchQuery: readonly(searchQuery),
+    hideFrozenFilter: readonly(hideFrozenFilter),
     sortKey: readonly(sortKey),
     sortDirection: readonly(sortDirection),
     selectTab,
     changeType,
     changeWallet,
     changeSearch,
+    changeHideFrozen,
     toggleSort,
     reload,
     reportQuery,
