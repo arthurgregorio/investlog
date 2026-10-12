@@ -4,7 +4,8 @@ import AppModal from '@/components/ui/AppModal.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
 import DateInput from '@/components/ui/DateInput.vue'
 import ReinvestDestinationSelect from '@/components/investments/ReinvestDestinationSelect.vue'
-import { holdingDisplayName, useReinvestForm } from '@/composables/useReinvestForm'
+import { useReinvestForm } from '@/composables/useReinvestForm'
+import { holdingDisplayName } from '@/utils/sortHoldingsByDisplayName'
 import { fmt } from '@/composables/useFormat'
 import type { HoldingRow } from '@/types'
 
@@ -26,12 +27,14 @@ const {
   amount,
   fees,
   taxes,
+  wholePosition,
   submitting,
   error,
   source,
   destination,
   isFundSource,
   currency,
+  availableAmount,
   destinationGroups,
   destinationUnpriced,
   grossAmount,
@@ -99,14 +102,26 @@ onMounted(() => load(props.walletId, props.preselectedHoldingId))
         label="Valor reinvestido"
         :type="exceedsRemaining ? 'is-danger' : ''"
         :message="exceedsRemaining ? 'Maior que o valor atual do fundo' : ''"
+        grouped
       >
-        <NumberInput
-          v-model="amount"
-          :prefix="fmt.sym(currency)"
-          placeholder="0,00"
-          min="0"
-          data-testid="reinvest-amount"
-        />
+        <div class="control is-expanded">
+          <NumberInput
+            v-model="amount"
+            :prefix="fmt.sym(currency)"
+            placeholder="0,00"
+            min="0"
+            :disabled="wholePosition"
+            data-testid="reinvest-amount"
+          />
+        </div>
+        <div class="control is-flex is-align-items-center">
+          <b-checkbox
+            v-model="wholePosition"
+            :disabled="availableAmount == null"
+            data-testid="reinvest-whole-position"
+            >Tudo</b-checkbox
+          >
+        </div>
       </b-field>
       <div v-else class="fixed-grid has-2-cols mb-3">
         <div class="grid">
@@ -115,13 +130,25 @@ onMounted(() => load(props.walletId, props.preselectedHoldingId))
             label="Quantidade"
             :type="exceedsRemaining ? 'is-danger' : ''"
             :message="exceedsRemaining ? 'Maior que o disponível' : ''"
+            grouped
           >
-            <NumberInput
-              v-model="quantity"
-              :placeholder="`Até ${fmt.qty(source.quantity ?? 0)}`"
-              min="0"
-              data-testid="reinvest-quantity"
-            />
+            <div class="control is-expanded">
+              <NumberInput
+                v-model="quantity"
+                :placeholder="`Até ${fmt.qty(source.quantity ?? 0)}`"
+                min="0"
+                :disabled="wholePosition"
+                data-testid="reinvest-quantity"
+              />
+            </div>
+            <div class="control is-flex is-align-items-center">
+              <b-checkbox
+                v-model="wholePosition"
+                :disabled="availableAmount == null"
+                data-testid="reinvest-whole-position"
+                >Tudo</b-checkbox
+              >
+            </div>
           </b-field>
           <b-field label="Preço unitário de venda">
             <NumberInput

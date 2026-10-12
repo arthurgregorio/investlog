@@ -256,7 +256,7 @@ It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fi
 
 ### Reinvesting (`ReinvestModal.vue`)
 
-"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
+"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A "Tudo" checkbox beside that field (#408, also in `WithdrawModal`) fills it with the whole position (`quantity`, or the fund's `currentValue`) and disables it; it is itself disabled when that amount is unknown, and changing the source unchecks it. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
 
 ### Moving holdings (`MoveHoldingsModal.vue`)
 
@@ -276,7 +276,8 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
 400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
 requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `userStatus.ts` (`statusTagType`, the tag colour per `UserStatus`), `reportGrouping.ts` (groups `HoldingRow[]`
-for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
+for `InvestmentReportView`), `sortHoldingsByDisplayName.ts` (`holdingDisplayName`, ticker or else name, and the
+pt-BR case-insensitive, numeric-aware A→Z order every holding picker uses), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
 unset).
 
 ### Theming
