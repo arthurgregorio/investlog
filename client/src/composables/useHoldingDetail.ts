@@ -12,12 +12,6 @@ interface HoldingKindOperations {
   removeHolding: (walletId: string, holdingId: string) => Promise<void>
   removeEntry: (walletId: string, holdingId: string, entryId: string) => Promise<void>
   removeWithdrawal: (walletId: string, holdingId: string, resultId: string) => Promise<void>
-  updateEntryDate: (
-    walletId: string,
-    holdingId: string,
-    entryId: string,
-    isoDate: string,
-  ) => Promise<unknown>
 }
 
 interface HoldingKindCopy {
@@ -37,8 +31,6 @@ export const HOLDING_KIND_OPERATIONS: Record<WalletKind, HoldingKindOperations> 
       holdingsApi.deleteStockLot(walletId, holdingId, entryId),
     removeWithdrawal: (walletId, holdingId, resultId) =>
       resultsApi.deleteStockWithdrawal(walletId, holdingId, resultId),
-    updateEntryDate: (walletId, holdingId, entryId, isoDate) =>
-      holdingsApi.updateStockLotDate(walletId, holdingId, entryId, { lotDate: isoDate }),
   },
   CRYPTO: {
     fetch: (walletId, holdingId) => holdingsApi.getCryptoHolding(walletId, holdingId),
@@ -49,8 +41,6 @@ export const HOLDING_KIND_OPERATIONS: Record<WalletKind, HoldingKindOperations> 
       holdingsApi.deleteCryptoLot(walletId, holdingId, entryId),
     removeWithdrawal: (walletId, holdingId, resultId) =>
       resultsApi.deleteCryptoWithdrawal(walletId, holdingId, resultId),
-    updateEntryDate: (walletId, holdingId, entryId, isoDate) =>
-      holdingsApi.updateCryptoLotDate(walletId, holdingId, entryId, { lotDate: isoDate }),
   },
   FUNDS: {
     fetch: (walletId, holdingId) => holdingsApi.getFundHolding(walletId, holdingId),
@@ -61,10 +51,6 @@ export const HOLDING_KIND_OPERATIONS: Record<WalletKind, HoldingKindOperations> 
       holdingsApi.deleteFundContribution(walletId, holdingId, entryId),
     removeWithdrawal: (walletId, holdingId, resultId) =>
       resultsApi.deleteFundWithdrawal(walletId, holdingId, resultId),
-    updateEntryDate: (walletId, holdingId, entryId, isoDate) =>
-      holdingsApi.updateFundContributionDate(walletId, holdingId, entryId, {
-        contributionDate: isoDate,
-      }),
   },
 }
 
@@ -102,7 +88,6 @@ export function useHoldingDetail(
 
   const detail = ref<HoldingDetail | null>(null)
   const loading = ref(false)
-  const editingEntryId = ref<string | null>(null)
   const isFund = computed(() => toValue(row).kind === 'FUNDS')
   const ledger = computed(() => (detail.value ? buildLedger(detail.value, isFund.value) : []))
 
@@ -193,18 +178,9 @@ export function useHoldingDetail(
     })
   }
 
-  async function updateEntryDate(entryId: string, date: Date) {
-    const { operations, walletId, id } = target()
-    await operations.updateEntryDate(walletId, id, entryId, date.toISOString().slice(0, 10))
-    editingEntryId.value = null
-    success('Data atualizada.')
-    await refresh()
-  }
-
   return {
     detail,
     loading,
-    editingEntryId,
     isFund,
     ledger,
     load,
@@ -213,6 +189,5 @@ export function useHoldingDetail(
     confirmRemoveHolding,
     confirmRemoveEntry,
     confirmRemoveWithdrawal,
-    updateEntryDate,
   }
 }

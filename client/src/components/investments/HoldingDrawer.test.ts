@@ -40,9 +40,9 @@ vi.mock('@/api/holdings', () => ({
     deleteStockLot: vi.fn(),
     deleteCryptoLot: vi.fn(),
     deleteFundContribution: vi.fn(),
-    updateStockLotDate: vi.fn(),
-    updateCryptoLotDate: vi.fn(),
-    updateFundContributionDate: vi.fn(),
+    updateStockLot: vi.fn(),
+    updateCryptoLot: vi.fn(),
+    updateFundContribution: vi.fn(),
   },
 }))
 
@@ -241,7 +241,7 @@ interface KindCase {
   deleteHolding: ApiMock
   deleteEntry: ApiMock
   deleteWithdrawal: ApiMock
-  updateEntryDate: ApiMock
+  updateEntry: ApiMock
   entryId: string
   dateField: 'lotDate' | 'contributionDate'
 }
@@ -256,7 +256,7 @@ const kindCases: KindCase[] = [
     deleteHolding: vi.mocked(holdingsApi.deleteStockHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteStockLot),
     deleteWithdrawal: vi.mocked(resultsApi.deleteStockWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateStockLotDate),
+    updateEntry: vi.mocked(holdingsApi.updateStockLot),
     entryId: 'lot-1',
     dateField: 'lotDate',
   },
@@ -269,7 +269,7 @@ const kindCases: KindCase[] = [
     deleteHolding: vi.mocked(holdingsApi.deleteCryptoHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteCryptoLot),
     deleteWithdrawal: vi.mocked(resultsApi.deleteCryptoWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateCryptoLotDate),
+    updateEntry: vi.mocked(holdingsApi.updateCryptoLot),
     entryId: 'lot-9',
     dateField: 'lotDate',
   },
@@ -282,7 +282,7 @@ const kindCases: KindCase[] = [
     deleteHolding: vi.mocked(holdingsApi.deleteFundHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteFundContribution),
     deleteWithdrawal: vi.mocked(resultsApi.deleteFundWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateFundContributionDate),
+    updateEntry: vi.mocked(holdingsApi.updateFundContribution),
     entryId: 'c-1',
     dateField: 'contributionDate',
   },
@@ -1131,56 +1131,135 @@ describe('HoldingDrawer', () => {
     })
   })
 
-  describe('date editing', () => {
-    const pickedDate = new Date(Date.UTC(2026, 1, 3, 12))
+  describe('editing a purchase or contribution', () => {
+    function rejectionOf(detail: string) {
+      return Object.assign(new Error('400'), {
+        isAxiosError: true,
+        response: { status: 400, data: { detail } },
+      })
+    }
 
-    it('shows each purchase date as a button and a withdrawal date as plain text', async () => {
+    async function openEdit(wrapper: VueWrapper, index = 0) {
+      await ledgerItems(wrapper)[index].get('[data-testid="ledger-edit"]').trigger('click')
+      await flushPromises()
+    }
+
+    it('shows dates as plain text and no inline date editor', async () => {
       const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
       const items = ledgerItems(wrapper)
-      expect(items[0].find('button.date-edit').text()).toBe('12 jan 2026')
-      expect(items[2].find('button.date-edit').exists()).toBe(false)
-      expect(items[2].text()).toContain('10 mai 2026')
-    })
-
-    it('turns the date into a date picker when it is clicked', async () => {
-      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
-
-      await wrapper.find('button.date-edit').trigger('click')
-
+      expect(items[0].get('[data-testid="ledger-date"]').text()).toBe('12 jan 2026')
+      expect(items[2].get('[data-testid="ledger-date"]').text()).toBe('10 mai 2026')
       expect(wrapper.find('button.date-edit').exists()).toBe(false)
-      expect(wrapper.find('.datepicker').exists()).toBe(true)
+      expect(items[2].find('[data-testid="ledger-edit"]').exists()).toBe(false)
     })
 
     it.each(kindCases)(
-      'saves the picked date of a $label entry, reloads and reports the change',
-      async ({ row, detail, getHolding, updateEntryDate, entryId, dateField }) => {
-        updateEntryDate.mockResolvedValue(undefined)
+      'opens the add dialog prefilled for a $label entry and saves the correction',
+      async ({ row, detail, getHolding, updateEntry, entryId, dateField }) => {
+        updateEntry.mockResolvedValue(undefined)
         const wrapper = await mountLoadedDrawer(row, detail())
 
-        await wrapper.find('button.date-edit').trigger('click')
-        wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', pickedDate)
+        await openEdit(wrapper)
+
+        const isFund = row.kind === 'FUNDS'
+        expect(wrapper.find('.modal-card-title').text()).toBe(
+          isFund ? 'Editar aporte' : 'Editar compra',
+        )
+        expect(wrapper.find('.modal-card-body').text()).toContain(
+          `${row.ticker ?? row.name} · ${row.walletName} · registrada em`,
+        )
+        const inputs = modalNumberInputs(wrapper)
+        const save = modalButton(wrapper, 'Salvar alterações')
+        expect(save.attributes('disabled')).toBeDefined()
+
+        await inputs[0].setValue(isFund ? '4500' : '3')
+        await flushPromises()
+        expect(wrapper.find('[data-testid="position-impact"]').text()).toContain('Antes:')
+        await save.trigger('click')
         await flushPromises()
 
-        expect(updateEntryDate).toHaveBeenCalledWith(row.walletId, row.id, entryId, {
-          [dateField]: '2026-02-03',
-        })
+        const lot = isFund ? null : (detail() as StockHoldingDetail | CryptoHoldingDetail).lots[0]
+        expect(updateEntry).toHaveBeenCalledWith(
+          row.walletId,
+          row.id,
+          entryId,
+          isFund
+            ? { [dateField]: '2026-01-10', amount: 4500 }
+            : { [dateField]: lot!.lotDate, quantity: 3, price: lot!.price },
+        )
         expect(getHolding).toHaveBeenCalledTimes(2)
         expect(wrapper.emitted('positionAdded')).toHaveLength(1)
-        expect(wrapper.find('.datepicker').exists()).toBe(false)
-        expect(document.body.textContent).toContain('Data atualizada.')
+        expect(wrapper.find('.modal-card').exists()).toBe(false)
+        expect(document.body.textContent).toContain(
+          isFund ? 'Aporte atualizado!' : 'Compra atualizada!',
+        )
       },
     )
 
-    it('ignores the picker being cleared', async () => {
-      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+    it('keeps the dialog open with the server message when the correction is rejected', async () => {
+      vi.mocked(holdingsApi.updateStockLot).mockRejectedValue(
+        rejectionOf('A quantidade das compras não pode ficar abaixo da quantidade já vendida'),
+      )
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-      await wrapper.find('button.date-edit').trigger('click')
-      wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', null)
+      await openEdit(wrapper)
+      await modalNumberInputs(wrapper)[0].setValue('10')
+      await modalButton(wrapper, 'Salvar alterações').trigger('click')
       await flushPromises()
 
-      expect(holdingsApi.updateStockLotDate).not.toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="position-error"]').text()).toContain(
+        'não pode ficar abaixo da quantidade já vendida',
+      )
+      expect(wrapper.find('.modal-card').exists()).toBe(true)
       expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(1)
+      expect(wrapper.emitted('positionAdded')).toBeUndefined()
+    })
+
+    it('discards the changes when the dialog is cancelled', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      await openEdit(wrapper)
+      await modalNumberInputs(wrapper)[0].setValue('10')
+      await modalButton(wrapper, 'Cancelar').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.modal-card').exists()).toBe(false)
+      expect(holdingsApi.updateStockLot).not.toHaveBeenCalled()
+      expect(wrapper.emitted('close')).toBeUndefined()
+    })
+
+    it('lets a non-admin edit a purchase', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals(), {
+        isAdmin: false,
+      })
+
+      await openEdit(wrapper)
+
+      expect(wrapper.find('.modal-card-title').text()).toBe('Editar compra')
+    })
+
+    it('lets a purchase of a frozen holding be corrected', async () => {
+      const wrapper = await mountLoadedDrawer(
+        { ...stockRow, frozen: true },
+        stockDetailWithoutWithdrawals(),
+      )
+
+      await openEdit(wrapper)
+
+      expect(wrapper.find('.modal-card-title').text()).toBe('Editar compra')
+    })
+
+    it('opens the add dialog empty again after an edit was closed', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      await openEdit(wrapper)
+      await modalButton(wrapper, 'Cancelar').trigger('click')
+      await flushPromises()
+      await clickBuy(wrapper)
+
+      expect(wrapper.find('.modal-card-title').text()).toBe('Registrar compra')
+      expect((modalNumberInputs(wrapper)[0].element as HTMLInputElement).value).toBe('')
     })
   })
 

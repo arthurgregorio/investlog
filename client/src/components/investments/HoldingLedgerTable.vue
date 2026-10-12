@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import DateInput from '@/components/ui/DateInput.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import { fmt } from '@/composables/useFormat'
 import { useDisplayMoney } from '@/composables/useDisplayMoney'
@@ -16,10 +15,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'delete-purchase': [entryId: string]
   'delete-withdrawal': [resultId: string]
-  'change-date': [entryId: string, date: Date]
+  'edit-purchase': [entry: LedgerRow]
 }>()
-
-const editingEntryId = defineModel<string | null>('editingEntryId', { default: null })
 
 const { formatConverted, toDisplayCurrency } = useDisplayMoney()
 
@@ -54,14 +51,6 @@ function movementDetail(entry: LedgerRow): string {
   return entry.unitPrice == null ? signedQuantity : `${signedQuantity} × ${money(entry.unitPrice)}`
 }
 
-function parseDate(iso: string): Date {
-  return new Date(iso + 'T00:00:00')
-}
-
-function changeDate(entryId: string, date: Date | null) {
-  if (date) emit('change-date', entryId, date)
-}
-
 function deleteEntry(entry: LedgerRow) {
   if (entry.type === 'PURCHASE') emit('delete-purchase', entry.id)
   else emit('delete-withdrawal', entry.id)
@@ -80,17 +69,7 @@ function deleteEntry(entry: LedgerRow) {
         <span class="ledger-tag" :class="tagClass(entry.type)">
           {{ movementLabel(entry.type) }}
         </span>
-        <template v-if="entry.type === 'PURCHASE'">
-          <DateInput
-            v-if="editingEntryId === entry.id"
-            :model-value="parseDate(entry.date)"
-            @update:model-value="(date) => changeDate(entry.id, date)"
-          />
-          <button v-else type="button" class="date-edit" @click="editingEntryId = entry.id">
-            {{ fmt.date(entry.date) }}
-          </button>
-        </template>
-        <span v-else class="has-text-grey">{{ fmt.date(entry.date) }}</span>
+        <span class="has-text-grey" data-testid="ledger-date">{{ fmt.date(entry.date) }}</span>
       </div>
       <div class="is-flex is-flex-direction-column is-gap-0.5">
         <span data-testid="ledger-detail">{{ movementDetail(entry) }}</span>
@@ -109,7 +88,16 @@ function deleteEntry(entry: LedgerRow) {
           data-testid="ledger-result"
         />
       </div>
-      <div class="is-flex is-justify-content-flex-end">
+      <div class="is-flex is-justify-content-flex-end is-gap-0.5">
+        <b-button
+          v-if="entry.type === 'PURCHASE'"
+          type="is-ghost"
+          size="is-small"
+          icon-left="pencil"
+          :aria-label="`Editar ${movementLabel(entry.type).toLowerCase()} de ${fmt.date(entry.date)}`"
+          data-testid="ledger-edit"
+          @click="emit('edit-purchase', entry)"
+        />
         <b-button
           v-if="isAdmin && entry.type !== 'REINVESTMENT'"
           outlined
@@ -146,6 +134,9 @@ function deleteEntry(entry: LedgerRow) {
 }
 
 .ledger-list {
+  display: grid;
+  grid-template-columns: minmax(84px, 1fr) minmax(0, 1.3fr) auto auto;
+  column-gap: 12px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -153,8 +144,8 @@ function deleteEntry(entry: LedgerRow) {
 
 .ledger-item {
   display: grid;
-  grid-template-columns: minmax(84px, 1fr) minmax(0, 1.3fr) auto 34px;
-  gap: 12px;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   padding: 10px 0;
   border-bottom: 1px solid var(--border-2);
@@ -188,21 +179,6 @@ function deleteEntry(entry: LedgerRow) {
 .lt-reinvestment {
   background: var(--primary-soft);
   color: var(--primary-text);
-}
-
-.date-edit {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border-bottom: 1px dashed var(--border);
-}
-
-.date-edit:hover {
-  border-bottom-color: var(--primary);
-  color: var(--primary-d);
 }
 
 .ledger-note {
