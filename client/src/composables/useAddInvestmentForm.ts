@@ -30,6 +30,7 @@ interface AddInvestmentFormState {
 
 export function useAddInvestmentForm(
   initialKind: InvestmentKind,
+  initialWalletId?: string,
   onDone?: (kind: InvestmentKind) => void,
 ) {
   const toast = useToast()
@@ -68,7 +69,11 @@ export function useAddInvestmentForm(
     }),
   })
 
-  form.walletId = form.walletsOfKind[0]?.id ?? ''
+  function initialWalletIn(wallets: WalletResponse[]) {
+    return wallets.find((wallet) => wallet.id === initialWalletId)
+  }
+
+  form.walletId = (initialWalletIn(form.walletsOfKind) ?? form.walletsOfKind[0])?.id ?? ''
   form.stockTypeId = typesListStore.stockTypes[0]?.id ?? ''
   form.fundTypeId = typesListStore.fundTypes[0]?.id ?? ''
 
@@ -82,7 +87,10 @@ export function useAddInvestmentForm(
   watch(
     () => form.walletsOfKind,
     (list) => {
-      if (form.walletId && !list.some((wallet) => wallet.id === form.walletId)) {
+      const initialWallet = initialWalletIn(list)
+      if (!form.walletId && initialWallet) {
+        form.walletId = initialWallet.id
+      } else if (form.walletId && !list.some((wallet) => wallet.id === form.walletId)) {
         form.walletId = list[0]?.id ?? ''
       }
     },
