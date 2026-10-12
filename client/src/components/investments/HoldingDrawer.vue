@@ -169,7 +169,7 @@ async function onWithdrawn(completed: boolean) {
 
 onMounted(() => {
   panel.value?.querySelector<HTMLButtonElement>('[data-drawer-close]')?.focus()
-  load()
+  return load()
 })
 </script>
 
