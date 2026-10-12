@@ -71,8 +71,8 @@ a snapshot nobody reads passes while the feature is broken.
 Coverage is measured with `npm run test:coverage` (v8 provider, report in `client/coverage/`) and
 **enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
 functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
-drops any of the four below its floor fails the build. The floor today is **96% statements, 97%
-lines, 94% functions and 93% branches** (the suite reaches 96.16 / 97.3 / 94.12 / 93.45), and every
+drops any of the four below its floor fails the build. The floor today is **98% statements, 98%
+lines, 96% functions and 96% branches** (the suite reaches 98.25 / 98.86 / 96.76 / 96.41), and every
 file under `src/views/` is above 80% statements.
 
 `src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
@@ -196,6 +196,9 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 **Pessimistic updates**: every mutation awaits the API response before updating store state.
 **Lazy loading**: each store is loaded by the view/component that needs it, in `onMounted`.
 Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`.
+**Reset on session end**: every store holding user data has a `reset()` action, and
+`stores/resetUserStores.ts` calls all of them when the session ends (logout is an in-app navigation,
+not a reload, so nothing else clears them). A new user-data store gets a `reset()` and a line there.
 
 ### Components (`src/components/`)
 
@@ -291,9 +294,13 @@ UI, so it is not built.
 
 `router/index.ts`'s `beforeEach` guard drives the whole flow off `auth.session`: no session on a
 non-public route → `/login`; session with `status !== 'APPROVED'` → `/pending-approval`; non-admin
-on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` is the allow-list for routes reachable without
+on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` (`router/publicRoutes.ts`) is the allow-list for routes reachable without
 (or despite) an approved session — extend it rather than adding one-off exceptions in the guard
-body. `LoginView.vue` is a single 5-step state machine (`credentials`/`register`/`enroll`/`totp`/`link`)
+body. `App.vue` renders the shell only for an approved session on a non-public route. Login and
+logout navigate in-app: logout replaces the route with `/login` while `auth.endingSession` lets it
+past the guard, and only then clears the session and calls `resetUserStores()`, so a protected page
+never renders without its shell. Both `<RouterView>`s fade their page (`.page-*` in `styles.css`,
+keyed by `route.path` so query-only changes don't fade). `LoginView.vue` is a single 5-step state machine (`credentials`/`register`/`enroll`/`totp`/`link`)
 driven by one `step` ref, not five separate views. The Google button starts from the `credentials`
 step, but `link` **is** a real step: the server redirects there with `?error=email_in_use&linkToken=…`
 when the Google account's email already belongs to a local account, and the step collects that
