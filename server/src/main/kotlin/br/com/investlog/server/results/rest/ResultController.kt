@@ -1,5 +1,6 @@
 package br.com.investlog.server.results.rest
 
+import br.com.investlog.server.jooq.finances.enums.ResultType
 import br.com.investlog.server.results.repositories.ResultRepository
 import br.com.investlog.server.results.rest.payloads.ResultResponse
 import br.com.investlog.server.results.rest.payloads.ResultSummaryResponse
@@ -22,11 +23,14 @@ class ResultController(
 ) {
 
     @GetMapping
-    fun findAll(pageable: Pageable): ResponseEntity<PagedModel<ResultResponse>> {
+    fun findAll(
+        @RequestParam(required = false) resultType: ResultType?,
+        pageable: Pageable,
+    ): ResponseEntity<PagedModel<ResultResponse>> {
 
         val userId = currentUserProvider.getCurrentUser().id
 
-        return ResponseEntity.ok(resultRepository.findAll(userId, pageable))
+        return ResponseEntity.ok(resultRepository.findAll(userId, resultType, pageable))
     }
 
     @GetMapping("/summary")

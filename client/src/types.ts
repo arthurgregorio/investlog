@@ -280,6 +280,7 @@ export interface SessionResponse {
 
 export interface AuthConfigResponse {
   googleAuthEnabled: boolean
+  demoModeEnabled: boolean
 }
 
 export interface UserAdminResponse {

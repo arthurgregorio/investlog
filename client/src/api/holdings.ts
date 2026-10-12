@@ -16,6 +16,7 @@ export const holdingsApi = {
     walletId?: string
     search?: string
     sort?: string
+    hideFrozen?: boolean
     page?: number
     size?: number
   }): Promise<PagedResponse<HoldingRow>> {
@@ -27,6 +28,7 @@ export const holdingsApi = {
     typeLabel?: string
     walletId?: string
     search?: string
+    hideFrozen?: boolean
   }): Promise<HoldingRow[]> {
     return apiClient.get<HoldingRow[]>('/holdings/report', { params }).then((r) => r.data)
   },

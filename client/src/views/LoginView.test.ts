@@ -3,7 +3,9 @@ import { mount } from '@vue/test-utils'
 import { createTestingPinia, type TestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import LoginView from './LoginView.vue'
+import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
+import type { AuthConfigResponse } from '@/types'
 
 vi.mock('@/api/auth', () => ({
   authApi: {
@@ -13,7 +15,7 @@ vi.mock('@/api/auth', () => ({
     enroll: vi.fn(),
     verify: vi.fn(),
     register: vi.fn(),
-    fetchConfig: vi.fn().mockResolvedValue({ googleAuthEnabled: false }),
+    fetchConfig: vi.fn().mockResolvedValue({ googleAuthEnabled: false, demoModeEnabled: false }),
     linkGoogleAccount: vi.fn(),
   },
 }))
@@ -203,6 +205,124 @@ describe('LoginView flow', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Senha incorreta ou link expirado')
+  })
+
+  it('explains a logout caused by inactivity', async () => {
+    const wrapper = await openLogin('?reason=inactivity')
+
+    expect(wrapper.find('[data-testid="session-notice"]').text()).toBe(
+      'Sua sessão foi encerrada por inatividade. Entre novamente.',
+    )
+  })
+
+  it('explains a session that expired on the server', async () => {
+    const wrapper = await openLogin('?reason=expired')
+
+    expect(wrapper.find('[data-testid="session-notice"]').text()).toBe(
+      'Sua sessão expirou. Entre novamente.',
+    )
+  })
+
+  it('shows no session notice for an unknown reason', async () => {
+    const wrapper = await openLogin('?reason=something-else')
+
+    expect(wrapper.find('[data-testid="session-notice"]').exists()).toBe(false)
+  })
+
+  it('clears the session notice once the visitor submits', async () => {
+    const store = useAuthStore()
+    vi.spyOn(store, 'login').mockRejectedValue(new Error('bad credentials'))
+
+    const wrapper = await openLogin('?reason=inactivity')
+    await submitCredentials(wrapper)
+
+    expect(wrapper.find('[data-testid="session-notice"]').exists()).toBe(false)
+  })
+
+  describe('demo mode', () => {
+    const demoConfig: AuthConfigResponse = { googleAuthEnabled: false, demoModeEnabled: true }
+
+    function inputValue(wrapper: Awaited<ReturnType<typeof openLogin>>, selector: string) {
+      return (wrapper.find(selector).element as HTMLInputElement).value
+    }
+
+    it('prefills the demo credentials when the server runs in demo mode', async () => {
+      vi.mocked(authApi.fetchConfig).mockResolvedValueOnce(demoConfig)
+
+      const wrapper = await openLogin()
+
+      expect(inputValue(wrapper, 'input[type="email"]')).toBe('admin@admin.com')
+      expect(inputValue(wrapper, 'input[type="password"]')).toBe('admin')
+    })
+
+    it('logs in with the prefilled demo credentials', async () => {
+      vi.mocked(authApi.fetchConfig).mockResolvedValueOnce(demoConfig)
+      const loginSpy = vi.spyOn(useAuthStore(), 'login').mockResolvedValue('authenticated')
+
+      const wrapper = await openLogin()
+      await wrapper.find('form').trigger('submit.prevent')
+      await flushPromises()
+
+      expect(loginSpy).toHaveBeenCalledWith('admin@admin.com', 'admin')
+    })
+
+    it('leaves the form empty when demo mode is off', async () => {
+      const wrapper = await openLogin()
+
+      expect(inputValue(wrapper, 'input[type="email"]')).toBe('')
+      expect(inputValue(wrapper, 'input[type="password"]')).toBe('')
+    })
+
+    it('never overwrites what the visitor typed before the config arrived', async () => {
+      let resolveConfig: (config: AuthConfigResponse) => void = () => {}
+      vi.mocked(authApi.fetchConfig).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveConfig = resolve
+        }),
+      )
+      router.push('/login')
+      await router.isReady()
+      const wrapper = mount(LoginView, { global: { plugins: [pinia, router] } })
+
+      await wrapper.find('input[type="email"]').setValue('visitante@example.com')
+      resolveConfig(demoConfig)
+      await flushPromises()
+
+      expect(inputValue(wrapper, 'input[type="email"]')).toBe('visitante@example.com')
+      expect(inputValue(wrapper, 'input[type="password"]')).toBe('')
+    })
+
+    it('leaves the Google link step untouched', async () => {
+      vi.mocked(authApi.fetchConfig).mockResolvedValueOnce(demoConfig)
+
+      const wrapper = await openLogin(
+        '?error=email_in_use&linkToken=abc123&linkEmail=nova%40example.com',
+      )
+
+      expect(wrapper.find('input[type="email"]').exists()).toBe(false)
+      expect(inputValue(wrapper, 'input[type="password"]')).toBe('')
+    })
+
+    it('opens an empty registration form instead of carrying the demo credentials over', async () => {
+      vi.mocked(authApi.fetchConfig).mockResolvedValueOnce(demoConfig)
+
+      const wrapper = await openLogin()
+      await wrapper.find('[data-testid="toggle-register"]').trigger('click')
+
+      expect(inputValue(wrapper, 'input[type="email"]')).toBe('')
+      expect(inputValue(wrapper, 'input[type="password"]')).toBe('')
+    })
+
+    it('keeps what the visitor typed when switching to the registration form', async () => {
+      vi.mocked(authApi.fetchConfig).mockResolvedValueOnce(demoConfig)
+
+      const wrapper = await openLogin()
+      await wrapper.find('input[type="email"]').setValue('nova@example.com')
+      await wrapper.find('[data-testid="toggle-register"]').trigger('click')
+
+      expect(inputValue(wrapper, 'input[type="email"]')).toBe('nova@example.com')
+      expect(inputValue(wrapper, 'input[type="password"]')).toBe('admin')
+    })
   })
 })
 

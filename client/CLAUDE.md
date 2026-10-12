@@ -71,8 +71,8 @@ a snapshot nobody reads passes while the feature is broken.
 Coverage is measured with `npm run test:coverage` (v8 provider, report in `client/coverage/`) and
 **enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
 functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
-drops any of the four below its floor fails the build. The floor today is **96% statements, 97%
-lines, 94% functions and 93% branches** (the suite reaches 96.16 / 97.3 / 94.12 / 93.45), and every
+drops any of the four below its floor fails the build. The floor today is **98% statements, 98%
+lines, 96% functions and 96% branches** (the suite reaches 98.32 / 98.92 / 96.85 / 96.55), and every
 file under `src/views/` is above 80% statements.
 
 `src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
@@ -182,7 +182,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
 | `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
 | `walletMoves` | `GET/POST /wallets/{id}/moves` | `rows[]` for one wallet, `load(walletId, page)`, `move(originWalletId, payload)` |
-| `results` | `GET /results`, `GET /results/summary` | `rows[]`, `summary`, `load(page)`, `loadSummary()` |
+| `results` | `GET /results?resultType=WITHDRAWAL`, `GET /results/summary` | `rows[]` (withdrawals only), `summary`, `load(page, size)`, `loadSummary()` |
 | `reinvestments` | `GET/POST /reinvestments` | `rows[]`, `load(page, size)` — a small `size` serves a recent list, the default the full history — and `reinvest(payload)` |
 | `typesList` | `GET /stock-types` + `/fund-types` + `/stock-segments` | `stockTypes[]`, `fundTypes[]`, `stockSegments[]`, CRUD actions |
 | `rates` | `GET /currency-rates` | `rates[]`, `baseCurrency`, `upsertRate(...)` |
@@ -196,6 +196,9 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 **Pessimistic updates**: every mutation awaits the API response before updating store state.
 **Lazy loading**: each store is loaded by the view/component that needs it, in `onMounted`.
 Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`.
+**Reset on session end**: every store holding user data has a `reset()` action, and
+`stores/resetUserStores.ts` calls all of them when the session ends (logout is an in-app navigation,
+not a reload, so nothing else clears them). A new user-data store gets a `reset()` and a line there.
 
 ### Components (`src/components/`)
 
@@ -203,7 +206,7 @@ Parallel loads within a screen use `Promise.all([store1.load(), store2.load()])`
 |---|---|
 | `ui/` | Presentational primitives used across views — `AppModal`, `Card`/`CardBody`, `EmptyState`, `FrozenBadge`, `GainChip`, `TickerBadge`, `Avatar`, `SortTh`, `TablePagination` (the `.table-foot` pager every paginated table uses, zero-based `page`/`page-change`), `SegmentedControl` (the app's tray-and-tinted-option toggle, scoped CSS on `--surface-2` and `--primary-soft`), and the `DateInput`/`NumberInput` field wrappers |
 | `forms/` | Add/edit modals and their field groups — `AddInvestmentModal`/`AddInvestmentForm`, `CreateWalletModal`, the password modals with `PasswordRequirementHint`, `TrustedDevicesModal` |
-| `investments/` | `InvestmentsToolbar` (the `/investments` controls row: the kind `SegmentedTabs`, wallet and type selects, search, add and export buttons, all props in and events out), `HoldingsTable` with `HoldingsTableRow` (the expandable holdings table shared by `/investments` and `/wallets/:id`) and its satellites — `HoldingDetailPanel` (the lazy-loaded expansion row, which keeps the modals and the event wiring and renders `FundFeeSummary`, `HoldingLedgerTable` with the ledger head and its scoped `.sub-table`/`.ledger-*` CSS, and `HoldingActionsDropdown`), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect` |
+| `investments/` | `InvestmentsToolbar` (the `/investments` controls row: the kind `SegmentedTabs`, wallet and type selects, search, the "Ocultar congelados" checkbox, add and export buttons, all props in and events out), `HoldingsTable` with `HoldingsTableRow` (the expandable holdings table shared by `/investments` and `/wallets/:id`) and its satellites — `HoldingDetailPanel` (the lazy-loaded expansion row, which keeps the modals and the event wiring and renders `FundFeeSummary`, `HoldingLedgerTable` with the ledger head and its scoped `.sub-table`/`.ledger-*` CSS, and `HoldingActionsDropdown`), `AddPositionModal`, `UpdatePriceModal`, `SetSegmentModal`, `WithdrawModal`, `MoveHoldingsModal` with `MoveHoldingList`, `ReinvestModal` with `ReinvestDestinationSelect`, and the results dashboard's read-only `ReinvestmentsTable` and `WithdrawalsTable` |
 | `report/` | `InvestmentReportView`'s pieces — `ReportHeader`, `ReportTotalsLine` (the Investido / Atual / Resultado line in its `grand`, `kind` and `subgroup` variants) and `ReportWalletTable`, each with its report CSS scoped; the paper, page-break guides, kind and sub-group heads and every print rule stay in `styles.css` |
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` (a compact layout, and a `detailed` one with share bars) |
 | `overview/` | `OverviewView`'s cards — `EvolutionCard` (the invested-capital `AreaChart`), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
@@ -249,11 +252,11 @@ It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fi
 
 ### Results dashboard (`ResultsDashboardView.vue`)
 
-"Dashboards" in `TheTopNav` (sack icon) is a dropdown holding "Visão geral", the existing overview at `/overview` that is still the landing page, and "Resultados" at `/overview/resultados`. The dashboard shows four KPI cards from `GET /results/summary` (withdrawn, realised profit, fees, taxes, in the user's display currency) and a paginated table of reinvestments (ten per page, newest first) from the `reinvestments` store, rendered through `ReinvestmentsTable`. A user with no recorded results sees one `EmptyState` instead of zeroed cards; a user with withdrawals but no reinvestments sees the cards and an empty reinvestments card. Wallet moves never appear here, since they realise nothing.
+"Dashboards" in `TheTopNav` (sack icon) is a dropdown holding "Visão geral", the existing overview at `/overview` that is still the landing page, and "Resultados" at `/overview/resultados`. The dashboard shows four KPI cards from `GET /results/summary` (withdrawn, realised profit, fees, taxes, in the user's display currency) and a paginated table of reinvestments (ten per page, newest first) from the `reinvestments` store, rendered through `ReinvestmentsTable`, then a "Resgates" card with the withdrawals alone (ten per page, newest first) from the `results` store, rendered through `WithdrawalsTable`: each row shows quantity and the unit price at the time (`grossAmount / quantity`, a dash for funds), gross, costs, net, cost basis and the profit with its percentage of the cost basis, all in the wallet's own currency. A user with no recorded results sees one `EmptyState` instead of zeroed cards; a user with withdrawals but no reinvestments (or the reverse) sees the cards and an empty state in the table card that has nothing to list. Wallet moves never appear here, since they realise nothing.
 
 ### Reinvesting (`ReinvestModal.vue`)
 
-"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
+"Reinvestir" (#205) sells part or all of one holding and lands the net amount in another, as one server call. It is opened from the wallet detail header (no holding preselected, so it shows a source picker over that wallet's holdings) or from any expanded holding's "Ações" dropdown, with `walletId` set to the holding's wallet and `preselectedHoldingId` to the holding. Destinations come from an unscoped `GET /holdings` filtered to the source's currency and excluding the source, grouped by wallet — `GET /holdings` already leaves out `COMPLETED` holdings. A stock or crypto source asks for quantity and a unit price pre-filled with the source's `currentPrice`; a fund source asks for an amount. A "Tudo" checkbox beside that field (#408, also in `WithdrawModal`) fills it with the whole position (`quantity`, or the fund's `currentValue`) and disables it; it is itself disabled when that amount is unknown, and changing the source unchecks it. A stock or crypto destination with no `currentPrice` is explained inline and blocks submit, since the server buys at that price. Server 400s land inline and the modal stays open. In `HoldingDetailPanel` a reinvestment shows as a "Reinvestimento" ledger row with no undo button, because the server refuses to undo one.
 
 ### Moving holdings (`MoveHoldingsModal.vue`)
 
@@ -263,7 +266,8 @@ Opened from the wallets view's "Mover" button with no origin, or from the wallet
 
 `AddInvestmentModal` and `CreateWalletModal` are rendered once in `App.vue`, outside the
 router views, and controlled via `provide`/`inject`. Any view calls `useModals()` to get
-`{ openAddInvestment, openCreateWallet }`.
+`{ openAddInvestment, openCreateWallet }`. `openAddInvestment(kind?, walletId?)` preselects both in
+the modal; `InvestmentsView` passes its active type and wallet filters (#415).
 
 ### Static presentation maps (`src/utils/walletTypes.ts`)
 
@@ -273,7 +277,8 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
 400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
 requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `userStatus.ts` (`statusTagType`, the tag colour per `UserStatus`), `reportGrouping.ts` (groups `HoldingRow[]`
-for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
+for `InvestmentReportView`), `sortHoldingsByDisplayName.ts` (`holdingDisplayName`, ticker or else name, and the
+pt-BR case-insensitive, numeric-aware A→Z order every holding picker uses), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
 unset).
 
 ### Theming
@@ -291,9 +296,13 @@ UI, so it is not built.
 
 `router/index.ts`'s `beforeEach` guard drives the whole flow off `auth.session`: no session on a
 non-public route → `/login`; session with `status !== 'APPROVED'` → `/pending-approval`; non-admin
-on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` is the allow-list for routes reachable without
+on `/settings` → `/overview`. `PUBLIC_ROUTE_NAMES` (`router/publicRoutes.ts`) is the allow-list for routes reachable without
 (or despite) an approved session — extend it rather than adding one-off exceptions in the guard
-body. `LoginView.vue` is a single 5-step state machine (`credentials`/`register`/`enroll`/`totp`/`link`)
+body. `App.vue` renders the shell only for an approved session on a non-public route. Login and
+logout navigate in-app: logout replaces the route with `/login` while `auth.endingSession` lets it
+past the guard, and only then clears the session and calls `resetUserStores()`, so a protected page
+never renders without its shell. Both `<RouterView>`s fade their page (`.page-*` in `styles.css`,
+keyed by `route.path` so query-only changes don't fade). `LoginView.vue` is a single 5-step state machine (`credentials`/`register`/`enroll`/`totp`/`link`)
 driven by one `step` ref, not five separate views. The Google button starts from the `credentials`
 step, but `link` **is** a real step: the server redirects there with `?error=email_in_use&linkToken=…`
 when the Google account's email already belongs to a local account, and the step collects that
@@ -346,7 +355,7 @@ existing access, not for handling new signups (those stay on approve/delete).
   uses `walletsStore` + `typesListStore`; submits directly to the API.
 - `useReinvestForm` / `useMoveHoldingsForm` — form state, derived amounts, validation, `load()` and
   `submit()` for `ReinvestModal` and `MoveHoldingsModal`; a server 400 lands in `error` inline.
-- `useInvestmentFilters` — `/investments`' filter, wallet, type, search and sort state kept in sync with the URL query (`filter`, `walletId`, `type`, `search`, `sort`, `page`): it hydrates from the route, writes every change back with `router.replace`, recognises its own echo by a query fingerprint so only a real navigation re-hydrates, debounces search by 300 ms, and hands each load to the view's `onReload` (plus `onFiltersChange`, where the view collapses the open row). `reportQuery()` is the same query minus sort and page, for the report link.
+- `useInvestmentFilters` — `/investments`' filter, wallet, type, search and sort state kept in sync with the URL query (`filter`, `walletId`, `type`, `search`, `hideFrozen`, `sort`, `page`): it hydrates from the route, writes every change back with `router.replace`, recognises its own echo by a query fingerprint so only a real navigation re-hydrates, debounces search by 300 ms, and hands each load to the view's `onReload` (plus `onFiltersChange`, where the view collapses the open row). `reportQuery()` is the same query minus sort and page, for the report link.
 - `useReportFilters` / `useReportPageBreaks` — the report's filters read from the route query, and the on-screen A4 page-break offsets kept current by a `ResizeObserver` on the paper.
 - `useWalletActions` — the wallet detail page's rename prompt and remove confirmation; removing goes back to `/wallets`.
 - `useAssetTypeActions` — `TypesView`'s per-kind copy and tabs plus the create/rename prompts and the remove confirmation, routed to the `typesList` store action of the active kind.
@@ -355,3 +364,4 @@ existing access, not for handling new signups (those stay on approve/delete).
 - `useHoldingDetail` — `HoldingDetailPanel`'s detail, ledger and actions (fetch, freeze, remove the holding, remove a purchase or contribution, undo a withdrawal, edit a purchase date), routed through one `HOLDING_KIND_OPERATIONS` table keyed by `STOCKS`/`CRYPTO`/`FUNDS`; the panel calls its `load()` in `onMounted`.
 - `useExpandedRow` — the single open row of an expandable table (`isExpanded`, `toggle`, `collapse`).
 - `useDisplayMoney` — `formatConverted` and `toDisplayCurrency` for amounts shown in the user's display currency.
+- `useInactivityLogout` — started once in `App.vue`; while a session exists it checks every 30 s, and on `visibilitychange` back to visible, whether `SESSION_IDLE_TIMEOUT_MINUTES` (30, the server's default servlet session timeout — change both together) have passed since the last API response (`api/serverActivity.ts`, stamped by the `api/client.ts` interceptor on every response), and calls `auth.expireSession('inactivity')`. A 401 on a live session calls `expireSession('expired')`. Both end on `/login?reason=…`, where `LoginView` shows a notice until the next submit.

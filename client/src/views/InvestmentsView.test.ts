@@ -267,7 +267,7 @@ describe('InvestmentsView', () => {
         [
           'all',
           0,
-          { typeLabel: undefined, walletId: undefined, search: undefined, sort: undefined },
+          { typeLabel: undefined, walletId: undefined, search: undefined, sort: 'gainPct,desc' },
         ],
       ])
     })
@@ -293,7 +293,7 @@ describe('InvestmentsView', () => {
         [
           'all',
           0,
-          { typeLabel: undefined, walletId: undefined, search: undefined, sort: undefined },
+          { typeLabel: undefined, walletId: undefined, search: undefined, sort: 'gainPct,desc' },
         ],
       ])
       expect(activeTab(wrapper)).toBe('Todos')
@@ -439,7 +439,7 @@ describe('InvestmentsView', () => {
         .find((button) => button.text() === 'Adicionar investimento')!
       await addButton.trigger('click')
 
-      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined)
+      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined, undefined)
     })
   })
 
@@ -462,7 +462,7 @@ describe('InvestmentsView', () => {
         typeLabel: undefined,
         walletId: undefined,
         search: undefined,
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
       expect(activeTab(wrapper)).toBe('Cripto')
       expect(router.currentRoute.value.query).toEqual({ filter: 'CRYPTO' })
@@ -488,7 +488,7 @@ describe('InvestmentsView', () => {
         typeLabel: undefined,
         walletId: undefined,
         search: undefined,
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
       expect(router.currentRoute.value.query).toEqual({ filter: 'FUNDS' })
       expect(wrapper.find<HTMLInputElement>('.search-input input').element.value).toBe('')
@@ -540,7 +540,7 @@ describe('InvestmentsView', () => {
         typeLabel: undefined,
         walletId: 'wallet-2',
         search: undefined,
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
       expect(router.currentRoute.value.query).toEqual({ walletId: 'wallet-2' })
     })
@@ -557,7 +557,7 @@ describe('InvestmentsView', () => {
         typeLabel: undefined,
         walletId: undefined,
         search: undefined,
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
     })
 
@@ -585,7 +585,7 @@ describe('InvestmentsView', () => {
         typeLabel: 'FII',
         walletId: undefined,
         search: undefined,
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
       expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', type: 'FII' })
     })
@@ -606,7 +606,7 @@ describe('InvestmentsView', () => {
         typeLabel: undefined,
         walletId: undefined,
         search: undefined,
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
     })
 
@@ -616,6 +616,52 @@ describe('InvestmentsView', () => {
       await flushPromises()
 
       expect(selects(wrapper)).toHaveLength(0)
+    })
+  })
+
+  describe('frozen holdings filter', () => {
+    it('requests the first page without frozen holdings once the box is checked', async () => {
+      const { wrapper, router, holdingsListStore } = await mountView({
+        query: '?filter=STOCKS&page=3',
+      })
+
+      await wrapper.get('.inv-toolbar input[type="checkbox"]').setValue(true)
+      await flushPromises()
+
+      expect(holdingsListStore.loadKind).toHaveBeenCalledExactlyOnceWith('STOCKS', 0, {
+        typeLabel: undefined,
+        walletId: undefined,
+        search: undefined,
+        sort: 'gainPct,desc',
+        hideFrozen: true,
+      })
+      expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', hideFrozen: 'true' })
+    })
+
+    it('starts checked from the URL and shows frozen holdings again once unchecked', async () => {
+      const { wrapper, router, holdingsListStore, initialLoad } = await mountView({
+        query: '?hideFrozen=true',
+      })
+      const checkbox = wrapper.get<HTMLInputElement>('.inv-toolbar input[type="checkbox"]')
+
+      expect(checkbox.element.checked).toBe(true)
+      expect(initialLoad).toEqual([['all', 0, expect.objectContaining({ hideFrozen: true })]])
+
+      await checkbox.setValue(false)
+      await flushPromises()
+
+      expect(holdingsListStore.loadKind).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(holdingsListStore.loadKind).mock.lastCall?.[2]?.hideFrozen).toBeUndefined()
+      expect(router.currentRoute.value.query).toEqual({})
+    })
+
+    it('carries the box into the exported report', async () => {
+      const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
+      const { wrapper } = await mountView({ query: '?hideFrozen=true' })
+
+      await wrapper.find('button[aria-label="Exportar relatório"]').trigger('click')
+
+      expect(String(openWindow.mock.calls[0][0])).toBe('/investments/report?hideFrozen=true')
     })
   })
 
@@ -637,7 +683,7 @@ describe('InvestmentsView', () => {
         typeLabel: undefined,
         walletId: undefined,
         search: 'petr',
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
       expect(router.currentRoute.value.query).toEqual({ search: 'petr' })
     })
@@ -722,6 +768,50 @@ describe('InvestmentsView', () => {
         'all',
         0,
         expect.objectContaining({ sort: 'wallet,asc' }),
+      )
+    })
+
+    it('opens sorted by gain percentage descending, marked on the Resultado header', async () => {
+      const { wrapper, router, initialLoad } = await mountView()
+
+      expect(initialLoad[0][2]).toEqual(expect.objectContaining({ sort: 'gainPct,desc' }))
+      const resultHeader = headerCell(wrapper, 'Resultado')
+      expect(resultHeader.find('.sort-icon-active').exists()).toBe(true)
+      expect(resultHeader.find('.mdi-chevron-down').exists()).toBe(true)
+      expect(router.currentRoute.value.query).toEqual({})
+    })
+
+    it('flips the default Resultado sort to ascending on its first click', async () => {
+      const { wrapper, router, holdingsListStore } = await mountView()
+
+      await headerCell(wrapper, 'Resultado').trigger('click')
+      await flushPromises()
+
+      expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
+        'all',
+        0,
+        expect.objectContaining({ sort: 'gainPct,asc' }),
+      )
+      expect(router.currentRoute.value.query).toEqual({ sort: 'gainPct,asc' })
+    })
+
+    it('sorts by asset from A to Z, then Z to A, on the Investimento header', async () => {
+      const { wrapper, holdingsListStore } = await mountView()
+
+      await headerCell(wrapper, 'Investimento').trigger('click')
+      await flushPromises()
+      expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
+        'all',
+        0,
+        expect.objectContaining({ sort: 'asset,asc' }),
+      )
+
+      await headerCell(wrapper, 'Investimento').trigger('click')
+      await flushPromises()
+      expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
+        'all',
+        0,
+        expect.objectContaining({ sort: 'asset,desc' }),
       )
     })
 
@@ -833,7 +923,7 @@ describe('InvestmentsView', () => {
         typeLabel: undefined,
         walletId: 'wallet-3',
         search: undefined,
-        sort: undefined,
+        sort: 'gainPct,desc',
       })
       expect(activeTab(wrapper)).toBe('Fundos')
     })
@@ -1070,7 +1160,7 @@ describe('InvestmentsView', () => {
         .find((button) => button.text() === 'Adicionar investimento')!
       await addButton.trigger('click')
 
-      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined)
+      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined, undefined)
     })
 
     it('opens the add-investment modal pre-set to the active kind', async () => {
@@ -1081,7 +1171,29 @@ describe('InvestmentsView', () => {
         .find((button) => button.text() === 'Adicionar investimento')!
       await addButton.trigger('click')
 
-      expect(modals.openAddInvestment).toHaveBeenCalledWith('FUNDS')
+      expect(modals.openAddInvestment).toHaveBeenCalledWith('FUNDS', undefined)
+    })
+
+    it('opens the add-investment modal on the filtered kind and wallet', async () => {
+      const { wrapper, modals } = await mountView({ query: '?filter=STOCKS&walletId=wallet-1' })
+
+      const addButton = wrapper
+        .findAll('.inv-toolbar button')
+        .find((button) => button.text() === 'Adicionar investimento')!
+      await addButton.trigger('click')
+
+      expect(modals.openAddInvestment).toHaveBeenCalledWith('STOCKS', 'wallet-1')
+    })
+
+    it("opens the add-investment modal on the filtered wallet's kind when no kind is filtered", async () => {
+      const { wrapper, modals } = await mountView({ query: '?walletId=wallet-2' })
+
+      const addButton = wrapper
+        .findAll('.inv-toolbar button')
+        .find((button) => button.text() === 'Adicionar investimento')!
+      await addButton.trigger('click')
+
+      expect(modals.openAddInvestment).toHaveBeenCalledWith('CRYPTO', 'wallet-2')
     })
 
     it('opens the report in a new tab carrying the active filters but not the sort or page', async () => {

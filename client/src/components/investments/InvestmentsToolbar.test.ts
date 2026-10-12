@@ -26,6 +26,7 @@ function mountToolbar(props: Partial<InstanceType<typeof InvestmentsToolbar>['$p
     props: {
       activeFilter: 'all',
       search: '',
+      hideFrozen: false,
       walletOptions: [stockWallet],
       typeLabelOptions: [],
       ...props,
@@ -95,6 +96,26 @@ describe('InvestmentsToolbar', () => {
     await searchInput.setValue('petr')
 
     expect(wrapper.emitted('change-search')).toEqual([['petr']])
+  })
+
+  it('shows an unchecked "Ocultar congelados" checkbox on every kind tab', () => {
+    for (const activeFilter of ['all', 'STOCKS', 'CRYPTO', 'FUNDS'] as const) {
+      const wrapper = mountToolbar({ activeFilter, walletOptions: [], typeLabelOptions: [] })
+
+      expect(wrapper.get('.inv-toolbar .checkbox').text()).toBe('Ocultar congelados')
+      expect(wrapper.get<HTMLInputElement>('input[type="checkbox"]').element.checked).toBe(false)
+    }
+  })
+
+  it('checks the box when frozen holdings are hidden and emits every toggle', async () => {
+    const wrapper = mountToolbar({ hideFrozen: true })
+    const checkbox = wrapper.get<HTMLInputElement>('input[type="checkbox"]')
+
+    expect(checkbox.element.checked).toBe(true)
+
+    await checkbox.setValue(false)
+
+    expect(wrapper.emitted('change-hide-frozen')).toEqual([[false]])
   })
 
   it('emits add-investment and export from its buttons', async () => {

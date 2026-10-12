@@ -1,10 +1,20 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authApi } from '@/api/auth'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, type SessionEndReason } from '@/stores/auth'
 import { fieldValidationMessage } from '@/utils/apiErrors'
+import { DEMO_CREDENTIALS } from '@/utils/demoCredentials'
 
 export type LoginStep = 'credentials' | 'register' | 'enroll' | 'totp' | 'link'
+
+const SESSION_END_NOTICES: Record<SessionEndReason, string> = {
+  inactivity: 'Sua sessão foi encerrada por inatividade. Entre novamente.',
+  expired: 'Sua sessão expirou. Entre novamente.',
+}
+
+function sessionEndNotice(reason: unknown): string {
+  return reason === 'inactivity' || reason === 'expired' ? SESSION_END_NOTICES[reason] : ''
+}
 
 export function useLoginFlow() {
   const router = useRouter()
@@ -20,6 +30,7 @@ export function useLoginFlow() {
   const qrCodeDataUri = ref('')
   const linkToken = ref('')
   const linkEmail = ref('')
+  const sessionNotice = ref(sessionEndNotice(route.query.reason))
 
   onMounted(async () => {
     const queryLinkToken = route.query.linkToken
@@ -34,7 +45,20 @@ export function useLoginFlow() {
     }
     const config = await authApi.fetchConfig()
     googleAuthEnabled.value = config.googleAuthEnabled
+    if (config.demoModeEnabled) {
+      prefillDemoCredentials()
+    }
   })
+
+  function prefillDemoCredentials() {
+    if (step.value !== 'credentials' || email.value || password.value) return
+    email.value = DEMO_CREDENTIALS.email
+    password.value = DEMO_CREDENTIALS.password
+  }
+
+  function holdsDemoCredentials(): boolean {
+    return email.value === DEMO_CREDENTIALS.email && password.value === DEMO_CREDENTIALS.password
+  }
 
   const title = computed(() => {
     if (step.value === 'register') return 'Criar conta'
@@ -57,11 +81,20 @@ export function useLoginFlow() {
 
   function toggleRegister() {
     error.value = ''
-    step.value = step.value === 'register' ? 'credentials' : 'register'
+    if (step.value === 'register') {
+      step.value = 'credentials'
+      return
+    }
+    if (holdsDemoCredentials()) {
+      email.value = ''
+      password.value = ''
+    }
+    step.value = 'register'
   }
 
   async function submit(action: () => Promise<void>) {
     error.value = ''
+    sessionNotice.value = ''
     submitting.value = true
     try {
       await action()
@@ -146,6 +179,7 @@ export function useLoginFlow() {
     email,
     password,
     error,
+    sessionNotice,
     submitting,
     googleAuthEnabled,
     qrCodeDataUri,

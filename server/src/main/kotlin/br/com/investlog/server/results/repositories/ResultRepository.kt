@@ -160,7 +160,7 @@ class ResultRepository(
         }
     }
 
-    fun findAll(userId: Long, pageable: Pageable): PagedModel<ResultResponse> {
+    fun findAll(userId: Long, resultType: ResultType?, pageable: Pageable): PagedModel<ResultResponse> {
         val results = RESULTS.`as`("results")
         val stockHoldings = STOCK_HOLDINGS.`as`("stock_holdings")
         val cryptoHoldings = CRYPTO_HOLDINGS.`as`("crypto_holdings")
@@ -174,6 +174,8 @@ class ResultRepository(
             .`when`(results.STOCK_HOLDING_ID.isNotNull, WalletKind.STOCKS.literal)
             .`when`(results.CRYPTO_HOLDING_ID.isNotNull, WalletKind.CRYPTO.literal)
             .else_(WalletKind.FUNDS.literal)
+        val listedResults = wallets.USER_ID.eq(userId)
+            .and(resultType?.let { results.RESULT_TYPE.eq(it) } ?: DSL.noCondition())
 
         val content = dsl.select(
             results.EXTERNAL_ID,
@@ -198,7 +200,7 @@ class ResultRepository(
             .leftJoin(cryptoHoldings).on(cryptoHoldings.ID.eq(results.CRYPTO_HOLDING_ID))
             .leftJoin(fundHoldings).on(fundHoldings.ID.eq(results.FUND_HOLDING_ID))
             .join(wallets).on(wallets.ID.eq(walletId))
-            .where(wallets.USER_ID.eq(userId))
+            .where(listedResults)
             .orderBy(results.RESULT_DATE.desc(), results.ID.desc())
             .limit(pageable.pageSize)
             .offset(pageable.offset.toInt())
@@ -230,7 +232,7 @@ class ResultRepository(
                 .leftJoin(cryptoHoldings).on(cryptoHoldings.ID.eq(results.CRYPTO_HOLDING_ID))
                 .leftJoin(fundHoldings).on(fundHoldings.ID.eq(results.FUND_HOLDING_ID))
                 .join(wallets).on(wallets.ID.eq(walletId))
-                .where(wallets.USER_ID.eq(userId))
+                .where(listedResults)
         )
 
         return pagedModelOf(content, pageable, total.toLong())

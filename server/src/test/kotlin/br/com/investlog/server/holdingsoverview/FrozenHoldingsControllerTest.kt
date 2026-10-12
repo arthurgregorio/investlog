@@ -28,6 +28,9 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
     lateinit var fundsWalletId: UUID
     lateinit var stockTypeId: UUID
     lateinit var fundTypeId: UUID
+    lateinit var hideFrozenStocksWalletId: UUID
+    lateinit var hideFrozenCryptoWalletId: UUID
+    lateinit var hideFrozenFundsWalletId: UUID
 
     @BeforeAll
     fun setup() {
@@ -56,8 +59,8 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
         .responseBody!!
         .id
 
-    private fun createStockHolding(ticker: String): StockHoldingResponse = restTestClient.post()
-        .uri("/private/v1/wallets/$stocksWalletId/stock-holdings")
+    private fun createStockHolding(ticker: String, walletId: UUID = stocksWalletId): StockHoldingResponse = restTestClient.post()
+        .uri("/private/v1/wallets/$walletId/stock-holdings")
         .contentType(MediaType.APPLICATION_JSON)
         .body(
             """
@@ -75,8 +78,8 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
         .returnResult<StockHoldingResponse>()
         .responseBody!!
 
-    private fun createCryptoHolding(ticker: String): CryptoHoldingResponse = restTestClient.post()
-        .uri("/private/v1/wallets/$cryptoWalletId/crypto-holdings")
+    private fun createCryptoHolding(ticker: String, walletId: UUID = cryptoWalletId): CryptoHoldingResponse = restTestClient.post()
+        .uri("/private/v1/wallets/$walletId/crypto-holdings")
         .contentType(MediaType.APPLICATION_JSON)
         .body(
             """
@@ -93,8 +96,8 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
         .returnResult<CryptoHoldingResponse>()
         .responseBody!!
 
-    private fun createFundHolding(name: String): FundHoldingResponse = restTestClient.post()
-        .uri("/private/v1/wallets/$fundsWalletId/fund-holdings")
+    private fun createFundHolding(name: String, walletId: UUID = fundsWalletId): FundHoldingResponse = restTestClient.post()
+        .uri("/private/v1/wallets/$walletId/fund-holdings")
         .contentType(MediaType.APPLICATION_JSON)
         .body(
             """
@@ -387,5 +390,83 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
             .expectStatus().isOk()
             .expectBody()
             .jsonPath("$[?(@.ticker == 'FRZMRG')].frozen").isEqualTo(false)
+    }
+
+    private fun freezeHolding(walletId: UUID, holdingsPath: String, holdingId: UUID) =
+        patch("/private/v1/wallets/$walletId/$holdingsPath/$holdingId", """{"frozen":true}""")
+            .expectStatus().isOk()
+
+    private fun getHoldings(uri: String) = restTestClient.get()
+        .uri(uri)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+
+    @Test
+    @Order(15)
+    fun `hideFrozen drops frozen stocks, crypto and funds from the list and its total`() {
+
+        hideFrozenStocksWalletId = createWallet("Hide Frozen Stocks Wallet", "stocks")
+        hideFrozenCryptoWalletId = createWallet("Hide Frozen Crypto Wallet", "crypto")
+        hideFrozenFundsWalletId = createWallet("Hide Frozen Funds Wallet", "funds")
+
+        createStockHolding("HFZS1", hideFrozenStocksWalletId)
+        freezeHolding(hideFrozenStocksWalletId, "stock-holdings", createStockHolding("HFZS2", hideFrozenStocksWalletId).id)
+        createCryptoHolding("HFZC1", hideFrozenCryptoWalletId)
+        freezeHolding(hideFrozenCryptoWalletId, "crypto-holdings", createCryptoHolding("HFZC2", hideFrozenCryptoWalletId).id)
+        createFundHolding("Fundo Hfz 1", hideFrozenFundsWalletId)
+        freezeHolding(hideFrozenFundsWalletId, "fund-holdings", createFundHolding("Fundo Hfz 2", hideFrozenFundsWalletId).id)
+
+        for (walletId in listOf(hideFrozenStocksWalletId, hideFrozenCryptoWalletId, hideFrozenFundsWalletId)) {
+            getHoldings("/private/v1/holdings?walletId=$walletId")
+                .jsonPath("$.page.totalElements").isEqualTo(2)
+                .jsonPath("$.content[?(@.frozen == true)]").isNotEmpty()
+
+            getHoldings("/private/v1/holdings?walletId=$walletId&hideFrozen=false")
+                .jsonPath("$.page.totalElements").isEqualTo(2)
+
+            getHoldings("/private/v1/holdings?walletId=$walletId&hideFrozen=true")
+                .jsonPath("$.page.totalElements").isEqualTo(1)
+                .jsonPath("$.content.length()").isEqualTo(1)
+                .jsonPath("$.content[?(@.frozen == true)]").isEmpty()
+        }
+    }
+
+    @Test
+    @Order(16)
+    fun `hideFrozen combines with the kind, wallet and search filters`() {
+
+        getHoldings("/private/v1/holdings?kind=STOCKS&search=hfzs")
+            .jsonPath("$.page.totalElements").isEqualTo(2)
+
+        getHoldings("/private/v1/holdings?kind=STOCKS&search=hfzs&hideFrozen=true")
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].ticker").isEqualTo("HFZS1")
+
+        getHoldings("/private/v1/holdings?kind=CRYPTO&walletId=$hideFrozenCryptoWalletId&hideFrozen=true")
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].ticker").isEqualTo("HFZC1")
+
+        getHoldings("/private/v1/holdings?kind=FUNDS&search=hfz&hideFrozen=true")
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].name").isEqualTo("Fundo Hfz 1")
+    }
+
+    @Test
+    @Order(17)
+    fun `the holdings report honors hideFrozen`() {
+
+        for (walletId in listOf(hideFrozenStocksWalletId, hideFrozenCryptoWalletId, hideFrozenFundsWalletId)) {
+            getHoldings("/private/v1/holdings/report?walletId=$walletId")
+                .jsonPath("$.length()").isEqualTo(2)
+
+            getHoldings("/private/v1/holdings/report?walletId=$walletId&hideFrozen=true")
+                .jsonPath("$.length()").isEqualTo(1)
+                .jsonPath("$[?(@.frozen == true)]").isEmpty()
+        }
+
+        getHoldings("/private/v1/holdings/report?kind=STOCKS&search=hfzs&hideFrozen=true")
+            .jsonPath("$.length()").isEqualTo(1)
+            .jsonPath("$[0].ticker").isEqualTo("HFZS1")
     }
 }

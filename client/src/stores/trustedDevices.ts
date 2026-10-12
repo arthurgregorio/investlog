@@ -23,5 +23,10 @@ export const useTrustedDevicesStore = defineStore('trustedDevices', () => {
     devices.value = devices.value.filter((device) => device.id !== id)
   }
 
-  return { devices, loading, load, revoke }
+  function reset() {
+    devices.value = []
+    loading.value = false
+  }
+
+  return { devices, loading, load, revoke, reset }
 })

@@ -115,6 +115,32 @@ describe('useMoveHoldingsForm', () => {
     expect(form.loadingHoldings.value).toBe(false)
   })
 
+  it('lists the origin holdings A to Z by ticker, or name without one, ignoring case and comparing numbers naturally', async () => {
+    vi.mocked(holdingsApi.findAll).mockResolvedValue({
+      content: [
+        vale,
+        holdingOf({ id: 'holding-itsa10', ticker: 'ITSA10', name: 'Itaúsa' }),
+        fund,
+        holdingOf({ id: 'holding-itsa4', ticker: 'ITSA4', name: 'Itaúsa' }),
+        holdingOf({ id: 'holding-bbas3', ticker: 'bbas3', name: 'Banco do Brasil' }),
+        petrobras,
+      ],
+      page: { size: 500, number: 0, totalElements: 6, totalPages: 1 },
+    })
+    const form = useMoveHoldingsForm({ originWalletId: 'wallet-origin' })
+
+    await form.load()
+
+    expect(form.holdings.value.map((holding) => holding.id)).toEqual([
+      'holding-bbas3',
+      'holding-itsa4',
+      'holding-itsa10',
+      'holding-petr4',
+      'holding-fund',
+      'holding-vale3',
+    ])
+  })
+
   it('loads the wallets when they are not loaded yet', async () => {
     useWalletsStore().loaded = false
     vi.mocked(walletsApi.findAll).mockResolvedValue({

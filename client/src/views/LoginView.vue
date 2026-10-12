@@ -13,6 +13,7 @@ const {
   email,
   password,
   error,
+  sessionNotice,
   submitting,
   googleAuthEnabled,
   qrCodeDataUri,
@@ -43,6 +44,14 @@ const {
           <p class="auth-sub">{{ subtitle }}</p>
         </div>
 
+        <p
+          v-if="sessionNotice && step === 'credentials'"
+          class="notification is-info is-light"
+          data-testid="session-notice"
+        >
+          {{ sessionNotice }}
+        </p>
+
         <p v-if="error" class="auth-error">{{ error }}</p>
 
         <CredentialsStep
@@ -68,12 +77,14 @@ const {
           v-else-if="step === 'enroll'"
           :submitting="submitting"
           :qr-code-data-uri="qrCodeDataUri"
+          :invalid="Boolean(error)"
           @submit="submitEnrollment"
         />
 
         <TotpVerifyStep
           v-else-if="step === 'totp'"
           :submitting="submitting"
+          :invalid="Boolean(error)"
           @submit="submitTotpCode"
         />
 
