@@ -4,6 +4,7 @@ import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountException
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
+import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
@@ -101,6 +102,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidWithdrawal(ex: InvalidWithdrawalException): ProblemDetail {
 
         val message = ex.message ?: "Resgate inválido"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidLotUpdateException::class)
+    fun handleInvalidLotUpdate(ex: InvalidLotUpdateException): ProblemDetail {
+
+        val message = ex.message ?: "Alteração de compra inválida"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
         problemDetail.setProperty("timestamp", Instant.now())

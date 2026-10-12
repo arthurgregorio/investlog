@@ -76,11 +76,11 @@ class FundHoldingController(
     }
 
     @PatchMapping("/{holdingId}/contributions/{contributionId}")
-    fun updateContributionDate(
+    fun updateContribution(
         @PathVariable walletId: UUID,
         @PathVariable holdingId: UUID,
         @PathVariable contributionId: UUID,
         @Valid @RequestBody request: ContributionUpdateRequest,
     ): ResponseEntity<ContributionResponse> =
-        ResponseEntity.ok(service.updateContributionDate(walletId, holdingId, contributionId, request))
+        ResponseEntity.ok(service.updateContribution(walletId, holdingId, contributionId, request))
 }

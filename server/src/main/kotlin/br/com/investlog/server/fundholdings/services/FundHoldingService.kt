@@ -100,7 +100,7 @@ class FundHoldingService(
     }
 
     @Transactional
-    fun updateContributionDate(
+    fun updateContribution(
         walletExternalId: UUID,
         holdingExternalId: UUID,
         contributionExternalId: UUID,
@@ -109,7 +109,7 @@ class FundHoldingService(
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
             ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
-        return contributionRepo.updateContributionDate(holdingId, contributionExternalId, request.contributionDate)
+        return contributionRepo.updateContribution(holdingId, contributionExternalId, request)
             ?: throw NotFoundException("Aporte não encontrado: $contributionExternalId")
     }
 }

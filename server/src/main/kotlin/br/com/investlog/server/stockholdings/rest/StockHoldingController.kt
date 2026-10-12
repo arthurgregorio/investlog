@@ -84,11 +84,11 @@ class StockHoldingController(private val service: StockHoldingService) {
     }
 
     @PatchMapping("/{holdingId}/lots/{lotId}")
-    fun updateLotDate(
+    fun updateLot(
         @PathVariable walletId: UUID,
         @PathVariable holdingId: UUID,
         @PathVariable lotId: UUID,
         @Valid @RequestBody request: LotUpdateRequest,
     ): ResponseEntity<LotResponse> =
-        ResponseEntity.ok(service.updateLotDate(walletId, holdingId, lotId, request))
+        ResponseEntity.ok(service.updateLot(walletId, holdingId, lotId, request))
 }

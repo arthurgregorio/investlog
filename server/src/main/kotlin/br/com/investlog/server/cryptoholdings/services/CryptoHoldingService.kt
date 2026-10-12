@@ -6,6 +6,7 @@ import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingCreateR
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingUpdateRequest
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
+import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
@@ -95,7 +96,7 @@ class CryptoHoldingService(
     }
 
     @Transactional
-    fun updateLotDate(
+    fun updateLot(
         walletExternalId: UUID,
         holdingExternalId: UUID,
         lotExternalId: UUID,
@@ -104,7 +105,11 @@ class CryptoHoldingService(
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
             ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
-        return lotRepo.updateLotDate(holdingId, lotExternalId, request.lotDate)
+        val lot = lotRepo.updateLot(holdingId, lotExternalId, request)
             ?: throw NotFoundException("Lote não encontrado: $lotExternalId")
+        if (request.quantity != null && lotRepo.sumQuantity(holdingId) < lotRepo.sumExitedQuantity(holdingId)) {
+            throw InvalidLotUpdateException()
+        }
+        return lot
     }
 }
