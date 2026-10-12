@@ -619,6 +619,52 @@ describe('InvestmentsView', () => {
     })
   })
 
+  describe('frozen holdings filter', () => {
+    it('requests the first page without frozen holdings once the box is checked', async () => {
+      const { wrapper, router, holdingsListStore } = await mountView({
+        query: '?filter=STOCKS&page=3',
+      })
+
+      await wrapper.get('.inv-toolbar input[type="checkbox"]').setValue(true)
+      await flushPromises()
+
+      expect(holdingsListStore.loadKind).toHaveBeenCalledExactlyOnceWith('STOCKS', 0, {
+        typeLabel: undefined,
+        walletId: undefined,
+        search: undefined,
+        sort: undefined,
+        hideFrozen: true,
+      })
+      expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', hideFrozen: 'true' })
+    })
+
+    it('starts checked from the URL and shows frozen holdings again once unchecked', async () => {
+      const { wrapper, router, holdingsListStore, initialLoad } = await mountView({
+        query: '?hideFrozen=true',
+      })
+      const checkbox = wrapper.get<HTMLInputElement>('.inv-toolbar input[type="checkbox"]')
+
+      expect(checkbox.element.checked).toBe(true)
+      expect(initialLoad).toEqual([['all', 0, expect.objectContaining({ hideFrozen: true })]])
+
+      await checkbox.setValue(false)
+      await flushPromises()
+
+      expect(holdingsListStore.loadKind).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(holdingsListStore.loadKind).mock.lastCall?.[2]?.hideFrozen).toBeUndefined()
+      expect(router.currentRoute.value.query).toEqual({})
+    })
+
+    it('carries the box into the exported report', async () => {
+      const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
+      const { wrapper } = await mountView({ query: '?hideFrozen=true' })
+
+      await wrapper.find('button[aria-label="Exportar relatório"]').trigger('click')
+
+      expect(String(openWindow.mock.calls[0][0])).toBe('/investments/report?hideFrozen=true')
+    })
+  })
+
   describe('search', () => {
     it('waits for the typing to pause, then reloads the first page with the trimmed term', async () => {
       const { wrapper, router, holdingsListStore } = await mountView({ query: '?page=2' })

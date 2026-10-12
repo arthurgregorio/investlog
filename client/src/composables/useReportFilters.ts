@@ -22,6 +22,7 @@ export function useReportFilters() {
   const walletIdFilter = computed(() => queryString('walletId'))
   const typeLabelFilter = computed(() => queryString('type'))
   const searchFilter = computed(() => queryString('search'))
+  const hideFrozenFilter = computed(() => queryString('hideFrozen') === 'true')
 
   const activeFilterLabels = computed(() => {
     const labels: string[] = []
@@ -34,5 +35,12 @@ export function useReportFilters() {
     return labels
   })
 
-  return { kindFilter, walletIdFilter, typeLabelFilter, searchFilter, activeFilterLabels }
+  return {
+    kindFilter,
+    walletIdFilter,
+    typeLabelFilter,
+    searchFilter,
+    hideFrozenFilter,
+    activeFilterLabels,
+  }
 }
