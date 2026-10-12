@@ -123,7 +123,9 @@ describe('ReinvestModal', () => {
     expect((control(wrapper, 'reinvest-source').element as HTMLSelectElement).value).toBe(
       'holding-petr4',
     )
-    expect((control(wrapper, 'reinvest-unit-price').element as HTMLInputElement).value).toBe('38.5')
+    expect((control(wrapper, 'reinvest-unit-price').element as HTMLInputElement).value).toBe(
+      '38.50',
+    )
   })
 
   it('offers the wallet holdings as sources when opened without one', async () => {
