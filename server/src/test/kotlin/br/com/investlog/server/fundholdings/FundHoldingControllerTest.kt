@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
+import java.math.BigDecimal
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -546,4 +547,138 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .jsonPath("$.administrationFeeRate").isEqualTo(1.5)
             .jsonPath("$.performanceFeeRate").isEqualTo(20)
     }
+
+    @Test
+    @Order(30)
+    fun `updates a contribution's amount and date and the holding's invested amount follows`() {
+        val holding = createHolding("Fundo EditadoA")
+        val firstContribution = holding.contributions.single()
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${holding.id}/contributions")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"contributionDate":"2024-02-10","amount":1000.00}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        patchContribution(holding.id, firstContribution.id, """{"contributionDate":"2024-01-12","amount":4000.00}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.contributionDate").isEqualTo("2024-01-12")
+            .jsonPath("$.amount").isEqualTo(4000.0)
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$walletId&search=EditadoA")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content.length()").isEqualTo(1)
+            .jsonPath("$.content[0].costBasis").isEqualTo(5000.0)
+    }
+
+    @Test
+    @Order(31)
+    fun `a date-only body or a null amount changes only the contribution's date`() {
+        val holding = createHolding("Fundo EditadoB")
+        val contribution = holding.contributions.single()
+
+        patchContribution(holding.id, contribution.id, """{"contributionDate":"2024-01-20"}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.contributionDate").isEqualTo("2024-01-20")
+            .jsonPath("$.amount").isEqualTo(5000.0)
+
+        patchContribution(holding.id, contribution.id, """{"contributionDate":"2024-01-21","amount":null}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.contributionDate").isEqualTo("2024-01-21")
+            .jsonPath("$.amount").isEqualTo(5000.0)
+    }
+
+    @Test
+    @Order(32)
+    fun `rejects a zero or negative contribution amount`() {
+        val holding = createHolding("Fundo EditadoC")
+        val contribution = holding.contributions.single()
+
+        patchContribution(holding.id, contribution.id, """{"contributionDate":"2024-01-10","amount":0}""")
+            .expectStatus().isBadRequest()
+
+        patchContribution(holding.id, contribution.id, """{"contributionDate":"2024-01-10","amount":-10}""")
+            .expectStatus().isBadRequest()
+
+        assertEquals(0, findHolding(holding.id).contributions.single().amount.compareTo(BigDecimal("5000")))
+    }
+
+    @Test
+    @Order(33)
+    fun `edits a contribution of a frozen holding`() {
+        val holding = createHolding("Fundo EditadoD")
+        val contribution = holding.contributions.single()
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"frozen":true}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        patchContribution(holding.id, contribution.id, """{"contributionDate":"2024-01-10","amount":4500.00}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.amount").isEqualTo(4500.0)
+    }
+
+    @Test
+    @Order(34)
+    fun `returns 404 with the contribution id when editing the amount of an unknown contribution`() {
+        val holding = createHolding("Fundo EditadoE")
+        val unknownContributionId = UUID.randomUUID()
+
+        patchContribution(holding.id, unknownContributionId, """{"contributionDate":"2024-01-10","amount":10.00}""")
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Aporte não encontrado: $unknownContributionId")
+    }
+
+    @Test
+    @Order(35)
+    fun `editing a contribution keeps the cost basis and profit of an existing redemption`() {
+        val holding = createHolding("Fundo EditadoF")
+        val contribution = holding.contributions.single()
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${holding.id}/withdrawals")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"resultDate":"2024-06-01","amount":1100.00}""")
+            .exchange()
+            .expectStatus().isCreated()
+        val redemptionBefore = findHolding(holding.id).withdrawals.single()
+
+        patchContribution(holding.id, contribution.id, """{"contributionDate":"2024-01-10","amount":6000.00}""")
+            .expectStatus().isOk()
+
+        val redemptionAfter = findHolding(holding.id).withdrawals.single()
+        assertEquals(redemptionBefore.costBasis, redemptionAfter.costBasis)
+        assertEquals(redemptionBefore.profit, redemptionAfter.profit)
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$walletId&search=EditadoF")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].costBasis").isEqualTo(5000.0)
+    }
+
+    private fun patchContribution(holdingId: UUID, contributionId: UUID, body: String) =
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$holdingId/contributions/$contributionId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .exchange()
+
+    private fun findHolding(holdingId: UUID): FundHoldingResponse =
+        restTestClient.get()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<FundHoldingResponse>()
+            .responseBody!!
 }
