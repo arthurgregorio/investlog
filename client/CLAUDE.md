@@ -273,7 +273,8 @@ router views, and controlled via `provide`/`inject`. Any view calls `useModals()
 The rest of `src/utils/`: `apiErrors.ts` (`fieldValidationMessage` pulls the field message out of a
 400 `ProblemDetail` so modals can show it inline), `passwordRules.ts` (the length bounds and
 requirement checks `PasswordRequirementHint` renders), `escapeHtml.ts` (every user-controlled value interpolated into a `dialog.confirm` message must go through it, because Buefy renders that message with `innerHTML`), `userStatus.ts` (`statusTagType`, the tag colour per `UserStatus`), `reportGrouping.ts` (groups `HoldingRow[]`
-for `InvestmentReportView`), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
+for `InvestmentReportView`), `sortHoldingsByDisplayName.ts` (`holdingDisplayName`, ticker or else name, and the
+pt-BR case-insensitive, numeric-aware A→Z order every holding picker uses), `appVersion.ts` (`APP_VERSION` from `VITE_APP_VERSION`, `'dev'` when
 unset).
 
 ### Theming

@@ -5,6 +5,7 @@ import type { WalletMoveItemPayload } from '@/api/walletMoves'
 import { useWalletsStore } from '@/stores/wallets'
 import { useWalletMovesStore } from '@/stores/walletMoves'
 import { problemDetailMessage } from '@/utils/apiErrors'
+import { sortHoldingsByDisplayName } from '@/utils/sortHoldingsByDisplayName'
 import type { HoldingRow } from '@/types'
 
 const MOVABLE_HOLDINGS_PAGE_SIZE = 500
@@ -100,7 +101,7 @@ export function useMoveHoldingsForm(
     loadingHoldings.value = true
     try {
       const page = await holdingsApi.findAll({ walletId, size: MOVABLE_HOLDINGS_PAGE_SIZE })
-      holdings.value = page.content
+      holdings.value = sortHoldingsByDisplayName(page.content)
       const preselectedHoldingId = options.preselectedHoldingId
       if (
         preselectedHoldingId &&
