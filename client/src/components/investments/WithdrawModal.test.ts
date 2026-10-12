@@ -26,8 +26,9 @@ function mountModal(
       walletId: 'wallet-1',
       kind: overrides.kind ?? 'STOCKS',
       walletCurrency: 'BRL',
-      remainingQuantity: overrides.remainingQuantity ?? 100,
-      currentValue: overrides.currentValue ?? 3850,
+      remainingQuantity:
+        overrides.remainingQuantity === undefined ? 100 : overrides.remainingQuantity,
+      currentValue: overrides.currentValue === undefined ? 3850 : overrides.currentValue,
     },
   })
 }
@@ -177,5 +178,89 @@ describe('WithdrawModal', () => {
     expect(wrapper.find('[data-testid="withdraw-error"]').text()).toBe(
       'A data do resgate é obrigatória',
     )
+  })
+
+  describe('"Tudo" checkbox', () => {
+    function inputByTestId(wrapper: ReturnType<typeof mountModal>, testId: string) {
+      const element = wrapper.get(`[data-testid="${testId}"]`)
+      return element.element.tagName === 'INPUT' ? element : element.get('input')
+    }
+
+    function wholePositionCheckbox(wrapper: ReturnType<typeof mountModal>) {
+      return inputByTestId(wrapper, 'withdraw-whole-position')
+    }
+
+    it('fills and locks the quantity with the remaining quantity of a stock holding', async () => {
+      const wrapper = mountModal({ remainingQuantity: 100 })
+
+      await wholePositionCheckbox(wrapper).setValue(true)
+
+      const quantityInput = inputByTestId(wrapper, 'withdraw-quantity')
+      expect((quantityInput.element as HTMLInputElement).value).toBe('100')
+      expect(quantityInput.attributes('disabled')).toBeDefined()
+    })
+
+    it('fills and locks the amount with the current value of a fund', async () => {
+      const wrapper = mountModal({ kind: 'FUNDS', currentValue: 1234.56 })
+
+      await wholePositionCheckbox(wrapper).setValue(true)
+
+      const amountInput = inputByTestId(wrapper, 'withdraw-amount')
+      expect((amountInput.element as HTMLInputElement).value).toBe('1234.56')
+      expect(amountInput.attributes('disabled')).toBeDefined()
+    })
+
+    it('re-enables the field and keeps the value when unchecked', async () => {
+      const wrapper = mountModal({ remainingQuantity: 100 })
+
+      await wholePositionCheckbox(wrapper).setValue(true)
+      await wholePositionCheckbox(wrapper).setValue(false)
+
+      const quantityInput = inputByTestId(wrapper, 'withdraw-quantity')
+      expect(quantityInput.attributes('disabled')).toBeUndefined()
+      expect((quantityInput.element as HTMLInputElement).value).toBe('100')
+    })
+
+    it.each<[WalletKind, { remainingQuantity?: null; currentValue?: null }]>([
+      ['STOCKS', { remainingQuantity: null }],
+      ['FUNDS', { currentValue: null }],
+    ])('is disabled on a %s holding whose available amount is unknown', (kind, unknown) => {
+      const wrapper = mountModal({ kind, ...unknown })
+
+      expect(wholePositionCheckbox(wrapper).attributes('disabled')).toBeDefined()
+    })
+
+    it('records a stock withdrawal of the whole position as a full exit', async () => {
+      vi.mocked(resultsApi.withdrawFromStockHolding).mockResolvedValue()
+      const wrapper = mountModal({ remainingQuantity: 100 })
+
+      await wholePositionCheckbox(wrapper).setValue(true)
+      await numberInputs(wrapper)[1].setValue('50')
+      await clickSubmit(wrapper)
+      await flushPromises()
+
+      expect(resultsApi.withdrawFromStockHolding).toHaveBeenCalledWith(
+        'wallet-1',
+        'holding-1',
+        expect.objectContaining({ quantity: 100, unitPrice: 50 }),
+      )
+      expect(wrapper.emitted('withdrawn')).toEqual([[true]])
+    })
+
+    it('records a fund withdrawal of the whole value as a full exit', async () => {
+      vi.mocked(resultsApi.withdrawFromFundHolding).mockResolvedValue()
+      const wrapper = mountModal({ kind: 'FUNDS', currentValue: 1234.56 })
+
+      await wholePositionCheckbox(wrapper).setValue(true)
+      await clickSubmit(wrapper)
+      await flushPromises()
+
+      expect(resultsApi.withdrawFromFundHolding).toHaveBeenCalledWith(
+        'wallet-1',
+        'holding-1',
+        expect.objectContaining({ amount: 1234.56 }),
+      )
+      expect(wrapper.emitted('withdrawn')).toEqual([[true]])
+    })
   })
 })

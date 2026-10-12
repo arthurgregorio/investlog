@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'buefy'
 import AppModal from '@/components/ui/AppModal.vue'
 import NumberInput from '@/components/ui/NumberInput.vue'
@@ -30,8 +30,20 @@ const unitPrice = ref<number | ''>('')
 const amount = ref<number | ''>('')
 const fees = ref<number | ''>('')
 const taxes = ref<number | ''>('')
+const wholePosition = ref(false)
 const submitting = ref(false)
 const error = ref('')
+
+const availableAmount = computed(() =>
+  isFund.value ? props.currentValue : props.remainingQuantity,
+)
+
+watch(wholePosition, (checked) => {
+  const available = availableAmount.value
+  if (!checked || available == null) return
+  if (isFund.value) amount.value = available
+  else quantity.value = available
+})
 
 const grossAmount = computed(() =>
   isFund.value
@@ -109,12 +121,45 @@ async function submit() {
           <DateInput v-model="date" />
         </b-field>
 
-        <b-field v-if="isFund" label="Valor resgatado" class="cell is-col-span-2">
-          <NumberInput v-model="amount" :prefix="symbol" placeholder="0,00" min="0" />
+        <b-field v-if="isFund" label="Valor resgatado" class="cell is-col-span-2" grouped>
+          <div class="control is-expanded">
+            <NumberInput
+              v-model="amount"
+              :prefix="symbol"
+              placeholder="0,00"
+              min="0"
+              :disabled="wholePosition"
+              data-testid="withdraw-amount"
+            />
+          </div>
+          <div class="control is-flex is-align-items-center">
+            <b-checkbox
+              v-model="wholePosition"
+              :disabled="availableAmount == null"
+              data-testid="withdraw-whole-position"
+              >Tudo</b-checkbox
+            >
+          </div>
         </b-field>
         <template v-else>
-          <b-field label="Quantidade" class="cell is-col-span-2-mobile">
-            <NumberInput v-model="quantity" placeholder="0" min="0" />
+          <b-field label="Quantidade" class="cell is-col-span-2-mobile" grouped>
+            <div class="control is-expanded">
+              <NumberInput
+                v-model="quantity"
+                placeholder="0"
+                min="0"
+                :disabled="wholePosition"
+                data-testid="withdraw-quantity"
+              />
+            </div>
+            <div class="control is-flex is-align-items-center">
+              <b-checkbox
+                v-model="wholePosition"
+                :disabled="availableAmount == null"
+                data-testid="withdraw-whole-position"
+                >Tudo</b-checkbox
+              >
+            </div>
           </b-field>
           <b-field label="Preço unitário" class="cell is-col-span-2-mobile">
             <NumberInput v-model="unitPrice" :prefix="symbol" placeholder="0,00" min="0" />
