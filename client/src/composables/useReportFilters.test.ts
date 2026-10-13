@@ -48,14 +48,31 @@ describe('useReportFilters', () => {
     )
 
     expect(filters.kindFilter.value).toBe('CRYPTO')
-    expect(filters.typeLabelFilter.value).toBe('Ordinária')
-    expect(filters.walletIdFilter.value).toBe('wallet-9')
+    expect(filters.typeLabelFilter.value).toEqual(['Ordinária'])
+    expect(filters.walletIdFilter.value).toEqual(['wallet-9'])
     expect(filters.searchFilter.value).toBe('btc')
     expect(filters.activeFilterLabels.value).toEqual([
       'Cripto',
       'Ordinária',
       'Carteira selecionada',
       '"btc"',
+    ])
+  })
+
+  it('reads repeated wallets and types and labels every one of them', async () => {
+    const filters = await filtersFor(
+      '?filter=STOCKS&type=FII&type=ETF&walletId=wallet-1&walletId=wallet-2',
+      { id: 'wallet-1', name: 'Ações BR' } as WalletResponse,
+    )
+
+    expect(filters.typeLabelFilter.value).toEqual(['FII', 'ETF'])
+    expect(filters.walletIdFilter.value).toEqual(['wallet-1', 'wallet-2'])
+    expect(filters.activeFilterLabels.value).toEqual([
+      'Ações',
+      'FII',
+      'ETF',
+      'Ações BR',
+      'Ações BR',
     ])
   })
 

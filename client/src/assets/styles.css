@@ -591,6 +591,39 @@ a {
   overflow: hidden;
 }
 
+.investments-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.investments-main {
+  flex: 999 1 640px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.investments-main-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.investments-search {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.investments-count {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .table-wrap {
   position: relative;
   min-height: 120px;
