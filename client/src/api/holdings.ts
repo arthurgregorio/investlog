@@ -92,7 +92,7 @@ export const holdingsApi = {
   updateStockHolding(
     walletId: string,
     holdingId: string,
-    payload: { currentPrice?: number; frozen?: boolean },
+    payload: { stockTypeId?: string; currentPrice?: number; frozen?: boolean },
   ): Promise<StockHoldingDetail> {
     return apiClient
       .patch<StockHoldingDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}`, payload)
@@ -140,7 +140,7 @@ export const holdingsApi = {
   updateCryptoHolding(
     walletId: string,
     holdingId: string,
-    payload: { currentPrice?: number; frozen?: boolean },
+    payload: { stockTypeId?: string; currentPrice?: number; frozen?: boolean },
   ): Promise<CryptoHoldingDetail> {
     return apiClient
       .patch<CryptoHoldingDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}`, payload)
@@ -189,6 +189,7 @@ export const holdingsApi = {
     walletId: string,
     holdingId: string,
     payload: {
+      fundTypeId?: string
       currentValue?: number
       administrationFeeRate?: number
       performanceFeeRate?: number

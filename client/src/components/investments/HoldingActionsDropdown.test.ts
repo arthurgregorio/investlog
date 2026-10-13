@@ -55,7 +55,7 @@ describe('HoldingActionsDropdown', () => {
       'Reinvestir',
       'Mover para outra carteira',
       'Atualizar preço',
-      'Definir segmento',
+      'Editar tags',
       'Congelar',
       'Remover investimento',
     ])
@@ -67,7 +67,7 @@ describe('HoldingActionsDropdown', () => {
     expect(labels().some((label) => label.startsWith('Registrar'))).toBe(false)
   })
 
-  it('uses the fund wording, drops Definir segmento and hides Remover from a non-admin', () => {
+  it('uses the fund wording, keeps Editar tags and hides Remover from a non-admin', () => {
     mountDropdown({ isFund: true, isStock: false, isAdmin: false })
 
     expect(labels()).toEqual([
@@ -75,8 +75,15 @@ describe('HoldingActionsDropdown', () => {
       'Reinvestir',
       'Mover para outra carteira',
       'Atualizar valor atual',
+      'Editar tags',
       'Congelar',
     ])
+  })
+
+  it('leaves Editar tags out for crypto, which has neither type nor segment', () => {
+    mountDropdown({ isFund: false, isStock: false })
+
+    expect(labels()).not.toContain('Editar tags')
   })
 
   it.each([
@@ -84,7 +91,7 @@ describe('HoldingActionsDropdown', () => {
     ['Reinvestir', 'reinvest'],
     ['Mover para outra carteira', 'move'],
     ['Atualizar preço', 'update-price'],
-    ['Definir segmento', 'set-segment'],
+    ['Editar tags', 'edit-tags'],
     ['Congelar', 'toggle-frozen'],
     ['Remover investimento', 'remove'],
   ])('emits %s as %s', async (label, event) => {
