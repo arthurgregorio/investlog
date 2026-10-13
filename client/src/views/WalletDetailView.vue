@@ -45,7 +45,7 @@ async function loadAllocationRows() {
 }
 
 async function loadAll() {
-  holdingsTable.value?.collapse()
+  holdingsTable.value?.closeDrawer()
   await Promise.all([
     loadAllocationRows(),
     walletDetailStore.load(walletId.value),

@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import HoldingDetailPanel from '@/components/investments/HoldingDetailPanel.vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import AddPositionModal from '@/components/investments/AddPositionModal.vue'
+import HoldingDrawer from '@/components/investments/HoldingDrawer.vue'
 import HoldingsTableRow from '@/components/investments/HoldingsTableRow.vue'
+import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import SortTh from '@/components/ui/SortTh.vue'
 import TablePagination from '@/components/ui/TablePagination.vue'
-import { useExpandedRow } from '@/composables/useExpandedRow'
 import type { HoldingRow } from '@/types'
+
+type RowModal = { kind: 'addPosition' | 'updatePrice'; row: HoldingRow }
 
 const props = withDefaults(
   defineProps<{
@@ -37,36 +40,64 @@ const emit = defineEmits<{
 }>()
 
 const numericColumns = [
+  { key: null, label: 'Qtd.' },
+  { key: null, label: 'Preço médio' },
   { key: 'price', label: 'Preço atual' },
-  { key: 'invested', label: 'Investido' },
   { key: 'current', label: 'Valor atual' },
   { key: 'gainPct', label: 'Resultado' },
 ]
 
-const { isExpanded, toggle, collapse } = useExpandedRow()
+const tableWrap = useTemplateRef<HTMLElement>('tableWrap')
+const openHoldingId = ref<string | null>(null)
+const rowModal = ref<RowModal | null>(null)
 
-const columnCount = computed(() => (props.showWalletColumn ? 8 : 7))
+const openRow = computed(() => props.rows.find((row) => row.id === openHoldingId.value) ?? null)
+
+watch(
+  () => props.rows,
+  (rows) => {
+    if (openHoldingId.value && !rows.some((row) => row.id === openHoldingId.value)) {
+      openHoldingId.value = null
+    }
+  },
+)
+
+function openDrawer(row: HoldingRow) {
+  openHoldingId.value = row.id
+}
+
+async function closeDrawer() {
+  const closedId = openHoldingId.value
+  openHoldingId.value = null
+  if (!closedId) return
+  await nextTick()
+  tableWrap.value?.querySelector<HTMLButtonElement>(`[data-open-holding="${closedId}"]`)?.focus()
+}
 
 function onPageChange(page: number) {
-  collapse()
+  closeDrawer()
   emit('page-change', page)
 }
 
 function onHoldingDeleted() {
-  collapse()
+  closeDrawer()
   emit('holding-changed')
 }
 
 function onRelocated() {
-  collapse()
+  closeDrawer()
   emit('relocated')
 }
 
-defineExpose({ collapse })
+function rowCurrentAmount(row: HoldingRow) {
+  return row.kind === 'FUNDS' ? row.currentValue : row.currentPrice
+}
+
+defineExpose({ closeDrawer })
 </script>
 
 <template>
-  <div class="table-wrap">
+  <div ref="tableWrap" class="table-wrap">
     <b-loading :is-full-page="false" :model-value="loading" />
     <div class="table-scroll">
       <table class="inv-table">
@@ -79,25 +110,22 @@ defineExpose({ collapse })
               :direction="sortDirection"
               align="left"
               @toggle="emit('sort', $event)"
-              >Investimento</SortTh
+              >Ativo</SortTh
             >
-            <th v-else>Investimento</th>
-            <template v-if="showWalletColumn">
+            <th v-else>Ativo</th>
+            <SortTh
+              v-if="sortable && showWalletColumn"
+              sort-key="wallet"
+              :active-key="sortKey"
+              :direction="sortDirection"
+              align="left"
+              @toggle="emit('sort', $event)"
+              >Carteira · tipo</SortTh
+            >
+            <th v-else>{{ showWalletColumn ? 'Carteira · tipo' : 'Tipo' }}</th>
+            <template v-for="column in numericColumns" :key="column.label">
               <SortTh
-                v-if="sortable"
-                sort-key="wallet"
-                :active-key="sortKey"
-                :direction="sortDirection"
-                align="left"
-                @toggle="emit('sort', $event)"
-                >Carteira</SortTh
-              >
-              <th v-else>Carteira</th>
-            </template>
-            <th class="c-num has-text-right">Qtd.</th>
-            <template v-for="column in numericColumns" :key="column.key">
-              <SortTh
-                v-if="sortable"
+                v-if="sortable && column.key"
                 :sort-key="column.key"
                 :active-key="sortKey"
                 :direction="sortDirection"
@@ -106,29 +134,21 @@ defineExpose({ collapse })
               >
               <th v-else class="c-num has-text-right">{{ column.label }}</th>
             </template>
-            <th class="c-act"></th>
+            <th class="c-act is-wide"><span class="is-sr-only">Ações</span></th>
           </tr>
         </thead>
         <tbody>
-          <template v-for="row in rows" :key="row.id">
-            <HoldingsTableRow
-              :row="row"
-              :expanded="isExpanded(row.id)"
-              :show-wallet-column="showWalletColumn"
-              :convert-to-display-currency="convertToDisplayCurrency"
-              @toggle="toggle(row.id)"
-            />
-            <tr v-if="isExpanded(row.id)" class="detail-row">
-              <td :colspan="columnCount">
-                <HoldingDetailPanel
-                  :row="row"
-                  @deleted="onHoldingDeleted"
-                  @position-added="emit('position-added')"
-                  @relocated="onRelocated"
-                />
-              </td>
-            </tr>
-          </template>
+          <HoldingsTableRow
+            v-for="row in rows"
+            :key="row.id"
+            :row="row"
+            :current="row.id === openHoldingId"
+            :show-wallet-column="showWalletColumn"
+            :convert-to-display-currency="convertToDisplayCurrency"
+            @open="openDrawer(row)"
+            @add-position="rowModal = { kind: 'addPosition', row }"
+            @update-price="rowModal = { kind: 'updatePrice', row }"
+          />
         </tbody>
       </table>
     </div>
@@ -138,11 +158,37 @@ defineExpose({ collapse })
       :total-elements="totalElements"
       @page-change="onPageChange"
     />
+
+    <HoldingDrawer
+      v-if="openRow"
+      :key="openRow.id"
+      :row="openRow"
+      :convert-to-display-currency="convertToDisplayCurrency"
+      @close="closeDrawer"
+      @deleted="onHoldingDeleted"
+      @position-added="emit('position-added')"
+      @relocated="onRelocated"
+    />
+
+    <AddPositionModal
+      v-if="rowModal?.kind === 'addPosition'"
+      :holding-id="rowModal.row.id"
+      :wallet-id="rowModal.row.walletId"
+      :kind="rowModal.row.kind"
+      :wallet-currency="rowModal.row.walletCurrency"
+      @added="emit('position-added')"
+      @close="rowModal = null"
+    />
+
+    <UpdatePriceModal
+      v-if="rowModal?.kind === 'updatePrice'"
+      :holding-id="rowModal.row.id"
+      :wallet-id="rowModal.row.walletId"
+      :kind="rowModal.row.kind"
+      :wallet-currency="rowModal.row.walletCurrency"
+      :initial-value="rowCurrentAmount(rowModal.row)"
+      @updated="emit('position-added')"
+      @close="rowModal = null"
+    />
   </div>
 </template>
-
-<style scoped>
-.detail-row > td {
-  background: var(--surface-2);
-}
-</style>

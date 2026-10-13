@@ -281,12 +281,15 @@ describe('WalletDetailView', () => {
     expect(wrapper.find('.move-item.is-selected').exists()).toBe(false)
   })
 
-  it('keeps a closed holding row free of action buttons', async () => {
+  it('gives each holding row the drawer button and the buy and price buttons, with no wallet column', async () => {
     const { wrapper } = await mountView(detailOf())
 
     const row = wrapper.find('tr.inv-row')
-    expect(row.findAll('button')).toHaveLength(0)
-    expect(row.find('.chev').exists()).toBe(true)
+    expect(row.get('button.open-holding').text()).toBe('PETR4')
+    expect(row.find('[data-testid="row-add-position"]').exists()).toBe(true)
+    expect(row.find('[data-testid="row-update-price"]').exists()).toBe(true)
+    expect(row.find('.wallet-ref').exists()).toBe(false)
+    expect(row.find('.chev').exists()).toBe(false)
   })
 
   it('puts the investments and the move history in one tabbed card, investments first', async () => {
@@ -408,7 +411,7 @@ describe('WalletDetailView', () => {
     }
   })
 
-  it('lists the wallet holdings and expands a row into the detail panel', async () => {
+  it('lists the wallet holdings and opens a row in the holding drawer', async () => {
     const { wrapper } = await mountView(detailOf())
 
     expect(wrapper.text()).toContain('PETR4')
@@ -416,7 +419,19 @@ describe('WalletDetailView', () => {
     await wrapper.find('tr.inv-row').trigger('click')
     await flushPromises()
 
-    expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+    expect(document.body.querySelector('[data-testid="holding-drawer"]')).not.toBeNull()
+    expect(wrapper.find('tr.inv-row').classes()).toContain('is-current')
+  })
+
+  it('closes the holding drawer when the wallet reloads', async () => {
+    const { wrapper, router } = await mountView(detailOf())
+    await wrapper.find('tr.inv-row').trigger('click')
+    await flushPromises()
+
+    await router.push('/wallets/wallet-2')
+    await flushPromises()
+
+    expect(document.body.querySelector('[data-testid="holding-drawer"]')).toBeNull()
   })
 
   it('swaps a frozen holding square for the snowflake badge and dims its row in the investments table', async () => {
@@ -431,7 +446,7 @@ describe('WalletDetailView', () => {
     expect(badge.attributes('aria-label')).toBe('Congelado')
     expect(badge.find('.mdi-snowflake').exists()).toBe(true)
     expect(rows[0].findAll('.ticker-badge')).toHaveLength(1)
-      expect(rows[0].find('.ticker-badge').attributes('data-testid')).toBe('frozen-tag')
+    expect(rows[0].find('.ticker-badge').attributes('data-testid')).toBe('frozen-tag')
     expect(rows[0].find('.t-ticker').text()).toBe('PETR4')
     expect(rows[0].text()).not.toContain('Congelado')
     expect(rows[0].classes()).toContain('is-frozen')
@@ -448,7 +463,7 @@ describe('WalletDetailView', () => {
     const row = wrapper.find('tr.inv-row')
     expect(row.find('[data-testid="frozen-tag"]').attributes('title')).toBe('Congelado')
     expect(row.findAll('.ticker-badge')).toHaveLength(1)
-      expect(row.find('.ticker-badge').attributes('data-testid')).toBe('frozen-tag')
+    expect(row.find('.ticker-badge').attributes('data-testid')).toBe('frozen-tag')
     expect(row.text()).not.toContain('Congelado')
     expect(row.classes()).toContain('is-frozen')
   })

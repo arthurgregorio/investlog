@@ -53,4 +53,14 @@ describe('useDisplayMoney', () => {
 
     expect(toDisplayCurrency(20, 'USD')).toEqual({ amount: 100, currency: 'BRL' })
   })
+
+  it('converts an amount only when asked to', () => {
+    useCurrencyStore().hydrate('BRL')
+    const { displayAmount, formatDisplayAmount } = useDisplayMoney()
+
+    expect(displayAmount(20, 'USD', true)).toEqual({ amount: 100, currency: 'BRL' })
+    expect(displayAmount(20, 'USD', false)).toEqual({ amount: 20, currency: 'USD' })
+    expect(formatDisplayAmount(20, 'USD', true)).toBe(fmt.money(100, 'BRL'))
+    expect(formatDisplayAmount(20, 'USD', false)).toBe(fmt.money(20, 'USD'))
+  })
 })

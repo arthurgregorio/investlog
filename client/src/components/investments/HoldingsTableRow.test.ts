@@ -40,7 +40,7 @@ const fundRow: HoldingRow = {
 
 interface RowProps {
   row: HoldingRow
-  expanded: boolean
+  current: boolean
   showWalletColumn: boolean
   convertToDisplayCurrency: boolean
 }
@@ -52,7 +52,7 @@ function mountRow(props: Partial<RowProps> = {}) {
   vi.mocked(currencyStore.convert).mockImplementation((amount) => amount * 5)
   const rowProps: RowProps = {
     row: stockRow,
-    expanded: false,
+    current: false,
     showWalletColumn: false,
     convertToDisplayCurrency: false,
     ...props,
@@ -71,49 +71,55 @@ function numericCells(wrapper: ReturnType<typeof mountRow>) {
   return wrapper.findAll('td.c-num').map((cell) => cell.text())
 }
 
+function rowEmitted(wrapper: ReturnType<typeof mountRow>, event: string) {
+  return wrapper.findComponent(HoldingsTableRow).emitted(event)
+}
+
 describe('HoldingsTableRow', () => {
-  it('shows the ticker, the type tag and the holding name', () => {
+  it('shows the ticker as the drawer button, the holding name and the type tag', () => {
     const wrapper = mountRow()
 
-    expect(wrapper.get('.t-ticker').text()).toBe('AAPL')
-    expect(wrapper.get('.type-tag').text()).toBe('Ação')
+    const opener = wrapper.get('button.open-holding')
+    expect(opener.text()).toBe('AAPL')
+    expect(opener.attributes('aria-haspopup')).toBe('dialog')
+    expect(opener.attributes('data-open-holding')).toBe('holding-1')
     expect(wrapper.get('.t-name').text()).toBe('Apple')
+    expect(wrapper.get('.type-tag').text()).toBe('Ação')
     expect(wrapper.get('.ticker-badge').text()).toBe('AAPL')
   })
 
-  it('formats the figures in the wallet currency by default', () => {
+  it('shows quantity, average price, current price, value and result in the wallet currency', () => {
     const wrapper = mountRow()
 
     const cells = numericCells(wrapper)
+    expect(cells).toHaveLength(5)
     expect(cells[0]).toBe('10')
-    expect(cells[1]).toContain(fmt.money(200, 'USD'))
-    expect(cells[1]).toContain(`PM ${fmt.money(150, 'USD')}`)
-    expect(cells[2]).toBe(fmt.money(1500, 'USD'))
+    expect(cells[1]).toBe(fmt.money(150, 'USD'))
+    expect(cells[2]).toBe(fmt.money(200, 'USD'))
     expect(cells[3]).toBe(fmt.money(2000, 'USD'))
     expect(cells[4]).toContain(fmt.moneySigned(500, 'USD'))
+    expect(wrapper.text()).not.toContain('PM ')
   })
 
   it('converts every figure into the display currency when asked to', () => {
     const wrapper = mountRow({ convertToDisplayCurrency: true })
 
     const cells = numericCells(wrapper)
-    expect(cells[1]).toContain(fmt.money(1000, 'BRL'))
-    expect(cells[1]).toContain(`PM ${fmt.money(750, 'BRL')}`)
-    expect(cells[2]).toBe(fmt.money(7500, 'BRL'))
+    expect(cells[1]).toBe(fmt.money(750, 'BRL'))
+    expect(cells[2]).toBe(fmt.money(1000, 'BRL'))
     expect(cells[3]).toBe(fmt.money(10000, 'BRL'))
     expect(cells[4]).toContain(fmt.moneySigned(2500, 'BRL'))
   })
 
-  it('shows a fund by name with its current value in the price column and no average price', () => {
+  it('shows a fund by name with dashes for quantity, average price and current price', () => {
     const wrapper = mountRow({ row: fundRow })
 
-    expect(wrapper.get('.t-ticker').text()).toBe('Tesouro IPCA+')
+    expect(wrapper.get('button.open-holding').text()).toBe('Tesouro IPCA+')
+    expect(wrapper.get('.t-name').text()).toBe('Fundo de investimento')
     expect(wrapper.get('.type-tag').text()).toBe('Fundo')
-    expect(wrapper.find('.t-name').exists()).toBe(false)
     const cells = numericCells(wrapper)
-    expect(cells[0]).toBe('—')
-    expect(cells[1]).toBe(fmt.money(3300, 'BRL'))
-    expect(wrapper.find('.avg-note').exists()).toBe(false)
+    expect(cells.slice(0, 3)).toEqual(['—', '—', '—'])
+    expect(cells[3]).toBe(fmt.money(3300, 'BRL'))
   })
 
   it('labels crypto and an untyped stock by their kind', () => {
@@ -135,9 +141,13 @@ describe('HoldingsTableRow', () => {
     })
 
     const cells = numericCells(wrapper)
-    expect(cells[1]).toContain('—')
+    expect(cells[2]).toBe('—')
     expect(cells[3]).toBe('—')
     expect(cells[4]).toBe('—')
+  })
+
+  it('shows a dash for the average price when the quantity is zero', () => {
+    expect(numericCells(mountRow({ row: { ...stockRow, quantity: 0 } }))[1]).toBe('—')
   })
 
   it('swaps the ticker square for the frozen badge and marks the row frozen', () => {
@@ -149,7 +159,7 @@ describe('HoldingsTableRow', () => {
     expect(row.get('.ticker-badge').attributes('data-testid')).toBe('frozen-tag')
   })
 
-  it('renders the wallet column only when asked to', () => {
+  it('adds the wallet reference above the type tag only when asked to', () => {
     expect(mountRow().find('.wallet-ref').exists()).toBe(false)
 
     const wrapper = mountRow({ showWalletColumn: true })
@@ -157,21 +167,51 @@ describe('HoldingsTableRow', () => {
     expect(wrapper.findAll('td')).toHaveLength(8)
   })
 
-  it('flips the chevron and the open class while expanded', () => {
-    const closed = mountRow()
-    expect(closed.get('.chev .mdi').classes()).toContain('mdi-chevron-down')
-    expect(closed.get('tr').classes()).not.toContain('is-open')
-
-    const open = mountRow({ expanded: true })
-    expect(open.get('.chev .mdi').classes()).toContain('mdi-chevron-up')
-    expect(open.get('tr').classes()).toContain('is-open')
+  it('highlights the row whose drawer is open', () => {
+    expect(mountRow().get('tr').classes()).not.toContain('is-current')
+    expect(mountRow({ current: true }).get('tr').classes()).toContain('is-current')
   })
 
-  it('asks to toggle when the row is clicked', async () => {
+  it('asks to open the drawer from a row click and from the ticker button', async () => {
     const wrapper = mountRow()
 
     await wrapper.get('tr').trigger('click')
+    await wrapper.get('button.open-holding').trigger('click')
 
-    expect(wrapper.findComponent(HoldingsTableRow).emitted('toggle')).toHaveLength(1)
+    expect(rowEmitted(wrapper, 'open')).toHaveLength(2)
+  })
+
+  it('offers a labelled buy and price button that do not open the drawer', async () => {
+    const wrapper = mountRow()
+
+    const addButton = wrapper.get('[data-testid="row-add-position"]')
+    const priceButton = wrapper.get('[data-testid="row-update-price"]')
+    expect(addButton.attributes('aria-label')).toBe('Registrar nova compra — AAPL')
+    expect(priceButton.attributes('aria-label')).toBe('Atualizar preço — AAPL')
+
+    await addButton.trigger('click')
+    await priceButton.trigger('click')
+
+    expect(rowEmitted(wrapper, 'add-position')).toHaveLength(1)
+    expect(rowEmitted(wrapper, 'update-price')).toHaveLength(1)
+    expect(rowEmitted(wrapper, 'open')).toBeUndefined()
+  })
+
+  it('words the row buttons for a fund', () => {
+    const wrapper = mountRow({ row: fundRow })
+
+    expect(wrapper.get('[data-testid="row-add-position"]').attributes('aria-label')).toBe(
+      'Registrar novo aporte — Tesouro IPCA+',
+    )
+    expect(wrapper.get('[data-testid="row-update-price"]').attributes('aria-label')).toBe(
+      'Atualizar valor atual — Tesouro IPCA+',
+    )
+  })
+
+  it('disables the buy button on a frozen holding', () => {
+    const wrapper = mountRow({ row: { ...stockRow, frozen: true } })
+
+    expect(wrapper.get('[data-testid="row-add-position"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="row-update-price"]').attributes('disabled')).toBeUndefined()
   })
 })

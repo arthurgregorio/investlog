@@ -27,12 +27,15 @@ function labels() {
   return items().map((item) => item.textContent?.trim() ?? '')
 }
 
-function item(label: string) {
-  return items().find((candidate) => candidate.textContent?.trim() === label)!
+function groupLabels() {
+  return Array.from(document.body.querySelectorAll('.actions-group-label')).map((label) =>
+    label.textContent?.trim(),
+  )
 }
 
 async function choose(label: string) {
-  item(label).dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  const item = items().find((candidate) => candidate.textContent?.trim() === label)!
+  item.dispatchEvent(new MouseEvent('click', { bubbles: true }))
   await flushPromises()
 }
 
@@ -42,44 +45,48 @@ describe('HoldingActionsDropdown', () => {
     activeWrapper = undefined
   })
 
-  it('lists every stock action in order behind an Ações trigger', () => {
+  it('groups every occasional stock action behind a Mais ações trigger', () => {
     const wrapper = mountDropdown()
 
-    expect(wrapper.get('[data-testid="holding-actions"] button').text()).toBe('Ações')
+    expect(wrapper.get('[data-testid="holding-actions"] button').text()).toBe('Mais ações')
+    expect(groupLabels()).toEqual(['Movimentar', 'Editar'])
     expect(labels()).toEqual([
-      'Registrar nova compra',
+      'Vender / resgatar',
+      'Reinvestir',
+      'Mover para outra carteira',
       'Atualizar preço',
       'Definir segmento',
-      'Resgatar',
-      'Reinvestir',
-      'Mover',
       'Congelar',
-      'Remover',
+      'Remover investimento',
     ])
+  })
+
+  it('leaves the buy action out, since the drawer shows it as its own button', () => {
+    mountDropdown()
+
+    expect(labels().some((label) => label.startsWith('Registrar'))).toBe(false)
   })
 
   it('uses the fund wording, drops Definir segmento and hides Remover from a non-admin', () => {
     mountDropdown({ isFund: true, isStock: false, isAdmin: false })
 
     expect(labels()).toEqual([
-      'Registrar novo aporte',
-      'Atualizar valor atual',
       'Resgatar',
       'Reinvestir',
-      'Mover',
+      'Mover para outra carteira',
+      'Atualizar valor atual',
       'Congelar',
     ])
   })
 
   it.each([
-    ['Registrar nova compra', 'add-position'],
+    ['Vender / resgatar', 'withdraw'],
+    ['Reinvestir', 'reinvest'],
+    ['Mover para outra carteira', 'move'],
     ['Atualizar preço', 'update-price'],
     ['Definir segmento', 'set-segment'],
-    ['Resgatar', 'withdraw'],
-    ['Reinvestir', 'reinvest'],
-    ['Mover', 'move'],
     ['Congelar', 'toggle-frozen'],
-    ['Remover', 'remove'],
+    ['Remover investimento', 'remove'],
   ])('emits %s as %s', async (label, event) => {
     const wrapper = mountDropdown()
 
@@ -88,13 +95,10 @@ describe('HoldingActionsDropdown', () => {
     expect(wrapper.emitted(event)).toHaveLength(1)
   })
 
-  it('offers Descongelar and disables the buy action without emitting on a frozen holding', async () => {
-    const wrapper = mountDropdown({ isFrozen: true })
+  it('offers Descongelar on a frozen holding', () => {
+    mountDropdown({ isFrozen: true })
 
     expect(labels()).toContain('Descongelar')
-    expect(item('Registrar nova compra').classList.contains('is-disabled')).toBe(true)
-    await choose('Registrar nova compra')
-
-    expect(wrapper.emitted('add-position')).toBeUndefined()
+    expect(labels()).not.toContain('Congelar')
   })
 })
