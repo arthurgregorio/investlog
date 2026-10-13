@@ -2,10 +2,11 @@ package br.com.investlog.server.fundholdings.repositories
 
 import br.com.investlog.server.fundholdings.rest.payloads.ContributionCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.ContributionResponse
+import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequest
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
 import org.jooq.DSLContext
+import org.jooq.Field
 import org.springframework.stereotype.Repository
-import java.time.LocalDate
 import java.util.UUID
 
 @Repository
@@ -27,9 +28,17 @@ class FundContributionRepository(
         )
     }
 
-    fun updateContributionDate(holdingInternalId: Long, externalId: UUID, contributionDate: LocalDate): ContributionResponse? {
+    fun updateContribution(
+        holdingInternalId: Long,
+        externalId: UUID,
+        request: ContributionUpdateRequest,
+    ): ContributionResponse? {
+        val changes = buildMap<Field<*>, Any> {
+            put(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE, request.contributionDate)
+            request.amount?.let { put(FUND_CONTRIBUTIONS.AMOUNT, it) }
+        }
         val rec = dsl.update(FUND_CONTRIBUTIONS)
-            .set(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE, contributionDate)
+            .set(changes)
             .where(FUND_CONTRIBUTIONS.FUND_HOLDING_ID.eq(holdingInternalId))
             .and(FUND_CONTRIBUTIONS.EXTERNAL_ID.eq(externalId))
             .returning()

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import HoldingDetailPanel from './HoldingDetailPanel.vue'
+import HoldingDrawer from './HoldingDrawer.vue'
 import { holdingsApi } from '@/api/holdings'
 import { resultsApi } from '@/api/results'
 import { useAuthStore } from '@/stores/auth'
@@ -40,9 +40,9 @@ vi.mock('@/api/holdings', () => ({
     deleteStockLot: vi.fn(),
     deleteCryptoLot: vi.fn(),
     deleteFundContribution: vi.fn(),
-    updateStockLotDate: vi.fn(),
-    updateCryptoLotDate: vi.fn(),
-    updateFundContributionDate: vi.fn(),
+    updateStockLot: vi.fn(),
+    updateCryptoLot: vi.fn(),
+    updateFundContribution: vi.fn(),
   },
 }))
 
@@ -241,7 +241,7 @@ interface KindCase {
   deleteHolding: ApiMock
   deleteEntry: ApiMock
   deleteWithdrawal: ApiMock
-  updateEntryDate: ApiMock
+  updateEntry: ApiMock
   entryId: string
   dateField: 'lotDate' | 'contributionDate'
 }
@@ -256,7 +256,7 @@ const kindCases: KindCase[] = [
     deleteHolding: vi.mocked(holdingsApi.deleteStockHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteStockLot),
     deleteWithdrawal: vi.mocked(resultsApi.deleteStockWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateStockLotDate),
+    updateEntry: vi.mocked(holdingsApi.updateStockLot),
     entryId: 'lot-1',
     dateField: 'lotDate',
   },
@@ -269,7 +269,7 @@ const kindCases: KindCase[] = [
     deleteHolding: vi.mocked(holdingsApi.deleteCryptoHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteCryptoLot),
     deleteWithdrawal: vi.mocked(resultsApi.deleteCryptoWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateCryptoLotDate),
+    updateEntry: vi.mocked(holdingsApi.updateCryptoLot),
     entryId: 'lot-9',
     dateField: 'lotDate',
   },
@@ -282,7 +282,7 @@ const kindCases: KindCase[] = [
     deleteHolding: vi.mocked(holdingsApi.deleteFundHolding),
     deleteEntry: vi.mocked(holdingsApi.deleteFundContribution),
     deleteWithdrawal: vi.mocked(resultsApi.deleteFundWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateFundContributionDate),
+    updateEntry: vi.mocked(holdingsApi.updateFundContribution),
     entryId: 'c-1',
     dateField: 'contributionDate',
   },
@@ -290,15 +290,25 @@ const kindCases: KindCase[] = [
 
 let activeWrapper: VueWrapper | undefined
 
-function mountPanel(row: HoldingRow, options: { isAdmin?: boolean } = {}) {
+interface DrawerOptions {
+  isAdmin?: boolean
+  convertToDisplayCurrency?: boolean
+  conversionRate?: number
+}
+
+function mountDrawer(row: HoldingRow, options: DrawerOptions = {}) {
   const pinia = createTestingPinia()
-  const wrapper = mount(HoldingDetailPanel, {
-    props: { row },
+  const currencyStore = useCurrencyStore()
+  vi.mocked(currencyStore.convert).mockImplementation(
+    (amount: number) => amount * (options.conversionRate ?? 1),
+  )
+  currencyStore.displayCurrency = 'BRL'
+  const wrapper = mount(HoldingDrawer, {
+    props: { row, convertToDisplayCurrency: options.convertToDisplayCurrency ?? true },
     global: { plugins: [pinia], config: { errorHandler: () => undefined } },
     attachTo: document.body,
   })
   activeWrapper = wrapper
-  vi.mocked(useCurrencyStore().convert).mockImplementation((amount: number) => amount)
   useAuthStore().session = {
     name: 'Admin',
     email: 'admin@admin.com',
@@ -310,25 +320,25 @@ function mountPanel(row: HoldingRow, options: { isAdmin?: boolean } = {}) {
   return wrapper
 }
 
-async function mountLoadedPanel(
+async function mountLoadedDrawer(
   row: HoldingRow,
   detail: HoldingDetail,
-  options: { isAdmin?: boolean } = {},
+  options: DrawerOptions = {},
 ) {
   for (const kindCase of kindCases) {
     if (kindCase.row.kind === row.kind) kindCase.getHolding.mockResolvedValue(detail)
   }
-  const wrapper = mountPanel(row, options)
+  const wrapper = mountDrawer(row, options)
   await flushPromises()
   return wrapper
 }
 
-function ledgerRows(wrapper: VueWrapper) {
-  return wrapper.findAll('tbody tr')
+function ledgerItems(wrapper: VueWrapper) {
+  return wrapper.findAll('.ledger-item')
 }
 
-function headerLabels(wrapper: VueWrapper) {
-  return wrapper.findAll('thead th').map((cell) => cell.text())
+function deleteButton(item: ReturnType<typeof ledgerItems>[number]) {
+  return item.find('[data-testid="ledger-delete"]')
 }
 
 function bodyButton(label: string) {
@@ -357,6 +367,19 @@ async function chooseAction(label: string) {
   await flushPromises()
 }
 
+async function clickBuy(wrapper: VueWrapper) {
+  await wrapper.get('[data-testid="holding-add-position"]').trigger('click')
+  await flushPromises()
+}
+
+function withdrawLabel(row: HoldingRow) {
+  return row.kind === 'FUNDS' ? 'Resgatar' : 'Vender / resgatar'
+}
+
+function stat(wrapper: VueWrapper, testId: string) {
+  return wrapper.get(`[data-testid="${testId}"]`).text()
+}
+
 function control(wrapper: VueWrapper, testId: string) {
   const element = wrapper.find(`[data-testid="${testId}"]`)
   return ['INPUT', 'SELECT'].includes(element.element.tagName)
@@ -372,7 +395,7 @@ function modalNumberInputs(wrapper: VueWrapper) {
   return wrapper.findAll('.modal-card input[type="number"]')
 }
 
-describe('HoldingDetailPanel', () => {
+describe('HoldingDrawer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(holdingsApi.findAll).mockResolvedValue({
@@ -386,13 +409,161 @@ describe('HoldingDetailPanel', () => {
     activeWrapper = undefined
   })
 
+  describe('sidebar', () => {
+    it('opens as a right-hand overlay dialog labelled by the holding title', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      const sidebar = wrapper.getComponent({ name: 'BSidebar' })
+      expect(sidebar.props('modelValue')).toBe(true)
+      expect(sidebar.props('right')).toBe(true)
+      expect(sidebar.props('overlay')).toBe(true)
+      expect(sidebar.props('mobile')).toBe('fullwidth')
+      const panel = wrapper.get('[data-testid="holding-drawer"]')
+      expect(panel.attributes('role')).toBe('dialog')
+      expect(panel.attributes('aria-modal')).toBe('true')
+      const title = wrapper.get('h2.drawer-title')
+      expect(panel.attributes('aria-labelledby')).toBe(title.attributes('id'))
+      expect(title.text()).toBe('PETR4')
+    })
+
+    it('moves focus to the close button when it opens', async () => {
+      await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      expect(document.activeElement?.getAttribute('aria-label')).toBe('Fechar detalhe')
+    })
+
+    it('asks to close from the close button', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      await wrapper.get('[data-drawer-close]').trigger('click')
+
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
+
+    it('asks to close when Buefy closes the sidebar', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      wrapper.getComponent({ name: 'BSidebar' }).vm.$emit('close')
+
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
+
+    it('closes from a click on the backdrop but not from a click inside the panel', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      await wrapper.get('[data-testid="drawer-stats"]').trigger('click')
+      expect(wrapper.emitted('close')).toBeUndefined()
+
+      await wrapper.get('.sidebar-background').trigger('click')
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
+
+    it('lets Escape close it only while no modal is open over it', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+      const sidebar = wrapper.getComponent({ name: 'BSidebar' })
+
+      expect(sidebar.props('canCancel')).toEqual(['escape'])
+      await clickBuy(wrapper)
+      expect(sidebar.props('canCancel')).toEqual([])
+      await modalButton(wrapper, 'Cancelar').trigger('click')
+      await flushPromises()
+      expect(sidebar.props('canCancel')).toEqual(['escape'])
+    })
+  })
+
+  describe('header', () => {
+    it('shows the ticker, the name, the type, the wallet and the segment of a stock', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, {
+        ...stockDetailWithoutWithdrawals(),
+        stockSegmentName: 'Energia',
+      })
+
+      expect(wrapper.get('.t-name').text()).toBe('Petróleo Brasileiro')
+      expect(wrapper.get('[data-testid="drawer-type"]').text()).toBe('Ação PN')
+      expect(wrapper.get('[data-testid="drawer-wallet"]').text()).toBe('Carteira B3')
+      expect(wrapper.get('[data-testid="drawer-segment"]').text()).toBe('Energia')
+    })
+
+    it('keeps the header tags read-only', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      const tags = ['drawer-type', 'drawer-wallet', 'drawer-segment'].map((testId) =>
+        wrapper.get(`[data-testid="${testId}"]`),
+      )
+      expect(tags.map((tag) => tag.element.tagName)).toEqual(['SPAN', 'SPAN', 'SPAN'])
+      expect(tags.some((tag) => tag.find('.icon').exists())).toBe(false)
+    })
+
+    it('falls back to the row segment, then to Sem segmento', async () => {
+      const labelled = await mountLoadedDrawer(
+        { ...stockRow, segmentLabel: 'Financeiro' },
+        stockDetailWithoutWithdrawals(),
+      )
+      expect(labelled.get('[data-testid="drawer-segment"]').text()).toBe('Financeiro')
+      labelled.unmount()
+
+      const unlabelled = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+      expect(unlabelled.get('[data-testid="drawer-segment"]').text()).toBe('Sem segmento')
+    })
+
+    it('shows the current value, the result and the current price', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      expect(wrapper.get('[data-testid="drawer-value"]').text()).toBe('R$ 6.960,00')
+      expect(wrapper.get('[data-testid="drawer-gain"]').text()).toContain('+R$ 1.308,00')
+      expect(wrapper.get('[data-testid="drawer-gain"]').text()).toContain('+23,10%')
+      expect(wrapper.get('[data-testid="drawer-price"]').text()).toBe('R$ 34,80')
+    })
+
+    it('shows dashes for a missing value and price', async () => {
+      const wrapper = await mountLoadedDrawer(
+        { ...stockRow, currentValue: null, currentPrice: null, gain: null, gainPct: null },
+        stockDetailWithoutWithdrawals(),
+      )
+
+      expect(wrapper.get('[data-testid="drawer-value"]').text()).toBe('—')
+      expect(wrapper.get('[data-testid="drawer-price"]').text()).toBe('—')
+    })
+
+    it('shows a fund by name, with no segment and no current price', async () => {
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
+
+      expect(wrapper.get('h2.drawer-title').text()).toBe('Tesouro IPCA+')
+      expect(wrapper.get('.t-name').text()).toBe('Fundo de investimento')
+      expect(wrapper.find('[data-testid="drawer-segment"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="drawer-price"]').exists()).toBe(false)
+    })
+
+    it('keeps the wallet currency when it is not asked to convert', async () => {
+      const wrapper = mountDrawer(
+        { ...stockRow, walletCurrency: 'USD' },
+        { convertToDisplayCurrency: false },
+      )
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="drawer-value"]').text()).toBe('US$ 6.960,00')
+      expect(useCurrencyStore().convert).not.toHaveBeenCalledWith(6960, 'USD')
+    })
+
+    it('converts the header figures into the display currency when asked to', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
+      const wrapper = mountDrawer({ ...stockRow, walletCurrency: 'USD' }, { conversionRate: 5 })
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="drawer-price"]').text()).toBe('R$ 174,00')
+      expect(wrapper.get('[data-testid="drawer-value"]').text()).toBe('R$ 34.800,00')
+      expect(wrapper.get('[data-testid="drawer-gain"]').text()).toContain('+R$ 6.540,00')
+    })
+  })
+
   describe('lazy detail fetch', () => {
     it.each(kindCases)(
       'fetches the $label holding once from its own endpoint using the row wallet and id',
       async ({ row, detail, getHolding }) => {
         getHolding.mockResolvedValue(detail())
 
-        mountPanel(row)
+        mountDrawer(row)
         await flushPromises()
 
         expect(getHolding).toHaveBeenCalledTimes(1)
@@ -403,292 +574,136 @@ describe('HoldingDetailPanel', () => {
       },
     )
 
-    it('renders neither the ledger nor the actions while the fetch is in flight', async () => {
+    it('shows the header but neither the stats, the movements nor the actions while the fetch is in flight', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockReturnValue(new Promise(() => undefined))
 
-      const wrapper = mountPanel(stockRow)
+      const wrapper = mountDrawer(stockRow)
       await flushPromises()
 
-      expect(wrapper.find('table').exists()).toBe(false)
+      expect(wrapper.get('h2.drawer-title').text()).toBe('PETR4')
+      expect(wrapper.find('[data-testid="drawer-stats"]').exists()).toBe(false)
+      expect(wrapper.find('.ledger-list').exists()).toBe(false)
       expect(wrapper.find('[data-testid="holding-actions"]').exists()).toBe(false)
     })
 
-    it('renders the ledger and the actions once the fetch resolves', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+    it('renders the stats, the movements and the actions once the fetch resolves', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-      expect(wrapper.find('table.sub-table').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="drawer-stats"]').exists()).toBe(true)
+      expect(wrapper.find('.ledger-list').exists()).toBe(true)
       expect(wrapper.find('[data-testid="holding-actions"]').exists()).toBe(true)
     })
 
-    it('renders neither the ledger nor the actions when the fetch fails', async () => {
+    it('keeps only the header when the fetch fails', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockRejectedValue(new Error('500'))
 
-      const wrapper = mountPanel(stockRow)
+      const wrapper = mountDrawer(stockRow)
       await flushPromises()
 
-      expect(wrapper.find('table').exists()).toBe(false)
+      expect(wrapper.get('h2.drawer-title').text()).toBe('PETR4')
+      expect(wrapper.find('.ledger-list').exists()).toBe(false)
       expect(wrapper.find('[data-testid="holding-actions"]').exists()).toBe(false)
-      expect(wrapper.text()).toBe('')
     })
   })
 
-  describe('ledger', () => {
-    it('renders the ledger (Tipo/Custos/Resultado/Saldo included) even for a holding with no withdrawals', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+  describe('stats', () => {
+    it('shows quantity, average price, invested amount and first purchase of a stock', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-      expect(wrapper.text()).toContain('Tipo')
-      expect(wrapper.text()).toContain('Saldo')
-      expect(wrapper.text()).toContain('Valor')
-      expect(wrapper.text()).not.toContain('Venda')
-
-      const rows = ledgerRows(wrapper)
-      expect(rows).toHaveLength(1)
-      expect(rows[0].text()).toContain('Compra')
-      expect(rows[0].text()).toContain('+300')
+      expect(stat(wrapper, 'stat-quantity')).toBe('200')
+      expect(stat(wrapper, 'stat-average-price')).toBe('R$ 28,26')
+      expect(stat(wrapper, 'stat-invested')).toBe('R$ 5.652,00')
+      expect(stat(wrapper, 'stat-first-movement')).toBe('12 jan 2026')
     })
 
-    it('counts the movements in the header', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
-
-      expect(wrapper.find('.ledger-title').text()).toBe('Movimentações')
-      expect(wrapper.find('.ledger-count').text()).toBe('4')
-    })
-
-    it('merges purchases and withdrawals into one ledger with signed quantities and a running balance', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
-
-      const rows = ledgerRows(wrapper)
-      expect(rows).toHaveLength(4)
-
-      expect(rows[0].text()).toContain('Compra')
-      expect(rows[0].text()).toContain('+300')
-      expect(rows[2].text()).toContain('Venda')
-      expect(rows[2].text()).toContain('−150')
-
-      const lastRowCells = rows[3].findAll('td')
-      expect(lastRowCells[lastRowCells.length - 2].text()).toBe('200')
-
-      expect(rows[0].find('td.c-act button').exists()).toBe(true)
-      expect(rows[2].find('td.c-act button').exists()).toBe(true)
-    })
-
-    it('shows the unit price, the amount and a dash for the costs of a purchase', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
-
-      const cells = ledgerRows(wrapper)[0].findAll('td')
-      expect(cells[3].text()).toBe('R$ 25,10')
-      expect(cells[4].text()).toBe('—')
-      expect(cells[5].text()).toBe('R$ 7.530,00')
-      expect(cells[6].text()).toBe('—')
-    })
-
-    it('breaks the costs of a withdrawal into fees and taxes and shows its net amount and profit', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
-
-      const cells = ledgerRows(wrapper)[2].findAll('td')
-      expect(cells[3].text()).toBe('R$ 30,50')
-      expect(cells[4].text()).toContain('R$ 130,00')
-      expect(cells[4].text()).toContain('taxa R$ 10,00 + imp. R$ 120,00')
-      expect(cells[5].text()).toBe('R$ 4.445,00')
-      expect(cells[6].text()).toBe('+R$ 206,00')
-    })
-
-    it('renders a crypto holding with the same columns as a stock', async () => {
-      const wrapper = await mountLoadedPanel(cryptoRow, cryptoDetail())
-
-      expect(headerLabels(wrapper)).toEqual([
-        'Tipo',
-        'Data da compra',
-        'Qtd.',
-        'Preço unit.',
-        'Custos',
-        'Valor',
-        'Resultado',
-        'Saldo',
-        '',
-      ])
-      const row = ledgerRows(wrapper)[0]
-      expect(row.text()).toContain('Compra')
-      expect(row.text()).toContain('+0,5')
-      expect(row.text()).toContain('R$ 200.000,00')
-    })
-
-    it('skips the quantity/price/balance columns for a fund and tags its rows as Aporte', async () => {
-      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
-
-      expect(headerLabels(wrapper)).toEqual([
-        'Tipo',
-        'Data do aporte',
-        'Custos',
-        'Valor',
-        'Resultado',
-        '',
-      ])
-      expect(wrapper.text()).toContain('Aporte')
-      expect(wrapper.text()).toContain('Resgate')
-      expect(wrapper.text()).not.toContain('Qtd.')
-      expect(wrapper.text()).not.toContain('Saldo')
-
-      const rows = ledgerRows(wrapper)
-      expect(rows[0].text()).toContain('R$ 4.000,00')
-      expect(rows[1].text()).toContain('−R$ 15,00')
-    })
-
-    it('shows a loss as a negative result', async () => {
-      const detail = stockDetailWithWithdrawals()
-      detail.withdrawals[0] = withdrawalOf({ profit: -80 })
-
-      const wrapper = await mountLoadedPanel(stockRow, detail)
-
-      expect(ledgerRows(wrapper)[2].text()).toContain('−R$ 80,00')
-    })
-
-    it('tags a reinvestment row as Reinvestimento and offers no undo for it', async () => {
+    it('sums the profit of every exit as the realised result', async () => {
       const detail = stockDetailWithWithdrawals()
       detail.withdrawals[1] = { ...detail.withdrawals[1], resultType: 'REINVESTMENT' }
 
-      const wrapper = await mountLoadedPanel(stockRow, detail)
+      const wrapper = await mountLoadedDrawer(stockRow, detail)
 
-      const reinvestmentRow = ledgerRows(wrapper)[3]
-      expect(reinvestmentRow.text()).toContain('Reinvestimento')
-      expect(reinvestmentRow.find('td.c-act button').exists()).toBe(false)
-      expect(ledgerRows(wrapper)[2].find('td.c-act button').exists()).toBe(true)
+      expect(stat(wrapper, 'stat-realized-result')).toBe('+R$ 646,00')
     })
 
-    it('shows a withdrawal without a quantity as a dash', async () => {
-      const detail = stockDetailWithWithdrawals()
-      detail.withdrawals[0] = withdrawalOf({ quantity: null })
+    it('shows a dash as the realised result before any exit', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-      const wrapper = await mountLoadedPanel(stockRow, detail)
-
-      const cells = ledgerRows(wrapper)[2].findAll('td')
-      expect(cells[2].text()).toBe('—')
-      expect(cells[3].find('.gl-empty').exists()).toBe(true)
+      expect(stat(wrapper, 'stat-realized-result')).toBe('—')
     })
 
-    it('shows the amounts in the display currency', async () => {
-      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
-      const wrapper = mountPanel({ ...stockRow, walletCurrency: 'USD' })
-      vi.mocked(useCurrencyStore().convert).mockImplementation((amount) => amount * 5)
-      await flushPromises()
-
-      expect(useCurrencyStore().convert).toHaveBeenCalledWith(25.1, 'USD')
-      expect(ledgerRows(wrapper)[0].findAll('td')[3].text()).toBe('R$ 125,50')
-    })
-
-    it('offers no delete buttons to a non-admin', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals(), {
-        isAdmin: false,
-      })
-
-      expect(wrapper.findAll('td.c-act button')).toHaveLength(0)
-    })
-  })
-
-  describe('stock segment', () => {
-    it.each(kindCases)(
-      'offers Definir segmento only for a stock, not for a $label holding',
-      async ({ row, detail }) => {
-        await mountLoadedPanel(row, detail())
-
-        expect(actionLabels().includes('Definir segmento')).toBe(row.kind === 'STOCKS')
-      },
-    )
-
-    it('opens the segment modal preselected and reloads the detail after saving', async () => {
-      vi.mocked(holdingsApi.updateStockHoldingSegment).mockResolvedValue(
+    it('shows dashes for the quantity and the average price of a stock without a quantity', async () => {
+      const wrapper = await mountLoadedDrawer(
+        { ...stockRow, quantity: null },
         stockDetailWithoutWithdrawals(),
       )
-      const wrapper = await mountLoadedPanel(stockRow, {
+
+      expect(stat(wrapper, 'stat-quantity')).toBe('—')
+      expect(stat(wrapper, 'stat-average-price')).toBe('—')
+    })
+
+    it('shows a dash as the first purchase when there is none', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, {
         ...stockDetailWithoutWithdrawals(),
-        stockSegmentId: 'segment-1',
-        stockSegmentName: 'Energia',
+        lots: [],
       })
 
-      useTypesListStore().stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 1 }]
-      await chooseAction('Definir segmento')
-      const select = wrapper.find('select[data-testid="set-segment-select"]')
-      expect(select.findAll('option').map((option) => option.text())).toEqual([
-        'Sem segmento',
-        'Energia',
-      ])
-      expect((select.element as HTMLSelectElement).value).toBe('segment-1')
-      await select.setValue('')
-      await modalButton(wrapper, 'Salvar').trigger('click')
-      await flushPromises()
-
-      expect(holdingsApi.updateStockHoldingSegment).toHaveBeenCalledWith(
-        'wallet-1',
-        'holding-1',
-        null,
-      )
-      expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(2)
-      expect(wrapper.emitted('positionAdded')).toHaveLength(1)
+      expect(stat(wrapper, 'stat-first-movement')).toBe('—')
     })
-  })
 
-  describe('fund fee rates', () => {
-    function feeRateText(wrapper: VueWrapper, testId: string) {
-      return wrapper.find(`[data-testid="${testId}"]`).text()
-    }
+    it('shows the invested amount, the first contribution and the fee rates of a fund', async () => {
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
+
+      const stats = wrapper.get('[data-testid="drawer-stats"]').text()
+      expect(stats).toContain('Investido')
+      expect(stats).toContain('Primeiro aporte')
+      expect(stats).toContain('Taxa de administração (% a.a.)')
+      expect(stats).toContain('Taxa de performance (%)')
+      expect(stats).not.toContain('Preço médio')
+      expect(stat(wrapper, 'stat-invested')).toBe('R$ 3.000,00')
+      expect(stat(wrapper, 'stat-first-movement')).toBe('10 jan 2026')
+    })
 
     it.each(kindCases)(
-      'shows the fee rates block only for a fund, not for a $label holding',
+      'shows the fee rates only for a fund, not for a $label holding',
       async ({ row, detail }) => {
-        const wrapper = await mountLoadedPanel(row, detail())
+        const wrapper = await mountLoadedDrawer(row, detail())
 
-        expect(wrapper.find('[data-testid="fund-fees"]').exists()).toBe(row.kind === 'FUNDS')
+        expect(wrapper.find('[data-testid="administration-fee-rate"]').exists()).toBe(
+          row.kind === 'FUNDS',
+        )
       },
     )
 
-    it('labels both rates with their units', async () => {
-      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
-
-      const block = wrapper.find('[data-testid="fund-fees"]')
-      expect(block.text()).toContain('Taxa de administração (% a.a.)')
-      expect(block.text()).toContain('Taxa de performance (%)')
-    })
-
     it('shows an em dash for each rate that is null', async () => {
-      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
-      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('—')
-      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('—')
+      expect(stat(wrapper, 'administration-fee-rate')).toBe('—')
+      expect(stat(wrapper, 'performance-fee-rate')).toBe('—')
     })
 
     it('shows both rates as percentages', async () => {
-      const wrapper = await mountLoadedPanel(
+      const wrapper = await mountLoadedDrawer(
         fundRow,
         fundDetail({ administrationFeeRate: 1.5, performanceFeeRate: 20 }),
       )
 
-      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('1,50%')
-      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('20,00%')
+      expect(stat(wrapper, 'administration-fee-rate')).toBe('1,50%')
+      expect(stat(wrapper, 'performance-fee-rate')).toBe('20,00%')
     })
 
     it('shows a rate of zero as 0,00% rather than a dash', async () => {
-      const wrapper = await mountLoadedPanel(
+      const wrapper = await mountLoadedDrawer(
         fundRow,
         fundDetail({ administrationFeeRate: 0, performanceFeeRate: null }),
       )
 
-      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('0,00%')
-      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('—')
-    })
-
-    it('shows only one rate when the other is null', async () => {
-      const wrapper = await mountLoadedPanel(
-        fundRow,
-        fundDetail({ administrationFeeRate: null, performanceFeeRate: 15.5 }),
-      )
-
-      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('—')
-      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('15,50%')
+      expect(stat(wrapper, 'administration-fee-rate')).toBe('0,00%')
+      expect(stat(wrapper, 'performance-fee-rate')).toBe('—')
     })
 
     it('reflects the rates saved from the update modal after the detail reloads', async () => {
       vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue(fundDetail())
-      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
       vi.mocked(holdingsApi.getFundHolding).mockResolvedValue(
         fundDetail({ administrationFeeRate: 2, performanceFeeRate: 10 }),
       )
@@ -705,8 +720,193 @@ describe('HoldingDetailPanel', () => {
         administrationFeeRate: 2,
         performanceFeeRate: 10,
       })
-      expect(feeRateText(wrapper, 'administration-fee-rate')).toBe('2,00%')
-      expect(feeRateText(wrapper, 'performance-fee-rate')).toBe('10,00%')
+      expect(stat(wrapper, 'administration-fee-rate')).toBe('2,00%')
+      expect(stat(wrapper, 'performance-fee-rate')).toBe('10,00%')
+    })
+  })
+
+  describe('movements', () => {
+    it('lists a holding with no withdrawals', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      const items = ledgerItems(wrapper)
+      expect(items).toHaveLength(1)
+      expect(items[0].text()).toContain('Compra')
+      expect(items[0].text()).toContain('+300')
+      expect(wrapper.text()).not.toContain('Venda')
+    })
+
+    it('counts the movements in the header', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
+
+      expect(wrapper.find('.ledger-title').text()).toBe('Movimentações')
+      expect(wrapper.find('.ledger-count').text()).toBe('4')
+    })
+
+    it('merges purchases and withdrawals into one chronological list with signed quantities', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
+
+      const items = ledgerItems(wrapper)
+      expect(items).toHaveLength(4)
+      expect(items[0].text()).toContain('Compra')
+      expect(items[0].text()).toContain('+300')
+      expect(items[2].text()).toContain('Venda')
+      expect(items[2].text()).toContain('−150')
+      expect(deleteButton(items[0]).exists()).toBe(true)
+      expect(deleteButton(items[2]).exists()).toBe(true)
+    })
+
+    it('shows the unit price and the amount of a purchase, with no result', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      const item = ledgerItems(wrapper)[0]
+      expect(item.get('[data-testid="ledger-detail"]').text()).toBe('+300 × R$ 25,10')
+      expect(item.get('[data-testid="ledger-amount"]').text()).toBe('R$ 7.530,00')
+      expect(item.find('[data-testid="ledger-result"]').exists()).toBe(false)
+    })
+
+    it('shows the costs, the net amount and the signed profit of a withdrawal', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
+
+      const item = ledgerItems(wrapper)[2]
+      expect(item.get('[data-testid="ledger-detail"]').text()).toBe('−150 × R$ 30,50')
+      expect(item.get('[data-testid="ledger-costs"]').text()).toBe('taxas + impostos R$ 130,00')
+      expect(item.get('[data-testid="ledger-amount"]').text()).toBe('R$ 4.445,00')
+      expect(item.get('[data-testid="ledger-result"]').text()).toBe('+R$ 206,00')
+    })
+
+    it('lists a crypto holding like a stock', async () => {
+      const wrapper = await mountLoadedDrawer(cryptoRow, cryptoDetail())
+
+      const item = ledgerItems(wrapper)[0]
+      expect(item.text()).toContain('Compra')
+      expect(item.get('[data-testid="ledger-detail"]').text()).toBe('+0,5 × R$ 200.000,00')
+    })
+
+    it('words a fund movement as Aporte and Resgate and describes it by its amount', async () => {
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
+
+      const items = ledgerItems(wrapper)
+      expect(items.map((item) => item.get('.ledger-tag').text())).toEqual(['Aporte', 'Resgate'])
+      expect(items[0].get('[data-testid="ledger-detail"]').text()).toBe('Valor aportado')
+      expect(items[0].get('[data-testid="ledger-amount"]').text()).toBe('R$ 4.000,00')
+      expect(items[1].get('[data-testid="ledger-result"]').text()).toBe('−R$ 15,00')
+    })
+
+    it('shows a loss as a negative result', async () => {
+      const detail = stockDetailWithWithdrawals()
+      detail.withdrawals[0] = withdrawalOf({ profit: -80 })
+
+      const wrapper = await mountLoadedDrawer(stockRow, detail)
+
+      expect(ledgerItems(wrapper)[2].get('[data-testid="ledger-result"]').text()).toBe('−R$ 80,00')
+    })
+
+    it('tags a reinvestment as Reinvestimento and offers no undo for it', async () => {
+      const detail = stockDetailWithWithdrawals()
+      detail.withdrawals[1] = { ...detail.withdrawals[1], resultType: 'REINVESTMENT' }
+
+      const wrapper = await mountLoadedDrawer(stockRow, detail)
+
+      const reinvestmentItem = ledgerItems(wrapper)[3]
+      expect(reinvestmentItem.text()).toContain('Reinvestimento')
+      expect(deleteButton(reinvestmentItem).exists()).toBe(false)
+      expect(deleteButton(ledgerItems(wrapper)[2]).exists()).toBe(true)
+    })
+
+    it('describes a withdrawal without a quantity by its amount', async () => {
+      const detail = stockDetailWithWithdrawals()
+      detail.withdrawals[0] = withdrawalOf({ quantity: null })
+
+      const wrapper = await mountLoadedDrawer(stockRow, detail)
+
+      expect(ledgerItems(wrapper)[2].get('[data-testid="ledger-detail"]').text()).toBe(
+        'Valor resgatado',
+      )
+    })
+
+    it('shows the amounts in the display currency', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
+      const wrapper = mountDrawer({ ...stockRow, walletCurrency: 'USD' }, { conversionRate: 5 })
+      await flushPromises()
+
+      expect(useCurrencyStore().convert).toHaveBeenCalledWith(25.1, 'USD')
+      expect(ledgerItems(wrapper)[0].get('[data-testid="ledger-detail"]').text()).toBe(
+        '+300 × R$ 125,50',
+      )
+    })
+
+    it('offers no delete buttons to a non-admin', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals(), {
+        isAdmin: false,
+      })
+
+      expect(wrapper.findAll('[data-testid="ledger-delete"]')).toHaveLength(0)
+    })
+  })
+
+  describe('tags', () => {
+    it.each(kindCases)(
+      'offers Editar tags on a $label holding only when it has a type',
+      async ({ row, detail }) => {
+        await mountLoadedDrawer(row, detail())
+
+        expect(actionLabels().includes('Editar tags')).toBe(row.kind !== 'CRYPTO')
+      },
+    )
+
+    it('edits a stock segment preselected and reloads the detail after saving', async () => {
+      vi.mocked(holdingsApi.updateStockHoldingSegment).mockResolvedValue(
+        stockDetailWithoutWithdrawals(),
+      )
+      const wrapper = await mountLoadedDrawer(stockRow, {
+        ...stockDetailWithoutWithdrawals(),
+        stockSegmentId: 'segment-1',
+        stockSegmentName: 'Energia',
+      })
+
+      useTypesListStore().stockTypes = [{ id: 'type-1', name: 'Ação PN', usageCount: 1 }]
+      useTypesListStore().stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 1 }]
+      await chooseAction('Editar tags')
+      const typeSelect = wrapper.find('select[data-testid="edit-tags-type"]')
+      expect((typeSelect.element as HTMLSelectElement).value).toBe('type-1')
+      const segmentSelect = wrapper.find('select[data-testid="edit-tags-segment"]')
+      expect((segmentSelect.element as HTMLSelectElement).value).toBe('segment-1')
+      await segmentSelect.setValue('')
+      await modalButton(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateStockHoldingSegment).toHaveBeenCalledWith(
+        'wallet-1',
+        'holding-1',
+        null,
+      )
+      expect(holdingsApi.updateStockHolding).not.toHaveBeenCalled()
+      expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(2)
+      expect(wrapper.emitted('positionAdded')).toHaveLength(1)
+    })
+
+    it('edits a fund type and reloads the detail after saving', async () => {
+      vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue(fundDetail())
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
+
+      useTypesListStore().fundTypes = [
+        { id: 'type-2', name: 'Renda fixa', usageCount: 1 },
+        { id: 'type-3', name: 'Multimercado', usageCount: 0 },
+      ]
+      await chooseAction('Editar tags')
+      expect(wrapper.find('select[data-testid="edit-tags-segment"]').exists()).toBe(false)
+      const typeSelect = wrapper.find('select[data-testid="edit-tags-type"]')
+      expect((typeSelect.element as HTMLSelectElement).value).toBe('type-2')
+      await typeSelect.setValue('type-3')
+      await modalButton(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith(fundRow.walletId, fundRow.id, {
+        fundTypeId: 'type-3',
+      })
+      expect(holdingsApi.getFundHolding).toHaveBeenCalledTimes(2)
+      expect(wrapper.emitted('positionAdded')).toHaveLength(1)
     })
   })
 
@@ -715,61 +915,54 @@ describe('HoldingDetailPanel', () => {
       return { ...row, frozen: true }
     }
 
-    function isDisabled(label: string) {
-      const item = Array.from(document.body.querySelectorAll('.dropdown-item')).find(
-        (candidate) => candidate.textContent?.trim() === label,
-      )
-      return item?.classList.contains('is-disabled')
-    }
-
     it.each(kindCases)(
       'shows no snowflake and offers Congelar on an open $label holding',
       async ({ row, detail }) => {
-        const wrapper = await mountLoadedPanel(row, detail())
+        const wrapper = await mountLoadedDrawer(row, detail())
 
         expect(wrapper.find('[data-testid="frozen-tag"]').exists()).toBe(false)
+        expect(wrapper.find('.frozen-note').exists()).toBe(false)
         expect(actionLabels()).toContain('Congelar')
         expect(actionLabels()).not.toContain('Descongelar')
       },
     )
 
     it.each(kindCases)(
-      'shows the snowflake next to Movimentações, with no text tag, and offers Descongelar on a frozen $label holding',
+      'swaps the badge for the snowflake, notes the freeze and offers Descongelar on a frozen $label holding',
       async ({ row, detail }) => {
-        const wrapper = await mountLoadedPanel(frozenOf(row), detail())
+        const wrapper = await mountLoadedDrawer(frozenOf(row), detail())
 
-        const badge = wrapper.find('.ledger-head [data-testid="frozen-tag"]')
-        expect(badge.attributes('title')).toBe('Congelado')
+        const badge = wrapper.get('[data-testid="frozen-tag"]')
         expect(badge.attributes('aria-label')).toBe('Congelado')
         expect(badge.find('.mdi-snowflake').exists()).toBe(true)
-        expect(badge.text()).toBe('')
-        expect(wrapper.find('.ledger-head').text()).not.toContain('Congelado')
+        expect(wrapper.get('.frozen-note').text()).toBe(
+          'Posição congelada: novas compras ficam bloqueadas.',
+        )
         expect(actionLabels()).toContain('Descongelar')
         expect(actionLabels()).not.toContain('Congelar')
       },
     )
 
     it.each(kindCases)(
-      'keeps the buy action enabled on an open $label holding',
+      'keeps the buy button enabled on an open $label holding',
       async ({ row, detail }) => {
-        await mountLoadedPanel(row, detail())
+        const wrapper = await mountLoadedDrawer(row, detail())
 
-        expect(
-          isDisabled(row.kind === 'FUNDS' ? 'Registrar novo aporte' : 'Registrar nova compra'),
-        ).toBe(false)
+        const buyButton = wrapper.get('[data-testid="holding-add-position"]')
+        expect(buyButton.text()).toBe(row.kind === 'FUNDS' ? 'Novo aporte' : 'Nova compra')
+        expect(buyButton.attributes('disabled')).toBeUndefined()
       },
     )
 
     it.each(kindCases)(
-      'disables the buy action and opens no modal on a frozen $label holding',
+      'disables the buy button and opens no modal on a frozen $label holding',
       async ({ row, detail }) => {
-        const wrapper = await mountLoadedPanel(frozenOf(row), detail())
-        const buyLabel = row.kind === 'FUNDS' ? 'Registrar novo aporte' : 'Registrar nova compra'
+        const wrapper = await mountLoadedDrawer(frozenOf(row), detail())
 
-        expect(isDisabled(buyLabel)).toBe(true)
-        await chooseAction(buyLabel)
+        const buyButton = wrapper.get('[data-testid="holding-add-position"]')
+        expect(buyButton.attributes('disabled')).toBeDefined()
+        await clickBuy(wrapper)
 
-        expect(wrapper.find('.modal-card').exists()).toBe(false)
         expect(document.body.querySelector('.modal-card')).toBeNull()
       },
     )
@@ -778,7 +971,7 @@ describe('HoldingDetailPanel', () => {
       'freezes an open $label holding, reloads its detail and reports the change',
       async ({ row, detail, updateHolding, getHolding }) => {
         updateHolding.mockResolvedValue(detail())
-        const wrapper = await mountLoadedPanel(row, detail())
+        const wrapper = await mountLoadedDrawer(row, detail())
 
         await chooseAction('Congelar')
 
@@ -792,7 +985,7 @@ describe('HoldingDetailPanel', () => {
       'unfreezes a frozen $label holding',
       async ({ row, detail, updateHolding, getHolding }) => {
         updateHolding.mockResolvedValue(detail())
-        const wrapper = await mountLoadedPanel(frozenOf(row), detail())
+        const wrapper = await mountLoadedDrawer(frozenOf(row), detail())
 
         await chooseAction('Descongelar')
 
@@ -804,7 +997,7 @@ describe('HoldingDetailPanel', () => {
 
     it('lets a non-admin freeze a holding', async () => {
       vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
-      await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals(), { isAdmin: false })
+      await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals(), { isAdmin: false })
 
       await chooseAction('Congelar')
 
@@ -813,9 +1006,9 @@ describe('HoldingDetailPanel', () => {
       })
     })
 
-    it('reports nothing and keeps the panel as it was when the toggle is rejected', async () => {
+    it('reports nothing and keeps the drawer as it was when the toggle is rejected', async () => {
       vi.mocked(holdingsApi.updateStockHolding).mockRejectedValue(new Error('500'))
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
       await chooseAction('Congelar')
 
@@ -824,12 +1017,17 @@ describe('HoldingDetailPanel', () => {
     })
 
     it('keeps every other action available on a frozen holding', async () => {
-      vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
-      const wrapper = await mountLoadedPanel(frozenOf(stockRow), stockDetailWithoutWithdrawals())
+      const wrapper = await mountLoadedDrawer(frozenOf(stockRow), stockDetailWithoutWithdrawals())
 
-      for (const label of ['Atualizar preço', 'Resgatar', 'Reinvestir', 'Mover', 'Remover']) {
-        expect(isDisabled(label)).toBe(false)
-      }
+      expect(actionLabels()).toEqual([
+        'Vender / resgatar',
+        'Reinvestir',
+        'Mover para outra carteira',
+        'Atualizar preço',
+        'Editar tags',
+        'Descongelar',
+        'Remover investimento',
+      ])
       await chooseAction('Atualizar preço')
       expect(wrapper.find('.modal-card-title').exists()).toBe(true)
     })
@@ -840,22 +1038,23 @@ describe('HoldingDetailPanel', () => {
       'removes a $label entry on confirm, reloads the detail and reports the change',
       async ({ row, detail, getHolding, deleteEntry, entryId }) => {
         deleteEntry.mockResolvedValue(undefined)
-        const wrapper = await mountLoadedPanel(row, detail())
+        const wrapper = await mountLoadedDrawer(row, detail())
 
-        await ledgerRows(wrapper)[0].find('td.c-act button').trigger('click')
+        await deleteButton(ledgerItems(wrapper)[0]).trigger('click')
         await confirmDialog('Remover')
 
         expect(deleteEntry).toHaveBeenCalledWith(row.walletId, row.id, entryId)
         expect(getHolding).toHaveBeenCalledTimes(2)
         expect(wrapper.emitted('positionAdded')).toHaveLength(1)
+        expect(wrapper.emitted('close')).toBeUndefined()
       },
     )
 
     it('words the stock dialog and toast as a purchase', async () => {
       vi.mocked(holdingsApi.deleteStockLot).mockResolvedValue(undefined)
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-      await ledgerRows(wrapper)[0].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[0]).trigger('click')
       await flushPromises()
       expect(document.body.textContent).toContain('Remover compra')
       await confirmDialog('Remover')
@@ -865,9 +1064,9 @@ describe('HoldingDetailPanel', () => {
 
     it('words the fund dialog and toast as a contribution', async () => {
       vi.mocked(holdingsApi.deleteFundContribution).mockResolvedValue(undefined)
-      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
-      await ledgerRows(wrapper)[0].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[0]).trigger('click')
       await flushPromises()
       expect(document.body.textContent).toContain('Remover aporte')
       await confirmDialog('Remover')
@@ -876,9 +1075,9 @@ describe('HoldingDetailPanel', () => {
     })
 
     it('keeps everything as it was when the dialog is cancelled', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-      await ledgerRows(wrapper)[0].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[0]).trigger('click')
       await confirmDialog('Cancelar')
 
       expect(holdingsApi.deleteStockLot).not.toHaveBeenCalled()
@@ -890,9 +1089,9 @@ describe('HoldingDetailPanel', () => {
   describe('withdrawal undo', () => {
     it('undoes the most recent withdrawal on confirm', async () => {
       vi.mocked(resultsApi.deleteStockWithdrawal).mockResolvedValue(undefined)
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-      await ledgerRows(wrapper)[3].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[3]).trigger('click')
       await confirmDialog('Desfazer')
 
       expect(resultsApi.deleteStockWithdrawal).toHaveBeenCalledWith('wallet-1', 'holding-1', 'w-2')
@@ -902,9 +1101,9 @@ describe('HoldingDetailPanel', () => {
 
     it('words the stock dialog and toast as a sale', async () => {
       vi.mocked(resultsApi.deleteStockWithdrawal).mockResolvedValue(undefined)
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-      await ledgerRows(wrapper)[3].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[3]).trigger('click')
       await flushPromises()
       expect(document.body.textContent).toContain('Desfazer venda')
       await confirmDialog('Desfazer')
@@ -916,9 +1115,9 @@ describe('HoldingDetailPanel', () => {
       vi.mocked(resultsApi.deleteCryptoWithdrawal).mockResolvedValue(undefined)
       const detail = cryptoDetail()
       detail.withdrawals = [withdrawalOf({ id: 'cw-1', resultDate: '2026-04-01', quantity: 0.1 })]
-      const wrapper = await mountLoadedPanel(cryptoRow, detail)
+      const wrapper = await mountLoadedDrawer(cryptoRow, detail)
 
-      await ledgerRows(wrapper)[1].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[1]).trigger('click')
       await confirmDialog('Desfazer')
 
       expect(resultsApi.deleteCryptoWithdrawal).toHaveBeenCalledWith(
@@ -931,9 +1130,9 @@ describe('HoldingDetailPanel', () => {
 
     it('words a fund withdrawal as a redemption and undoes it through the fund endpoint', async () => {
       vi.mocked(resultsApi.deleteFundWithdrawal).mockResolvedValue(undefined)
-      const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
-      await ledgerRows(wrapper)[1].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[1]).trigger('click')
       await flushPromises()
       expect(document.body.textContent).toContain('Desfazer resgate')
       await confirmDialog('Desfazer')
@@ -944,9 +1143,9 @@ describe('HoldingDetailPanel', () => {
 
     it('lets the server reject undoing a withdrawal that is not the most recent, without reloading', async () => {
       vi.mocked(resultsApi.deleteStockWithdrawal).mockRejectedValue(new Error('409 Conflict'))
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-      await ledgerRows(wrapper)[2].find('td.c-act button').trigger('click')
+      await deleteButton(ledgerItems(wrapper)[2]).trigger('click')
       await confirmDialog('Desfazer')
 
       expect(resultsApi.deleteStockWithdrawal).toHaveBeenCalledWith('wallet-1', 'holding-1', 'w-1')
@@ -955,92 +1154,173 @@ describe('HoldingDetailPanel', () => {
     })
   })
 
-  describe('date editing', () => {
-    const pickedDate = new Date(Date.UTC(2026, 1, 3, 12))
+  describe('editing a purchase or contribution', () => {
+    function rejectionOf(detail: string) {
+      return Object.assign(new Error('400'), {
+        isAxiosError: true,
+        response: { status: 400, data: { detail } },
+      })
+    }
 
-    it('shows each purchase date as a button and a withdrawal date as plain text', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
+    async function openEdit(wrapper: VueWrapper, index = 0) {
+      await ledgerItems(wrapper)[index].get('[data-testid="ledger-edit"]').trigger('click')
+      await flushPromises()
+    }
 
-      const rows = ledgerRows(wrapper)
-      expect(rows[0].find('button.date-edit').text()).toBe('12 jan 2026')
-      expect(rows[2].find('button.date-edit').exists()).toBe(false)
-      expect(rows[2].findAll('td')[1].text()).toBe('10 mai 2026')
-    })
+    it('shows dates as plain text and no inline date editor', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-    it('turns the date into a date picker when it is clicked', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
-
-      await wrapper.find('button.date-edit').trigger('click')
-
+      const items = ledgerItems(wrapper)
+      expect(items[0].get('[data-testid="ledger-date"]').text()).toBe('12 jan 2026')
+      expect(items[2].get('[data-testid="ledger-date"]').text()).toBe('10 mai 2026')
       expect(wrapper.find('button.date-edit').exists()).toBe(false)
-      expect(wrapper.find('.datepicker').exists()).toBe(true)
+      expect(items[2].find('[data-testid="ledger-edit"]').exists()).toBe(false)
     })
 
     it.each(kindCases)(
-      'saves the picked date of a $label entry, reloads and reports the change',
-      async ({ row, detail, getHolding, updateEntryDate, entryId, dateField }) => {
-        updateEntryDate.mockResolvedValue(undefined)
-        const wrapper = await mountLoadedPanel(row, detail())
+      'opens the add dialog prefilled for a $label entry and saves the correction',
+      async ({ row, detail, getHolding, updateEntry, entryId, dateField }) => {
+        updateEntry.mockResolvedValue(undefined)
+        const wrapper = await mountLoadedDrawer(row, detail())
 
-        await wrapper.find('button.date-edit').trigger('click')
-        wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', pickedDate)
+        await openEdit(wrapper)
+
+        const isFund = row.kind === 'FUNDS'
+        expect(wrapper.find('.modal-card-title').text()).toBe(
+          isFund ? 'Editar aporte' : 'Editar compra',
+        )
+        expect(wrapper.find('.modal-card-body').text()).toContain(
+          `${row.ticker ?? row.name} · ${row.walletName} · registrada em`,
+        )
+        const inputs = modalNumberInputs(wrapper)
+        const save = modalButton(wrapper, 'Salvar alterações')
+        expect(save.attributes('disabled')).toBeDefined()
+
+        await inputs[0].setValue(isFund ? '4500' : '3')
+        await flushPromises()
+        expect(wrapper.find('[data-testid="position-impact"]').text()).toContain('Antes:')
+        await save.trigger('click')
         await flushPromises()
 
-        expect(updateEntryDate).toHaveBeenCalledWith(row.walletId, row.id, entryId, {
-          [dateField]: '2026-02-03',
-        })
+        const lot = isFund ? null : (detail() as StockHoldingDetail | CryptoHoldingDetail).lots[0]
+        expect(updateEntry).toHaveBeenCalledWith(
+          row.walletId,
+          row.id,
+          entryId,
+          isFund
+            ? { [dateField]: '2026-01-10', amount: 4500 }
+            : { [dateField]: lot!.lotDate, quantity: 3, price: lot!.price },
+        )
         expect(getHolding).toHaveBeenCalledTimes(2)
         expect(wrapper.emitted('positionAdded')).toHaveLength(1)
-        expect(wrapper.find('.datepicker').exists()).toBe(false)
-        expect(document.body.textContent).toContain('Data atualizada.')
+        expect(wrapper.find('.modal-card').exists()).toBe(false)
+        expect(document.body.textContent).toContain(
+          isFund ? 'Aporte atualizado!' : 'Compra atualizada!',
+        )
       },
     )
 
-    it('ignores the picker being cleared', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+    it('keeps the dialog open with the server message when the correction is rejected', async () => {
+      vi.mocked(holdingsApi.updateStockLot).mockRejectedValue(
+        rejectionOf('A quantidade das compras não pode ficar abaixo da quantidade já vendida'),
+      )
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-      await wrapper.find('button.date-edit').trigger('click')
-      wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', null)
+      await openEdit(wrapper)
+      await modalNumberInputs(wrapper)[0].setValue('10')
+      await modalButton(wrapper, 'Salvar alterações').trigger('click')
       await flushPromises()
 
-      expect(holdingsApi.updateStockLotDate).not.toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="position-error"]').text()).toContain(
+        'não pode ficar abaixo da quantidade já vendida',
+      )
+      expect(wrapper.find('.modal-card').exists()).toBe(true)
       expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(1)
+      expect(wrapper.emitted('positionAdded')).toBeUndefined()
+    })
+
+    it('discards the changes when the dialog is cancelled', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      await openEdit(wrapper)
+      await modalNumberInputs(wrapper)[0].setValue('10')
+      await modalButton(wrapper, 'Cancelar').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('.modal-card').exists()).toBe(false)
+      expect(holdingsApi.updateStockLot).not.toHaveBeenCalled()
+      expect(wrapper.emitted('close')).toBeUndefined()
+    })
+
+    it('lets a non-admin edit a purchase', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals(), {
+        isAdmin: false,
+      })
+
+      await openEdit(wrapper)
+
+      expect(wrapper.find('.modal-card-title').text()).toBe('Editar compra')
+    })
+
+    it('lets a purchase of a frozen holding be corrected', async () => {
+      const wrapper = await mountLoadedDrawer(
+        { ...stockRow, frozen: true },
+        stockDetailWithoutWithdrawals(),
+      )
+
+      await openEdit(wrapper)
+
+      expect(wrapper.find('.modal-card-title').text()).toBe('Editar compra')
+    })
+
+    it('opens the add dialog empty again after an edit was closed', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      await openEdit(wrapper)
+      await modalButton(wrapper, 'Cancelar').trigger('click')
+      await flushPromises()
+      await clickBuy(wrapper)
+
+      expect(wrapper.find('.modal-card-title').text()).toBe('Registrar compra')
+      expect((modalNumberInputs(wrapper)[0].element as HTMLInputElement).value).toBe('')
     })
   })
 
-  describe('Ações dropdown', () => {
-    it('replaces the separate buttons with one dropdown listing every holding action in order', async () => {
-      const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
+  describe('actions', () => {
+    it('shows the buy action as its own button and every other action behind Mais ações', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
 
-      expect(wrapper.find('[data-testid="holding-actions"] button').text()).toBe('Ações')
+      expect(wrapper.get('[data-testid="holding-add-position"]').text()).toBe('Nova compra')
+      expect(wrapper.find('[data-testid="holding-actions"] button').text()).toBe('Mais ações')
       expect(actionLabels()).toEqual([
-        'Registrar nova compra',
-        'Atualizar preço',
-        'Definir segmento',
-        'Resgatar',
+        'Vender / resgatar',
         'Reinvestir',
-        'Mover',
+        'Mover para outra carteira',
+        'Atualizar preço',
+        'Editar tags',
         'Congelar',
-        'Remover',
+        'Remover investimento',
       ])
-      expect(wrapper.find('.ledger-head').findAll(':scope > div > button')).toHaveLength(0)
     })
 
     it('words the crypto actions as purchases and prices', async () => {
-      await mountLoadedPanel(cryptoRow, cryptoDetail())
+      const wrapper = await mountLoadedDrawer(cryptoRow, cryptoDetail())
 
-      expect(actionLabels().slice(0, 2)).toEqual(['Registrar nova compra', 'Atualizar preço'])
+      expect(wrapper.get('[data-testid="holding-add-position"]').text()).toBe('Nova compra')
+      expect(actionLabels()).toContain('Atualizar preço')
+      expect(actionLabels()).toContain('Vender / resgatar')
     })
 
     it('uses the fund wording and hides Remover from a non-admin', async () => {
-      await mountLoadedPanel(fundRow, fundDetail(), { isAdmin: false })
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail(), { isAdmin: false })
 
+      expect(wrapper.get('[data-testid="holding-add-position"]').text()).toBe('Novo aporte')
       expect(actionLabels()).toEqual([
-        'Registrar novo aporte',
-        'Atualizar valor atual',
         'Resgatar',
         'Reinvestir',
-        'Mover',
+        'Mover para outra carteira',
+        'Atualizar valor atual',
+        'Editar tags',
         'Congelar',
       ])
     })
@@ -1048,9 +1328,9 @@ describe('HoldingDetailPanel', () => {
     describe('register purchase', () => {
       it('records a stock purchase, reloads the detail and reports the change', async () => {
         vi.mocked(holdingsApi.addStockLot).mockResolvedValue(newLot)
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-        await chooseAction('Registrar nova compra')
+        await clickBuy(wrapper)
         expect(wrapper.find('.modal-card-title').text()).toBe('Registrar compra')
         const [quantityInput, priceInput] = modalNumberInputs(wrapper)
         await quantityInput.setValue('10')
@@ -1070,9 +1350,9 @@ describe('HoldingDetailPanel', () => {
 
       it('records a crypto purchase through the crypto endpoint', async () => {
         vi.mocked(holdingsApi.addCryptoLot).mockResolvedValue(newLot)
-        const wrapper = await mountLoadedPanel(cryptoRow, cryptoDetail())
+        const wrapper = await mountLoadedDrawer(cryptoRow, cryptoDetail())
 
-        await chooseAction('Registrar nova compra')
+        await clickBuy(wrapper)
         const [quantityInput, priceInput] = modalNumberInputs(wrapper)
         await quantityInput.setValue('0.1')
         await priceInput.setValue('190000')
@@ -1089,9 +1369,9 @@ describe('HoldingDetailPanel', () => {
 
       it('records a fund contribution', async () => {
         vi.mocked(holdingsApi.addContribution).mockResolvedValue(newContribution)
-        const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+        const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
-        await chooseAction('Registrar novo aporte')
+        await clickBuy(wrapper)
         expect(wrapper.find('.modal-card-title').text()).toBe('Registrar aporte')
         await modalNumberInputs(wrapper)[0].setValue('500')
         await modalButton(wrapper, 'Registrar aporte').trigger('click')
@@ -1107,22 +1387,23 @@ describe('HoldingDetailPanel', () => {
       })
 
       it('closes the modal without recording anything when cancelled', async () => {
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-        await chooseAction('Registrar nova compra')
+        await clickBuy(wrapper)
         await modalButton(wrapper, 'Cancelar').trigger('click')
         await flushPromises()
 
         expect(wrapper.find('.modal-card').exists()).toBe(false)
         expect(holdingsApi.addStockLot).not.toHaveBeenCalled()
         expect(wrapper.emitted('positionAdded')).toBeUndefined()
+        expect(wrapper.emitted('close')).toBeUndefined()
       })
     })
 
     describe('update price', () => {
       it('pre-fills the current price of a stock and saves the new one', async () => {
         vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue(stockDetailWithoutWithdrawals())
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
         await chooseAction('Atualizar preço')
         const priceInput = modalNumberInputs(wrapper)[0]
@@ -1140,7 +1421,7 @@ describe('HoldingDetailPanel', () => {
 
       it('pre-fills the current price of a crypto and saves the new one', async () => {
         vi.mocked(holdingsApi.updateCryptoHolding).mockResolvedValue(cryptoDetail())
-        const wrapper = await mountLoadedPanel(cryptoRow, cryptoDetail())
+        const wrapper = await mountLoadedDrawer(cryptoRow, cryptoDetail())
 
         await chooseAction('Atualizar preço')
         const priceInput = modalNumberInputs(wrapper)[0]
@@ -1156,7 +1437,7 @@ describe('HoldingDetailPanel', () => {
 
       it('pre-fills the current value of a fund and saves the new one', async () => {
         vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue(fundDetail())
-        const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+        const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
         await chooseAction('Atualizar valor atual')
         const valueInput = modalNumberInputs(wrapper)[0]
@@ -1172,7 +1453,7 @@ describe('HoldingDetailPanel', () => {
       })
 
       it('pre-fills the stored rates of a fund in the update modal', async () => {
-        const wrapper = await mountLoadedPanel(
+        const wrapper = await mountLoadedDrawer(
           fundRow,
           fundDetail({ administrationFeeRate: 1.5, performanceFeeRate: 20 }),
         )
@@ -1186,21 +1467,23 @@ describe('HoldingDetailPanel', () => {
       })
 
       it('offers no fee rate fields in the update modal of a stock', async () => {
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
         await chooseAction('Atualizar preço')
 
         expect(modalNumberInputs(wrapper)).toHaveLength(1)
-        expect(document.body.textContent).not.toContain('Taxa de administração')
+        expect(document.querySelector('.modal-card')?.textContent).not.toContain(
+          'Taxa de administração',
+        )
       })
     })
 
     describe('withdraw', () => {
-      it('records a partial withdrawal, reloads the detail and keeps the panel', async () => {
+      it('records a partial withdrawal, reloads the detail and keeps the drawer', async () => {
         vi.mocked(resultsApi.withdrawFromStockHolding).mockResolvedValue(undefined)
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-        await chooseAction('Resgatar')
+        await chooseAction(withdrawLabel(stockRow))
         expect(wrapper.find('.modal-card-title').text()).toBe('Resgatar')
         const [quantityInput, priceInput] = modalNumberInputs(wrapper)
         await quantityInput.setValue('50')
@@ -1218,11 +1501,11 @@ describe('HoldingDetailPanel', () => {
         expect(wrapper.emitted('deleted')).toBeUndefined()
       })
 
-      it('collapses through the deleted event, without reloading, when the whole position is withdrawn', async () => {
+      it('closes through the deleted event, without reloading, when the whole position is withdrawn', async () => {
         vi.mocked(resultsApi.withdrawFromStockHolding).mockResolvedValue(undefined)
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-        await chooseAction('Resgatar')
+        await chooseAction(withdrawLabel(stockRow))
         const [quantityInput, priceInput] = modalNumberInputs(wrapper)
         await quantityInput.setValue('200')
         await priceInput.setValue('40')
@@ -1236,9 +1519,9 @@ describe('HoldingDetailPanel', () => {
 
       it('treats a fund withdrawal of the whole current value as a full exit', async () => {
         vi.mocked(resultsApi.withdrawFromFundHolding).mockResolvedValue(undefined)
-        const wrapper = await mountLoadedPanel(fundRow, fundDetail())
+        const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
-        await chooseAction('Resgatar')
+        await chooseAction(withdrawLabel(fundRow))
         await modalNumberInputs(wrapper)[0].setValue('3000')
         await modalButton(wrapper, 'Resgatar').trigger('click')
         await flushPromises()
@@ -1253,9 +1536,9 @@ describe('HoldingDetailPanel', () => {
 
       it('withdraws from a crypto holding through the crypto endpoint', async () => {
         vi.mocked(resultsApi.withdrawFromCryptoHolding).mockResolvedValue(undefined)
-        const wrapper = await mountLoadedPanel(cryptoRow, cryptoDetail())
+        const wrapper = await mountLoadedDrawer(cryptoRow, cryptoDetail())
 
-        await chooseAction('Resgatar')
+        await chooseAction(withdrawLabel(cryptoRow))
         const [quantityInput, priceInput] = modalNumberInputs(wrapper)
         await quantityInput.setValue('0.1')
         await priceInput.setValue('190000')
@@ -1273,7 +1556,7 @@ describe('HoldingDetailPanel', () => {
 
     describe('reinvest and move', () => {
       it('opens Reinvestir with this holding as the source and reports the relocation', async () => {
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
         const reinvestmentsStore = useReinvestmentsStore()
         vi.mocked(reinvestmentsStore.reinvest).mockResolvedValue(undefined)
         vi.mocked(holdingsApi.findAll).mockResolvedValue({
@@ -1297,7 +1580,7 @@ describe('HoldingDetailPanel', () => {
       })
 
       it('opens Mover with this holding preselected in its own wallet', async () => {
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithWithdrawals())
         const wallet: WalletResponse = {
           id: 'wallet-1',
           name: 'Carteira B3',
@@ -1314,7 +1597,7 @@ describe('HoldingDetailPanel', () => {
         walletsStore.wallets = [wallet]
         walletsStore.walletById = (id: string) => (id === wallet.id ? wallet : undefined)
 
-        await chooseAction('Mover')
+        await chooseAction('Mover para outra carteira')
 
         expect(wrapper.text()).toContain('Mover investimentos')
         expect(wrapper.find('[data-testid="move-origin"]').exists()).toBe(false)
@@ -1328,9 +1611,9 @@ describe('HoldingDetailPanel', () => {
         'removes the $label holding on confirm and reports it as deleted',
         async ({ row, detail, deleteHolding }) => {
           deleteHolding.mockResolvedValue(undefined)
-          const wrapper = await mountLoadedPanel(row, detail())
+          const wrapper = await mountLoadedDrawer(row, detail())
 
-          await chooseAction('Remover')
+          await chooseAction('Remover investimento')
           await flushPromises()
           expect(document.body.textContent).toContain('Remover investimento')
           await confirmDialog('Remover')
@@ -1341,9 +1624,9 @@ describe('HoldingDetailPanel', () => {
       )
 
       it('removes nothing when the dialog is cancelled', async () => {
-        const wrapper = await mountLoadedPanel(stockRow, stockDetailWithoutWithdrawals())
+        const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
 
-        await chooseAction('Remover')
+        await chooseAction('Remover investimento')
         await confirmDialog('Cancelar')
 
         expect(holdingsApi.deleteStockHolding).not.toHaveBeenCalled()
@@ -1353,7 +1636,7 @@ describe('HoldingDetailPanel', () => {
   })
 
   describe('loading overlay', () => {
-    it('covers the panel while the detail is being fetched and leaves once it arrives', async () => {
+    it('covers the drawer while the detail is being fetched and leaves once it arrives', async () => {
       const [{ row, detail, getHolding }] = kindCases
       let resolveDetail!: (loaded: HoldingDetail) => void
       getHolding.mockReturnValue(
@@ -1362,7 +1645,7 @@ describe('HoldingDetailPanel', () => {
         }),
       )
 
-      const wrapper = mountPanel(row)
+      const wrapper = mountDrawer(row)
       await flushPromises()
       expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
 
@@ -1375,7 +1658,7 @@ describe('HoldingDetailPanel', () => {
       const [{ row, getHolding }] = kindCases
       getHolding.mockRejectedValue(new Error('boom'))
 
-      const wrapper = mountPanel(row)
+      const wrapper = mountDrawer(row)
       await flushPromises()
 
       expect(wrapper.find('.loading-overlay').exists()).toBe(false)

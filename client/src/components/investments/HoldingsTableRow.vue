@@ -3,100 +3,119 @@ import { computed } from 'vue'
 import FrozenBadge from '@/components/ui/FrozenBadge.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import TickerBadge from '@/components/ui/TickerBadge.vue'
-import { useDisplayMoney, type DisplayAmount } from '@/composables/useDisplayMoney'
+import { useDisplayMoney } from '@/composables/useDisplayMoney'
 import { fmt } from '@/composables/useFormat'
+import { holdingTypeLabel } from '@/utils/holdingLabels'
 import { badgeColor, WALLET_TYPES } from '@/utils/walletTypes'
 import type { HoldingRow } from '@/types'
 
 const props = defineProps<{
   row: HoldingRow
-  expanded: boolean
+  current: boolean
   showWalletColumn: boolean
   convertToDisplayCurrency: boolean
 }>()
-const emit = defineEmits<{ toggle: [] }>()
+const emit = defineEmits<{ open: []; 'add-position': []; 'update-price': [] }>()
 
-const { toDisplayCurrency } = useDisplayMoney()
+const { displayAmount, formatDisplayAmount } = useDisplayMoney()
 
+const isFund = computed(() => props.row.kind === 'FUNDS')
 const displayName = computed(() => props.row.ticker ?? props.row.name)
-
-const subLabel = computed(() => {
-  if (props.row.kind === 'FUNDS') return props.row.typeLabel ?? 'Fundo'
-  if (props.row.kind === 'CRYPTO') return 'Cripto'
-  return props.row.typeLabel ?? 'Ação'
-})
-
-const priceAmount = computed(() =>
-  props.row.kind === 'FUNDS' ? props.row.currentValue : props.row.currentPrice,
-)
+const secondLine = computed(() => (props.row.ticker ? props.row.name : 'Fundo de investimento'))
 
 const averagePrice = computed(() =>
-  props.row.kind !== 'FUNDS' && props.row.quantity
-    ? props.row.costBasis / props.row.quantity
-    : null,
+  !isFund.value && props.row.quantity ? props.row.costBasis / props.row.quantity : null,
 )
 
-const gain = computed(() => (props.row.gain == null ? null : shown(props.row.gain)))
+const gain = computed(() =>
+  props.row.gain == null
+    ? null
+    : displayAmount(props.row.gain, props.row.walletCurrency, props.convertToDisplayCurrency),
+)
 
-function shown(amount: number): DisplayAmount {
-  return props.convertToDisplayCurrency
-    ? toDisplayCurrency(amount, props.row.walletCurrency)
-    : { amount, currency: props.row.walletCurrency }
-}
+const addLabel = computed(() => (isFund.value ? 'Registrar novo aporte' : 'Registrar nova compra'))
+const updateLabel = computed(() => (isFund.value ? 'Atualizar valor atual' : 'Atualizar preço'))
 
 function money(amount: number): string {
-  const displayAmount = shown(amount)
-  return fmt.money(displayAmount.amount, displayAmount.currency)
+  return formatDisplayAmount(amount, props.row.walletCurrency, props.convertToDisplayCurrency)
 }
 </script>
 
 <template>
   <tr
     class="inv-row"
-    :class="{ 'is-open': expanded, 'is-frozen': row.frozen }"
-    @click="emit('toggle')"
+    :class="{ 'is-current': current, 'is-frozen': row.frozen }"
+    @click="emit('open')"
   >
     <td>
       <div class="is-flex is-align-items-center is-gap-1.5">
         <FrozenBadge v-if="row.frozen" />
         <TickerBadge v-else :ticker="displayName" :color="badgeColor(row.ticker, row.kind)" />
         <div class="name-meta">
-          <div class="is-flex is-align-items-center is-gap-1">
-            <span class="t-ticker">{{ displayName }}</span>
-            <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{ subLabel }}</span>
-          </div>
-          <div v-if="row.kind !== 'FUNDS' && row.name" class="t-name">{{ row.name }}</div>
+          <button
+            type="button"
+            class="t-ticker open-holding"
+            aria-haspopup="dialog"
+            :data-open-holding="row.id"
+            @click.stop="emit('open')"
+          >
+            {{ displayName }}
+          </button>
+          <div class="t-name">{{ secondLine }}</div>
         </div>
       </div>
     </td>
-    <td v-if="showWalletColumn">
-      <span class="wallet-ref">
-        <span class="wref-dot" :style="{ background: WALLET_TYPES[row.kind].accent }" />
-        {{ row.walletName }}
-      </span>
+    <td>
+      <div class="kind-meta">
+        <span v-if="showWalletColumn" class="wallet-ref">
+          <span class="wref-dot" :style="{ background: WALLET_TYPES[row.kind].accent }" />
+          {{ row.walletName }}
+        </span>
+        <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
+          holdingTypeLabel(row)
+        }}</span>
+      </div>
     </td>
     <td class="c-num has-text-right">
-      {{ row.quantity == null ? '—' : fmt.qty(row.quantity) }}
+      {{ isFund || row.quantity == null ? '—' : fmt.qty(row.quantity) }}
+    </td>
+    <td class="c-num has-text-right has-text-weight-semibold">
+      <span v-if="averagePrice == null" class="gl-empty">—</span>
+      <template v-else>{{ money(averagePrice) }}</template>
     </td>
     <td class="c-num has-text-right">
-      <span v-if="priceAmount == null" class="gl-empty">—</span>
-      <template v-else>{{ money(priceAmount) }}</template>
-      <div v-if="averagePrice != null" class="avg-note">PM {{ money(averagePrice) }}</div>
+      <span v-if="isFund || row.currentPrice == null" class="gl-empty">—</span>
+      <template v-else>{{ money(row.currentPrice) }}</template>
     </td>
-    <td class="c-num has-text-right">
-      <div class="has-text-weight-bold">{{ money(row.costBasis) }}</div>
-    </td>
-    <td class="c-num has-text-right">
+    <td class="c-num has-text-right has-text-weight-bold">
       <span v-if="row.currentValue == null" class="gl-empty">—</span>
       <template v-else>{{ money(row.currentValue) }}</template>
     </td>
     <td class="c-num has-text-right">
       <GainChip :value="gain?.amount ?? null" :pct="row.gainPct" :cur="gain?.currency" stacked />
     </td>
-    <td class="c-act">
-      <span class="chev">
-        <b-icon :icon="expanded ? 'chevron-up' : 'chevron-down'" />
-      </span>
+    <td class="c-act is-wide">
+      <div class="is-flex is-justify-content-flex-end">
+        <b-tooltip :label="addLabel" position="is-left">
+          <b-button
+            type="is-ghost"
+            icon-left="plus"
+            :aria-label="`${addLabel} — ${displayName}`"
+            :disabled="row.frozen"
+            data-testid="row-add-position"
+            @click.stop="emit('add-position')"
+          />
+        </b-tooltip>
+        <b-tooltip :label="updateLabel" position="is-left">
+          <b-button
+            type="is-ghost"
+            icon-left="currency-usd"
+            :aria-label="`${updateLabel} — ${displayName}`"
+            data-testid="row-update-price"
+            @click.stop="emit('update-price')"
+          />
+        </b-tooltip>
+      </div>
     </td>
   </tr>
 </template>
@@ -111,8 +130,9 @@ function money(amount: number): string {
   background: var(--surface-hover);
 }
 
-.inv-row.is-open {
-  background: var(--surface-2);
+.inv-row.is-current {
+  background: var(--primary-soft);
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .inv-row.is-frozen {
@@ -131,12 +151,37 @@ function money(amount: number): string {
   border: 1.5px dashed;
 }
 
-.inv-row.is-frozen :is(.name-meta, .wallet-ref, td.c-num) {
+.inv-row.is-frozen :is(.name-meta, .kind-meta, td.c-num) {
   opacity: 0.65;
 }
 
 .name-meta {
   min-width: 0;
+}
+
+.open-holding {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.open-holding:hover {
+  color: var(--primary-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.kind-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .wallet-ref {
@@ -145,6 +190,7 @@ function money(amount: number): string {
   gap: 7px;
   font-size: 13px;
   color: var(--text-2);
+  white-space: nowrap;
 }
 
 .wref-dot {
@@ -152,17 +198,5 @@ function money(amount: number): string {
   height: 8px;
   border-radius: 3px;
   flex-shrink: 0;
-}
-
-.avg-note {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.chev {
-  color: var(--text-muted);
-  display: grid;
-  place-items: center;
 }
 </style>

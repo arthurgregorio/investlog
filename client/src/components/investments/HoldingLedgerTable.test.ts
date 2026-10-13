@@ -53,122 +53,172 @@ const withdrawal: LedgerRow = {
   balance: 6,
 }
 
+const losingWithdrawal: LedgerRow = { ...withdrawal, id: 'w-2', profit: -40 }
+
 const reinvestment: LedgerRow = { ...withdrawal, type: 'REINVESTMENT', id: 'r-1' }
 
-interface TableProps {
+const fundContribution: LedgerRow = {
+  ...purchase,
+  id: 'c-1',
+  quantity: null,
+  unitPrice: null,
+  balance: null,
+}
+
+interface ListProps {
   entries: LedgerRow[]
   isFund: boolean
   isAdmin: boolean
   row: HoldingRow
-  editingEntryId: string | null
 }
 
-function mountTable(props: Partial<TableProps> = {}) {
+function mountList(props: Partial<ListProps> = {}) {
   const pinia = createTestingPinia()
   const currencyStore = useCurrencyStore()
   currencyStore.displayCurrency = 'BRL'
   vi.mocked(currencyStore.convert).mockImplementation((amount) => amount * 5)
   return mount(HoldingLedgerTable, {
     props: { entries: [purchase, withdrawal], isFund: false, isAdmin: true, row, ...props },
-    slots: { actions: '<button class="slotted-action">Ações</button>' },
     global: { plugins: [pinia] },
   })
 }
 
-function rows(wrapper: ReturnType<typeof mountTable>) {
-  return wrapper.findAll('tbody tr')
+function items(wrapper: ReturnType<typeof mountList>) {
+  return wrapper.findAll('.ledger-item')
 }
 
 describe('HoldingLedgerTable', () => {
-  it('heads the ledger with its count and the actions slot', () => {
-    const wrapper = mountTable()
+  it('heads the movements with their count', () => {
+    const wrapper = mountList()
 
-    expect(wrapper.get('.ledger-head').text()).toContain('Movimentações')
+    expect(wrapper.get('.ledger-title').text()).toBe('Movimentações')
     expect(wrapper.get('.ledger-count').text()).toBe('2')
-    expect(wrapper.find('.ledger-head .slotted-action').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="frozen-tag"]').exists()).toBe(false)
   })
 
-  it('shows the frozen badge for a frozen holding', () => {
-    const wrapper = mountTable({ row: { ...row, frozen: true } })
+  it('lists a purchase with its signed quantity and unit price in the display currency', () => {
+    const [purchaseItem] = items(mountList())
 
-    expect(wrapper.find('.ledger-head [data-testid="frozen-tag"]').exists()).toBe(true)
+    expect(purchaseItem.get('.ledger-tag').text()).toBe('Compra')
+    expect(purchaseItem.get('[data-testid="ledger-date"]').text()).toBe('12 jan 2026')
+    expect(purchaseItem.get('[data-testid="ledger-detail"]').text()).toBe('+10 × R$ 750,00')
+    expect(purchaseItem.get('[data-testid="ledger-amount"]').text()).toBe('R$ 7.500,00')
+    expect(purchaseItem.find('[data-testid="ledger-costs"]').exists()).toBe(false)
+    expect(purchaseItem.find('[data-testid="ledger-result"]').exists()).toBe(false)
   })
 
-  it('renders a stock purchase and a sale with signed quantities in the display currency', () => {
-    const wrapper = mountTable()
+  it('lists a sale with its costs and a signed result without a label', () => {
+    const saleItem = items(mountList())[1]
 
-    const purchaseCells = rows(wrapper)[0]
-      .findAll('td')
-      .map((cell) => cell.text())
-    expect(purchaseCells.slice(0, 4)).toEqual(['Compra', '12 jan 2026', '+10', 'R$ 750,00'])
-    expect(purchaseCells[4]).toBe('—')
-    const saleCells = rows(wrapper)[1]
-      .findAll('td')
-      .map((cell) => cell.text())
-    expect(saleCells[0]).toBe('Venda')
-    expect(saleCells[2]).toBe('−4')
-    expect(saleCells[4]).toContain('R$ 25,00')
-    expect(rows(wrapper)[1].get('.ledger-costs-note').text()).toBe('taxa R$ 10,00 + imp. R$ 15,00')
-    expect(saleCells[5]).toBe('R$ 3.975,00')
-    expect(saleCells[7]).toBe('6')
+    expect(saleItem.get('.ledger-tag').text()).toBe('Venda')
+    expect(saleItem.get('[data-testid="ledger-detail"]').text()).toBe('−4 × R$ 1.000,00')
+    expect(saleItem.get('[data-testid="ledger-costs"]').text()).toBe('taxas + impostos R$ 25,00')
+    expect(saleItem.get('[data-testid="ledger-amount"]').text()).toBe('R$ 3.975,00')
+    const result = saleItem.get('[data-testid="ledger-result"]')
+    expect(result.text()).toBe('+R$ 975,00')
+    expect(result.classes()).toContain('gl-up')
+    expect(saleItem.text()).not.toContain('Resultado')
   })
 
-  it('drops the quantity, price and balance columns for a fund and words its rows as Aporte and Resgate', () => {
-    const wrapper = mountTable({ isFund: true })
+  it('colours a losing sale as a loss', () => {
+    const result = items(mountList({ entries: [losingWithdrawal] }))[0].get(
+      '[data-testid="ledger-result"]',
+    )
 
-    expect(wrapper.findAll('thead th').map((cell) => cell.text())).toEqual([
-      'Tipo',
-      'Data do aporte',
-      'Custos',
-      'Valor',
-      'Resultado',
-      '',
-    ])
-    expect(rows(wrapper).map((tableRow) => tableRow.get('.ledger-tag').text())).toEqual([
+    expect(result.text()).toBe('−R$ 200,00')
+    expect(result.classes()).toContain('gl-down')
+  })
+
+  it('words a fund movement as Aporte and Resgate and describes it by its amount', () => {
+    const wrapper = mountList({
+      isFund: true,
+      entries: [fundContribution, { ...withdrawal, quantity: null, unitPrice: null }],
+    })
+
+    expect(items(wrapper).map((item) => item.get('.ledger-tag').text())).toEqual([
       'Aporte',
       'Resgate',
     ])
+    expect(items(wrapper).map((item) => item.get('[data-testid="ledger-detail"]').text())).toEqual([
+      'Valor aportado',
+      'Valor resgatado',
+    ])
+  })
+
+  it('tags a reinvestment, describes an amount-only one and offers no edit for it', () => {
+    const wrapper = mountList({
+      entries: [{ ...reinvestment, quantity: null, unitPrice: null }],
+    })
+
+    const reinvestmentItem = items(wrapper)[0]
+    expect(reinvestmentItem.get('.ledger-tag').text()).toBe('Reinvestimento')
+    expect(reinvestmentItem.get('.ledger-tag').classes()).toContain('lt-reinvestment')
+    expect(reinvestmentItem.get('[data-testid="ledger-detail"]').text()).toBe('Valor reinvestido')
+    expect(reinvestmentItem.find('[data-testid="ledger-edit"]').exists()).toBe(false)
+  })
+
+  it('shows a quantity without a unit price on its own', () => {
+    const wrapper = mountList({ entries: [{ ...withdrawal, unitPrice: null }] })
+
+    expect(items(wrapper)[0].get('[data-testid="ledger-detail"]').text()).toBe('−4')
   })
 
   it('emits delete-purchase and delete-withdrawal from the delete buttons', async () => {
-    const wrapper = mountTable()
+    const wrapper = mountList()
 
-    await rows(wrapper)[0].get('td.c-act button').trigger('click')
-    await rows(wrapper)[1].get('td.c-act button').trigger('click')
+    await items(wrapper)[0].get('[data-testid="ledger-delete"]').trigger('click')
+    await items(wrapper)[1].get('[data-testid="ledger-delete"]').trigger('click')
 
     expect(wrapper.emitted('delete-purchase')).toEqual([['lot-1']])
     expect(wrapper.emitted('delete-withdrawal')).toEqual([['w-1']])
   })
 
+  it('labels each delete button with the movement it removes', () => {
+    const wrapper = mountList()
+
+    expect(items(wrapper)[1].get('[data-testid="ledger-delete"]').attributes('aria-label')).toBe(
+      'Remover venda de 10 mai 2026',
+    )
+  })
+
   it('offers no delete button for a reinvestment or to a non-admin', () => {
     expect(
-      rows(mountTable({ entries: [reinvestment] }))[0]
-        .find('td.c-act button')
+      mountList({ entries: [reinvestment] })
+        .find('[data-testid="ledger-delete"]')
         .exists(),
     ).toBe(false)
-    expect(mountTable({ isAdmin: false }).find('td.c-act button').exists()).toBe(false)
+    expect(mountList({ isAdmin: false }).find('[data-testid="ledger-delete"]').exists()).toBe(false)
   })
 
-  it('asks to edit a purchase date and shows the picker for the entry being edited', async () => {
-    const wrapper = mountTable()
+  it('offers an edit button on purchases only and emits the purchase', async () => {
+    const wrapper = mountList({ entries: [purchase, withdrawal, reinvestment] })
 
-    expect(rows(wrapper)[1].find('button.date-edit').exists()).toBe(false)
-    await wrapper.get('button.date-edit').trigger('click')
+    const editButton = items(wrapper)[0].get('[data-testid="ledger-edit"]')
+    expect(editButton.attributes('aria-label')).toBe('Editar compra de 12 jan 2026')
+    expect(items(wrapper)[1].find('[data-testid="ledger-edit"]').exists()).toBe(false)
+    expect(items(wrapper)[2].find('[data-testid="ledger-edit"]').exists()).toBe(false)
 
-    expect(wrapper.emitted('update:editingEntryId')).toEqual([['lot-1']])
-    await wrapper.setProps({ editingEntryId: 'lot-1' })
+    await editButton.trigger('click')
+
+    expect(wrapper.emitted('edit-purchase')).toEqual([[purchase]])
+  })
+
+  it('offers the edit button to a non-admin and words it as a contribution for a fund', () => {
+    const wrapper = mountList({ isAdmin: false, isFund: true, entries: [fundContribution] })
+
+    expect(items(wrapper)[0].get('[data-testid="ledger-edit"]').attributes('aria-label')).toBe(
+      'Editar aporte de 12 jan 2026',
+    )
+    expect(wrapper.find('[data-testid="ledger-delete"]').exists()).toBe(false)
+  })
+
+  it('shows every date as plain text, with no inline date editor', () => {
+    const wrapper = mountList()
+
+    expect(items(wrapper).map((item) => item.get('[data-testid="ledger-date"]').text())).toEqual([
+      '12 jan 2026',
+      '10 mai 2026',
+    ])
     expect(wrapper.find('button.date-edit').exists()).toBe(false)
-    expect(wrapper.find('.datepicker').exists()).toBe(true)
-  })
-
-  it('emits change-date for a picked date and nothing when the picker is cleared', async () => {
-    const pickedDate = new Date(Date.UTC(2026, 1, 3, 12))
-    const wrapper = mountTable({ editingEntryId: 'lot-1' })
-
-    wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', null)
-    wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', pickedDate)
-
-    expect(wrapper.emitted('change-date')).toEqual([['lot-1', pickedDate]])
+    expect(wrapper.find('.datepicker').exists()).toBe(false)
   })
 })

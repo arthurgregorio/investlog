@@ -38,6 +38,7 @@ defineProps<{ title: string; description?: string }>()
 
 .head-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 </style>

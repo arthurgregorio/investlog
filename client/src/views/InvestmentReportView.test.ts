@@ -198,8 +198,8 @@ describe('InvestmentReportView', () => {
 
     expect(holdingsApi.findAllForReport).toHaveBeenCalledWith({
       kind: 'CRYPTO',
-      typeLabel: 'Ordinária',
-      walletId: 'wallet-1',
+      typeLabel: ['Ordinária'],
+      walletId: ['wallet-1'],
       search: 'btc',
     })
   })

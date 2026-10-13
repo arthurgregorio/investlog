@@ -9,28 +9,42 @@ import type {
   StockHoldingDetail,
 } from '@/types'
 
+export interface LotUpdatePayload {
+  lotDate: string
+  quantity: number
+  price: number
+}
+
+export interface ContributionUpdatePayload {
+  contributionDate: string
+  amount: number
+}
+
+export interface HoldingsFilterParams {
+  kind?: string
+  typeLabel?: string | string[]
+  walletId?: string | string[]
+  search?: string
+  hideFrozen?: boolean
+}
+
+// Spring binds a list only from repeated keys (walletId=a&walletId=b), not from axios's default
+// walletId[]=a form.
+const REPEATED_KEYS = { indexes: null } as const
+
 export const holdingsApi = {
-  findAll(params: {
-    kind?: string
-    typeLabel?: string
-    walletId?: string
-    search?: string
-    sort?: string
-    hideFrozen?: boolean
-    page?: number
-    size?: number
-  }): Promise<PagedResponse<HoldingRow>> {
-    return apiClient.get<PagedResponse<HoldingRow>>('/holdings', { params }).then((r) => r.data)
+  findAll(
+    params: HoldingsFilterParams & { sort?: string; page?: number; size?: number },
+  ): Promise<PagedResponse<HoldingRow>> {
+    return apiClient
+      .get<PagedResponse<HoldingRow>>('/holdings', { params, paramsSerializer: REPEATED_KEYS })
+      .then((r) => r.data)
   },
 
-  findAllForReport(params: {
-    kind?: string
-    typeLabel?: string
-    walletId?: string
-    search?: string
-    hideFrozen?: boolean
-  }): Promise<HoldingRow[]> {
-    return apiClient.get<HoldingRow[]>('/holdings/report', { params }).then((r) => r.data)
+  findAllForReport(params: HoldingsFilterParams): Promise<HoldingRow[]> {
+    return apiClient
+      .get<HoldingRow[]>('/holdings/report', { params, paramsSerializer: REPEATED_KEYS })
+      .then((r) => r.data)
   },
 
   // --- Stock holdings ---
@@ -78,7 +92,7 @@ export const holdingsApi = {
   updateStockHolding(
     walletId: string,
     holdingId: string,
-    payload: { currentPrice?: number; frozen?: boolean },
+    payload: { stockTypeId?: string; currentPrice?: number; frozen?: boolean },
   ): Promise<StockHoldingDetail> {
     return apiClient
       .patch<StockHoldingDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}`, payload)
@@ -126,7 +140,7 @@ export const holdingsApi = {
   updateCryptoHolding(
     walletId: string,
     holdingId: string,
-    payload: { currentPrice?: number; frozen?: boolean },
+    payload: { stockTypeId?: string; currentPrice?: number; frozen?: boolean },
   ): Promise<CryptoHoldingDetail> {
     return apiClient
       .patch<CryptoHoldingDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}`, payload)
@@ -175,6 +189,7 @@ export const holdingsApi = {
     walletId: string,
     holdingId: string,
     payload: {
+      fundTypeId?: string
       currentValue?: number
       administrationFeeRate?: number
       performanceFeeRate?: number
@@ -221,33 +236,33 @@ export const holdingsApi = {
       .then(() => undefined)
   },
 
-  updateStockLotDate(
+  updateStockLot(
     walletId: string,
     holdingId: string,
     lotId: string,
-    payload: { lotDate: string },
+    payload: LotUpdatePayload,
   ): Promise<LotDetail> {
     return apiClient
       .patch<LotDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}/lots/${lotId}`, payload)
       .then((r) => r.data)
   },
 
-  updateCryptoLotDate(
+  updateCryptoLot(
     walletId: string,
     holdingId: string,
     lotId: string,
-    payload: { lotDate: string },
+    payload: LotUpdatePayload,
   ): Promise<LotDetail> {
     return apiClient
       .patch<LotDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}/lots/${lotId}`, payload)
       .then((r) => r.data)
   },
 
-  updateFundContributionDate(
+  updateFundContribution(
     walletId: string,
     holdingId: string,
     contributionId: string,
-    payload: { contributionDate: string },
+    payload: ContributionUpdatePayload,
   ): Promise<ContributionDetail> {
     return apiClient
       .patch<ContributionDetail>(

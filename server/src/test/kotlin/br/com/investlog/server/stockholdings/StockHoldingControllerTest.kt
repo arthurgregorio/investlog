@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
+import java.math.BigDecimal
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -484,6 +485,190 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .expectBody()
             .jsonPath("$.detail").isEqualTo("Posição de ação não encontrada: $unknownHoldingId")
     }
+
+    @Test
+    @Order(27)
+    fun `updates a lot's quantity and price and the holding's average price follows`() {
+        val holding = createHolding("EDTA3")
+        val firstLot = holding.lots.single()
+        addLot(holding.id, """{"lotDate":"2024-02-01","quantity":100,"price":50.00}""")
+
+        patchLot(holding.id, firstLot.id, """{"lotDate":"2024-01-20","quantity":300,"price":30.00}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.lotDate").isEqualTo("2024-01-20")
+            .jsonPath("$.quantity").isEqualTo(300)
+            .jsonPath("$.price").isEqualTo(30.0)
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$walletId&search=EDTA3")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content.length()").isEqualTo(1)
+            .jsonPath("$.content[0].quantity").isEqualTo(400.0)
+            .jsonPath("$.content[0].costBasis").isEqualTo(14000.0)
+    }
+
+    @Test
+    @Order(28)
+    fun `a date-only body changes only the lot's date`() {
+        val holding = createHolding("EDTB3")
+        val lot = holding.lots.single()
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-25"}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.lotDate").isEqualTo("2024-01-25")
+            .jsonPath("$.quantity").isEqualTo(100)
+            .jsonPath("$.price").isEqualTo(35.0)
+    }
+
+    @Test
+    @Order(29)
+    fun `null quantity or price keeps the stored value`() {
+        val holding = createHolding("EDTC3")
+        val lot = holding.lots.single()
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","quantity":150,"price":null}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.quantity").isEqualTo(150)
+            .jsonPath("$.price").isEqualTo(35.0)
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","price":20.00}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.quantity").isEqualTo(150)
+            .jsonPath("$.price").isEqualTo(20.0)
+    }
+
+    @Test
+    @Order(30)
+    fun `rejects a zero quantity or a negative price`() {
+        val holding = createHolding("EDTD3")
+        val lot = holding.lots.single()
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","quantity":0}""")
+            .expectStatus().isBadRequest()
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","price":-1}""")
+            .expectStatus().isBadRequest()
+
+        val storedLot = findHolding(holding.id).lots.single()
+        assertEquals(0, storedLot.quantity.compareTo(BigDecimal("100")))
+        assertEquals(0, storedLot.price.compareTo(BigDecimal("35")))
+    }
+
+    @Test
+    @Order(31)
+    fun `rejects lowering a lot below the quantity already sold`() {
+        val holding = createHolding("EDTE3")
+        val lot = holding.lots.single()
+        withdraw(holding.id, """{"resultDate":"2024-06-01","quantity":60,"unitPrice":40.00}""")
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","quantity":50}""")
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.detail")
+            .isEqualTo("A quantidade das compras não pode ficar abaixo da quantidade já vendida ou resgatada")
+
+        assertEquals(0, findHolding(holding.id).lots.single().quantity.compareTo(BigDecimal("100")))
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","quantity":70}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.quantity").isEqualTo(70)
+    }
+
+    @Test
+    @Order(32)
+    fun `edits a lot of a frozen holding`() {
+        val holding = createHolding("EDTF3")
+        val lot = holding.lots.single()
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"frozen":true}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","quantity":120,"price":33.00}""")
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.quantity").isEqualTo(120)
+            .jsonPath("$.price").isEqualTo(33.0)
+    }
+
+    @Test
+    @Order(33)
+    fun `returns 404 with the lot id when editing the quantity of an unknown lot`() {
+        val holding = createHolding("EDTG3")
+        val unknownLotId = UUID.randomUUID()
+
+        patchLot(holding.id, unknownLotId, """{"lotDate":"2024-01-15","quantity":1,"price":1.00}""")
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Lote não encontrado: $unknownLotId")
+    }
+
+    @Test
+    @Order(34)
+    fun `editing a lot keeps the cost basis and profit of an existing sale`() {
+        val holding = createHolding("EDTH3")
+        val lot = holding.lots.single()
+        withdraw(holding.id, """{"resultDate":"2024-06-01","quantity":40,"unitPrice":50.00}""")
+        val saleBefore = findHolding(holding.id).withdrawals.single()
+
+        patchLot(holding.id, lot.id, """{"lotDate":"2024-01-15","quantity":120,"price":40.00}""")
+            .expectStatus().isOk()
+
+        val saleAfter = findHolding(holding.id).withdrawals.single()
+        assertEquals(saleBefore.costBasis, saleAfter.costBasis)
+        assertEquals(saleBefore.profit, saleAfter.profit)
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$walletId&search=EDTH3")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].quantity").isEqualTo(80.0)
+            .jsonPath("$.content[0].costBasis").isEqualTo(3400.0)
+    }
+
+    private fun addLot(holdingId: UUID, body: String): LotResponse =
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId/lots")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<LotResponse>()
+            .responseBody!!
+
+    private fun patchLot(holdingId: UUID, lotId: UUID, body: String) =
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId/lots/$lotId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .exchange()
+
+    private fun withdraw(holdingId: UUID, body: String) {
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId/withdrawals")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(body)
+            .exchange()
+            .expectStatus().isCreated()
+    }
+
+    private fun findHolding(holdingId: UUID): StockHoldingResponse =
+        restTestClient.get()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<StockHoldingResponse>()
+            .responseBody!!
 
     private fun createSegment(name: String): TypeResponse =
         restTestClient.post()

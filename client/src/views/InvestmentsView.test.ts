@@ -7,11 +7,18 @@ import { holdingsApi } from '@/api/holdings'
 import { useAuthStore } from '@/stores/auth'
 import { useCurrencyStore } from '@/stores/currency'
 import { useHoldingsListStore } from '@/stores/holdingsList'
+import { useOverviewStore } from '@/stores/overview'
 import { useRatesStore } from '@/stores/rates'
 import { useTypesListStore } from '@/stores/typesList'
 import { useWalletsStore } from '@/stores/wallets'
 import { ModalKey } from '@/composables/useModals'
-import type { AssetType, HoldingRow, StockHoldingDetail, WalletResponse } from '@/types'
+import type {
+  AssetType,
+  HoldingRow,
+  KindSummary,
+  StockHoldingDetail,
+  WalletResponse,
+} from '@/types'
 
 vi.mock('@/api/holdings', () => ({
   holdingsApi: {
@@ -215,16 +222,72 @@ async function mountView(options: MountOptions = {}) {
   return { wrapper, router, modals, holdingsListStore, initialLoad }
 }
 
-function tabLabels(wrapper: VueWrapper) {
-  return wrapper.findAll('[role="tab"]').map((tab) => tab.text())
+function kindSummaryOf(kind: string, holdingCount: number): KindSummary {
+  return {
+    kind,
+    holdingCount,
+    totalCostBasis: 0,
+    totalCurrentValue: 0,
+    totalGain: 0,
+    totalGainPct: null,
+  }
 }
 
-function activeTab(wrapper: VueWrapper) {
-  return wrapper.find('[role="tab"][aria-selected="true"]').text()
+function classLabels(wrapper: VueWrapper) {
+  return wrapper
+    .findAll('fieldset')[0]
+    .findAll('.rail-label')
+    .map((label) => label.text())
 }
 
-function tab(wrapper: VueWrapper, label: string) {
-  return wrapper.findAll('[role="tab"]').find((candidate) => candidate.text() === label)!
+function classRadio(wrapper: VueWrapper, filter: string) {
+  return wrapper.get<HTMLInputElement>(`[data-testid="class-${filter}"]`)
+}
+
+function activeClass(wrapper: VueWrapper) {
+  return wrapper.get<HTMLInputElement>('input[name="investments-class"]:checked').element.value
+}
+
+function walletLabels(wrapper: VueWrapper) {
+  return wrapper
+    .findAll('fieldset')[1]
+    .findAll('.rail-label')
+    .map((label) => label.text())
+}
+
+function walletCheckbox(wrapper: VueWrapper, walletId: string) {
+  return wrapper.get<HTMLInputElement>(`[data-testid="wallet-${walletId}"]`)
+}
+
+function typeLabels(wrapper: VueWrapper) {
+  return wrapper
+    .findAll('fieldset')[2]
+    .findAll('.rail-label')
+    .map((label) => label.text())
+}
+
+function typeCheckbox(wrapper: VueWrapper, typeLabel: string) {
+  return wrapper.get<HTMLInputElement>(`[data-testid="type-${typeLabel}"]`)
+}
+
+function hideFrozenCheckbox(wrapper: VueWrapper) {
+  return wrapper.get<HTMLInputElement>('[data-testid="hide-frozen"]')
+}
+
+function searchInput(wrapper: VueWrapper) {
+  return wrapper.get<HTMLInputElement>('.investments-search input')
+}
+
+function chipLabels(wrapper: VueWrapper) {
+  return wrapper.findAll('.investments-main-head .tag').map((chip) => chip.text())
+}
+
+function headerButton(wrapper: VueWrapper, label: string) {
+  return wrapper.findAll('.head-actions button').find((button) => button.text() === label)!
+}
+
+function exportButton(wrapper: VueWrapper) {
+  return headerButton(wrapper, 'Exportar relatório')
 }
 
 function headerCell(wrapper: VueWrapper, label: string) {
@@ -235,12 +298,12 @@ function bodyRows(wrapper: VueWrapper) {
   return wrapper.findAll('tbody tr.inv-row')
 }
 
-function selectOptions(select: ReturnType<VueWrapper['find']>) {
-  return select.findAll('option').map((option) => option.text())
+function drawerOpen() {
+  return document.body.querySelector('[data-testid="holding-drawer"]') !== null
 }
 
-function selects(wrapper: VueWrapper) {
-  return wrapper.findAll('.inv-toolbar select')
+function drawerText() {
+  return document.body.querySelector('[data-testid="holding-drawer"]')?.textContent ?? ''
 }
 
 describe('InvestmentsView', () => {
@@ -278,10 +341,14 @@ describe('InvestmentsView', () => {
       })
 
       expect(initialLoad).toEqual([
-        ['STOCKS', 2, { typeLabel: 'FII', walletId: 'wallet-1', search: 'petr', sort: 'gain,asc' }],
+        [
+          'STOCKS',
+          2,
+          { typeLabel: ['FII'], walletId: ['wallet-1'], search: 'petr', sort: 'gain,asc' },
+        ],
       ])
-      expect(activeTab(wrapper)).toBe('Ações')
-      expect(wrapper.find<HTMLInputElement>('.search-input input').element.value).toBe('petr')
+      expect(activeClass(wrapper)).toBe('STOCKS')
+      expect(searchInput(wrapper).element.value).toBe('petr')
     })
 
     it('ignores an unknown filter, an unknown sort key and a non-positive page in the URL', async () => {
@@ -296,7 +363,7 @@ describe('InvestmentsView', () => {
           { typeLabel: undefined, walletId: undefined, search: undefined, sort: 'gainPct,desc' },
         ],
       ])
-      expect(activeTab(wrapper)).toBe('Todos')
+      expect(activeClass(wrapper)).toBe('all')
     })
 
     it('defaults an unrecognised sort direction to descending', async () => {
@@ -321,17 +388,19 @@ describe('InvestmentsView', () => {
       expect(rows[1].text()).toContain('Carteira Cripto')
     })
 
-    it('shows quantity, current price, average price, invested, current value and result of a stock', async () => {
+    it('shows quantity, average price, current price, current value and result of a stock, without the invested amount', async () => {
       const { wrapper } = await mountView({ rows: [stockRow] })
 
-      const text = bodyRows(wrapper)[0].text()
-      expect(text).toContain('200')
-      expect(text).toContain('R$ 34,80')
-      expect(text).toContain('PM R$ 28,26')
-      expect(text).toContain('R$ 5.652,00')
-      expect(text).toContain('R$ 6.960,00')
-      expect(text).toContain('+R$ 1.308,00')
-      expect(text).toContain('+23,10%')
+      const cells = bodyRows(wrapper)[0]
+        .findAll('td.c-num')
+        .map((cell) => cell.text())
+      expect(cells[0]).toBe('200')
+      expect(cells[1]).toBe('R$ 28,26')
+      expect(cells[2]).toBe('R$ 34,80')
+      expect(cells[3]).toBe('R$ 6.960,00')
+      expect(cells[4]).toContain('+R$ 1.308,00')
+      expect(cells[4]).toContain('+23,10%')
+      expect(bodyRows(wrapper)[0].text()).not.toContain('R$ 5.652,00')
     })
 
     it('shows a loss as a negative result and a fractional quantity in full', async () => {
@@ -343,16 +412,16 @@ describe('InvestmentsView', () => {
       expect(text).toContain('−10,00%')
     })
 
-    it('shows a fund by its name, its current value as the price and no quantity or average price', async () => {
+    it('shows a fund by its name, with its current value and dashes for quantity and prices', async () => {
       const { wrapper } = await mountView({ rows: [fundRow] })
 
       const row = bodyRows(wrapper)[0]
       expect(row.find('.t-ticker').text()).toBe('Tesouro IPCA+')
       expect(row.find('.type-tag').text()).toBe('Renda Fixa')
-      expect(row.find('.t-name').exists()).toBe(false)
-      expect(row.text()).toContain('R$ 3.300,00')
-      expect(row.text()).not.toContain('PM')
-      expect(row.findAll('td')[2].text()).toBe('—')
+      expect(row.find('.t-name').text()).toBe('Fundo de investimento')
+      const cells = row.findAll('td.c-num').map((cell) => cell.text())
+      expect(cells.slice(0, 3)).toEqual(['—', '—', '—'])
+      expect(cells[3]).toBe('R$ 3.300,00')
     })
 
     it('falls back to dashes for a holding without price, value or result', async () => {
@@ -381,7 +450,7 @@ describe('InvestmentsView', () => {
       expect(rows[1].find('[data-testid="frozen-tag"]').exists()).toBe(false)
       expect(rows[1].find('.ticker-badge').exists()).toBe(true)
       expect(rows[1].classes()).not.toContain('is-frozen')
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
 
     it('swaps a frozen fund square for the snowflake badge too', async () => {
@@ -443,18 +512,78 @@ describe('InvestmentsView', () => {
     })
   })
 
-  describe('tabs', () => {
-    it('lists the four kind tabs with Todos active by default', async () => {
+  describe('header', () => {
+    it('summarises positions, wallets and the total value under the title', async () => {
       const { wrapper } = await mountView()
+      useOverviewStore().summary = {
+        displayCurrency: 'BRL',
+        totalCostBasis: 100000,
+        totalCurrentValue: 123456.78,
+        totalGain: 23456.78,
+        totalGainPct: 23.45,
+        kindSummaries: [
+          kindSummaryOf('STOCKS', 9),
+          kindSummaryOf('CRYPTO', 3),
+          kindSummaryOf('FUNDS', 4),
+        ],
+      }
+      await flushPromises()
 
-      expect(tabLabels(wrapper)).toEqual(['Todos', 'Ações', 'Cripto', 'Fundos'])
-      expect(activeTab(wrapper)).toBe('Todos')
+      expect(wrapper.get('.page-desc').text()).toBe(
+        '16 posições em 3 carteiras · R$ 123.456,78 no total',
+      )
     })
 
-    it('reloads the first page of the chosen kind and writes it to the URL', async () => {
+    it('refreshes the summary when it mounts and after the holdings change', async () => {
+      const { wrapper } = await mountView({ rows: [stockRow] })
+      expect(useOverviewStore().refresh).toHaveBeenCalledTimes(1)
+
+      wrapper.getComponent({ name: 'HoldingsTable' }).vm.$emit('position-added')
+      await flushPromises()
+
+      expect(useOverviewStore().refresh).toHaveBeenCalledTimes(2)
+      expect(useHoldingsListStore().refresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows no summary line before the overview has loaded', async () => {
+      const { wrapper } = await mountView()
+
+      expect(wrapper.find('.page-desc').exists()).toBe(false)
+    })
+  })
+
+  describe('class', () => {
+    it('lists the four classes with Todas as classes selected by default', async () => {
+      const { wrapper } = await mountView()
+
+      expect(classLabels(wrapper)).toEqual(['Todas as classes', 'Ações', 'Cripto', 'Fundos'])
+      expect(activeClass(wrapper)).toBe('all')
+    })
+
+    it('counts the holdings of each class from the overview summary', async () => {
+      const { wrapper } = await mountView()
+      useOverviewStore().summary = {
+        displayCurrency: 'BRL',
+        totalCostBasis: 0,
+        totalCurrentValue: 0,
+        totalGain: 0,
+        totalGainPct: null,
+        kindSummaries: [kindSummaryOf('STOCKS', 9), kindSummaryOf('FUNDS', 4)],
+      }
+      await flushPromises()
+
+      expect(
+        wrapper
+          .findAll('fieldset')[0]
+          .findAll('.rail-side')
+          .map((count) => count.text()),
+      ).toEqual(['13', '9', '4'])
+    })
+
+    it('reloads the first page of the chosen class and writes it to the URL', async () => {
       const { wrapper, router, holdingsListStore } = await mountView({ query: '?page=4' })
 
-      await tab(wrapper, 'Cripto').trigger('click')
+      await classRadio(wrapper, 'CRYPTO').trigger('change')
       await flushPromises()
 
       expect(holdingsListStore.loadKind).toHaveBeenCalledTimes(1)
@@ -464,158 +593,215 @@ describe('InvestmentsView', () => {
         search: undefined,
         sort: 'gainPct,desc',
       })
-      expect(activeTab(wrapper)).toBe('Cripto')
+      expect(activeClass(wrapper)).toBe('CRYPTO')
       expect(router.currentRoute.value.query).toEqual({ filter: 'CRYPTO' })
     })
 
-    it('does nothing when the active tab is clicked again', async () => {
-      const { wrapper, holdingsListStore } = await mountView()
-
-      await tab(wrapper, 'Todos').trigger('click')
-
-      expect(holdingsListStore.loadKind).not.toHaveBeenCalled()
-    })
-
-    it('drops the wallet, type and search filters when the kind changes', async () => {
+    it('keeps the search and the wallets that belong to the new class', async () => {
       const { wrapper, router, holdingsListStore } = await mountView({
-        query: '?filter=STOCKS&walletId=wallet-1&type=FII&search=petr',
+        query: '?walletId=wallet-1&walletId=wallet-3&search=petr',
       })
 
-      await tab(wrapper, 'Fundos').trigger('click')
+      await classRadio(wrapper, 'FUNDS').trigger('change')
       await flushPromises()
 
       expect(holdingsListStore.loadKind).toHaveBeenCalledWith('FUNDS', 0, {
         typeLabel: undefined,
-        walletId: undefined,
-        search: undefined,
+        walletId: ['wallet-3'],
+        search: 'petr',
         sort: 'gainPct,desc',
       })
-      expect(router.currentRoute.value.query).toEqual({ filter: 'FUNDS' })
-      expect(wrapper.find<HTMLInputElement>('.search-input input').element.value).toBe('')
+      expect(router.currentRoute.value.query).toEqual({
+        filter: 'FUNDS',
+        walletId: ['wallet-3'],
+        search: 'petr',
+      })
+      expect(searchInput(wrapper).element.value).toBe('petr')
     })
 
-    it('keeps the chosen sort when the kind changes', async () => {
-      const { wrapper, holdingsListStore } = await mountView({ query: '?sort=gain,desc' })
+    it('drops the asset types when the class changes', async () => {
+      const { wrapper, holdingsListStore } = await mountView({
+        query: '?filter=STOCKS&type=FII',
+      })
 
-      await tab(wrapper, 'Ações').trigger('click')
+      await classRadio(wrapper, 'all').trigger('change')
       await flushPromises()
 
-      expect(holdingsListStore.loadKind).toHaveBeenCalledWith('STOCKS', 0, {
-        typeLabel: undefined,
-        walletId: undefined,
-        search: undefined,
-        sort: 'gain,desc',
-      })
+      expect(holdingsListStore.loadKind).toHaveBeenCalledWith(
+        'all',
+        0,
+        expect.objectContaining({ typeLabel: undefined }),
+      )
+    })
+
+    it('keeps the chosen sort when the class changes', async () => {
+      const { wrapper, holdingsListStore } = await mountView({ query: '?sort=gain,desc' })
+
+      await classRadio(wrapper, 'STOCKS').trigger('change')
+      await flushPromises()
+
+      expect(holdingsListStore.loadKind).toHaveBeenCalledWith(
+        'STOCKS',
+        0,
+        expect.objectContaining({ sort: 'gain,desc' }),
+      )
     })
   })
 
-  describe('filters', () => {
-    it('lists every wallet on the Todos tab, labelled with its kind', async () => {
+  describe('wallets and types', () => {
+    it('lists every wallet without a kind prefix under Todas as classes, with its holding count', async () => {
       const { wrapper } = await mountView()
 
-      expect(selectOptions(selects(wrapper)[0])).toEqual([
-        'Todas as carteiras',
-        '[Ações] Carteira B3',
-        '[Cripto] Carteira Cripto',
-        '[Fundos] Carteira Fundos',
-      ])
+      expect(walletLabels(wrapper)).toEqual(['Carteira B3', 'Carteira Cripto', 'Carteira Fundos'])
+      expect(
+        wrapper
+          .findAll('fieldset')[1]
+          .findAll('.rail-side')
+          .map((count) => count.text()),
+      ).toEqual(['1', '1', '1'])
     })
 
-    it('narrows the wallet list to the active kind', async () => {
+    it('narrows the wallet list to the active class', async () => {
       const { wrapper } = await mountView({ query: '?filter=CRYPTO' })
 
-      expect(selectOptions(selects(wrapper)[0])).toEqual([
-        'Todas as carteiras',
-        '[Cripto] Carteira Cripto',
-      ])
+      expect(walletLabels(wrapper)).toEqual(['Carteira Cripto'])
     })
 
-    it('reloads the first page for the chosen wallet', async () => {
+    it('filters by several wallets at once and unticks one again', async () => {
       const { wrapper, router, holdingsListStore } = await mountView({ query: '?page=3' })
 
-      await selects(wrapper)[0].setValue('wallet-2')
+      await walletCheckbox(wrapper, 'wallet-1').setValue(true)
+      await walletCheckbox(wrapper, 'wallet-2').setValue(true)
       await flushPromises()
 
-      expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, {
+      expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith('all', 0, {
         typeLabel: undefined,
-        walletId: 'wallet-2',
+        walletId: ['wallet-1', 'wallet-2'],
         search: undefined,
         sort: 'gainPct,desc',
       })
-      expect(router.currentRoute.value.query).toEqual({ walletId: 'wallet-2' })
-    })
+      expect(router.currentRoute.value.query).toEqual({ walletId: ['wallet-1', 'wallet-2'] })
 
-    it('clears the wallet filter when all wallets are chosen again', async () => {
-      const { wrapper, holdingsListStore } = await mountView({
-        query: '?walletId=wallet-2',
-      })
-
-      await selects(wrapper)[0].setValue('')
+      await walletCheckbox(wrapper, 'wallet-1').setValue(false)
       await flushPromises()
 
-      expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, {
-        typeLabel: undefined,
-        walletId: undefined,
-        search: undefined,
-        sort: 'gainPct,desc',
-      })
+      expect(router.currentRoute.value.query).toEqual({ walletId: ['wallet-2'] })
     })
 
-    it('offers no type filter on the Todos and Cripto tabs', async () => {
+    it('ticks the wallets restored from the URL', async () => {
+      const { wrapper } = await mountView({ query: '?walletId=wallet-1&walletId=wallet-3' })
+
+      expect(walletCheckbox(wrapper, 'wallet-1').element.checked).toBe(true)
+      expect(walletCheckbox(wrapper, 'wallet-2').element.checked).toBe(false)
+      expect(walletCheckbox(wrapper, 'wallet-3').element.checked).toBe(true)
+    })
+
+    it('offers no asset type under Todas as classes or Cripto and says why', async () => {
       const { wrapper } = await mountView()
 
-      expect(selects(wrapper)).toHaveLength(1)
+      expect(typeLabels(wrapper)).toEqual([])
+      expect(wrapper.get('[data-testid="type-hint"]').text()).toBe(
+        'Escolha Ações ou Fundos para filtrar por tipo.',
+      )
 
-      await tab(wrapper, 'Cripto').trigger('click')
+      await classRadio(wrapper, 'CRYPTO').trigger('change')
       await flushPromises()
 
-      expect(selects(wrapper)).toHaveLength(1)
+      expect(wrapper.get('[data-testid="type-hint"]').text()).toBe('Cripto não tem tipos de ativo.')
     })
 
-    it('offers the stock types on the Ações tab and filters by the chosen one', async () => {
+    it('offers the stock types under Ações and filters by several of them', async () => {
       const { wrapper, router, holdingsListStore } = await mountView({ query: '?filter=STOCKS' })
 
-      const typeSelect = selects(wrapper)[1]
-      expect(selectOptions(typeSelect)).toEqual(['Todos os tipos', 'Ação PN', 'FII'])
+      expect(typeLabels(wrapper)).toEqual(['Ação PN', 'FII'])
 
-      await typeSelect.setValue('FII')
+      await typeCheckbox(wrapper, 'FII').setValue(true)
+      await typeCheckbox(wrapper, 'Ação PN').setValue(true)
       await flushPromises()
 
-      expect(holdingsListStore.loadKind).toHaveBeenCalledWith('STOCKS', 0, {
-        typeLabel: 'FII',
+      expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith('STOCKS', 0, {
+        typeLabel: ['FII', 'Ação PN'],
         walletId: undefined,
         search: undefined,
         sort: 'gainPct,desc',
       })
-      expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', type: 'FII' })
+      expect(router.currentRoute.value.query).toEqual({
+        filter: 'STOCKS',
+        type: ['FII', 'Ação PN'],
+      })
     })
 
-    it('offers the fund types on the Fundos tab', async () => {
+    it('offers the fund types under Fundos', async () => {
       const { wrapper } = await mountView({ query: '?filter=FUNDS' })
 
-      expect(selectOptions(selects(wrapper)[1])).toEqual(['Todos os tipos', 'Renda Fixa'])
+      expect(typeLabels(wrapper)).toEqual(['Renda Fixa'])
+    })
+  })
+
+  describe('chips and clearing', () => {
+    it('shows one removable chip per active filter and counts them with the search', async () => {
+      const { wrapper } = await mountView({
+        query: '?filter=STOCKS&walletId=wallet-1&type=FII&hideFrozen=true&search=petr',
+      })
+
+      expect(chipLabels(wrapper)).toEqual(['Ações', 'Carteira B3', 'FII', 'Ocultar congelados'])
+      expect(wrapper.get('[data-testid="active-filter-count"]').text()).toBe('5')
     })
 
-    it('clears the type filter when all types are chosen again', async () => {
-      const { wrapper, holdingsListStore } = await mountView({ query: '?filter=STOCKS&type=FII' })
+    it('names an unknown wallet generically', async () => {
+      const { wrapper } = await mountView({ query: '?walletId=wallet-gone' })
 
-      await selects(wrapper)[1].setValue('')
+      expect(chipLabels(wrapper)).toEqual(['Carteira selecionada'])
+    })
+
+    it('removes the filter behind a chip', async () => {
+      const { wrapper, router } = await mountView({
+        query: '?filter=STOCKS&walletId=wallet-1&type=FII&hideFrozen=true',
+      })
+
+      for (const key of ['wallet-wallet-1', 'type-FII', 'hide-frozen', 'class-STOCKS']) {
+        await wrapper.get(`[data-testid="chip-${key}"] .delete`).trigger('click')
+        await flushPromises()
+      }
+
+      expect(chipLabels(wrapper)).toEqual([])
+      expect(router.currentRoute.value.query).toEqual({})
+    })
+
+    it('labels each chip remover for screen readers', async () => {
+      const { wrapper } = await mountView({ query: '?walletId=wallet-1' })
+
+      expect(
+        wrapper.get('[data-testid="chip-wallet-wallet-1"] .delete').attributes('aria-label'),
+      ).toBe('Remover filtro Carteira B3')
+    })
+
+    it('clears every filter but the sort from the rail', async () => {
+      const { wrapper, router, holdingsListStore } = await mountView({
+        query:
+          '?filter=STOCKS&walletId=wallet-1&type=FII&hideFrozen=true&search=petr&sort=gain,asc',
+      })
+
+      await wrapper.get('[data-testid="clear-filters"]').trigger('click')
       await flushPromises()
 
-      expect(holdingsListStore.loadKind).toHaveBeenCalledWith('STOCKS', 0, {
+      expect(router.currentRoute.value.query).toEqual({ sort: 'gain,asc' })
+      expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, {
         typeLabel: undefined,
         walletId: undefined,
         search: undefined,
-        sort: 'gainPct,desc',
+        sort: 'gain,asc',
       })
+      expect(searchInput(wrapper).element.value).toBe('')
     })
 
-    it('hides the wallet filter while the user has no wallets', async () => {
-      const { wrapper } = await mountView()
-      useWalletsStore().wallets = []
-      await flushPromises()
+    it('counts the results from the store', async () => {
+      const { wrapper, holdingsListStore } = await mountView({ totalElements: 43 })
 
-      expect(selects(wrapper)).toHaveLength(0)
+      expect(wrapper.get('[data-testid="result-count"]').text()).toBe('43 investimentos')
+      holdingsListStore.totalElements = 1
+      await flushPromises()
+      expect(wrapper.get('[data-testid="result-count"]').text()).toBe('1 investimento')
     })
   })
 
@@ -625,7 +811,7 @@ describe('InvestmentsView', () => {
         query: '?filter=STOCKS&page=3',
       })
 
-      await wrapper.get('.inv-toolbar input[type="checkbox"]').setValue(true)
+      await hideFrozenCheckbox(wrapper).setValue(true)
       await flushPromises()
 
       expect(holdingsListStore.loadKind).toHaveBeenCalledExactlyOnceWith('STOCKS', 0, {
@@ -642,7 +828,7 @@ describe('InvestmentsView', () => {
       const { wrapper, router, holdingsListStore, initialLoad } = await mountView({
         query: '?hideFrozen=true',
       })
-      const checkbox = wrapper.get<HTMLInputElement>('.inv-toolbar input[type="checkbox"]')
+      const checkbox = hideFrozenCheckbox(wrapper)
 
       expect(checkbox.element.checked).toBe(true)
       expect(initialLoad).toEqual([['all', 0, expect.objectContaining({ hideFrozen: true })]])
@@ -659,7 +845,7 @@ describe('InvestmentsView', () => {
       const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
       const { wrapper } = await mountView({ query: '?hideFrozen=true' })
 
-      await wrapper.find('button[aria-label="Exportar relatório"]').trigger('click')
+      await exportButton(wrapper).trigger('click')
 
       expect(String(openWindow.mock.calls[0][0])).toBe('/investments/report?hideFrozen=true')
     })
@@ -670,7 +856,7 @@ describe('InvestmentsView', () => {
       const { wrapper, router, holdingsListStore } = await mountView({ query: '?page=2' })
       vi.useFakeTimers()
 
-      await wrapper.find('.search-input input').setValue('  petr  ')
+      await searchInput(wrapper).setValue('  petr  ')
       vi.advanceTimersByTime(299)
       expect(holdingsListStore.loadKind).not.toHaveBeenCalled()
 
@@ -692,9 +878,9 @@ describe('InvestmentsView', () => {
       const { wrapper, holdingsListStore } = await mountView()
       vi.useFakeTimers()
 
-      await wrapper.find('.search-input input').setValue('pe')
+      await searchInput(wrapper).setValue('pe')
       vi.advanceTimersByTime(200)
-      await wrapper.find('.search-input input').setValue('petr')
+      await searchInput(wrapper).setValue('petr')
       vi.advanceTimersByTime(200)
       expect(holdingsListStore.loadKind).not.toHaveBeenCalled()
 
@@ -714,7 +900,7 @@ describe('InvestmentsView', () => {
       const { wrapper, router, holdingsListStore } = await mountView({ query: '?search=petr' })
       vi.useFakeTimers()
 
-      await wrapper.find('.search-input input').setValue('   ')
+      await searchInput(wrapper).setValue('   ')
       vi.advanceTimersByTime(300)
       vi.useRealTimers()
       await flushPromises()
@@ -747,21 +933,21 @@ describe('InvestmentsView', () => {
     it('flips the direction when the same column is clicked again', async () => {
       const { wrapper, holdingsListStore } = await mountView()
 
-      await headerCell(wrapper, 'Investido').trigger('click')
-      await headerCell(wrapper, 'Investido').trigger('click')
+      await headerCell(wrapper, 'Preço atual').trigger('click')
+      await headerCell(wrapper, 'Preço atual').trigger('click')
       await flushPromises()
 
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
         'all',
         0,
-        expect.objectContaining({ sort: 'invested,desc' }),
+        expect.objectContaining({ sort: 'price,desc' }),
       )
     })
 
     it('starts ascending again on a different column', async () => {
       const { wrapper, holdingsListStore } = await mountView({ query: '?sort=gain,desc' })
 
-      await headerCell(wrapper, 'Carteira').trigger('click')
+      await headerCell(wrapper, 'Carteira · tipo').trigger('click')
       await flushPromises()
 
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
@@ -795,10 +981,10 @@ describe('InvestmentsView', () => {
       expect(router.currentRoute.value.query).toEqual({ sort: 'gainPct,asc' })
     })
 
-    it('sorts by asset from A to Z, then Z to A, on the Investimento header', async () => {
+    it('sorts by asset from A to Z, then Z to A, on the Ativo header', async () => {
       const { wrapper, holdingsListStore } = await mountView()
 
-      await headerCell(wrapper, 'Investimento').trigger('click')
+      await headerCell(wrapper, 'Ativo').trigger('click')
       await flushPromises()
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
         'all',
@@ -806,7 +992,7 @@ describe('InvestmentsView', () => {
         expect.objectContaining({ sort: 'asset,asc' }),
       )
 
-      await headerCell(wrapper, 'Investimento').trigger('click')
+      await headerCell(wrapper, 'Ativo').trigger('click')
       await flushPromises()
       expect(holdingsListStore.loadKind).toHaveBeenLastCalledWith(
         'all',
@@ -891,7 +1077,7 @@ describe('InvestmentsView', () => {
       expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 1, expect.any(Object))
     })
 
-    it('collapses the open row when the page changes', async () => {
+    it('closes the drawer when the page changes', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView({
         rows: [stockRow],
@@ -902,12 +1088,12 @@ describe('InvestmentsView', () => {
       })
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+      expect(drawerOpen()).toBe(true)
 
       await wrapper.find('.pagination-next').trigger('click')
       await flushPromises()
 
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
   })
 
@@ -921,29 +1107,30 @@ describe('InvestmentsView', () => {
       expect(holdingsListStore.loadKind).toHaveBeenCalledTimes(1)
       expect(holdingsListStore.loadKind).toHaveBeenCalledWith('FUNDS', 1, {
         typeLabel: undefined,
-        walletId: 'wallet-3',
+        walletId: ['wallet-3'],
         search: undefined,
         sort: 'gainPct,desc',
       })
-      expect(activeTab(wrapper)).toBe('Fundos')
+      expect(activeClass(wrapper)).toBe('FUNDS')
     })
 
-    it('collapses the open row on an external navigation', async () => {
+    it('closes the drawer on an external navigation', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper, router } = await mountView({ rows: [stockRow] })
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
+      expect(drawerOpen()).toBe(true)
 
       await router.push('/investments?filter=STOCKS')
       await flushPromises()
 
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
 
     it('does not reload a second time for the URL it wrote itself', async () => {
       const { wrapper, holdingsListStore } = await mountView()
 
-      await tab(wrapper, 'Ações').trigger('click')
+      await classRadio(wrapper, 'STOCKS').trigger('change')
       await flushPromises()
       await headerCell(wrapper, 'Valor atual').trigger('click')
       await flushPromises()
@@ -952,19 +1139,42 @@ describe('InvestmentsView', () => {
     })
   })
 
-  describe('row expansion', () => {
-    it('expands a row into the holding detail panel and fetches that holding', async () => {
+  describe('holding drawer', () => {
+    const fundDetail = {
+      id: 'holding-3',
+      walletId: 'wallet-3',
+      fundTypeId: 'type-3',
+      name: 'Tesouro IPCA+',
+      currentValue: 3300,
+      administrationFeeRate: null,
+      performanceFeeRate: null,
+      contributions: [],
+      frozen: false,
+      withdrawals: [],
+    }
+
+    it('opens a row in the drawer and fetches that holding', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView()
 
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
 
-      expect(wrapper.findAll('tr.detail-row')).toHaveLength(1)
-      expect(bodyRows(wrapper)[0].classes()).toContain('is-open')
+      expect(drawerOpen()).toBe(true)
+      expect(bodyRows(wrapper)[0].classes()).toContain('is-current')
       expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(1)
       expect(holdingsApi.getStockHolding).toHaveBeenCalledWith('wallet-1', 'holding-1')
-      expect(wrapper.find('tr.detail-row').text()).toContain('Movimentações')
+      expect(drawerText()).toContain('Movimentações')
+    })
+
+    it('shows the figures in the display currency, as the table does', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
+      const { wrapper } = await mountView({ rows: [stockRow] })
+
+      await bodyRows(wrapper)[0].trigger('click')
+      await flushPromises()
+
+      expect(drawerText()).toContain('R$ 6.960,00')
     })
 
     it('fetches a crypto and a fund holding through their own endpoints', async () => {
@@ -978,18 +1188,7 @@ describe('InvestmentsView', () => {
         frozen: false,
         withdrawals: [],
       })
-      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue({
-        id: 'holding-3',
-        walletId: 'wallet-3',
-        fundTypeId: 'type-3',
-        name: 'Tesouro IPCA+',
-        currentValue: 3300,
-        administrationFeeRate: null,
-        performanceFeeRate: null,
-        contributions: [],
-        frozen: false,
-        withdrawals: [],
-      })
+      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue(fundDetail)
       const { wrapper } = await mountView()
 
       await bodyRows(wrapper)[1].trigger('click')
@@ -1001,44 +1200,9 @@ describe('InvestmentsView', () => {
       expect(holdingsApi.getFundHolding).toHaveBeenCalledWith('wallet-3', 'holding-3')
     })
 
-    it('flips the chevron while a row is open', async () => {
+    it('keeps a single drawer open at a time', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
-      const { wrapper } = await mountView()
-      const chevron = () => bodyRows(wrapper)[0].find('.chev .mdi')
-
-      expect(chevron().classes()).toContain('mdi-chevron-down')
-
-      await bodyRows(wrapper)[0].trigger('click')
-
-      expect(chevron().classes()).toContain('mdi-chevron-up')
-    })
-
-    it('collapses the panel when the open row is clicked again', async () => {
-      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
-      const { wrapper } = await mountView()
-
-      await bodyRows(wrapper)[0].trigger('click')
-      await flushPromises()
-      await bodyRows(wrapper)[0].trigger('click')
-
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
-      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-open')
-    })
-
-    it('keeps a single row open at a time', async () => {
-      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
-      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue({
-        id: 'holding-3',
-        walletId: 'wallet-3',
-        fundTypeId: 'type-3',
-        name: 'Tesouro IPCA+',
-        currentValue: 3300,
-        administrationFeeRate: null,
-        performanceFeeRate: null,
-        contributions: [],
-        frozen: false,
-        withdrawals: [],
-      })
+      vi.mocked(holdingsApi.getFundHolding).mockResolvedValue(fundDetail)
       const { wrapper } = await mountView()
 
       await bodyRows(wrapper)[0].trigger('click')
@@ -1046,44 +1210,62 @@ describe('InvestmentsView', () => {
       await bodyRows(wrapper)[2].trigger('click')
       await flushPromises()
 
-      expect(wrapper.findAll('tr.detail-row')).toHaveLength(1)
-      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-open')
-      expect(bodyRows(wrapper)[2].classes()).toContain('is-open')
+      expect(document.body.querySelectorAll('[data-testid="holding-drawer"]')).toHaveLength(1)
+      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-current')
+      expect(bodyRows(wrapper)[2].classes()).toContain('is-current')
+      expect(drawerText()).toContain('Tesouro IPCA+')
     })
 
-    it('collapses the open row when the kind tab changes', async () => {
+    it('closes the drawer from its close button', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView()
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
 
-      await tab(wrapper, 'Ações').trigger('click')
+      document.body
+        .querySelector<HTMLElement>('[data-drawer-close]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await flushPromises()
 
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
+      expect(bodyRows(wrapper)[0].classes()).not.toContain('is-current')
     })
 
-    it('collapses the open row when a wallet or type filter changes', async () => {
+    it('closes the drawer when the kind tab changes', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
+      const { wrapper } = await mountView()
+      await bodyRows(wrapper)[0].trigger('click')
+      await flushPromises()
+      expect(drawerOpen()).toBe(true)
+
+      await classRadio(wrapper, 'STOCKS').trigger('change')
+      await flushPromises()
+
+      expect(drawerOpen()).toBe(false)
+    })
+
+    it('closes the drawer when a wallet or type filter changes', async () => {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const { wrapper } = await mountView({ query: '?filter=STOCKS' })
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+      expect(drawerOpen()).toBe(true)
 
-      await selects(wrapper)[1].setValue('FII')
+      await typeCheckbox(wrapper, 'FII').setValue(true)
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
 
       await bodyRows(wrapper)[0].trigger('click')
       await flushPromises()
-      await selects(wrapper)[0].setValue('wallet-1')
+      expect(drawerOpen()).toBe(true)
+      await walletCheckbox(wrapper, 'wallet-1').setValue(true)
       await flushPromises()
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
   })
 
-  describe('reacting to the detail panel', () => {
-    async function openStockPanel() {
+  describe('reacting to the drawer', () => {
+    async function openStockDrawer() {
       vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
       const context = await mountView({ rows: [stockRow] })
       await bodyRows(context.wrapper)[0].trigger('click')
@@ -1097,9 +1279,9 @@ describe('InvestmentsView', () => {
       ) as HTMLButtonElement
     }
 
-    it('collapses the panel and refreshes the list after the holding is removed', async () => {
+    it('closes the drawer and refreshes the list after the holding is removed', async () => {
       vi.mocked(holdingsApi.deleteStockHolding).mockResolvedValue(undefined)
-      const { wrapper, holdingsListStore } = await openStockPanel()
+      const { holdingsListStore } = await openStockDrawer()
 
       document.body
         .querySelector<HTMLElement>('[data-testid="holding-remove"]')!
@@ -1110,12 +1292,12 @@ describe('InvestmentsView', () => {
 
       expect(holdingsApi.deleteStockHolding).toHaveBeenCalledWith('wallet-1', 'holding-1')
       expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('tr.detail-row').exists()).toBe(false)
+      expect(drawerOpen()).toBe(false)
     })
 
-    it('freezes the holding from the panel and shows the new state once the list reloads', async () => {
+    it('freezes the holding from the drawer and shows the new state once the list reloads', async () => {
       vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue({ ...stockDetail, frozen: true })
-      const { wrapper, holdingsListStore } = await openStockPanel()
+      const { wrapper, holdingsListStore } = await openStockDrawer()
       vi.mocked(holdingsListStore.refresh).mockImplementation(async () => {
         holdingsListStore.rows = [{ ...stockRow, frozen: true }]
       })
@@ -1130,24 +1312,41 @@ describe('InvestmentsView', () => {
         frozen: true,
       })
       expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
-      expect(wrapper.findAll('[data-testid="frozen-tag"]')).toHaveLength(2)
+      expect(drawerOpen()).toBe(true)
+      expect(bodyRows(wrapper)[0].find('[data-testid="frozen-tag"]').exists()).toBe(true)
+      expect(
+        document.body.querySelector('[data-testid="holding-drawer"] [data-testid="frozen-tag"]'),
+      ).not.toBeNull()
       expect(document.body.querySelector('[data-testid="holding-freeze"]')!.textContent).toContain(
         'Descongelar',
       )
     })
-    it('refreshes the list but keeps the panel open after a position changes', async () => {
-      vi.mocked(holdingsApi.deleteStockLot).mockResolvedValue(undefined)
-      const { wrapper, holdingsListStore } = await openStockPanel()
 
-      await wrapper.find('tr.detail-row td.c-act button').trigger('click')
+    it('refreshes the list but keeps the drawer open after a position changes', async () => {
+      vi.mocked(holdingsApi.deleteStockLot).mockResolvedValue(undefined)
+      const { holdingsListStore } = await openStockDrawer()
+
+      document.body
+        .querySelector<HTMLElement>('[data-testid="ledger-delete"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await flushPromises()
       dialogButton('Remover').click()
       await flushPromises()
 
       expect(holdingsApi.deleteStockLot).toHaveBeenCalledWith('wallet-1', 'holding-1', 'lot-1')
       expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
-      expect(wrapper.find('tr.detail-row').exists()).toBe(true)
+      expect(drawerOpen()).toBe(true)
+    })
+
+    it('opens the purchase modal from the row without opening the drawer', async () => {
+      const { wrapper, holdingsListStore } = await mountView({ rows: [stockRow] })
+
+      await bodyRows(wrapper)[0].get('[data-testid="row-add-position"]').trigger('click')
+      await flushPromises()
+
+      expect(drawerOpen()).toBe(false)
+      expect(document.body.querySelector('.modal-card-title')?.textContent).toBe('Registrar compra')
+      expect(holdingsListStore.refresh).not.toHaveBeenCalled()
     })
   })
 
@@ -1155,10 +1354,7 @@ describe('InvestmentsView', () => {
     it('opens the add-investment modal without a kind on the Todos tab', async () => {
       const { wrapper, modals } = await mountView()
 
-      const addButton = wrapper
-        .findAll('.inv-toolbar button')
-        .find((button) => button.text() === 'Adicionar investimento')!
-      await addButton.trigger('click')
+      await headerButton(wrapper, 'Adicionar investimento').trigger('click')
 
       expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined, undefined)
     })
@@ -1166,10 +1362,7 @@ describe('InvestmentsView', () => {
     it('opens the add-investment modal pre-set to the active kind', async () => {
       const { wrapper, modals } = await mountView({ query: '?filter=FUNDS' })
 
-      const addButton = wrapper
-        .findAll('.inv-toolbar button')
-        .find((button) => button.text() === 'Adicionar investimento')!
-      await addButton.trigger('click')
+      await headerButton(wrapper, 'Adicionar investimento').trigger('click')
 
       expect(modals.openAddInvestment).toHaveBeenCalledWith('FUNDS', undefined)
     })
@@ -1177,10 +1370,7 @@ describe('InvestmentsView', () => {
     it('opens the add-investment modal on the filtered kind and wallet', async () => {
       const { wrapper, modals } = await mountView({ query: '?filter=STOCKS&walletId=wallet-1' })
 
-      const addButton = wrapper
-        .findAll('.inv-toolbar button')
-        .find((button) => button.text() === 'Adicionar investimento')!
-      await addButton.trigger('click')
+      await headerButton(wrapper, 'Adicionar investimento').trigger('click')
 
       expect(modals.openAddInvestment).toHaveBeenCalledWith('STOCKS', 'wallet-1')
     })
@@ -1188,12 +1378,30 @@ describe('InvestmentsView', () => {
     it("opens the add-investment modal on the filtered wallet's kind when no kind is filtered", async () => {
       const { wrapper, modals } = await mountView({ query: '?walletId=wallet-2' })
 
-      const addButton = wrapper
-        .findAll('.inv-toolbar button')
-        .find((button) => button.text() === 'Adicionar investimento')!
-      await addButton.trigger('click')
+      await headerButton(wrapper, 'Adicionar investimento').trigger('click')
 
       expect(modals.openAddInvestment).toHaveBeenCalledWith('CRYPTO', 'wallet-2')
+    })
+
+    it('preselects no wallet when several are filtered', async () => {
+      const { wrapper, modals } = await mountView({ query: '?walletId=wallet-1&walletId=wallet-2' })
+
+      await headerButton(wrapper, 'Adicionar investimento').trigger('click')
+
+      expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined, undefined)
+    })
+
+    it('carries several wallets and types into the report as repeated keys', async () => {
+      const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
+      const { wrapper } = await mountView({
+        query: '?filter=STOCKS&walletId=wallet-1&walletId=wallet-4&type=FII&type=ETF',
+      })
+
+      await exportButton(wrapper).trigger('click')
+
+      expect(String(openWindow.mock.calls[0][0])).toBe(
+        '/investments/report?filter=STOCKS&walletId=wallet-1&walletId=wallet-4&type=FII&type=ETF',
+      )
     })
 
     it('opens the report in a new tab carrying the active filters but not the sort or page', async () => {
@@ -1202,7 +1410,7 @@ describe('InvestmentsView', () => {
         query: '?filter=STOCKS&walletId=wallet-1&type=FII&search=petr&sort=gain,asc&page=2',
       })
 
-      await wrapper.find('button[aria-label="Exportar relatório"]').trigger('click')
+      await exportButton(wrapper).trigger('click')
 
       expect(openWindow).toHaveBeenCalledTimes(1)
       const [href, target] = openWindow.mock.calls[0]
@@ -1216,7 +1424,7 @@ describe('InvestmentsView', () => {
       const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
       const { wrapper } = await mountView()
 
-      await wrapper.find('button[aria-label="Exportar relatório"]').trigger('click')
+      await exportButton(wrapper).trigger('click')
 
       expect(String(openWindow.mock.calls[0][0])).toBe('/investments/report')
     })

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.context.request.WebRequest
 import java.util.UUID
 
 @RestController
@@ -23,8 +24,8 @@ class HoldingsOverviewController(
     @GetMapping
     fun findAll(
         @RequestParam(required = false) kind: WalletKind?,
-        @RequestParam(required = false) typeLabel: String?,
-        @RequestParam(required = false) walletId: UUID?,
+        webRequest: WebRequest,
+        @RequestParam(required = false) walletId: List<UUID>?,
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false, defaultValue = "false") hideFrozen: Boolean,
         pageable: Pageable,
@@ -33,7 +34,7 @@ class HoldingsOverviewController(
         val userId = currentUserProvider.getCurrentUser().id
 
         val holdings = holdingsOverviewRepository.findAll(
-            userId, kind?.jooqWalletKind, typeLabel, walletId, search, hideFrozen, pageable
+            userId, kind?.jooqWalletKind, webRequest.typeLabels(), walletId, search, hideFrozen, pageable
         )
 
         return ResponseEntity.ok(holdings)
@@ -42,8 +43,8 @@ class HoldingsOverviewController(
     @GetMapping("/report")
     fun findAllForReport(
         @RequestParam(required = false) kind: WalletKind?,
-        @RequestParam(required = false) typeLabel: String?,
-        @RequestParam(required = false) walletId: UUID?,
+        webRequest: WebRequest,
+        @RequestParam(required = false) walletId: List<UUID>?,
         @RequestParam(required = false) search: String?,
         @RequestParam(required = false, defaultValue = "false") hideFrozen: Boolean,
     ): ResponseEntity<List<HoldingRowResponse>> {
@@ -51,9 +52,12 @@ class HoldingsOverviewController(
         val userId = currentUserProvider.getCurrentUser().id
 
         val holdings = holdingsOverviewRepository.findAllForReport(
-            userId, kind?.jooqWalletKind, typeLabel, walletId, search, hideFrozen
+            userId, kind?.jooqWalletKind, webRequest.typeLabels(), walletId, search, hideFrozen
         )
 
         return ResponseEntity.ok(holdings)
     }
+
+    // Binding a lone value to List<String> splits it on commas, and a type label is free text that may contain one.
+    private fun WebRequest.typeLabels(): List<String>? = getParameterValues("typeLabel")?.toList()
 }

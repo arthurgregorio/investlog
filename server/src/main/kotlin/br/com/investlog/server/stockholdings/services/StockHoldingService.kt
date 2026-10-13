@@ -1,6 +1,7 @@
 package br.com.investlog.server.stockholdings.services
 
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
+import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.stockholdings.repositories.StockHoldingRepository
 import br.com.investlog.server.stockholdings.repositories.StockLotRepository
@@ -116,7 +117,7 @@ class StockHoldingService(
     }
 
     @Transactional
-    fun updateLotDate(
+    fun updateLot(
         walletExternalId: UUID,
         holdingExternalId: UUID,
         lotExternalId: UUID,
@@ -125,8 +126,12 @@ class StockHoldingService(
         val walletId = walletService.resolveId(walletExternalId)
         val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
             ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
-        return lotRepo.updateLotDate(holdingId, lotExternalId, request.lotDate)
+        val lot = lotRepo.updateLot(holdingId, lotExternalId, request)
             ?: throw NotFoundException("Lote não encontrado: $lotExternalId")
+        if (request.quantity != null && lotRepo.sumQuantity(holdingId) < lotRepo.sumExitedQuantity(holdingId)) {
+            throw InvalidLotUpdateException()
+        }
+        return lot
     }
 
     private fun resolveStockSegmentId(externalId: UUID): Long =

@@ -26,5 +26,14 @@ export function useDisplayMoney() {
     return fmt.money(converted.amount, converted.currency, options)
   }
 
-  return { toDisplayCurrency, formatConverted }
+  function displayAmount(amount: number, fromCurrency: string, convert: boolean): DisplayAmount {
+    return convert ? toDisplayCurrency(amount, fromCurrency) : { amount, currency: fromCurrency }
+  }
+
+  function formatDisplayAmount(amount: number, fromCurrency: string, convert: boolean): string {
+    const shown = displayAmount(amount, fromCurrency, convert)
+    return fmt.money(shown.amount, shown.currency)
+  }
+
+  return { toDisplayCurrency, formatConverted, displayAmount, formatDisplayAmount }
 }
