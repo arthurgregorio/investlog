@@ -36,9 +36,6 @@ vi.mock('@/api/holdings', () => ({
     deleteStockLot: vi.fn(),
     deleteCryptoLot: vi.fn(),
     deleteFundContribution: vi.fn(),
-    updateStockLotDate: vi.fn(),
-    updateCryptoLotDate: vi.fn(),
-    updateFundContributionDate: vi.fn(),
   },
 }))
 
@@ -137,8 +134,6 @@ interface KindCase {
   removeHolding: ApiMock
   removeEntry: ApiMock
   removeWithdrawal: ApiMock
-  updateEntryDate: ApiMock
-  dateField: 'lotDate' | 'contributionDate'
   removeEntryTitle: string
   entryRemoved: string
   removeWithdrawalTitle: string
@@ -156,8 +151,6 @@ const kindCases: KindCase[] = [
     removeHolding: vi.mocked(holdingsApi.deleteStockHolding),
     removeEntry: vi.mocked(holdingsApi.deleteStockLot),
     removeWithdrawal: vi.mocked(resultsApi.deleteStockWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateStockLotDate),
-    dateField: 'lotDate',
     removeEntryTitle: 'Remover compra',
     entryRemoved: 'Compra removida.',
     removeWithdrawalTitle: 'Desfazer venda',
@@ -173,8 +166,6 @@ const kindCases: KindCase[] = [
     removeHolding: vi.mocked(holdingsApi.deleteCryptoHolding),
     removeEntry: vi.mocked(holdingsApi.deleteCryptoLot),
     removeWithdrawal: vi.mocked(resultsApi.deleteCryptoWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateCryptoLotDate),
-    dateField: 'lotDate',
     removeEntryTitle: 'Remover compra',
     entryRemoved: 'Compra removida.',
     removeWithdrawalTitle: 'Desfazer venda',
@@ -190,8 +181,6 @@ const kindCases: KindCase[] = [
     removeHolding: vi.mocked(holdingsApi.deleteFundHolding),
     removeEntry: vi.mocked(holdingsApi.deleteFundContribution),
     removeWithdrawal: vi.mocked(resultsApi.deleteFundWithdrawal),
-    updateEntryDate: vi.mocked(holdingsApi.updateFundContributionDate),
-    dateField: 'contributionDate',
     removeEntryTitle: 'Remover aporte',
     entryRemoved: 'Aporte removido.',
     removeWithdrawalTitle: 'Desfazer resgate',
@@ -327,27 +316,6 @@ describe('useHoldingDetail', () => {
       })
       expect(onChanged).toHaveBeenCalledTimes(1)
     })
-
-    it('saves an entry date under the kind payload key and closes the editor', async () => {
-      kindCase.updateEntryDate.mockResolvedValue(undefined)
-      const { holding, onChanged } = setup(kindCase.row)
-      holding.editingEntryId.value = 'entry-1'
-
-      await holding.updateEntryDate('entry-1', new Date(Date.UTC(2026, 1, 3, 12)))
-
-      expect(kindCase.updateEntryDate).toHaveBeenCalledWith(
-        kindCase.row.walletId,
-        kindCase.row.id,
-        'entry-1',
-        { [kindCase.dateField]: '2026-02-03' },
-      )
-      for (const other of otherCalls(kindCase, (other) => other.updateEntryDate)) {
-        expect(other).not.toHaveBeenCalled()
-      }
-      expect(holding.editingEntryId.value).toBeNull()
-      expect(toastOpen).toHaveBeenCalledWith({ message: 'Data atualizada.', type: 'is-success' })
-      expect(onChanged).toHaveBeenCalledTimes(1)
-    })
   })
 
   it('leaves loading once a failed fetch settles', async () => {
@@ -399,17 +367,6 @@ describe('useHoldingDetail', () => {
 
     expect(toastOpen).not.toHaveBeenCalled()
     expect(holdingsApi.getStockHolding).not.toHaveBeenCalled()
-    expect(onChanged).not.toHaveBeenCalled()
-  })
-
-  it('keeps the date editor open when saving the date is rejected', async () => {
-    vi.mocked(holdingsApi.updateStockLotDate).mockRejectedValue(new Error('500'))
-    const { holding, onChanged } = setup(stockRow)
-    holding.editingEntryId.value = 'lot-1'
-
-    await expect(holding.updateEntryDate('lot-1', new Date())).rejects.toThrow('500')
-
-    expect(holding.editingEntryId.value).toBe('lot-1')
     expect(onChanged).not.toHaveBeenCalled()
   })
 })

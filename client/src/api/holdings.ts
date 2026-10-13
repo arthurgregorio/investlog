@@ -9,6 +9,17 @@ import type {
   StockHoldingDetail,
 } from '@/types'
 
+export interface LotUpdatePayload {
+  lotDate: string
+  quantity: number
+  price: number
+}
+
+export interface ContributionUpdatePayload {
+  contributionDate: string
+  amount: number
+}
+
 export interface HoldingsFilterParams {
   kind?: string
   typeLabel?: string | string[]
@@ -224,33 +235,33 @@ export const holdingsApi = {
       .then(() => undefined)
   },
 
-  updateStockLotDate(
+  updateStockLot(
     walletId: string,
     holdingId: string,
     lotId: string,
-    payload: { lotDate: string },
+    payload: LotUpdatePayload,
   ): Promise<LotDetail> {
     return apiClient
       .patch<LotDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}/lots/${lotId}`, payload)
       .then((r) => r.data)
   },
 
-  updateCryptoLotDate(
+  updateCryptoLot(
     walletId: string,
     holdingId: string,
     lotId: string,
-    payload: { lotDate: string },
+    payload: LotUpdatePayload,
   ): Promise<LotDetail> {
     return apiClient
       .patch<LotDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}/lots/${lotId}`, payload)
       .then((r) => r.data)
   },
 
-  updateFundContributionDate(
+  updateFundContribution(
     walletId: string,
     holdingId: string,
     contributionId: string,
-    payload: { contributionDate: string },
+    payload: ContributionUpdatePayload,
   ): Promise<ContributionDetail> {
     return apiClient
       .patch<ContributionDetail>(

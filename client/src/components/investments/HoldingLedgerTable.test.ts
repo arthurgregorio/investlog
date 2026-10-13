@@ -70,7 +70,6 @@ interface ListProps {
   isFund: boolean
   isAdmin: boolean
   row: HoldingRow
-  editingEntryId: string | null
 }
 
 function mountList(props: Partial<ListProps> = {}) {
@@ -100,7 +99,7 @@ describe('HoldingLedgerTable', () => {
     const [purchaseItem] = items(mountList())
 
     expect(purchaseItem.get('.ledger-tag').text()).toBe('Compra')
-    expect(purchaseItem.get('button.date-edit').text()).toBe('12 jan 2026')
+    expect(purchaseItem.get('[data-testid="ledger-date"]').text()).toBe('12 jan 2026')
     expect(purchaseItem.get('[data-testid="ledger-detail"]').text()).toBe('+10 × R$ 750,00')
     expect(purchaseItem.get('[data-testid="ledger-amount"]').text()).toBe('R$ 7.500,00')
     expect(purchaseItem.find('[data-testid="ledger-costs"]').exists()).toBe(false)
@@ -145,7 +144,7 @@ describe('HoldingLedgerTable', () => {
     ])
   })
 
-  it('tags a reinvestment, describes an amount-only one and shows its date as plain text', () => {
+  it('tags a reinvestment, describes an amount-only one and offers no edit for it', () => {
     const wrapper = mountList({
       entries: [{ ...reinvestment, quantity: null, unitPrice: null }],
     })
@@ -154,7 +153,7 @@ describe('HoldingLedgerTable', () => {
     expect(reinvestmentItem.get('.ledger-tag').text()).toBe('Reinvestimento')
     expect(reinvestmentItem.get('.ledger-tag').classes()).toContain('lt-reinvestment')
     expect(reinvestmentItem.get('[data-testid="ledger-detail"]').text()).toBe('Valor reinvestido')
-    expect(reinvestmentItem.find('button.date-edit').exists()).toBe(false)
+    expect(reinvestmentItem.find('[data-testid="ledger-edit"]').exists()).toBe(false)
   })
 
   it('shows a quantity without a unit price on its own', () => {
@@ -190,25 +189,36 @@ describe('HoldingLedgerTable', () => {
     expect(mountList({ isAdmin: false }).find('[data-testid="ledger-delete"]').exists()).toBe(false)
   })
 
-  it('asks to edit a purchase date and shows the picker for the entry being edited', async () => {
-    const wrapper = mountList()
+  it('offers an edit button on purchases only and emits the purchase', async () => {
+    const wrapper = mountList({ entries: [purchase, withdrawal, reinvestment] })
 
-    expect(items(wrapper)[1].find('button.date-edit').exists()).toBe(false)
-    await wrapper.get('button.date-edit').trigger('click')
+    const editButton = items(wrapper)[0].get('[data-testid="ledger-edit"]')
+    expect(editButton.attributes('aria-label')).toBe('Editar compra de 12 jan 2026')
+    expect(items(wrapper)[1].find('[data-testid="ledger-edit"]').exists()).toBe(false)
+    expect(items(wrapper)[2].find('[data-testid="ledger-edit"]').exists()).toBe(false)
 
-    expect(wrapper.emitted('update:editingEntryId')).toEqual([['lot-1']])
-    await wrapper.setProps({ editingEntryId: 'lot-1' })
-    expect(wrapper.find('button.date-edit').exists()).toBe(false)
-    expect(wrapper.find('.datepicker').exists()).toBe(true)
+    await editButton.trigger('click')
+
+    expect(wrapper.emitted('edit-purchase')).toEqual([[purchase]])
   })
 
-  it('emits change-date for a picked date and nothing when the picker is cleared', async () => {
-    const pickedDate = new Date(Date.UTC(2026, 1, 3, 12))
-    const wrapper = mountList({ editingEntryId: 'lot-1' })
+  it('offers the edit button to a non-admin and words it as a contribution for a fund', () => {
+    const wrapper = mountList({ isAdmin: false, isFund: true, entries: [fundContribution] })
 
-    wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', null)
-    wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', pickedDate)
+    expect(items(wrapper)[0].get('[data-testid="ledger-edit"]').attributes('aria-label')).toBe(
+      'Editar aporte de 12 jan 2026',
+    )
+    expect(wrapper.find('[data-testid="ledger-delete"]').exists()).toBe(false)
+  })
 
-    expect(wrapper.emitted('change-date')).toEqual([['lot-1', pickedDate]])
+  it('shows every date as plain text, with no inline date editor', () => {
+    const wrapper = mountList()
+
+    expect(items(wrapper).map((item) => item.get('[data-testid="ledger-date"]').text())).toEqual([
+      '12 jan 2026',
+      '10 mai 2026',
+    ])
+    expect(wrapper.find('button.date-edit').exists()).toBe(false)
+    expect(wrapper.find('.datepicker').exists()).toBe(false)
   })
 })

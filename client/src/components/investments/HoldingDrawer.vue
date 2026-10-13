@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useId, useTemplateRef } from 'vue'
-import AddPositionModal from '@/components/investments/AddPositionModal.vue'
+import AddPositionModal, { type PositionEntry } from '@/components/investments/AddPositionModal.vue'
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import WithdrawModal from '@/components/investments/WithdrawModal.vue'
 import ReinvestModal from '@/components/investments/ReinvestModal.vue'
@@ -17,9 +17,11 @@ import { useHoldingDetail } from '@/composables/useHoldingDetail'
 import { useAuthStore } from '@/stores/auth'
 import { holdingTypeLabel } from '@/utils/holdingLabels'
 import { badgeColor } from '@/utils/walletTypes'
+import type { LedgerRow } from '@/utils/holdingLedger'
 import type { FundHoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
 
-type HoldingModal = 'addPosition' | 'updatePrice' | 'setSegment' | 'withdraw' | 'reinvest' | 'move'
+type HoldingModal =
+  'addPosition' | 'editPurchase' | 'updatePrice' | 'setSegment' | 'withdraw' | 'reinvest' | 'move'
 
 interface DrawerStat {
   testId: string
@@ -41,7 +43,6 @@ const { displayAmount, formatDisplayAmount } = useDisplayMoney()
 const {
   detail,
   loading,
-  editingEntryId,
   isFund,
   ledger,
   load,
@@ -50,7 +51,6 @@ const {
   confirmRemoveHolding,
   confirmRemoveEntry,
   confirmRemoveWithdrawal,
-  updateEntryDate,
 } = useHoldingDetail(() => props.row, {
   onChanged: () => emit('positionAdded'),
   onRemoved: () => emit('deleted'),
@@ -59,6 +59,7 @@ const {
 const titleId = useId()
 const panel = useTemplateRef<HTMLElement>('panel')
 const activeModal = ref<HoldingModal | null>(null)
+const editedPurchase = ref<PositionEntry | null>(null)
 
 const isStock = computed(() => props.row.kind === 'STOCKS')
 const displayName = computed(() => props.row.ticker ?? props.row.name)
@@ -154,6 +155,18 @@ function closeOnBackdrop(event: MouseEvent) {
 
 function closeModal() {
   activeModal.value = null
+  editedPurchase.value = null
+}
+
+function editPurchase(entry: LedgerRow) {
+  editedPurchase.value = {
+    id: entry.id,
+    date: entry.date,
+    quantity: entry.quantity,
+    price: entry.unitPrice,
+    amount: entry.amount,
+  }
+  activeModal.value = 'editPurchase'
 }
 
 // A full exit flips the holding to COMPLETED, which drops it out of GET /holdings. Reloading the
@@ -304,14 +317,13 @@ onMounted(() => {
 
         <section class="drawer-section">
           <HoldingLedgerTable
-            v-model:editing-entry-id="editingEntryId"
             :entries="ledger"
             :is-fund="isFund"
             :is-admin="auth.isAdmin"
             :row="row"
             @delete-purchase="confirmRemoveEntry"
             @delete-withdrawal="confirmRemoveWithdrawal"
-            @change-date="updateEntryDate"
+            @edit-purchase="editPurchase"
           />
         </section>
       </template>
@@ -319,12 +331,15 @@ onMounted(() => {
   </b-sidebar>
 
   <AddPositionModal
-    v-if="activeModal === 'addPosition'"
+    v-if="activeModal === 'addPosition' || activeModal === 'editPurchase'"
     :holding-id="row.id"
     :wallet-id="row.walletId"
     :kind="row.kind"
     :wallet-currency="row.walletCurrency"
+    :entry="editedPurchase ?? undefined"
+    :holding-label="`${displayName} · ${row.walletName}`"
     @added="refresh"
+    @updated="refresh"
     @close="closeModal"
   />
 

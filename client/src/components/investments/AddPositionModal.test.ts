@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import AddPositionModal from './AddPositionModal.vue'
+import AddPositionModal, { type PositionEntry } from './AddPositionModal.vue'
 import { holdingsApi } from '@/api/holdings'
 import type { WalletKind } from '@/types'
 
@@ -9,6 +9,9 @@ vi.mock('@/api/holdings', () => ({
     addStockLot: vi.fn(),
     addCryptoLot: vi.fn(),
     addContribution: vi.fn(),
+    updateStockLot: vi.fn(),
+    updateCryptoLot: vi.fn(),
+    updateFundContribution: vi.fn(),
   },
 }))
 
@@ -170,5 +173,180 @@ describe('AddPositionModal', () => {
 
     expect(wrapper.emitted('close')).toHaveLength(1)
     expect(holdingsApi.addStockLot).not.toHaveBeenCalled()
+  })
+
+  describe('editing an entry', () => {
+    const lot: PositionEntry = {
+      id: 'lot-1',
+      date: '2026-01-12',
+      quantity: 300,
+      price: 25.1,
+      amount: 7530,
+    }
+    const contribution: PositionEntry = {
+      id: 'c-1',
+      date: '2026-01-10',
+      quantity: null,
+      price: null,
+      amount: 4000,
+    }
+
+    function mountEditModal(kind: WalletKind, entry: PositionEntry, holdingLabel?: string) {
+      activeWrapper = mount(AddPositionModal, {
+        props: {
+          holdingId: 'holding-1',
+          walletId: 'wallet-1',
+          kind,
+          walletCurrency: 'BRL',
+          entry,
+          holdingLabel,
+        },
+        global: { config: { errorHandler: () => undefined } },
+        attachTo: document.body,
+      })
+      return activeWrapper
+    }
+
+    function rejectionOf(detail: string) {
+      return Object.assign(new Error('400'), {
+        isAxiosError: true,
+        response: { status: 400, data: { detail } },
+      })
+    }
+
+    it('titles a lot edit and prefills its values', () => {
+      const wrapper = mountEditModal('STOCKS', lot, 'PETR4 · Carteira B3')
+
+      expect(document.body.textContent).toContain('Editar compra')
+      expect(document.body.textContent).toContain('PETR4 · Carteira B3 · registrada em 12 jan 2026')
+      const [quantityInput, priceInput] = wrapper.findAll<HTMLInputElement>('input[type="number"]')
+      expect(Number(quantityInput.element.value)).toBe(300)
+      expect(Number(priceInput.element.value)).toBe(25.1)
+      expect(wrapper.get('[data-testid="position-total"]').text()).toContain('R$ 7.530,00')
+    })
+
+    it('titles a contribution edit, prefills the amount and names the date without a label', () => {
+      const wrapper = mountEditModal('FUNDS', contribution)
+
+      expect(document.body.textContent).toContain('Editar aporte')
+      expect(document.body.textContent).toContain('registrada em 10 jan 2026')
+      expect(Number(wrapper.get<HTMLInputElement>('input[type="number"]').element.value)).toBe(4000)
+      expect(wrapper.get('[data-testid="position-total"]').text()).toContain('Total aportado')
+    })
+
+    it('keeps Salvar alterações disabled until a value changes, then shows the previous total', async () => {
+      const wrapper = mountEditModal('STOCKS', lot)
+
+      expect(submitButton(wrapper, 'Salvar alterações').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="position-impact"]').exists()).toBe(false)
+
+      await wrapper.findAll('input[type="number"]')[1].setValue('2.51')
+
+      expect(submitButton(wrapper, 'Salvar alterações').attributes('disabled')).toBeUndefined()
+      expect(wrapper.get('[data-testid="position-impact"]').text()).toBe(
+        'Antes: R$ 7.530,00. Preço médio e resultado serão recalculados.',
+      )
+      expect(wrapper.get('[data-testid="position-total"]').text()).toContain('R$ 753,00')
+    })
+
+    it('keeps saving disabled while the date is cleared', async () => {
+      const wrapper = mountEditModal('STOCKS', lot)
+      await wrapper.findAll('input[type="number"]')[0].setValue('30')
+
+      wrapper.getComponent({ name: 'BDatepicker' }).vm.$emit('update:modelValue', null)
+      await flushPromises()
+
+      expect(submitButton(wrapper, 'Salvar alterações').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="position-impact"]').exists()).toBe(false)
+    })
+
+    it('treats a new date as a change', async () => {
+      const wrapper = mountEditModal('STOCKS', lot)
+
+      wrapper
+        .getComponent({ name: 'BDatepicker' })
+        .vm.$emit('update:modelValue', new Date('2026-02-03T12:00:00Z'))
+      await flushPromises()
+
+      expect(submitButton(wrapper, 'Salvar alterações').attributes('disabled')).toBeUndefined()
+    })
+
+    it.each([
+      ['STOCKS', 'updateStockLot'],
+      ['CRYPTO', 'updateCryptoLot'],
+    ] as const)('saves a %s lot through %s', async (kind, method) => {
+      vi.mocked(holdingsApi[method]).mockResolvedValue({} as never)
+      const wrapper = mountEditModal(kind, lot)
+
+      await wrapper.findAll('input[type="number"]')[0].setValue('30')
+      await submitButton(wrapper, 'Salvar alterações').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi[method]).toHaveBeenCalledWith('wallet-1', 'holding-1', 'lot-1', {
+        lotDate: '2026-01-12',
+        quantity: 30,
+        price: 25.1,
+      })
+      expect(document.body.textContent).toContain('Compra atualizada!')
+      expect(wrapper.emitted('updated')).toHaveLength(1)
+      expect(wrapper.emitted('added')).toBeUndefined()
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
+
+    it('saves a contribution with its amount and words the impact for a fund', async () => {
+      vi.mocked(holdingsApi.updateFundContribution).mockResolvedValue({} as never)
+      const wrapper = mountEditModal('FUNDS', contribution)
+
+      await wrapper.find('input[type="number"]').setValue('4500')
+      expect(wrapper.get('[data-testid="position-impact"]').text()).toBe(
+        'Antes: R$ 4.000,00. O valor investido e o resultado serão recalculados.',
+      )
+      await submitButton(wrapper, 'Salvar alterações').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateFundContribution).toHaveBeenCalledWith(
+        'wallet-1',
+        'holding-1',
+        'c-1',
+        { contributionDate: '2026-01-10', amount: 4500 },
+      )
+      expect(document.body.textContent).toContain('Aporte atualizado!')
+      expect(wrapper.emitted('updated')).toHaveLength(1)
+    })
+
+    it('shows a rejected correction inline and stays open', async () => {
+      vi.mocked(holdingsApi.updateStockLot).mockRejectedValue(
+        rejectionOf('A quantidade das compras não pode ficar abaixo da quantidade já vendida'),
+      )
+      const wrapper = mountEditModal('STOCKS', lot)
+
+      await wrapper.findAll('input[type="number"]')[0].setValue('10')
+      await submitButton(wrapper, 'Salvar alterações').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.get('[data-testid="position-error"]').text()).toBe(
+        'A quantidade das compras não pode ficar abaixo da quantidade já vendida',
+      )
+      expect(wrapper.emitted('updated')).toBeUndefined()
+      expect(wrapper.emitted('close')).toBeUndefined()
+    })
+
+    it('clears the previous message when it is submitted again', async () => {
+      vi.mocked(holdingsApi.updateStockLot)
+        .mockRejectedValueOnce(rejectionOf('Quantidade inválida'))
+        .mockResolvedValueOnce({} as never)
+      const wrapper = mountEditModal('STOCKS', lot)
+
+      await wrapper.findAll('input[type="number"]')[0].setValue('10')
+      await submitButton(wrapper, 'Salvar alterações').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="position-error"]').exists()).toBe(true)
+
+      await submitButton(wrapper, 'Salvar alterações').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="position-error"]').exists()).toBe(false)
+      expect(wrapper.emitted('updated')).toHaveLength(1)
+    })
   })
 })
