@@ -20,28 +20,31 @@ export interface ContributionUpdatePayload {
   amount: number
 }
 
+export interface HoldingsFilterParams {
+  kind?: string
+  typeLabel?: string | string[]
+  walletId?: string | string[]
+  search?: string
+  hideFrozen?: boolean
+}
+
+// Spring binds a list only from repeated keys (walletId=a&walletId=b), not from axios's default
+// walletId[]=a form.
+const REPEATED_KEYS = { indexes: null } as const
+
 export const holdingsApi = {
-  findAll(params: {
-    kind?: string
-    typeLabel?: string
-    walletId?: string
-    search?: string
-    sort?: string
-    hideFrozen?: boolean
-    page?: number
-    size?: number
-  }): Promise<PagedResponse<HoldingRow>> {
-    return apiClient.get<PagedResponse<HoldingRow>>('/holdings', { params }).then((r) => r.data)
+  findAll(
+    params: HoldingsFilterParams & { sort?: string; page?: number; size?: number },
+  ): Promise<PagedResponse<HoldingRow>> {
+    return apiClient
+      .get<PagedResponse<HoldingRow>>('/holdings', { params, paramsSerializer: REPEATED_KEYS })
+      .then((r) => r.data)
   },
 
-  findAllForReport(params: {
-    kind?: string
-    typeLabel?: string
-    walletId?: string
-    search?: string
-    hideFrozen?: boolean
-  }): Promise<HoldingRow[]> {
-    return apiClient.get<HoldingRow[]>('/holdings/report', { params }).then((r) => r.data)
+  findAllForReport(params: HoldingsFilterParams): Promise<HoldingRow[]> {
+    return apiClient
+      .get<HoldingRow[]>('/holdings/report', { params, paramsSerializer: REPEATED_KEYS })
+      .then((r) => r.data)
   },
 
   // --- Stock holdings ---

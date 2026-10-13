@@ -8,6 +8,7 @@ import {
   parsePage,
   parseSort,
   queryFingerprint,
+  queryList,
   useInvestmentFilters,
   type InvestmentsLoadRequest,
 } from './useInvestmentFilters'
@@ -93,6 +94,21 @@ describe('query parsing', () => {
       'filter=FUNDS&walletId=&type=&search=&hideFrozen=&sort=&page=2',
     )
   })
+
+  it('fingerprints a list the same whatever its order', () => {
+    expect(queryFingerprint({ walletId: ['b', 'a'] })).toBe(
+      queryFingerprint({ walletId: ['a', 'b'] }),
+    )
+  })
+
+  it('reads a single value or repeated values as a list, skipping empty ones', () => {
+    expect(queryList({ walletId: 'wallet-1' }, 'walletId')).toEqual(['wallet-1'])
+    expect(queryList({ walletId: ['wallet-1', null, '', 'wallet-2'] }, 'walletId')).toEqual([
+      'wallet-1',
+      'wallet-2',
+    ])
+    expect(queryList({}, 'walletId')).toEqual([])
+  })
 })
 
 describe('useInvestmentFilters', () => {
@@ -102,16 +118,16 @@ describe('useInvestmentFilters', () => {
     )
 
     expect(filters.activeFilter.value).toBe('STOCKS')
-    expect(filters.walletIdFilter.value).toBe('wallet-1')
-    expect(filters.typeLabelFilter.value).toBe('FII')
+    expect(filters.walletIdFilter.value).toEqual(['wallet-1'])
+    expect(filters.typeLabelFilter.value).toEqual(['FII'])
     expect(filters.searchQuery.value).toBe('petr')
     expect(filters.sortKey.value).toBe('gain')
     expect(filters.sortDirection.value).toBe('asc')
     expect(onReload).toHaveBeenCalledExactlyOnceWith({
       kind: 'STOCKS',
       page: 1,
-      walletId: 'wallet-1',
-      typeLabel: 'FII',
+      walletId: ['wallet-1'],
+      typeLabel: ['FII'],
       search: 'petr',
       sort: 'gain,asc',
     })
@@ -155,7 +171,7 @@ describe('useInvestmentFilters', () => {
     ])
   })
 
-  it('writes a tab change to the URL without reloading again for its own echo', async () => {
+  it('writes a class change to the URL, keeping the search, without reloading for its own echo', async () => {
     const { filters, router, onReload, onFiltersChange } = await mountFilters(
       '?walletId=wallet-1&search=petr&sort=price,desc&page=3',
     )
@@ -164,16 +180,33 @@ describe('useInvestmentFilters', () => {
     filters.selectTab('CRYPTO')
     await flushPromises()
 
-    expect(router.currentRoute.value.query).toEqual({ filter: 'CRYPTO', sort: 'price,desc' })
+    expect(router.currentRoute.value.query).toEqual({
+      filter: 'CRYPTO',
+      search: 'petr',
+      sort: 'price,desc',
+    })
     expect(onFiltersChange).toHaveBeenCalledTimes(1)
     expect(onReload).toHaveBeenCalledExactlyOnceWith({
       kind: 'CRYPTO',
       page: 0,
       walletId: undefined,
       typeLabel: undefined,
-      search: undefined,
+      search: 'petr',
       sort: 'price,desc',
     })
+  })
+
+  it('keeps the wallets that still belong to the new class and always drops the types', async () => {
+    const { filters, router } = await mountFilters(
+      '?filter=STOCKS&walletId=wallet-1&walletId=wallet-2&type=FII',
+    )
+
+    filters.selectTab('all', ['wallet-1', 'wallet-9'])
+    await flushPromises()
+
+    expect(filters.walletIdFilter.value).toEqual(['wallet-1'])
+    expect(filters.typeLabelFilter.value).toEqual([])
+    expect(router.currentRoute.value.query).toEqual({ walletId: ['wallet-1'] })
   })
 
   it('ignores a click on the active tab', async () => {
@@ -193,12 +226,12 @@ describe('useInvestmentFilters', () => {
     await flushPromises()
 
     expect(filters.activeFilter.value).toBe('FUNDS')
-    expect(filters.typeLabelFilter.value).toBe('Renda Fixa')
+    expect(filters.typeLabelFilter.value).toEqual(['Renda Fixa'])
     expect(filters.sortKey.value).toBe('gainPct')
     expect(filters.sortDirection.value).toBe('desc')
     expect(onFiltersChange).toHaveBeenCalledTimes(1)
     expect(onReload).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ kind: 'FUNDS', page: 1, typeLabel: 'Renda Fixa' }),
+      expect.objectContaining({ kind: 'FUNDS', page: 1, typeLabel: ['Renda Fixa'] }),
     )
     expect(router.currentRoute.value.query).toEqual({
       filter: 'FUNDS',
@@ -207,24 +240,84 @@ describe('useInvestmentFilters', () => {
     })
   })
 
-  it('sets and clears the wallet and type filters, going back to the first page', async () => {
+  it('toggles several wallets and types on and off, going back to the first page', async () => {
     const { filters, router, onReload } = await mountFilters('?filter=STOCKS&page=4')
     onReload.mockClear()
 
-    filters.changeWallet('wallet-1')
-    filters.changeType('FII')
+    filters.toggleWallet('wallet-1')
+    filters.toggleWallet('wallet-2')
+    filters.toggleType('FII')
+    filters.toggleType('ETF')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({
       filter: 'STOCKS',
-      walletId: 'wallet-1',
-      type: 'FII',
+      walletId: ['wallet-1', 'wallet-2'],
+      type: ['FII', 'ETF'],
     })
+    expect(onReload.mock.lastCall?.[0]).toEqual(
+      expect.objectContaining({ walletId: ['wallet-1', 'wallet-2'], typeLabel: ['FII', 'ETF'] }),
+    )
 
-    filters.changeWallet('')
-    filters.changeType('')
+    filters.toggleWallet('wallet-1')
+    filters.toggleType('FII')
+    filters.toggleType('ETF')
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS' })
-    expect(onReload.mock.calls.map(([request]) => request.page)).toEqual([0, 0, 0, 0])
+    expect(router.currentRoute.value.query).toEqual({ filter: 'STOCKS', walletId: ['wallet-2'] })
+    expect(onReload.mock.lastCall?.[0].typeLabel).toBeUndefined()
+    expect(onReload.mock.calls.map(([request]) => request.page)).toEqual([0, 0, 0, 0, 0, 0, 0])
+  })
+
+  it('reads repeated wallets and types from the URL', async () => {
+    const { filters, onReload } = await mountFilters(
+      '?filter=FUNDS&walletId=wallet-1&walletId=wallet-2&type=Ações&type=Multimercado',
+    )
+
+    expect(filters.walletIdFilter.value).toEqual(['wallet-1', 'wallet-2'])
+    expect(filters.typeLabelFilter.value).toEqual(['Ações', 'Multimercado'])
+    expect(onReload).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        walletId: ['wallet-1', 'wallet-2'],
+        typeLabel: ['Ações', 'Multimercado'],
+      }),
+    )
+  })
+
+  it('does not reload for its own echo of a list in a different order', async () => {
+    const { filters, router, onReload } = await mountFilters()
+    filters.toggleWallet('wallet-2')
+    filters.toggleWallet('wallet-1')
+    await flushPromises()
+    onReload.mockClear()
+
+    await router.replace({ query: { walletId: ['wallet-1', 'wallet-2'] } })
+    await flushPromises()
+
+    expect(onReload).not.toHaveBeenCalled()
+  })
+
+  it('clears every filter but the sort and reloads from the first page', async () => {
+    const { filters, router, onReload, onFiltersChange } = await mountFilters(
+      '?filter=STOCKS&walletId=wallet-1&type=FII&search=petr&hideFrozen=true&sort=price,asc&page=3',
+    )
+    onReload.mockClear()
+    vi.useFakeTimers()
+    filters.changeSearch('vale')
+
+    filters.clearFilters()
+    vi.advanceTimersByTime(300)
+    vi.useRealTimers()
+    await flushPromises()
+
+    expect(filters.activeFilter.value).toBe('all')
+    expect(filters.walletIdFilter.value).toEqual([])
+    expect(filters.typeLabelFilter.value).toEqual([])
+    expect(filters.searchQuery.value).toBe('')
+    expect(filters.hideFrozenFilter.value).toBe(false)
+    expect(router.currentRoute.value.query).toEqual({ sort: 'price,asc' })
+    expect(onFiltersChange).toHaveBeenCalledTimes(1)
+    expect(onReload).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ kind: 'all', page: 0, search: undefined, sort: 'price,asc' }),
+    )
   })
 
   it('waits 300 ms after the last keystroke before reloading with the trimmed term', async () => {
@@ -356,8 +449,8 @@ describe('useInvestmentFilters', () => {
 
     expect(filters.reportQuery()).toEqual({
       filter: 'STOCKS',
-      walletId: 'wallet-1',
-      type: 'FII',
+      walletId: ['wallet-1'],
+      type: ['FII'],
       search: 'petr',
     })
   })

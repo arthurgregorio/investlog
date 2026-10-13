@@ -6,8 +6,8 @@ import type { HoldingRow, WalletKind } from '@/types'
 type KindFilter = 'all' | WalletKind
 
 export interface HoldingsListOptions {
-  typeLabel?: string
-  walletId?: string
+  typeLabel?: string | string[]
+  walletId?: string | string[]
   search?: string
   sort?: string
   hideFrozen?: boolean
@@ -19,8 +19,8 @@ const DEFAULT_PAGE_SIZE = 20
 export const useHoldingsListStore = defineStore('holdingsList', () => {
   const rows = ref<HoldingRow[]>([])
   const currentKind = ref<KindFilter>('all')
-  const currentTypeLabel = ref<string | undefined>(undefined)
-  const currentWalletId = ref<string | undefined>(undefined)
+  const currentTypeLabel = ref<string | string[] | undefined>(undefined)
+  const currentWalletId = ref<string | string[] | undefined>(undefined)
   const currentSearch = ref<string | undefined>(undefined)
   const currentSort = ref<string | undefined>(undefined)
   const currentHideFrozen = ref<boolean | undefined>(undefined)
