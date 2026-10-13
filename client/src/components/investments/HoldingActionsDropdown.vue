@@ -8,7 +8,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'update-price': []
-  'set-segment': []
+  'edit-tags': []
   withdraw: []
   reinvest: []
   move: []
@@ -42,12 +42,12 @@ const emit = defineEmits<{
       {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
     </b-dropdown-item>
     <b-dropdown-item
-      v-if="isStock"
+      v-if="isStock || isFund"
       aria-role="listitem"
-      data-testid="holding-set-segment"
-      @click="emit('set-segment')"
+      data-testid="holding-edit-tags"
+      @click="emit('edit-tags')"
     >
-      <b-icon icon="tag-outline" size="is-small" /> Definir segmento
+      <b-icon icon="tag-outline" size="is-small" /> Editar tags
     </b-dropdown-item>
     <b-dropdown-item
       aria-role="listitem"

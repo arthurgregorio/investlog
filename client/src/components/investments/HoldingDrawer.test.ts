@@ -479,11 +479,19 @@ describe('HoldingDrawer', () => {
       })
 
       expect(wrapper.get('.t-name').text()).toBe('Petróleo Brasileiro')
-      expect(wrapper.get('.type-tag').text()).toBe('Ação PN')
+      expect(wrapper.get('[data-testid="drawer-type"]').text()).toBe('Ação PN')
       expect(wrapper.get('[data-testid="drawer-wallet"]').text()).toBe('Carteira B3')
-      const segment = wrapper.get('[data-testid="drawer-segment"]')
-      expect(segment.text()).toBe('Energia')
-      expect(segment.attributes('aria-label')).toBe('Segmento: Energia — alterar')
+      expect(wrapper.get('[data-testid="drawer-segment"]').text()).toBe('Energia')
+    })
+
+    it('keeps the header tags read-only', async () => {
+      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+
+      const tags = ['drawer-type', 'drawer-wallet', 'drawer-segment'].map((testId) =>
+        wrapper.get(`[data-testid="${testId}"]`),
+      )
+      expect(tags.map((tag) => tag.element.tagName)).toEqual(['SPAN', 'SPAN', 'SPAN'])
+      expect(tags.some((tag) => tag.find('.icon').exists())).toBe(false)
     })
 
     it('falls back to the row segment, then to Sem segmento', async () => {
@@ -837,17 +845,17 @@ describe('HoldingDrawer', () => {
     })
   })
 
-  describe('stock segment', () => {
+  describe('tags', () => {
     it.each(kindCases)(
-      'offers Definir segmento only for a stock, not for a $label holding',
+      'offers Editar tags on a $label holding only when it has a type',
       async ({ row, detail }) => {
         await mountLoadedDrawer(row, detail())
 
-        expect(actionLabels().includes('Definir segmento')).toBe(row.kind === 'STOCKS')
+        expect(actionLabels().includes('Editar tags')).toBe(row.kind !== 'CRYPTO')
       },
     )
 
-    it('opens the segment modal preselected and reloads the detail after saving', async () => {
+    it('edits a stock segment preselected and reloads the detail after saving', async () => {
       vi.mocked(holdingsApi.updateStockHoldingSegment).mockResolvedValue(
         stockDetailWithoutWithdrawals(),
       )
@@ -857,15 +865,14 @@ describe('HoldingDrawer', () => {
         stockSegmentName: 'Energia',
       })
 
+      useTypesListStore().stockTypes = [{ id: 'type-1', name: 'Ação PN', usageCount: 1 }]
       useTypesListStore().stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 1 }]
-      await chooseAction('Definir segmento')
-      const select = wrapper.find('select[data-testid="set-segment-select"]')
-      expect(select.findAll('option').map((option) => option.text())).toEqual([
-        'Sem segmento',
-        'Energia',
-      ])
-      expect((select.element as HTMLSelectElement).value).toBe('segment-1')
-      await select.setValue('')
+      await chooseAction('Editar tags')
+      const typeSelect = wrapper.find('select[data-testid="edit-tags-type"]')
+      expect((typeSelect.element as HTMLSelectElement).value).toBe('type-1')
+      const segmentSelect = wrapper.find('select[data-testid="edit-tags-segment"]')
+      expect((segmentSelect.element as HTMLSelectElement).value).toBe('segment-1')
+      await segmentSelect.setValue('')
       await modalButton(wrapper, 'Salvar').trigger('click')
       await flushPromises()
 
@@ -874,16 +881,32 @@ describe('HoldingDrawer', () => {
         'holding-1',
         null,
       )
+      expect(holdingsApi.updateStockHolding).not.toHaveBeenCalled()
       expect(holdingsApi.getStockHolding).toHaveBeenCalledTimes(2)
       expect(wrapper.emitted('positionAdded')).toHaveLength(1)
     })
 
-    it('opens the segment modal from the segment tag too', async () => {
-      const wrapper = await mountLoadedDrawer(stockRow, stockDetailWithoutWithdrawals())
+    it('edits a fund type and reloads the detail after saving', async () => {
+      vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue(fundDetail())
+      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
-      await wrapper.get('[data-testid="drawer-segment"]').trigger('click')
+      useTypesListStore().fundTypes = [
+        { id: 'type-2', name: 'Renda fixa', usageCount: 1 },
+        { id: 'type-3', name: 'Multimercado', usageCount: 0 },
+      ]
+      await chooseAction('Editar tags')
+      expect(wrapper.find('select[data-testid="edit-tags-segment"]').exists()).toBe(false)
+      const typeSelect = wrapper.find('select[data-testid="edit-tags-type"]')
+      expect((typeSelect.element as HTMLSelectElement).value).toBe('type-2')
+      await typeSelect.setValue('type-3')
+      await modalButton(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
 
-      expect(wrapper.find('select[data-testid="set-segment-select"]').exists()).toBe(true)
+      expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith(fundRow.walletId, fundRow.id, {
+        fundTypeId: 'type-3',
+      })
+      expect(holdingsApi.getFundHolding).toHaveBeenCalledTimes(2)
+      expect(wrapper.emitted('positionAdded')).toHaveLength(1)
     })
   })
 
@@ -1001,7 +1024,7 @@ describe('HoldingDrawer', () => {
         'Reinvestir',
         'Mover para outra carteira',
         'Atualizar preço',
-        'Definir segmento',
+        'Editar tags',
         'Descongelar',
         'Remover investimento',
       ])
@@ -1274,7 +1297,7 @@ describe('HoldingDrawer', () => {
         'Reinvestir',
         'Mover para outra carteira',
         'Atualizar preço',
-        'Definir segmento',
+        'Editar tags',
         'Congelar',
         'Remover investimento',
       ])
@@ -1297,6 +1320,7 @@ describe('HoldingDrawer', () => {
         'Reinvestir',
         'Mover para outra carteira',
         'Atualizar valor atual',
+        'Editar tags',
         'Congelar',
       ])
     })

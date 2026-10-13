@@ -4,7 +4,7 @@ import AddPositionModal, { type PositionEntry } from '@/components/investments/A
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import WithdrawModal from '@/components/investments/WithdrawModal.vue'
 import ReinvestModal from '@/components/investments/ReinvestModal.vue'
-import SetSegmentModal from '@/components/investments/SetSegmentModal.vue'
+import EditHoldingTagsModal from '@/components/investments/EditHoldingTagsModal.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import HoldingActionsDropdown from '@/components/investments/HoldingActionsDropdown.vue'
 import HoldingLedgerTable from '@/components/investments/HoldingLedgerTable.vue'
@@ -21,7 +21,7 @@ import type { LedgerRow } from '@/utils/holdingLedger'
 import type { FundHoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
 
 type HoldingModal =
-  'addPosition' | 'editPurchase' | 'updatePrice' | 'setSegment' | 'withdraw' | 'reinvest' | 'move'
+  'addPosition' | 'editPurchase' | 'updatePrice' | 'editTags' | 'withdraw' | 'reinvest' | 'move'
 
 interface DrawerStat {
   testId: string
@@ -72,6 +72,12 @@ const fundDetail = computed(() =>
 const stockDetail = computed(() =>
   isStock.value && detail.value ? (detail.value as StockHoldingDetail) : null,
 )
+
+const tagsDetail = computed(() => {
+  if (stockDetail.value) return { kind: 'STOCKS' as const, typeId: stockDetail.value.stockTypeId }
+  if (fundDetail.value) return { kind: 'FUNDS' as const, typeId: fundDetail.value.fundTypeId }
+  return null
+})
 
 const segmentName = computed(
   () => stockDetail.value?.stockSegmentName ?? props.row.segmentLabel ?? 'Sem segmento',
@@ -221,21 +227,16 @@ onMounted(() => {
             <h2 :id="titleId" class="drawer-title">{{ displayName }}</h2>
             <p class="t-name">{{ secondLine }}</p>
             <div class="is-flex is-flex-wrap-wrap is-gap-0.5 mt-2">
-              <span class="type-tag" :class="`tt-${row.kind.toLowerCase()}`">{{
-                holdingTypeLabel(row)
-              }}</span>
-              <span class="type-tag" data-testid="drawer-wallet">{{ row.walletName }}</span>
-              <button
-                v-if="isStock"
-                type="button"
-                class="type-tag segment-tag"
-                :aria-label="`Segmento: ${segmentName} — alterar`"
-                data-testid="drawer-segment"
-                @click="activeModal = 'setSegment'"
+              <span
+                class="type-tag"
+                :class="`tt-${row.kind.toLowerCase()}`"
+                data-testid="drawer-type"
+                >{{ holdingTypeLabel(row) }}</span
               >
-                {{ segmentName }}
-                <b-icon icon="pencil" custom-size="mdi-12px" />
-              </button>
+              <span class="type-tag" data-testid="drawer-wallet">{{ row.walletName }}</span>
+              <span v-if="isStock" class="type-tag" data-testid="drawer-segment">{{
+                segmentName
+              }}</span>
             </div>
           </div>
           <b-button
@@ -290,7 +291,7 @@ onMounted(() => {
             :is-frozen="row.frozen"
             :is-admin="auth.isAdmin"
             @update-price="activeModal = 'updatePrice'"
-            @set-segment="activeModal = 'setSegment'"
+            @edit-tags="activeModal = 'editTags'"
             @withdraw="activeModal = 'withdraw'"
             @reinvest="activeModal = 'reinvest'"
             @move="activeModal = 'move'"
@@ -356,10 +357,12 @@ onMounted(() => {
     @close="closeModal"
   />
 
-  <SetSegmentModal
-    v-if="activeModal === 'setSegment'"
+  <EditHoldingTagsModal
+    v-if="activeModal === 'editTags' && tagsDetail"
     :holding-id="row.id"
     :wallet-id="row.walletId"
+    :kind="tagsDetail.kind"
+    :initial-type-id="tagsDetail.typeId"
     :initial-segment-id="stockDetail?.stockSegmentId ?? null"
     @updated="refresh"
     @close="closeModal"
@@ -396,7 +399,7 @@ onMounted(() => {
 
 <style scoped>
 .holding-drawer {
-  --bulma-sidebar-width: 500px;
+  --bulma-sidebar-width: 600px;
   --bulma-sidebar-overlay-background: hsl(
     var(--bulma-scheme-h) var(--bulma-scheme-s) var(--bulma-scheme-invert-l) / 30%
   );
@@ -432,19 +435,6 @@ onMounted(() => {
   font-size: 20px;
   font-weight: 800;
   line-height: 1.2;
-}
-
-.segment-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.segment-tag:hover {
-  color: var(--primary-text);
 }
 
 .drawer-label {
