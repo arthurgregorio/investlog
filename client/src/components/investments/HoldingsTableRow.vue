@@ -96,7 +96,7 @@ function money(amount: number): string {
     </td>
     <td class="c-act is-wide">
       <div class="is-flex is-justify-content-flex-end">
-        <b-tooltip :label="addLabel" position="is-top">
+        <b-tooltip :label="addLabel" position="is-left">
           <b-button
             type="is-ghost"
             icon-left="plus"
@@ -106,10 +106,10 @@ function money(amount: number): string {
             @click.stop="emit('add-position')"
           />
         </b-tooltip>
-        <b-tooltip :label="updateLabel" position="is-top">
+        <b-tooltip :label="updateLabel" position="is-left">
           <b-button
             type="is-ghost"
-            icon-left="pencil"
+            icon-left="currency-usd"
             :aria-label="`${updateLabel} — ${displayName}`"
             data-testid="row-update-price"
             @click.stop="emit('update-price')"

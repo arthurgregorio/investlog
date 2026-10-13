@@ -43,6 +43,6 @@ DELETE FROM system.users WHERE email <> 'admin@admin.com';
 
 -- 5. Recreate admin's sample wallets, holdings, lots, and snapshot history. \ir resolves relative to this
 --    script's own location rather than psql's working directory.
-\ir sample-data.sql
+--\ir sample-data.sql
 
 COMMIT;
