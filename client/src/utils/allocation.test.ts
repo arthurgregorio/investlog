@@ -7,6 +7,9 @@ import {
   OTHERS_SHARE_CUTOFF,
   SEGMENTLESS_KEY,
   SEGMENTLESS_LABEL,
+  TYPELESS_KEY,
+  TYPELESS_LABEL,
+  WALLET_KIND_GROUPINGS,
 } from './allocation'
 import type { HoldingRow } from '@/types'
 
@@ -307,5 +310,81 @@ describe('computeAllocation by segment', () => {
     ])
 
     expect(entries[1].name).toBe('1 segmento')
+  })
+})
+
+describe('computeAllocation by type', () => {
+  function byType(rows: HoldingRow[]) {
+    return computeAllocation(rows, 'currentValue', OTHERS_SHARE_CUTOFF, 'type')
+  }
+
+  it('sums the holdings of each type and buckets the typeless ones', () => {
+    const { entries, total, topThreeShare } = byType([
+      rowOf({ id: 'a', typeLabel: 'Ação', currentValue: 300 }),
+      rowOf({ id: 'b', typeLabel: 'Ação', currentValue: 200 }),
+      rowOf({ id: 'c', typeLabel: 'ETF', currentValue: 100 }),
+      rowOf({ id: 'd', typeLabel: 'FII', currentValue: 150 }),
+      rowOf({ id: 'e', typeLabel: null, currentValue: 250 }),
+    ])
+
+    expect(total).toBe(1000)
+    expect(entries.map((entry) => [entry.label, entry.value, entry.name])).toEqual([
+      ['Ação', 500, '2 investimentos'],
+      [TYPELESS_LABEL, 250, '1 investimento'],
+      ['FII', 150, '1 investimento'],
+      ['ETF', 100, '1 investimento'],
+    ])
+    expect(entries[0].key).toBe('type:Ação')
+    expect(entries[1].key).toBe(TYPELESS_KEY)
+    expect(sumOfShares(entries)).toBeCloseTo(100, 9)
+    expect(topThreeShare).toBeNull()
+  })
+
+  it('ignores the segment when grouping by type', () => {
+    const { entries } = byType([
+      rowOf({ id: 'a', typeLabel: 'Ação', segmentLabel: 'Energia', currentValue: 100 }),
+      rowOf({ id: 'b', typeLabel: 'Ação', segmentLabel: 'Bancos', currentValue: 100 }),
+    ])
+
+    expect(entries.map((entry) => entry.label)).toEqual(['Ação'])
+  })
+
+  it('keeps a type named like the bucket apart from the typeless holdings', () => {
+    const { entries } = byType([
+      rowOf({ id: 'a', typeLabel: TYPELESS_KEY, currentValue: 100 }),
+      rowOf({ id: 'b', typeLabel: null, currentValue: 100 }),
+    ])
+
+    expect(entries).toHaveLength(2)
+  })
+
+  it('folds the small types into Outros counted in types', () => {
+    const { entries } = byType([
+      rowOf({ id: 'a', typeLabel: 'Ação', currentValue: 960 }),
+      rowOf({ id: 'b', typeLabel: 'BDR', currentValue: 20 }),
+      rowOf({ id: 'c', typeLabel: 'ETF', currentValue: 20 }),
+    ])
+
+    expect(entries.map((entry) => entry.label)).toEqual(['Ação', OTHERS_LABEL])
+    expect(entries[1].name).toBe('2 tipos')
+  })
+
+  it('names a single folded type in the singular', () => {
+    const { entries } = byType([
+      rowOf({ id: 'a', typeLabel: 'Ação', currentValue: 980 }),
+      rowOf({ id: 'b', typeLabel: 'BDR', currentValue: 20 }),
+    ])
+
+    expect(entries[1].name).toBe('1 tipo')
+  })
+})
+
+describe('WALLET_KIND_GROUPINGS', () => {
+  it('offers type and segment to stocks, type to funds and nothing beyond holdings to crypto', () => {
+    expect(WALLET_KIND_GROUPINGS).toEqual({
+      STOCKS: ['holding', 'type', 'segment'],
+      FUNDS: ['holding', 'type'],
+      CRYPTO: ['holding'],
+    })
   })
 })

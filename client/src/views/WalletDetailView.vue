@@ -18,7 +18,9 @@ import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useWalletLedgerStore } from '@/stores/walletLedger'
 import { useWalletsStore } from '@/stores/wallets'
+import { WALLET_KIND_GROUPINGS } from '@/utils/allocation'
 import type { HoldingRow } from '@/types'
+import { DEFAULT_SORT, nextSort, sortParam, type InvestmentSort } from '@/utils/investmentSort'
 
 const PAGE_SIZE = 10
 
@@ -36,6 +38,7 @@ const holdingsTable = useTemplateRef('holdingsTable')
 const moveModalOpen = ref(false)
 const reinvestModalOpen = ref(false)
 const allocationRows = ref<HoldingRow[]>([])
+const sort = ref<InvestmentSort>({ ...DEFAULT_SORT })
 const { renameWallet, confirmRemoveWallet } = useWalletActions(detail)
 
 async function loadAllocationRows() {
@@ -58,7 +61,19 @@ onMounted(loadAll)
 watch(walletId, loadAll)
 
 function loadHoldingsPage(page: number) {
-  return holdingsListStore.loadKind('all', page, { walletId: walletId.value, size: PAGE_SIZE })
+  return holdingsListStore.loadKind('all', page, {
+    walletId: walletId.value,
+    size: PAGE_SIZE,
+    sort: sortParam(sort.value),
+  })
+}
+
+function changeSort(key: string) {
+  const next = nextSort(sort.value, key)
+  if (!next) return
+  sort.value = next
+  holdingsTable.value?.closeDrawer()
+  loadHoldingsPage(0)
 }
 
 async function onPositionsChanged() {
@@ -100,7 +115,7 @@ function goToWallets() {
           <AllocationDonut
             :rows="allocationRows"
             :currency="detail.currency"
-            :groupable="detail.kind === 'STOCKS'"
+            :groupings="WALLET_KIND_GROUPINGS[detail.kind]"
           />
         </CardBody>
       </Card>
@@ -124,6 +139,10 @@ function goToWallets() {
           :page="holdingsListStore.page"
           :page-size="holdingsListStore.pageSize"
           :total-elements="holdingsListStore.totalElements"
+          sortable
+          :sort-key="sort.key"
+          :sort-direction="sort.direction"
+          @sort="changeSort"
           @page-change="loadHoldingsPage"
           @holding-changed="loadAll"
           @position-added="loadAll"

@@ -29,10 +29,15 @@ class PositionExitService(private val resultRepository: ResultRepository) {
         taxes: BigDecimal,
     ): RecordedResult {
         val remainingQuantity = position.quantity ?: BigDecimal.ZERO
+        val isFullExit = quantity.compareTo(remainingQuantity) == 0
 
-        val costBasis = position.costBasis
-            .divide(remainingQuantity, COST_BASIS_SCALE, RoundingMode.HALF_UP)
-            .multiply(quantity)
+        val costBasis = if (isFullExit) {
+            position.costBasis
+        } else {
+            position.costBasis
+                .divide(remainingQuantity, COST_BASIS_SCALE, RoundingMode.HALF_UP)
+                .multiply(quantity)
+        }
 
         val result = resultRepository.insert(
             position = position,
@@ -45,7 +50,7 @@ class PositionExitService(private val resultRepository: ResultRepository) {
             costBasis = costBasis,
         )
 
-        if (quantity.compareTo(remainingQuantity) == 0) {
+        if (isFullExit) {
             resultRepository.markCompleted(position)
         }
 

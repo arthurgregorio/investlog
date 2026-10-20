@@ -11,6 +11,7 @@ import {
   OTHERS_SHARE_CUTOFF,
   SEGMENTLESS_KEY,
   TOP_POSITIONS_COUNT,
+  TYPELESS_KEY,
   type AllocationGrouping,
   type AllocationMetric,
 } from '@/utils/allocation'
@@ -20,8 +21,12 @@ const RING_SIZE = 236
 const RING_THICKNESS = 38
 const SEGMENT_SPACING = 2
 const OTHERS_COLOR = 'var(--text-muted)'
+const NEUTRAL_KEYS = [SEGMENTLESS_KEY, TYPELESS_KEY]
 
-const props = defineProps<{ rows: HoldingRow[]; currency: string; groupable?: boolean }>()
+const props = withDefaults(
+  defineProps<{ rows: HoldingRow[]; currency: string; groupings?: AllocationGrouping[] }>(),
+  { groupings: () => ['holding'] },
+)
 
 const METRIC_OPTIONS: { value: AllocationMetric; label: string; testId: string }[] = [
   { value: 'currentValue', label: 'Valor atual', testId: 'allocation-metric-currentValue' },
@@ -30,25 +35,39 @@ const METRIC_OPTIONS: { value: AllocationMetric; label: string; testId: string }
 
 const GROUPING_OPTIONS: { value: AllocationGrouping; label: string; testId: string }[] = [
   { value: 'holding', label: 'Por ativo', testId: 'allocation-grouping-holding' },
+  { value: 'type', label: 'Por tipo', testId: 'allocation-grouping-type' },
   { value: 'segment', label: 'Por segmento', testId: 'allocation-grouping-segment' },
 ]
 
-const activeMetric = ref<AllocationMetric>('currentValue')
-const activeGrouping = ref<AllocationGrouping>('holding')
+const GROUPED_NOUNS: Record<AllocationGrouping, { singular: string; plural: string }> = {
+  holding: { singular: 'investimento', plural: 'investimentos' },
+  type: { singular: 'tipo', plural: 'tipos' },
+  segment: { singular: 'segmento', plural: 'segmentos' },
+}
 
-const groupingBySegment = computed(() => props.groupable && activeGrouping.value === 'segment')
+const activeMetric = ref<AllocationMetric>('currentValue')
+const selectedGrouping = ref<AllocationGrouping>('holding')
+
+const groupingOptions = computed(() =>
+  GROUPING_OPTIONS.filter((option) => props.groupings.includes(option.value)),
+)
+
+const activeGrouping = computed<AllocationGrouping>({
+  get: () =>
+    props.groupings.includes(selectedGrouping.value) ? selectedGrouping.value : 'holding',
+  set: (grouping) => {
+    selectedGrouping.value = grouping
+  },
+})
+
+const groupedNoun = computed(() => GROUPED_NOUNS[activeGrouping.value])
 
 const activeMetricLabel = computed(
   () => METRIC_OPTIONS.find((option) => option.value === activeMetric.value)?.label ?? '',
 )
 
 const allocation = computed(() =>
-  computeAllocation(
-    props.rows,
-    activeMetric.value,
-    OTHERS_SHARE_CUTOFF,
-    groupingBySegment.value ? 'segment' : 'holding',
-  ),
+  computeAllocation(props.rows, activeMetric.value, OTHERS_SHARE_CUTOFF, activeGrouping.value),
 )
 
 const coloredEntries = computed(() => {
@@ -56,7 +75,7 @@ const coloredEntries = computed(() => {
   const largestShare = Math.max(...entries.map((entry) => entry.share))
   return entries.map((entry, index) => ({
     ...entry,
-    color: entry.isOthers || entry.key === SEGMENTLESS_KEY ? OTHERS_COLOR : chartColor(index),
+    color: entry.isOthers || NEUTRAL_KEYS.includes(entry.key) ? OTHERS_COLOR : chartColor(index),
     relativeShare: (entry.share / largestShare) * 100,
   }))
 })
@@ -94,8 +113,7 @@ const concentrationNote = computed(() => {
     )
   }
   if (allocation.value.entries.some((entry) => entry.isOthers)) {
-    const grouped = groupingBySegment.value ? 'os segmentos' : 'os investimentos'
-    notes.push(`“Outros” reúne ${grouped} abaixo de ${OTHERS_SHARE_CUTOFF}%.`)
+    notes.push(`“Outros” reúne os ${groupedNoun.value.plural} abaixo de ${OTHERS_SHARE_CUTOFF}%.`)
   }
   return notes.join(' ')
 })
@@ -116,15 +134,13 @@ const exclusionNote = computed(() => {
     >
       <div>
         <div class="chart-title">Distribuição</div>
-        <div class="sub-caption">
-          Participação de cada {{ groupingBySegment ? 'segmento' : 'investimento' }} na carteira
-        </div>
+        <div class="sub-caption">Participação de cada {{ groupedNoun.singular }} na carteira</div>
       </div>
       <div v-if="rows.length > 0" class="is-flex is-flex-wrap-wrap is-gap-2">
         <SegmentedControl
-          v-if="groupable"
+          v-if="groupingOptions.length > 1"
           v-model="activeGrouping"
-          :options="GROUPING_OPTIONS"
+          :options="groupingOptions"
           group-label="Agrupar por"
         />
         <SegmentedControl
