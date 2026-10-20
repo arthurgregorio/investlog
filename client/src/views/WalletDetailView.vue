@@ -19,6 +19,7 @@ import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useWalletMovesStore } from '@/stores/walletMoves'
 import { useWalletsStore } from '@/stores/wallets'
 import type { HoldingRow } from '@/types'
+import { DEFAULT_SORT, nextSort, sortParam, type InvestmentSort } from '@/utils/investmentSort'
 
 const PAGE_SIZE = 10
 
@@ -36,6 +37,7 @@ const holdingsTable = useTemplateRef('holdingsTable')
 const moveModalOpen = ref(false)
 const reinvestModalOpen = ref(false)
 const allocationRows = ref<HoldingRow[]>([])
+const sort = ref<InvestmentSort>({ ...DEFAULT_SORT })
 const { renameWallet, confirmRemoveWallet } = useWalletActions(detail)
 
 async function loadAllocationRows() {
@@ -58,7 +60,19 @@ onMounted(loadAll)
 watch(walletId, loadAll)
 
 function loadHoldingsPage(page: number) {
-  return holdingsListStore.loadKind('all', page, { walletId: walletId.value, size: PAGE_SIZE })
+  return holdingsListStore.loadKind('all', page, {
+    walletId: walletId.value,
+    size: PAGE_SIZE,
+    sort: sortParam(sort.value),
+  })
+}
+
+function changeSort(key: string) {
+  const next = nextSort(sort.value, key)
+  if (!next) return
+  sort.value = next
+  holdingsTable.value?.closeDrawer()
+  loadHoldingsPage(0)
 }
 
 async function onPositionsChanged() {
@@ -120,6 +134,10 @@ function goToWallets() {
           :page="holdingsListStore.page"
           :page-size="holdingsListStore.pageSize"
           :total-elements="holdingsListStore.totalElements"
+          sortable
+          :sort-key="sort.key"
+          :sort-direction="sort.direction"
+          @sort="changeSort"
           @page-change="loadHoldingsPage"
           @holding-changed="loadAll"
           @position-added="loadAll"

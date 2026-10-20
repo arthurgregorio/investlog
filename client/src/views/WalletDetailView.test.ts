@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import WalletDetailView from './WalletDetailView.vue'
+import HoldingsTable from '@/components/investments/HoldingsTable.vue'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useAuthStore } from '@/stores/auth'
@@ -85,6 +86,10 @@ function control(wrapper: ReturnType<typeof mount>, testId: string) {
   return ['INPUT', 'SELECT'].includes(element.element.tagName)
     ? element
     : element.find('input, select')
+}
+
+function headerCell(wrapper: ReturnType<typeof mount>, label: string) {
+  return wrapper.findAll('thead th').find((cell) => cell.text() === label)!
 }
 
 function flushPromises() {
@@ -356,7 +361,68 @@ describe('WalletDetailView', () => {
     expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, {
       walletId: 'wallet-1',
       size: 10,
+      sort: 'gainPct,desc',
     })
+  })
+
+  it('sorts the investments by Ativo, Preço atual, Valor atual and Resultado, highest result first', async () => {
+    const { wrapper } = await mountView(detailOf())
+
+    expect(wrapper.findAll('thead th.sort-th').map((cell) => cell.text())).toEqual([
+      'Ativo',
+      'Preço atual',
+      'Valor atual',
+      'Resultado',
+    ])
+    expect(headerCell(wrapper, 'Resultado').find('.sort-icon-active').exists()).toBe(true)
+  })
+
+  it('reloads the first page with the toggled sort when a header is clicked', async () => {
+    const { wrapper, holdingsListStore } = await mountView(detailOf())
+    vi.mocked(holdingsListStore.loadKind).mockClear()
+
+    await headerCell(wrapper, 'Ativo').trigger('click')
+    await headerCell(wrapper, 'Ativo').trigger('click')
+
+    expect(vi.mocked(holdingsListStore.loadKind).mock.calls).toEqual([
+      ['all', 0, { walletId: 'wallet-1', size: 10, sort: 'asset,asc' }],
+      ['all', 0, { walletId: 'wallet-1', size: 10, sort: 'asset,desc' }],
+    ])
+    expect(headerCell(wrapper, 'Ativo').find('.sort-icon-active').exists()).toBe(true)
+  })
+
+  it('keeps the chosen sort when paging', async () => {
+    const { wrapper, holdingsListStore } = await mountView(detailOf())
+    await headerCell(wrapper, 'Valor atual').trigger('click')
+    vi.mocked(holdingsListStore.loadKind).mockClear()
+
+    wrapper.findComponent(HoldingsTable).vm.$emit('page-change', 2)
+
+    expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 2, {
+      walletId: 'wallet-1',
+      size: 10,
+      sort: 'current,asc',
+    })
+  })
+
+  it('closes the holding drawer when the sort changes', async () => {
+    const { wrapper } = await mountView(detailOf())
+    await wrapper.find('tr.inv-row').trigger('click')
+    await flushPromises()
+
+    await headerCell(wrapper, 'Preço atual').trigger('click')
+    await flushPromises()
+
+    expect(document.body.querySelector('[data-testid="holding-drawer"]')).toBeNull()
+  })
+
+  it('ignores a sort key it does not know', async () => {
+    const { wrapper, holdingsListStore } = await mountView(detailOf())
+    vi.mocked(holdingsListStore.loadKind).mockClear()
+
+    wrapper.findComponent(HoldingsTable).vm.$emit('sort', 'colour')
+
+    expect(holdingsListStore.loadKind).not.toHaveBeenCalled()
   })
 
   it('shows the wallet header figures', async () => {
@@ -579,6 +645,7 @@ describe('WalletDetailView', () => {
     expect(holdingsListStore.loadKind).toHaveBeenCalledWith('all', 0, {
       walletId: 'wallet-1',
       size: 10,
+      sort: 'gainPct,desc',
     })
     expect(walletDetailStore.load).toHaveBeenCalledWith('wallet-1')
     expect(walletsStore.refresh).toHaveBeenCalled()
