@@ -405,6 +405,21 @@ describe('WalletDetailView', () => {
     })
   })
 
+  it('keeps the chosen sort when a purchase is added or a holding is relocated', async () => {
+    const { wrapper, holdingsListStore } = await mountView(detailOf())
+    await headerCell(wrapper, 'Ativo').trigger('click')
+    vi.mocked(holdingsListStore.loadKind).mockClear()
+
+    wrapper.findComponent(HoldingsTable).vm.$emit('position-added')
+    wrapper.findComponent(HoldingsTable).vm.$emit('relocated')
+    await flushPromises()
+
+    expect(vi.mocked(holdingsListStore.loadKind).mock.calls).toEqual([
+      ['all', 0, { walletId: 'wallet-1', size: 10, sort: 'asset,asc' }],
+      ['all', 0, { walletId: 'wallet-1', size: 10, sort: 'asset,asc' }],
+    ])
+  })
+
   it('closes the holding drawer when the sort changes', async () => {
     const { wrapper } = await mountView(detailOf())
     await wrapper.find('tr.inv-row').trigger('click')
