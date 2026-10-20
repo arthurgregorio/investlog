@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="20-1000-1" author="${claude}">
+        <comment>
+            Every event that touched a wallet, one row each, for the wallet ledger (issue #463):
+            purchases, contributions, withdrawals, reinvestments and both sides of a wallet move.
+            No status filter, because the events of completed holdings are the reason the view
+            exists. A lot or contribution is listed under the wallet whose holding owns it today.
+        </comment>
+        <sql>
+            CREATE VIEW finances.wallet_ledger AS
+            WITH reinvestment_destinations AS (
+                SELECT
+                    reinvestments.result_id,
+                    COALESCE(
+                        destination_stock_holdings.ticker,
+                        destination_stock_holdings.name,
+                        destination_crypto_holdings.ticker,
+                        destination_crypto_holdings.name,
+                        destination_fund_holdings.name
+                    ) AS destination_name
+                FROM finances.reinvestments
+                LEFT JOIN finances.stock_holdings AS destination_stock_holdings
+                    ON destination_stock_holdings.id = reinvestments.destination_stock_holding_id
+                LEFT JOIN finances.crypto_holdings AS destination_crypto_holdings
+                    ON destination_crypto_holdings.id = reinvestments.destination_crypto_holding_id
+                LEFT JOIN finances.fund_holdings AS destination_fund_holdings
+                    ON destination_fund_holdings.id = reinvestments.destination_fund_holding_id
+            )
+            SELECT
+                stock_holdings.wallet_id,
+                stock_lots.external_id AS event_id,
+                'PURCHASE'::TEXT AS event_type,
+                stock_lots.lot_date AS event_date,
+                'STOCKS'::finances.wallet_kind AS kind,
+                stock_holdings.external_id AS holding_external_id,
+                stock_holdings.name AS holding_name,
+                stock_holdings.ticker,
+                stock_lots.quantity,
+                stock_lots.quantity * stock_lots.price AS amount,
+                NULL::NUMERIC AS profit,
+                NULL::TEXT AS counterpart_name,
+                stock_lots.created_at
+            FROM finances.stock_lots
+            JOIN finances.stock_holdings ON stock_holdings.id = stock_lots.stock_holding_id
+
+            UNION ALL
+
+            SELECT
+                crypto_holdings.wallet_id,
+                crypto_lots.external_id,
+                'PURCHASE'::TEXT,
+                crypto_lots.lot_date,
+                'CRYPTO'::finances.wallet_kind,
+                crypto_holdings.external_id,
+                crypto_holdings.name,
+                crypto_holdings.ticker,
+                crypto_lots.quantity,
+                crypto_lots.quantity * crypto_lots.price,
+                NULL::NUMERIC,
+                NULL::TEXT,
+                crypto_lots.created_at
+            FROM finances.crypto_lots
+            JOIN finances.crypto_holdings ON crypto_holdings.id = crypto_lots.crypto_holding_id
+
+            UNION ALL
+
+            SELECT
+                fund_holdings.wallet_id,
+                fund_contributions.external_id,
+                'CONTRIBUTION'::TEXT,
+                fund_contributions.contribution_date,
+                'FUNDS'::finances.wallet_kind,
+                fund_holdings.external_id,
+                fund_holdings.name,
+                NULL::TEXT,
+                NULL::NUMERIC,
+                fund_contributions.amount,
+                NULL::NUMERIC,
+                NULL::TEXT,
+                fund_contributions.created_at
+            FROM finances.fund_contributions
+            JOIN finances.fund_holdings ON fund_holdings.id = fund_contributions.fund_holding_id
+
+            UNION ALL
+
+            SELECT
+                stock_holdings.wallet_id,
+                results.external_id,
+                results.result_type::TEXT,
+                results.result_date,
+                'STOCKS'::finances.wallet_kind,
+                stock_holdings.external_id,
+                stock_holdings.name,
+                stock_holdings.ticker,
+                results.quantity,
+                results.net_amount,
+                results.profit,
+                reinvestment_destinations.destination_name,
+                results.created_at
+            FROM finances.results
+            JOIN finances.stock_holdings ON stock_holdings.id = results.stock_holding_id
+            LEFT JOIN reinvestment_destinations ON reinvestment_destinations.result_id = results.id
+
+            UNION ALL
+
+            SELECT
+                crypto_holdings.wallet_id,
+                results.external_id,
+                results.result_type::TEXT,
+                results.result_date,
+                'CRYPTO'::finances.wallet_kind,
+                crypto_holdings.external_id,
+                crypto_holdings.name,
+                crypto_holdings.ticker,
+                results.quantity,
+                results.net_amount,
+                results.profit,
+                reinvestment_destinations.destination_name,
+                results.created_at
+            FROM finances.results
+            JOIN finances.crypto_holdings ON crypto_holdings.id = results.crypto_holding_id
+            LEFT JOIN reinvestment_destinations ON reinvestment_destinations.result_id = results.id
+
+            UNION ALL
+
+            SELECT
+                fund_holdings.wallet_id,
+                results.external_id,
+                results.result_type::TEXT,
+                results.result_date,
+                'FUNDS'::finances.wallet_kind,
+                fund_holdings.external_id,
+                fund_holdings.name,
+                NULL::TEXT,
+                results.quantity,
+                results.net_amount,
+                results.profit,
+                reinvestment_destinations.destination_name,
+                results.created_at
+            FROM finances.results
+            JOIN finances.fund_holdings ON fund_holdings.id = results.fund_holding_id
+            LEFT JOIN reinvestment_destinations ON reinvestment_destinations.result_id = results.id
+
+            UNION ALL
+
+            SELECT
+                wallet_moves.origin_wallet_id,
+                wallet_moves.external_id,
+                'MOVE_OUT'::TEXT,
+                wallet_moves.moved_at,
+                wallet_moves.kind,
+                wallet_moves.origin_holding_external_id,
+                wallet_moves.holding_name,
+                wallet_moves.ticker,
+                wallet_moves.quantity,
+                NULL::NUMERIC,
+                NULL::NUMERIC,
+                destination_wallets.name,
+                wallet_moves.created_at
+            FROM finances.wallet_moves
+            LEFT JOIN finances.wallets AS destination_wallets
+                ON destination_wallets.id = wallet_moves.destination_wallet_id
+
+            UNION ALL
+
+            SELECT
+                wallet_moves.destination_wallet_id,
+                wallet_moves.external_id,
+                'MOVE_IN'::TEXT,
+                wallet_moves.moved_at,
+                wallet_moves.kind,
+                wallet_moves.destination_holding_external_id,
+                wallet_moves.holding_name,
+                wallet_moves.ticker,
+                wallet_moves.quantity,
+                NULL::NUMERIC,
+                NULL::NUMERIC,
+                origin_wallets.name,
+                wallet_moves.created_at
+            FROM finances.wallet_moves
+            LEFT JOIN finances.wallets AS origin_wallets
+                ON origin_wallets.id = wallet_moves.origin_wallet_id;
+        </sql>
+        <rollback>
+            <sql>
+                DROP VIEW finances.wallet_ledger;
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
