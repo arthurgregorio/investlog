@@ -114,6 +114,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `walletmoves` | Relocating holdings between wallets and `finances.wallet_moves` — see **Wallet moves** |
 | `reinvestments` | Exiting one holding into another and `finances.reinvestments` — see **Reinvestments** |
 | `walletdetail` | `GET /wallets/{id}/detail`, the per-wallet dashboard payload — see **Wallet detail** |
+| `walletledger` | `GET /wallets/{id}/ledger`, every event that touched a wallet — see **Wallet ledger** |
 | `overview` | Portfolio summary and the monthly invested series |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
 | `typelists`, `currencyrates`, `configurations` | Reference data and runtime feature toggles |
@@ -251,6 +252,14 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 **Deltas are snapshot-to-snapshot, not snapshot-to-live.** `changeOver` compares the latest snapshot against the most recent one at or before `latest - N days`, and returns null when no such snapshot exists. A wallet gets an empty series and three null deltas until `walletsnapshots` has been collecting for long enough, which is why #174 shipped first.
 
 **`findTransactions` unions stock lots, crypto lots and fund contributions.** The three child tables have different column names for the same idea, so the union aliases them to `transaction_date`/`investment_name`/`amount` and the service reads them by alias.
+
+### Wallet ledger
+
+`walletledger` serves `GET /private/v1/wallets/{walletId}/ledger`, the paginated feed behind the wallet detail's Movimentações tab (issue #462). Each row is one event read from `finances.wallet_ledger`, a `UNION ALL` view over what is already stored: `PURCHASE` from the two lot tables, `CONTRIBUTION` from `fund_contributions`, `WITHDRAWAL` and `REINVESTMENT` from `finances.results`, and `MOVE_IN` / `MOVE_OUT` from `finances.wallet_moves`, one branch per side. Rows come newest first, ordered by `event_date`, then `created_at`, then `event_id`, so pages stay stable. The controller calls `WalletLedgerRepository` directly, since there is nothing to do between the query and the response.
+
+**The view has no status filter.** The events of `COMPLETED` holdings are the reason it exists: once a holding is fully exited it leaves the investments list, and the ledger is the only place its purchases and withdrawals still show. Only a holding deleted outright drops out, because its lots, contributions and results cascade with it.
+
+**A purchase or contribution is listed under the wallet whose holding owns it today.** The lot tables keep no wallet history. A whole move of a holding with no exits carries its original lots across, so the destination lists them with their original dates and the origin no longer does. A partial move, or a whole move of a holding that already had exits, writes one new lot or contribution on the destination dated the move day, which shows as a purchase next to the `MOVE_IN` row. A reinvestment is two events that are never merged: a `REINVESTMENT` row on the source, whose `counterpart_name` is the destination's ticker (or name) resolved through `finances.reinvestments`, and an ordinary purchase or contribution on the destination.
 
 ### Price sync
 

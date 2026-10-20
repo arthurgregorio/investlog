@@ -16,7 +16,7 @@ import { useWalletActions } from '@/composables/useWalletActions'
 import { useAuthStore } from '@/stores/auth'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useWalletDetailStore } from '@/stores/walletDetail'
-import { useWalletMovesStore } from '@/stores/walletMoves'
+import { useWalletLedgerStore } from '@/stores/walletLedger'
 import { useWalletsStore } from '@/stores/wallets'
 import { WALLET_KIND_GROUPINGS } from '@/utils/allocation'
 import type { HoldingRow } from '@/types'
@@ -30,7 +30,7 @@ const auth = useAuthStore()
 const walletDetailStore = useWalletDetailStore()
 const walletsStore = useWalletsStore()
 const holdingsListStore = useHoldingsListStore()
-const walletMovesStore = useWalletMovesStore()
+const walletLedgerStore = useWalletLedgerStore()
 
 const walletId = computed(() => route.params.id as string)
 const detail = computed(() => walletDetailStore.detail)
@@ -53,7 +53,7 @@ async function loadAll() {
     loadAllocationRows(),
     walletDetailStore.load(walletId.value),
     loadHoldingsPage(0),
-    walletMovesStore.load(walletId.value, 0),
+    walletLedgerStore.load(walletId.value, 0),
   ])
 }
 
@@ -120,7 +120,11 @@ function goToWallets() {
         </CardBody>
       </Card>
 
-      <WalletDetailTabs :wallet-id="detail.id" :holdings-count="holdingsListStore.totalElements">
+      <WalletDetailTabs
+        :wallet-id="detail.id"
+        :currency="detail.currency"
+        :holdings-count="holdingsListStore.totalElements"
+      >
         <EmptyState
           v-if="holdingsListStore.loaded && holdingsListStore.rows.length === 0"
           icon="wallet-outline"

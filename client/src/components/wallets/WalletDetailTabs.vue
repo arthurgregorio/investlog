@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import Card from '@/components/ui/Card.vue'
-import WalletMovesTable from '@/components/wallets/WalletMovesTable.vue'
-import { useWalletMovesStore } from '@/stores/walletMoves'
+import WalletLedgerTable from '@/components/wallets/WalletLedgerTable.vue'
+import { useWalletLedgerStore } from '@/stores/walletLedger'
 
-defineProps<{ walletId: string; holdingsCount: number }>()
+defineProps<{ walletId: string; currency: string; holdingsCount: number }>()
 
 defineSlots<{ default(): unknown }>()
 
-const walletMovesStore = useWalletMovesStore()
+const walletLedgerStore = useWalletLedgerStore()
 
 const activeTab = ref(0)
 </script>
@@ -27,9 +27,9 @@ const activeTab = ref(0)
       <b-tab-item>
         <template #header>
           <span>Movimentações</span>
-          <span class="tag is-rounded ml-2">{{ walletMovesStore.totalElements }}</span>
+          <span class="tag is-rounded ml-2">{{ walletLedgerStore.totalElements }}</span>
         </template>
-        <WalletMovesTable :wallet-id="walletId" />
+        <WalletLedgerTable :wallet-id="walletId" :currency="currency" />
       </b-tab-item>
     </b-tabs>
   </Card>
