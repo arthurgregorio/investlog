@@ -18,6 +18,7 @@ import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useWalletMovesStore } from '@/stores/walletMoves'
 import { useWalletsStore } from '@/stores/wallets'
+import { WALLET_KIND_GROUPINGS } from '@/utils/allocation'
 import type { HoldingRow } from '@/types'
 
 const PAGE_SIZE = 10
@@ -100,7 +101,7 @@ function goToWallets() {
           <AllocationDonut
             :rows="allocationRows"
             :currency="detail.currency"
-            :groupable="detail.kind === 'STOCKS'"
+            :groupings="WALLET_KIND_GROUPINGS[detail.kind]"
           />
         </CardBody>
       </Card>

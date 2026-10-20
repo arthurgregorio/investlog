@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { parseTypedDate } from '@/utils/typedDate'
+
 defineProps<{ modelValue: Date | null }>()
 const emit = defineEmits<{ 'update:modelValue': [Date | null] }>()
 </script>
@@ -9,6 +11,7 @@ const emit = defineEmits<{ 'update:modelValue': [Date | null] }>()
     trap-focus
     append-to-body
     editable
+    :date-parser="parseTypedDate"
     @update:model-value="emit('update:modelValue', $event)"
   />
 </template>
