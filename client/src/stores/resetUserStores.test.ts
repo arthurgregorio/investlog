@@ -13,7 +13,7 @@ import { useTrustedDevicesStore } from './trustedDevices'
 import { useTypesListStore } from './typesList'
 import { useUsersAdminStore } from './usersAdmin'
 import { useWalletDetailStore } from './walletDetail'
-import { useWalletMovesStore } from './walletMoves'
+import { useWalletLedgerStore } from './walletLedger'
 import { useWalletsStore } from './wallets'
 
 vi.mock('@/router', () => ({ router: {} }))
@@ -69,15 +69,14 @@ const storeCases: StoreCase[] = [
     initial: { detail: null, loaded: false },
   },
   {
-    name: 'walletMoves',
-    useStore: useWalletMovesStore,
+    name: 'walletLedger',
+    useStore: useWalletLedgerStore,
     seed: {
-      rows: [{ id: 'move-1' }],
+      rows: [{ id: 'entry-1' }],
       walletId: 'wallet-1',
       page: 2,
       pageSize: 50,
       totalElements: 30,
-      totalPages: 3,
       loaded: true,
     },
     initial: {
@@ -86,7 +85,6 @@ const storeCases: StoreCase[] = [
       page: 0,
       pageSize: 10,
       totalElements: 0,
-      totalPages: 0,
       loading: false,
       loaded: false,
     },

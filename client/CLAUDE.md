@@ -146,7 +146,8 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `holdings.ts` | `GET /holdings`, stock/crypto/fund CRUD + lots/contributions |
 | `overview.ts` | `GET /overview`, `GET /overview/series` |
 | `walletDetail.ts` | `GET /wallets/{id}/detail` (the per-wallet dashboard payload) |
-| `walletMoves.ts` | `POST /wallets/{id}/moves` (relocate holdings), `GET /wallets/{id}/moves` (move history) |
+| `walletMoves.ts` | `POST /wallets/{id}/moves` (relocate holdings) |
+| `walletLedger.ts` | `GET /wallets/{id}/ledger` (every event of a wallet, paginated) |
 | `results.ts` | `GET /results` (paginated), `GET /results/summary` (realised totals), withdrawal `POST`/`DELETE` |
 | `reinvestments.ts` | `POST /reinvestments` (exit one holding into another), `GET /reinvestments` (history) |
 | `assetTypes.ts` | `GET/POST/PUT/DELETE /stock-types`, `/fund-types`, `/stock-segments` |
@@ -181,7 +182,8 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `holdingsList` | `GET /holdings` | `rows[]`, `page`, `totalElements`, `loadKind(kind, page, { size })` — `size` defaults to 20 and `refresh()` keeps it |
 | `overview` | `GET /overview` + `/overview/series` | `summary`, `series`, `refresh()` |
 | `walletDetail` | `GET /wallets/{id}/detail` | `detail`, `load(walletId)`, `refresh()`, `reset()` |
-| `walletMoves` | `GET/POST /wallets/{id}/moves` | `rows[]` for one wallet, `load(walletId, page)`, `move(originWalletId, payload)` |
+| `walletMoves` | `POST /wallets/{id}/moves` | `move(originWalletId, payload)` only, with no state of its own |
+| `walletLedger` | `GET /wallets/{id}/ledger` | `rows[]` for one wallet, `totalElements`, `load(walletId, page)`, `refresh()`, `reset()` |
 | `results` | `GET /results?resultType=WITHDRAWAL`, `GET /results/summary` | `rows[]` (withdrawals only), `summary`, `load(page, size)`, `loadSummary()` |
 | `reinvestments` | `GET/POST /reinvestments` | `rows[]`, `load(page, size)` — a small `size` serves a recent list, the default the full history — and `reinvest(payload)` |
 | `typesList` | `GET /stock-types` + `/fund-types` + `/stock-segments` | `stockTypes[]`, `fundTypes[]`, `stockSegments[]`, CRUD actions |
@@ -211,7 +213,7 @@ not a reload, so nothing else clears them). A new user-data store gets a `reset(
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers; colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` (a compact layout, and a `detailed` one with share bars) |
 | `overview/` | `OverviewView`'s cards — `EvolutionCard` (the invested-capital `AreaChart`), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
 | `users/` | `UserCard` — one `UsersView` card on `EntityCard` with its own "Ações" dropdown, store calls and `useConfirmDialog` confirmations; it emits `reset-password` so the view owns `PasswordResetModal` |
-| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`); `WalletDetailView`'s `WalletDetailHeader` (identity, figures and the **Ações** dropdown emitting `rename`, `remove`, `move`, `reinvest` and `view-holdings`, above a strip of three `WalletHighlightCard`s with an `up`, `down` or `largest` rail), `WalletPerformanceCard` (the Desempenho chart and delta chips), `WalletDetailTabs` (the tabbed card, investments in its slot) and `WalletMovesTable` (the Movimentações tab, reading the `walletMoves` store) |
+| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`); `WalletDetailView`'s `WalletDetailHeader` (identity, figures and the **Ações** dropdown emitting `rename`, `remove`, `move`, `reinvest` and `view-holdings`, above a strip of three `WalletHighlightCard`s with an `up`, `down` or `largest` rail), `WalletPerformanceCard` (the Desempenho chart and delta chips), `WalletDetailTabs` (the tabbed card, investments in its slot) and `WalletLedgerTable` (the Movimentações tab, reading the `walletLedger` store) |
 | `settings/` | The admin settings pieces — `SettingsSection` (the titled card frame with an optional `aside` slot and loading overlay), `CurrencyRateRow` (one rate with its own draft, emitting `commit` only for a rate above zero), `PriceSyncActions` (the manual price-sync buttons) and `TypesView`'s `AssetTypeTable` |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
@@ -252,7 +254,7 @@ Sections run header card (identity, figures, **Ações** dropdown and, below the
 
 The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the holding drawer (see the investments table above).
 
-It also carries #211's move pieces: `MoveHoldingsModal` with this wallet as a fixed origin, and the **Movimentações** tab listing the wallet's relocations in and out from the `walletMoves` store. That table is the only place moves surface — they realise no result, so the results dashboard never shows them.
+It also carries #211's `MoveHoldingsModal` with this wallet as a fixed origin. The **Movimentações** tab (#462) is `WalletLedgerTable`, the wallet's whole ledger from the `walletLedger` store, ten rows a page, newest first: purchases (Compra), contributions (Aporte), withdrawals (Resgate), reinvestments (Reinvestimento, with "→ destination") and moves in and out (Entrada / Saída, with the other wallet or "Carteira removida", and "Tudo" for a whole move), in the wallet's own currency, the withdrawals and reinvestments with their profit as a `GainChip`. It lists the events of completed holdings too, which have left the investments table and have no drawer, so a fully withdrawn position keeps its history here. It reloads through `loadAll` with everything else: the drawer's `position-added` (a purchase, an edit, a partial withdrawal or undoing one, since `useHoldingDetail.refresh()` calls `onChanged`), `deleted` (a full withdrawal) and `relocated` (a move or a reinvestment) all end there. Moves still realise no result, so the results dashboard never shows them.
 
 ### Results dashboard (`ResultsDashboardView.vue`)
 

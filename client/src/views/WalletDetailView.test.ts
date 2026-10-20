@@ -6,14 +6,15 @@ import WalletDetailView from './WalletDetailView.vue'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useAuthStore } from '@/stores/auth'
-import { useWalletMovesStore } from '@/stores/walletMoves'
+import { useWalletLedgerStore } from '@/stores/walletLedger'
 import { useWalletsStore } from '@/stores/wallets'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { holdingsApi } from '@/api/holdings'
-import type { HoldingRow, WalletDetail, WalletMoveRow, WalletResponse } from '@/types'
+import type { HoldingRow, WalletDetail, WalletLedgerEntry, WalletResponse } from '@/types'
 import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
-vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { findAll: vi.fn(), move: vi.fn() } }))
+vi.mock('@/api/walletMoves', () => ({ walletMovesApi: { move: vi.fn() } }))
+vi.mock('@/api/walletLedger', () => ({ walletLedgerApi: { findAll: vi.fn() } }))
 vi.mock('@/api/reinvestments', () => ({
   reinvestmentsApi: { findAll: vi.fn(), reinvest: vi.fn() },
 }))
@@ -96,7 +97,7 @@ async function mountView(
   rows: HoldingRow[] = [mockRow],
   loaded = true,
   isAdmin = true,
-  moves: WalletMoveRow[] = [],
+  ledgerEntries: WalletLedgerEntry[] = [],
 ) {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -127,12 +128,12 @@ async function mountView(
   walletDetailStore.detail = detail
   holdingsListStore.rows = rows
   holdingsListStore.loaded = loaded
-  const walletMovesStore = useWalletMovesStore()
-  walletMovesStore.rows = moves
-  walletMovesStore.loaded = true
+  const walletLedgerStore = useWalletLedgerStore()
+  walletLedgerStore.rows = ledgerEntries
+  walletLedgerStore.loaded = true
 
   await flushPromises()
-  return { wrapper, router, walletDetailStore, holdingsListStore, walletMovesStore }
+  return { wrapper, router, walletDetailStore, holdingsListStore, walletLedgerStore }
 }
 
 describe('WalletDetailView', () => {
@@ -194,57 +195,57 @@ describe('WalletDetailView', () => {
     expect(wrapper.find('canvas').exists()).toBe(false)
   })
 
-  it('loads the wallet move history on mount', async () => {
-    const { walletMovesStore } = await mountView(detailOf())
+  it('loads the wallet ledger on mount', async () => {
+    const { walletLedgerStore } = await mountView(detailOf())
 
-    expect(walletMovesStore.load).toHaveBeenCalledWith('wallet-1', 0)
+    expect(walletLedgerStore.load).toHaveBeenCalledWith('wallet-1', 0)
   })
 
-  it('lists relocations into and out of the wallet', async () => {
+  it('lists every event of the wallet in its own currency', async () => {
     const { wrapper } = await mountView(detailOf(), [mockRow], true, true, [
       {
-        id: 'move-out',
-        movedAt: '2026-09-20',
-        direction: 'OUT',
+        id: 'result-1',
+        date: '2026-09-21',
+        type: 'WITHDRAWAL',
         kind: 'STOCKS',
-        holdingName: 'Vale',
-        ticker: 'VALE3',
-        quantity: 10,
-        originWalletId: 'wallet-1',
-        originWalletName: 'Detail Wallet',
-        destinationWalletId: 'wallet-2',
-        destinationWalletName: 'Outra carteira',
-      },
-      {
-        id: 'move-in',
-        movedAt: '2026-09-21',
-        direction: 'IN',
-        kind: 'STOCKS',
+        holdingId: 'holding-1',
         holdingName: 'Itaú',
         ticker: 'ITUB4',
+        quantity: 5,
+        amount: 150,
+        profit: 20,
+        counterpartName: null,
+      },
+      {
+        id: 'move-out',
+        date: '2026-09-20',
+        type: 'MOVE_OUT',
+        kind: 'STOCKS',
+        holdingId: 'holding-2',
+        holdingName: 'Vale',
+        ticker: 'VALE3',
         quantity: null,
-        originWalletId: null,
-        originWalletName: null,
-        destinationWalletId: 'wallet-1',
-        destinationWalletName: 'Detail Wallet',
+        amount: null,
+        profit: null,
+        counterpartName: 'Outra carteira',
       },
     ])
 
-    const rows = wrapper.findAll('[data-testid="move-row"]')
+    const rows = wrapper.findAll('[data-testid="ledger-row"]')
     expect(rows).toHaveLength(2)
-    expect(rows[0].text()).toContain('VALE3')
-    expect(rows[0].text()).toContain('Saída')
-    expect(rows[0].text()).toContain('Outra carteira')
-    expect(rows[1].text()).toContain('Entrada')
-    expect(rows[1].text()).toContain('Carteira removida')
+    expect(rows[0].text()).toContain('ITUB4')
+    expect(rows[0].text()).toContain('Resgate')
+    expect(rows[0].get('[data-testid="ledger-amount"]').text()).toContain('150,00')
+    expect(rows[1].text()).toContain('Saída')
+    expect(rows[1].text()).toContain('Outra carteira')
     expect(rows[1].text()).toContain('Tudo')
   })
 
-  it('shows an empty move history when nothing was moved', async () => {
+  it('shows an empty ledger when nothing was recorded', async () => {
     const { wrapper } = await mountView(detailOf())
 
     const emptyState = wrapper.find(
-      '[data-testid="move-history"] [data-testid="move-history-empty"]',
+      '[data-testid="wallet-ledger"] [data-testid="wallet-ledger-empty"]',
     )
     expect(emptyState.text()).toContain('Nenhuma movimentação')
   })
@@ -292,10 +293,10 @@ describe('WalletDetailView', () => {
     expect(row.find('.chev').exists()).toBe(false)
   })
 
-  it('puts the investments and the move history in one tabbed card, investments first', async () => {
-    const { wrapper, holdingsListStore, walletMovesStore } = await mountView(detailOf())
+  it('puts the investments and the wallet ledger in one tabbed card, investments first', async () => {
+    const { wrapper, holdingsListStore, walletLedgerStore } = await mountView(detailOf())
     holdingsListStore.totalElements = 7
-    walletMovesStore.totalElements = 3
+    walletLedgerStore.totalElements = 3
     await flushPromises()
 
     const card = wrapper.find('.table-card')
@@ -304,7 +305,7 @@ describe('WalletDetailView', () => {
     expect(tabs[0].text()).toMatch(/^Investimentos\s*7$/)
     expect(tabs[1].text()).toMatch(/^Movimentações\s*3$/)
     expect(tabs[0].classes()).toContain('is-active')
-    expect(card.find('[data-testid="move-history"]').exists()).toBe(true)
+    expect(card.find('[data-testid="wallet-ledger"]').exists()).toBe(true)
     expect(card.find('table.inv-table').exists()).toBe(true)
   })
 
@@ -633,18 +634,18 @@ describe('WalletDetailView', () => {
   })
 
   describe('loading overlays', () => {
-    const move: WalletMoveRow = {
+    const ledgerEntry: WalletLedgerEntry = {
       id: 'move-out',
-      movedAt: '2026-09-20',
-      direction: 'OUT',
+      date: '2026-09-20',
+      type: 'MOVE_OUT',
       kind: 'STOCKS',
+      holdingId: 'holding-2',
       holdingName: 'Vale',
       ticker: 'VALE3',
       quantity: 10,
-      originWalletId: 'wallet-1',
-      originWalletName: 'Detail Wallet',
-      destinationWalletId: 'wallet-2',
-      destinationWalletName: 'Outra carteira',
+      amount: null,
+      profit: null,
+      counterpartName: 'Outra carteira',
     }
 
     it('shows the page overlay only while the wallet detail is loading', async () => {
@@ -661,19 +662,19 @@ describe('WalletDetailView', () => {
       expect(wrapper.find('.loading-overlay').exists()).toBe(false)
     })
 
-    it('shows the move history overlay only while the moves are loading', async () => {
-      const { wrapper, walletMovesStore } = await mountView(detailOf(), [mockRow], true, true, [
-        move,
+    it('shows the ledger overlay only while the ledger is loading', async () => {
+      const { wrapper, walletLedgerStore } = await mountView(detailOf(), [mockRow], true, true, [
+        ledgerEntry,
       ])
 
-      expect(wrapper.find('[data-testid="move-history"] .loading-overlay').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="wallet-ledger"] .loading-overlay').exists()).toBe(false)
 
-      walletMovesStore.loading = true
+      walletLedgerStore.loading = true
       await flushPromises()
       expect(wrapper.findAll('.loading-overlay')).toHaveLength(1)
-      expect(wrapper.find('[data-testid="move-history"] .loading-overlay').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="wallet-ledger"] .loading-overlay').exists()).toBe(true)
 
-      walletMovesStore.loading = false
+      walletLedgerStore.loading = false
       await flushPromises()
       expect(wrapper.find('.loading-overlay').exists()).toBe(false)
     })

@@ -330,17 +330,20 @@ export interface ConfigurationResponse {
   updatedAt: string
 }
 
-/** One relocation of a holding between two wallets — a row of `GET /wallets/{id}/moves`. */
-export interface WalletMoveRow {
+export type WalletLedgerEventType =
+  'PURCHASE' | 'CONTRIBUTION' | 'WITHDRAWAL' | 'REINVESTMENT' | 'MOVE_IN' | 'MOVE_OUT'
+
+/** One event that touched a wallet — a row of `GET /wallets/{id}/ledger`. */
+export interface WalletLedgerEntry {
   id: string
-  movedAt: string
-  direction: 'IN' | 'OUT'
+  date: string
+  type: WalletLedgerEventType
   kind: WalletKind
+  holdingId: string | null
   holdingName: string
   ticker: string | null
   quantity: number | null
-  originWalletId: string | null
-  originWalletName: string | null
-  destinationWalletId: string | null
-  destinationWalletName: string | null
+  amount: number | null
+  profit: number | null
+  counterpartName: string | null
 }

@@ -9,7 +9,7 @@ import { useTrustedDevicesStore } from '@/stores/trustedDevices'
 import { useTypesListStore } from '@/stores/typesList'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
 import { useWalletDetailStore } from '@/stores/walletDetail'
-import { useWalletMovesStore } from '@/stores/walletMoves'
+import { useWalletLedgerStore } from '@/stores/walletLedger'
 import { useWalletsStore } from '@/stores/wallets'
 
 export function resetUserStores() {
@@ -17,7 +17,7 @@ export function resetUserStores() {
   useHoldingsListStore().reset()
   useOverviewStore().reset()
   useWalletDetailStore().reset()
-  useWalletMovesStore().reset()
+  useWalletLedgerStore().reset()
   useResultsStore().reset()
   useReinvestmentsStore().reset()
   useTypesListStore().reset()

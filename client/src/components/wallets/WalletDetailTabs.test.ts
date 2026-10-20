@@ -3,15 +3,16 @@ import { nextTick } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import WalletDetailTabs from './WalletDetailTabs.vue'
-import { useWalletMovesStore } from '@/stores/walletMoves'
+import WalletLedgerTable from './WalletLedgerTable.vue'
+import { useWalletLedgerStore } from '@/stores/walletLedger'
 
 async function mountTabs() {
   const pinia = createTestingPinia()
-  const walletMovesStore = useWalletMovesStore()
-  walletMovesStore.totalElements = 3
-  walletMovesStore.loaded = true
+  const walletLedgerStore = useWalletLedgerStore()
+  walletLedgerStore.totalElements = 3
+  walletLedgerStore.loaded = true
   const wrapper = mount(WalletDetailTabs, {
-    props: { walletId: 'wallet-1', holdingsCount: 7 },
+    props: { walletId: 'wallet-1', currency: 'USD', holdingsCount: 7 },
     slots: { default: '<p class="holdings-slot">holdings</p>' },
     global: { plugins: [pinia] },
   })
@@ -20,7 +21,7 @@ async function mountTabs() {
 }
 
 describe('WalletDetailTabs', () => {
-  it('labels the investments tab and the move history tab with their counts', async () => {
+  it('labels the investments tab and the ledger tab with their counts', async () => {
     const wrapper = await mountTabs()
 
     const tabs = wrapper.findAll('.tabs li')
@@ -29,7 +30,7 @@ describe('WalletDetailTabs', () => {
     expect(tabs[1].text()).toMatch(/^Movimentações\s*3$/)
   })
 
-  it('opens on the slotted investments and holds the move history in the second tab', async () => {
+  it('opens on the slotted investments and holds the wallet ledger in the second tab', async () => {
     const wrapper = await mountTabs()
 
     expect(wrapper.findAll('.tabs li')[0].classes()).toContain('is-active')
@@ -39,6 +40,10 @@ describe('WalletDetailTabs', () => {
     await nextTick()
 
     expect(wrapper.findAll('.tabs li')[1].classes()).toContain('is-active')
-    expect(wrapper.get('[data-testid="move-history-empty"]').isVisible()).toBe(true)
+    expect(wrapper.get('[data-testid="wallet-ledger-empty"]').isVisible()).toBe(true)
+    expect(wrapper.findComponent(WalletLedgerTable).props()).toEqual({
+      walletId: 'wallet-1',
+      currency: 'USD',
+    })
   })
 })
