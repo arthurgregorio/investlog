@@ -2,15 +2,17 @@ import { onMounted, onScopeDispose, readonly, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
 import type { WalletKind } from '@/types'
+import {
+  DEFAULT_SORT,
+  VALID_SORT_KEYS,
+  nextSort,
+  sortParam,
+  type InvestmentSort,
+  type InvestmentSortKey,
+  type SortDirection,
+} from '@/utils/investmentSort'
 
 export type InvestmentKindFilter = 'all' | WalletKind
-export type InvestmentSortKey =
-  'asset' | 'wallet' | 'price' | 'invested' | 'current' | 'gain' | 'gainPct'
-export type SortDirection = 'asc' | 'desc'
-export interface InvestmentSort {
-  key: InvestmentSortKey
-  direction: SortDirection
-}
 
 export interface InvestmentsLoadRequest {
   kind: InvestmentKindFilter
@@ -28,17 +30,7 @@ export interface InvestmentFiltersOptions {
 }
 
 const VALID_FILTERS: InvestmentKindFilter[] = ['all', 'STOCKS', 'CRYPTO', 'FUNDS']
-const VALID_SORT_KEYS: InvestmentSortKey[] = [
-  'asset',
-  'wallet',
-  'price',
-  'invested',
-  'current',
-  'gain',
-  'gainPct',
-]
-const DEFAULT_SORT: InvestmentSort = { key: 'gainPct', direction: 'desc' }
-const DEFAULT_SORT_PARAM = `${DEFAULT_SORT.key},${DEFAULT_SORT.direction}`
+const DEFAULT_SORT_PARAM = sortParam(DEFAULT_SORT)
 const QUERY_KEYS = ['filter', 'walletId', 'type', 'search', 'hideFrozen', 'sort', 'page'] as const
 const SEARCH_DEBOUNCE_MILLISECONDS = 300
 
@@ -59,9 +51,9 @@ export function parseFilter(query: LocationQuery): InvestmentKindFilter {
 }
 
 export function parseSort(query: LocationQuery): InvestmentSort {
-  const sortParam = queryString(query, 'sort')
-  if (sortParam === undefined) return { ...DEFAULT_SORT }
-  const [keyParam, directionParam] = sortParam.split(',')
+  const sortQuery = queryString(query, 'sort')
+  if (sortQuery === undefined) return { ...DEFAULT_SORT }
+  const [keyParam, directionParam] = sortQuery.split(',')
   const key = VALID_SORT_KEYS.find((sortKey) => sortKey === keyParam)
   if (!key) return { ...DEFAULT_SORT }
   return { key, direction: directionParam === 'asc' ? 'asc' : 'desc' }
@@ -106,8 +98,8 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
     return searchQuery.value.trim() || undefined
   }
 
-  function sortParam() {
-    return `${sortKey.value},${sortDirection.value}`
+  function currentSort(): InvestmentSort {
+    return { key: sortKey.value, direction: sortDirection.value }
   }
 
   function listOrUndefined(values: string[]) {
@@ -127,7 +119,7 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
 
   function buildQuery(pageNumber: number): LocationQueryRaw {
     const query = reportQuery()
-    const sort = sortParam()
+    const sort = sortParam(currentSort())
     if (sort !== DEFAULT_SORT_PARAM) query.sort = sort
     if (pageNumber > 0) query.page = String(pageNumber + 1)
     return query
@@ -143,7 +135,7 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
       typeLabel: listOrUndefined(typeLabelFilter.value),
       walletId: listOrUndefined(walletIdFilter.value),
       search: trimmedSearch(),
-      sort: sortParam(),
+      sort: sortParam(currentSort()),
       hideFrozen: hideFrozenFilter.value || undefined,
     })
   }
@@ -214,14 +206,10 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
   }
 
   function toggleSort(key: string) {
-    const nextKey = VALID_SORT_KEYS.find((sortKey) => sortKey === key)
-    if (!nextKey) return
-    if (sortKey.value === nextKey) {
-      sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-    } else {
-      sortKey.value = nextKey
-      sortDirection.value = 'asc'
-    }
+    const sort = nextSort(currentSort(), key)
+    if (!sort) return
+    sortKey.value = sort.key
+    sortDirection.value = sort.direction
     reload(0)
   }
 
