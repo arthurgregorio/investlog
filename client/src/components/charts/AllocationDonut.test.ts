@@ -3,6 +3,7 @@ import { defineComponent, h, type PropType } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import AllocationDonut from './AllocationDonut.vue'
+import { WALLET_KIND_GROUPINGS, type AllocationGrouping } from '@/utils/allocation'
 import type { HoldingRow } from '@/types'
 
 const DonutChartStub = defineComponent({
@@ -49,9 +50,9 @@ function rowOf(overrides: Partial<HoldingRow>): HoldingRow {
   }
 }
 
-function mountDonut(rows: HoldingRow[], groupable = false) {
+function mountDonut(rows: HoldingRow[], groupings?: AllocationGrouping[]) {
   return mount(AllocationDonut, {
-    props: { rows, currency: 'BRL', groupable },
+    props: { rows, currency: 'BRL', groupings },
     global: { plugins: [createTestingPinia()], stubs: { DonutChart: DonutChartStub } },
   })
 }
@@ -283,14 +284,8 @@ describe('AllocationDonut', () => {
       rowOf({ id: 'd', ticker: 'PETR4', segmentLabel: null, currentValue: 250 }),
     ]
 
-    it('offers no grouping control unless the wallet is groupable', () => {
-      const wrapper = mountDonut(segmentedRows)
-
-      expect(wrapper.find('[data-testid="allocation-grouping-segment"]').exists()).toBe(false)
-    })
-
     it('switches to one entry per segment with a neutral Sem segmento and back', async () => {
-      const wrapper = mountDonut(segmentedRows, true)
+      const wrapper = mountDonut(segmentedRows, WALLET_KIND_GROUPINGS.STOCKS)
       expect(legendTexts(wrapper)).toHaveLength(4)
       expect(wrapper.text()).toContain('Participação de cada investimento na carteira')
 
@@ -318,13 +313,118 @@ describe('AllocationDonut', () => {
           rowOf({ id: 'a', segmentLabel: 'Energia', currentValue: 980 }),
           rowOf({ id: 'b', segmentLabel: 'Saúde', currentValue: 20 }),
         ],
-        true,
+        WALLET_KIND_GROUPINGS.STOCKS,
       )
 
       await wrapper.find('[data-testid="allocation-grouping-segment"]').trigger('click')
 
       expect(wrapper.find('[data-testid="allocation-concentration-note"]').text()).toContain(
         'reúne os segmentos abaixo de 3%',
+      )
+    })
+  })
+
+  describe('grouping options per wallet kind', () => {
+    function groupingLabels(wrapper: ReturnType<typeof mountDonut>) {
+      return wrapper.findAll('[data-testid^="allocation-grouping-"]').map((option) => option.text())
+    }
+
+    it('offers Por ativo, Por tipo and Por segmento on a stock wallet', () => {
+      const wrapper = mountDonut(mixedRows, WALLET_KIND_GROUPINGS.STOCKS)
+
+      expect(groupingLabels(wrapper)).toEqual(['Por ativo', 'Por tipo', 'Por segmento'])
+    })
+
+    it('offers Por ativo and Por tipo on a fund wallet', () => {
+      const wrapper = mountDonut(mixedRows, WALLET_KIND_GROUPINGS.FUNDS)
+
+      expect(groupingLabels(wrapper)).toEqual(['Por ativo', 'Por tipo'])
+    })
+
+    it('shows no grouping control on a crypto wallet or when no groupings are given', () => {
+      expect(groupingLabels(mountDonut(mixedRows, WALLET_KIND_GROUPINGS.CRYPTO))).toEqual([])
+      expect(groupingLabels(mountDonut(mixedRows))).toEqual([])
+    })
+
+    it('falls back to Por ativo when the active grouping is no longer offered', async () => {
+      const wrapper = mountDonut(
+        [
+          rowOf({ id: 'a', ticker: 'AAAA3', segmentLabel: 'Energia', currentValue: 600 }),
+          rowOf({ id: 'b', ticker: 'BBBB3', segmentLabel: 'Energia', currentValue: 400 }),
+        ],
+        WALLET_KIND_GROUPINGS.STOCKS,
+      )
+      await wrapper.find('[data-testid="allocation-grouping-segment"]').trigger('click')
+      expect(legendTexts(wrapper)).toHaveLength(1)
+
+      await wrapper.setProps({ groupings: WALLET_KIND_GROUPINGS.FUNDS })
+
+      expect(legendTexts(wrapper)).toHaveLength(2)
+      expect(
+        wrapper.find('[data-testid="allocation-grouping-holding"]').attributes('aria-pressed'),
+      ).toBe('true')
+    })
+  })
+
+  describe('grouping by type', () => {
+    const typedRows = [
+      rowOf({ id: 'a', ticker: 'TAEE11', typeLabel: 'Ação', currentValue: 300 }),
+      rowOf({ id: 'b', ticker: 'EGIE3', typeLabel: 'Ação', currentValue: 200 }),
+      rowOf({ id: 'c', ticker: 'HGLG11', typeLabel: 'FII', currentValue: 250 }),
+      rowOf({ id: 'd', ticker: 'XPTO3', typeLabel: null, currentValue: 250 }),
+    ]
+
+    it('switches a fund wallet to one entry per type with a neutral Sem tipo and back', async () => {
+      const wrapper = mountDonut(typedRows, WALLET_KIND_GROUPINGS.FUNDS)
+
+      await wrapper.find('[data-testid="allocation-grouping-type"]').trigger('click')
+
+      const entries = legendTexts(wrapper)
+      expect(entries).toHaveLength(3)
+      expect(entries[0]).toContain('Ação')
+      expect(entries[0]).toContain('2 investimentos')
+      expect(entries[0]).toContain('50,00%')
+      expect(wrapper.text()).toContain('Participação de cada tipo na carteira')
+      const colors = wrapper
+        .findAll('[data-testid="donut-segment"]')
+        .map((segment) => [segment.text(), segment.attributes('data-color')])
+      expect(colors).toContainEqual(['Sem tipo=250', 'var(--text-muted)'])
+      expect(wrapper.find('[data-testid="allocation-concentration-note"]').exists()).toBe(false)
+
+      await wrapper.find('[data-testid="allocation-grouping-holding"]').trigger('click')
+      expect(legendTexts(wrapper)).toHaveLength(4)
+    })
+
+    it('sizes the type slices by the selected metric', async () => {
+      const wrapper = mountDonut(
+        [
+          rowOf({ id: 'a', typeLabel: 'Ação', currentValue: 750, costBasis: 200 }),
+          rowOf({ id: 'b', typeLabel: 'FII', currentValue: 250, costBasis: 800 }),
+        ],
+        WALLET_KIND_GROUPINGS.STOCKS,
+      )
+
+      await wrapper.find('[data-testid="allocation-grouping-type"]').trigger('click')
+      expect(legendTexts(wrapper)[0]).toContain('Ação')
+
+      await wrapper.find('[data-testid="allocation-metric-costBasis"]').trigger('click')
+      expect(legendTexts(wrapper)[0]).toContain('FII')
+      expect(legendTexts(wrapper)[0]).toContain('80,00%')
+    })
+
+    it('words the Outros note in types', async () => {
+      const wrapper = mountDonut(
+        [
+          rowOf({ id: 'a', typeLabel: 'Ação', currentValue: 980 }),
+          rowOf({ id: 'b', typeLabel: 'BDR', currentValue: 20 }),
+        ],
+        WALLET_KIND_GROUPINGS.STOCKS,
+      )
+
+      await wrapper.find('[data-testid="allocation-grouping-type"]').trigger('click')
+
+      expect(wrapper.find('[data-testid="allocation-concentration-note"]').text()).toContain(
+        'reúne os tipos abaixo de 3%',
       )
     })
   })

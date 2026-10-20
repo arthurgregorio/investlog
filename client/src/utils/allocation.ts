@@ -1,8 +1,8 @@
-import type { HoldingRow } from '@/types'
+import type { HoldingRow, WalletKind } from '@/types'
 
 export type AllocationMetric = 'currentValue' | 'costBasis'
 
-export type AllocationGrouping = 'holding' | 'segment'
+export type AllocationGrouping = 'holding' | 'type' | 'segment'
 
 export const OTHERS_SHARE_CUTOFF = 3
 export const OTHERS_LABEL = 'Outros'
@@ -10,7 +10,16 @@ export const OTHERS_LABEL = 'Outros'
 export const SEGMENTLESS_KEY = 'segmentless'
 export const SEGMENTLESS_LABEL = 'Sem segmento'
 
+export const TYPELESS_KEY = 'typeless'
+export const TYPELESS_LABEL = 'Sem tipo'
+
 export const TOP_POSITIONS_COUNT = 3
+
+export const WALLET_KIND_GROUPINGS: Record<WalletKind, AllocationGrouping[]> = {
+  STOCKS: ['holding', 'type', 'segment'],
+  FUNDS: ['holding', 'type'],
+  CRYPTO: ['holding'],
+}
 
 export interface AllocationEntry {
   key: string
@@ -41,8 +50,29 @@ function investmentCount(count: number): string {
   return count === 1 ? '1 investimento' : `${count} investimentos`
 }
 
-function segmentCount(count: number): string {
-  return count === 1 ? '1 segmento' : `${count} segmentos`
+interface GroupDimension {
+  labelOf: (row: HoldingRow) => string | null
+  keyPrefix: string
+  emptyKey: string
+  emptyLabel: string
+  groupCount: (count: number) => string
+}
+
+const GROUP_DIMENSIONS: Record<Exclude<AllocationGrouping, 'holding'>, GroupDimension> = {
+  type: {
+    labelOf: (row) => row.typeLabel,
+    keyPrefix: 'type',
+    emptyKey: TYPELESS_KEY,
+    emptyLabel: TYPELESS_LABEL,
+    groupCount: (count) => (count === 1 ? '1 tipo' : `${count} tipos`),
+  },
+  segment: {
+    labelOf: (row) => row.segmentLabel,
+    keyPrefix: 'segment',
+    emptyKey: SEGMENTLESS_KEY,
+    emptyLabel: SEGMENTLESS_LABEL,
+    groupCount: (count) => (count === 1 ? '1 segmento' : `${count} segmentos`),
+  },
 }
 
 function holdingEntries(counted: CountedRow[], total: number): AllocationEntry[] {
@@ -56,12 +86,17 @@ function holdingEntries(counted: CountedRow[], total: number): AllocationEntry[]
   }))
 }
 
-function segmentEntries(counted: CountedRow[], total: number): AllocationEntry[] {
+function groupedEntries(
+  counted: CountedRow[],
+  total: number,
+  dimension: GroupDimension,
+): AllocationEntry[] {
   const groups = new Map<string, { label: string; value: number; count: number }>()
   for (const { row, value } of counted) {
-    const key = row.segmentLabel == null ? SEGMENTLESS_KEY : `segment:${row.segmentLabel}`
+    const label = dimension.labelOf(row)
+    const key = label == null ? dimension.emptyKey : `${dimension.keyPrefix}:${label}`
     const group = groups.get(key) ?? {
-      label: row.segmentLabel ?? SEGMENTLESS_LABEL,
+      label: label ?? dimension.emptyLabel,
       value: 0,
       count: 0,
     }
@@ -94,7 +129,9 @@ export function computeAllocation(
   if (total === 0) return { entries: [], total: 0, excludedCount, topThreeShare: null }
 
   const individual =
-    grouping === 'segment' ? segmentEntries(counted, total) : holdingEntries(counted, total)
+    grouping === 'holding'
+      ? holdingEntries(counted, total)
+      : groupedEntries(counted, total, GROUP_DIMENSIONS[grouping])
 
   const bySizeDescending = (first: AllocationEntry, second: AllocationEntry) =>
     second.share - first.share
@@ -115,7 +152,10 @@ export function computeAllocation(
   const others: AllocationEntry = {
     key: 'others',
     label: OTHERS_LABEL,
-    name: grouping === 'segment' ? segmentCount(small.length) : investmentCount(small.length),
+    name:
+      grouping === 'holding'
+        ? investmentCount(small.length)
+        : GROUP_DIMENSIONS[grouping].groupCount(small.length),
     value: small.reduce((sum, entry) => sum + entry.value, 0),
     share: small.reduce((sum, entry) => sum + entry.share, 0),
     isOthers: true,
