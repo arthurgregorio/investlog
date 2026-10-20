@@ -1,5 +1,6 @@
 package br.com.investlog.server.walletdetail.repositories
 
+import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
@@ -28,6 +29,7 @@ class WalletDetailRepository(private val dsl: DSLContext) {
         )
             .from(HOLDINGS_OVERVIEW)
             .where(HOLDINGS_OVERVIEW.WALLET_ID.eq(walletId))
+            .and(HOLDINGS_OVERVIEW.STATUS.eq(HoldingStatus.ACTIVE))
             .fetch { record ->
                 WalletHolding(
                     id = record.get(HOLDINGS_OVERVIEW.EXTERNAL_ID)!!,

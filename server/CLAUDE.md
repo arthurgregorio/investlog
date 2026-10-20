@@ -204,6 +204,8 @@ In detail:
 
 **`WithdrawalService` reads the position from `finances.holdings_overview`, not from the lot tables.** That view already reports `quantity` and `cost_basis` net of everything withdrawn so far, which makes the average price simply `cost_basis / quantity` — and keeps it correct across repeated partial exits without the service tracking anything itself. The view carries `holding_id` for exactly this reason: it is what lets one query serve all three kinds.
 
+**A full stock or crypto exit records the remaining `cost_basis` itself, not `average × quantity`** (issue #458). The average is rounded to ten places, so when it is a repeating decimal (a partial wallet move writes the destination lot at a scale-20 price) the product misses the remaining cost by a sliver, and the completed holding keeps a tiny `cost_basis` that reads as a −100% `gain_pct`. Partial exits keep the average-price math.
+
 **The withdrawn totals are subtracted in `holdings_overview` through scalar correlated subqueries, never a join.** Joining `finances.results` to a branch that already aggregates lots multiplies the `SUM` by the number of result rows, silently inflating quantity and cost basis on any holding exited more than once. Adding a second such aggregate later must follow the same rule.
 
 **Only stock and crypto subtract withdrawn quantity from `current_value`.** A fund withdrawal decrements `fund_holdings.current_value` directly, so the view nets only its `cost_basis`; subtracting again would double-count.
@@ -249,8 +251,6 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 **Deltas are snapshot-to-snapshot, not snapshot-to-live.** `changeOver` compares the latest snapshot against the most recent one at or before `latest - N days`, and returns null when no such snapshot exists. A wallet gets an empty series and three null deltas until `walletsnapshots` has been collecting for long enough, which is why #174 shipped first.
 
 **`findTransactions` unions stock lots, crypto lots and fund contributions.** The three child tables have different column names for the same idea, so the union aliases them to `transaction_date`/`investment_name`/`amount` and the service reads them by alias.
-
-**Known gap, tracked on #212.** The endpoint does not yet exclude `COMPLETED` holdings, because `finances.holding_status` arrives with #204 and is not on this branch or on `main`. When `feature/176-wallet-detail-view` is rebased onto a `main` containing #204, `WalletDetailRepository.findHoldings` needs `status = 'ACTIVE'` added — the query keeps compiling without it and silently counts fully-withdrawn holdings in every current figure.
 
 ### Price sync
 
