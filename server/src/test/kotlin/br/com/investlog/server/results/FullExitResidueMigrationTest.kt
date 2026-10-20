@@ -237,7 +237,7 @@ class FullExitResidueMigrationTest : BaseIntegrationTest() {
         val earlierDatedResult = withdraw(stockWithResidue, "2024-06-01", "2")
         shiftCostBasis(earlierDatedResult, "-0.0000000003")
 
-        withdraw(cryptoSharingItsId, "2024-06-01", "2")
+        withdraw(cryptoSharingItsId, "2024-06-20", "2")
         val cryptoTwinBefore = resultCostBases(cryptoSharingItsId)
 
         val cryptoOverRecorded = createCryptoHolding("ETH", "4", "25")
