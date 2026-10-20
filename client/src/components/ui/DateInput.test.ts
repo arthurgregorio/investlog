@@ -26,9 +26,12 @@ describe('DateInput', () => {
     wrapper.unmount()
   })
 
-  it('reads digits typed without slashes as DDMMYYYY when the field is left', async () => {
+  it('reads digits typed without slashes as DDMMYYYY and shows them formatted when the field is left', async () => {
     const wrapper = mount(DateInput, {
-      props: { modelValue: null },
+      props: {
+        modelValue: null,
+        'onUpdate:modelValue': (value: Date | null) => wrapper.setProps({ modelValue: value }),
+      },
       attachTo: document.body,
     })
     const input = wrapper.get('input')
@@ -38,6 +41,7 @@ describe('DateInput', () => {
     await input.trigger('blur')
 
     expect(wrapper.emitted('update:modelValue')?.slice(-1)).toEqual([[new Date(2026, 0, 20)]])
+    expect(input.element.value).toBe('20/01/2026')
     wrapper.unmount()
   })
 
