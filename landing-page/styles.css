@@ -75,10 +75,7 @@ section{max-width:1140px;margin:0 auto;padding:64px 24px;}
 .video-wrap{max-width:840px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--border);
   box-shadow:var(--shadow);background:var(--surface);}
 .video-frame{position:relative;aspect-ratio:16/9;background:#0e1620;}
-.video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
-.video-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;}
-.play-btn{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.35);}
-.video-placeholder p{margin:0;font-size:13px;color:rgba(255,255,255,.65);font-weight:500;}
+.video-frame video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;}
 
 /* ===== Carousel ===== */
 .carousel{position:relative;}
