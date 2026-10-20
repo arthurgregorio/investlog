@@ -599,4 +599,39 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
             .jsonPath("$.page.totalElements").isEqualTo(1)
             .jsonPath("$.content[0].segmentLabel").isEqualTo("Energia")
     }
+
+    @Test
+    @Order(20)
+    fun `fully withdrawing a moved position with a repeating average price nets the holding to exactly zero`() {
+        val origin = createWallet("Origem Dízima", "stocks")
+        val destination = createWallet("Destino Dízima", "stocks")
+        val holdingId = createStockHolding(origin, "BBAS3", "4", "10")
+        addStockLot(origin, holdingId, "2024-02-01", "5", "12")
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId","quantity":3}]}""")
+            .expectStatus().isCreated()
+
+        val overview = HOLDINGS_OVERVIEW.`as`("overview")
+        val wallets = WALLETS.`as`("wallets")
+        val movedHoldingId = dsl.select(overview.EXTERNAL_ID)
+            .from(overview)
+            .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
+            .where(wallets.EXTERNAL_ID.eq(destination))
+            .fetchSingle(overview.EXTERNAL_ID)!!
+        val movedCostBasis = activePosition(destination, "Holding BBAS3").costBasis
+        assertEquals(0, BigDecimal("33.33333333333333333333").compareTo(movedCostBasis))
+
+        withdrawFromStock(destination, movedHoldingId, "3")
+
+        val result = dsl.selectFrom(RESULTS).orderBy(RESULTS.ID.desc()).limit(1).fetchSingle()
+        assertEquals(0, movedCostBasis.compareTo(result.costBasis))
+
+        val completed = dsl.select(overview.COST_BASIS, overview.GAIN_PCT, overview.STATUS)
+            .from(overview)
+            .where(overview.EXTERNAL_ID.eq(movedHoldingId))
+            .fetchSingle()
+        assertEquals(HoldingStatus.COMPLETED, completed.get(overview.STATUS))
+        assertEquals(0, BigDecimal.ZERO.compareTo(completed.get(overview.COST_BASIS)))
+        assertNull(completed.get(overview.GAIN_PCT))
+    }
 }

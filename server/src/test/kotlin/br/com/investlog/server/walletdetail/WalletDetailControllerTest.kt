@@ -1,9 +1,13 @@
 package br.com.investlog.server.walletdetail
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.jooq.finances.tables.references.RESULTS
+import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
+import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
 import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import br.com.investlog.server.walletsnapshots.services.WalletSnapshotService
+import org.jooq.DSLContext
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.TestInstance
@@ -11,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.Test
@@ -23,6 +28,9 @@ class WalletDetailControllerTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var walletSnapshotService: WalletSnapshotService
+
+    @Autowired
+    lateinit var dsl: DSLContext
 
     lateinit var walletId: UUID
     lateinit var emptyWalletId: UUID
@@ -63,9 +71,10 @@ class WalletDetailControllerTest : BaseIntegrationTest() {
         price: String,
         currentPrice: String,
         lotDate: String,
-    ) {
+        targetWalletId: UUID = walletId,
+    ): UUID =
         restTestClient.post()
-            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .uri("/private/v1/wallets/$targetWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
                 """
@@ -80,7 +89,9 @@ class WalletDetailControllerTest : BaseIntegrationTest() {
             )
             .exchange()
             .expectStatus().isCreated()
-    }
+            .returnResult<StockHoldingResponse>()
+            .responseBody!!
+            .id
 
     @Test
     @Order(1)
@@ -220,5 +231,41 @@ class WalletDetailControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/${UUID.randomUUID()}/detail")
             .exchange()
             .expectStatus().isNotFound()
+    }
+
+    @Test
+    @Order(10)
+    fun `a completed holding is left out of every figure even when it keeps a cost basis residue`() {
+        val completedWalletId = createWallet("Completed Wallet")
+        createStockHolding("ITUB4", "10", "30.00", "33.00", "2024-01-15", completedWalletId)
+        val exitedHoldingId = createStockHolding("BBDC4", "3", "10.00", "15.00", "2024-02-15", completedWalletId)
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$completedWalletId/stock-holdings/$exitedHoldingId/withdrawals")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"resultDate":"2024-06-01","quantity":3,"unitPrice":15.00}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val exitedInternalId = dsl.select(STOCK_HOLDINGS.ID)
+            .from(STOCK_HOLDINGS)
+            .where(STOCK_HOLDINGS.EXTERNAL_ID.eq(exitedHoldingId))
+            .fetchSingle(STOCK_HOLDINGS.ID)
+        dsl.update(RESULTS)
+            .set(RESULTS.COST_BASIS, RESULTS.COST_BASIS.minus(BigDecimal("0.0000000001")))
+            .where(RESULTS.STOCK_HOLDING_ID.eq(exitedInternalId))
+            .execute()
+
+        restTestClient.get()
+            .uri("/private/v1/wallets/$completedWalletId/detail")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.totalInvested").isEqualTo(300.0)
+            .jsonPath("$.currentValue").isEqualTo(330.0)
+            .jsonPath("$.bestPerformer.ticker").isEqualTo("ITUB4")
+            .jsonPath("$.worstPerformer.ticker").isEqualTo("ITUB4")
+            .jsonPath("$.largestHoldingName").isEqualTo("Holding ITUB4")
+            .jsonPath("$.activity.investmentCount").isEqualTo(1)
     }
 }

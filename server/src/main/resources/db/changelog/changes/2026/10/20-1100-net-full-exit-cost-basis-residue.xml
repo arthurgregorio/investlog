@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="20-1100-1" author="${claude}">
+        <comment>
+            Full exits used to record average × quantity with the average rounded to ten places, so a
+            completed stock or crypto holding whose average was a repeating decimal kept a sub-0.000001
+            cost_basis in holdings_overview and read as a −100% performer (issue #458). This moves each
+            such residual onto the holding's most recent result, picked by result_date then id exactly
+            as ResultRepository.findMostRecentResultId does, so the holding nets to zero; profit is a
+            generated column and follows. The SQL lives in its own file so the test runs the same
+            statement. There is no rollback: the previous values were the defect.
+        </comment>
+        <sqlFile path="20-1100-net-full-exit-cost-basis-residue.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+        <rollback/>
+    </changeSet>
+
+</databaseChangeLog>
