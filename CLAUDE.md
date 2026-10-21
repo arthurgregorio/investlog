@@ -135,6 +135,10 @@ then:
 `Scope` replaces `Design` here: the umbrella states the shape of the whole feature, and each
 sub-issue carries the `Design` detail for its own layer.
 
+A **design-required umbrella** (see below) adds a second callout right after the first one, and
+its `## Subtasks` lists the planned split (one line per sub-issue, by layer) instead of issue links,
+because the sub-issues don't exist yet. #482, #483 and #484 are the worked examples.
+
 ### Bug and maintenance skeleton
 
 Small defect and housekeeping issues use a lighter shape — don't force them through the feature
@@ -148,6 +152,21 @@ template:
 
 `## Failing tests` is a useful addition when a test is what surfaced the bug (see #196).
 
+### Design-required issues
+
+Work that introduces new screens or layout-heavy UI gets the **`design required`** label, and
+**nothing in it starts until a Claude Design pass has drawn those screens** in the InvestLog design
+project. Such an issue is usually an umbrella, and its body carries:
+
+- a second callout after the umbrella one: *"**Design required.** Before any subtask starts, run a
+  Claude Design pass … The subtasks are filed after that pass, and each client subtask's Design
+  section points at its mockup."*
+- a **"Screens the design must cover"** list inside `## Scope`, naming every surface the mockups
+  must include, plus any open question the design pass has to settle.
+
+Its sub-issues are **filed after the design pass**, not with the umbrella, so each client
+sub-issue's `Design` section can point at its mockup instead of inventing the UI.
+
 ### Keeping the body stable
 
 The body is the stable statement of the work. Extra context found while implementing, revised
@@ -157,11 +176,15 @@ Rewrite the body only when the spec itself genuinely changed.
 
 **Every issue gets, at creation time:**
 
-- A **milestone** — always, unless the user explicitly says not to link one when the issue is
-  created. Check what's open with `gh api repos/:owner/:repo/milestones --jq '.[].title'` and set
-  it with `gh issue create --milestone "<name>"`.
+- A **milestone** — always, with two exceptions: the user explicitly says not to link one, or the
+  issue is a **spike** (time-boxed research) or a **backlog** item (filed for later, not
+  scheduled). Spikes and backlog items get their milestone when they are actually scheduled (#485
+  and #486 are the worked examples). Check what's open with `gh api repos/:owner/:repo/milestones
+  --jq '.[].title'` and set it with `gh issue create --milestone "<name>"`.
 - The **right label**: `feature` for new functionality, `bug` for defects, `documentation` for
-  docs, `maintenance` for refactors and housekeeping, `github_actions` for workflow changes.
+  docs, `maintenance` for refactors and housekeeping, `github_actions` for workflow changes. Add
+  `design required` **on top of** that label when the issue needs a design pass first (see
+  [Design-required issues](#design-required-issues)) — never instead of it.
 - **`arthurgregorio` as assignee.**
 
 ## Umbrella issues and sub-issues
@@ -208,7 +231,8 @@ attached as real sub-issues, each targeting the `feature/176-wallet-detail-view`
 **Recommend umbrellas, never a lone subtask.** When asked what to work on next or what can run in
 parallel, recommend umbrella issues as whole units, alongside standalone issues. A subtask has no
 purpose without the rest of its umbrella, so never suggest one on its own: compare blockers and
-parallelism between umbrellas, and name sub-issues only as an umbrella's contents.
+parallelism between umbrellas, and name sub-issues only as an umbrella's contents. When the
+recommended umbrella carries `design required`, its first step is the Claude Design pass, not code.
 
 ### Dependencies point at the umbrella, never at one of its subtasks
 
