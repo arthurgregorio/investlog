@@ -57,6 +57,7 @@ val kotlinLoggingJvmVersion = "8.0.4"
 val totpVersion = "1.7.1"
 val zxingVersion = "3.5.4"
 val wiremockSpringVersion = "4.0.9"
+val openHtmlToPdfVersion = "1.1.97"
 
 dependencies {
     // spring stuff
@@ -76,6 +77,10 @@ dependencies {
     implementation("dev.samstevens.totp:totp:$totpVersion")
     implementation("com.google.zxing:core:$zxingVersion")
     implementation("com.google.zxing:javase:$zxingVersion")
+
+    // pdf reports
+    implementation("org.thymeleaf:thymeleaf")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:$openHtmlToPdfVersion")
 
     // logging
     implementation("io.github.oshai:kotlin-logging-jvm:$kotlinLoggingJvmVersion")

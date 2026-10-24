@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<title>Relatório de investimentos</title>
+<style>
+@page {
+    size: A4 landscape;
+    margin: 20mm 0 16mm 0;
+    @top-center {
+        content: element(running-header);
+        vertical-align: top;
+    }
+    @bottom-center {
+        content: element(running-footer);
+        vertical-align: bottom;
+    }
+}
+
+@page :first {
+    margin-top: 0;
+    @top-center {
+        content: none;
+    }
+}
+
+body {
+    margin: 0;
+    font-family: Inter, sans-serif;
+    font-size: 12px;
+    color: #172033;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td, th {
+    padding: 0;
+}
+
+.running-header {
+    position: running(running-header);
+    width: 100%;
+    height: 20mm;
+    background-color: #206bc4;
+    color: #ffffff;
+}
+
+.running-footer {
+    position: running(running-footer);
+    width: 100%;
+    height: 11mm;
+    background-color: #f4f6fa;
+    border-top: 1px solid #e6e9ef;
+    font-size: 12px;
+    color: #586375;
+}
+
+.band, .footer-table {
+    height: 100%;
+}
+
+.band td, .footer-table td {
+    vertical-align: middle;
+}
+
+.band td, .footer-table td, .cover-top td, .cover-meta td {
+    padding-left: 40px;
+    padding-right: 40px;
+}
+
+.band .band-date, .footer-table .footer-generated, .cover-top .band-date {
+    text-align: right;
+}
+
+.band-date {
+    font-size: 13px;
+}
+
+.band-date strong {
+    font-weight: 700;
+}
+
+.brand-title {
+    display: inline-block;
+    vertical-align: middle;
+    font-size: 22px;
+    font-weight: 600;
+    margin-left: 12px;
+}
+
+.cover .brand-title {
+    font-size: 28px;
+    margin-left: 14px;
+}
+
+.logo {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    width: 1em;
+    height: 1em;
+    border-radius: 0.275em;
+    background-color: #ffffff;
+}
+
+.logo-large {
+    font-size: 40px;
+}
+
+.logo-small {
+    font-size: 32px;
+}
+
+.logo span {
+    position: absolute;
+    width: 0.084em;
+    background-color: #206bc4;
+    border-radius: 0.0325em;
+}
+
+.logo .logo-base {
+    left: 0.2725em;
+    top: 0.6544em;
+    width: 0.455em;
+    height: 0.0596em;
+    border-radius: 0.0298em;
+    background-color: #90b5e2;
+}
+
+.logo .logo-bar-short {
+    left: 0.3213em;
+    top: 0.5108em;
+    height: 0.1517em;
+}
+
+.logo .logo-bar-medium {
+    left: 0.458em;
+    top: 0.3971em;
+    height: 0.2654em;
+}
+
+.logo .logo-bar-tall {
+    left: 0.5948em;
+    top: 0.2725em;
+    height: 0.39em;
+}
+
+.logo .logo-dot {
+    left: 0.5813em;
+    top: 0.217em;
+    width: 0.111em;
+    height: 0.111em;
+    border-radius: 0.0555em;
+}
+
+.footer-brand {
+    font-weight: 700;
+    color: #172033;
+}
+
+.footer-brand-accent {
+    color: #1a58a1;
+}
+
+.page-number::before {
+    content: counter(page);
+}
+
+.page-count::before {
+    content: counter(pages);
+}
+
+.cover {
+    background-color: #206bc4;
+    color: #ffffff;
+    padding: 28px 0 22px 0;
+}
+
+.cover-top td {
+    padding-bottom: 16px;
+    vertical-align: middle;
+}
+
+.cover-rule {
+    margin: 0 40px 18px 40px;
+    border-top: 1px solid #79a6dc;
+}
+
+.cover .band-date {
+    font-size: 14px;
+}
+
+.cover-meta td {
+    vertical-align: bottom;
+    width: 33%;
+}
+
+.cover-meta .meta-center {
+    text-align: center;
+}
+
+.cover-meta .meta-right {
+    text-align: right;
+}
+
+.meta-label {
+    display: block;
+    font-size: 13px;
+    color: #e9f0f9;
+}
+
+.meta-value {
+    display: block;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.meta-value-currency {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.content {
+    padding: 0 40px;
+}
+
+.summary {
+    padding-top: 24px;
+    page-break-after: always;
+}
+
+h2 {
+    margin: 0 0 14px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a58a1;
+}
+
+.grid {
+    table-layout: fixed;
+    -fs-table-paginate: paginate;
+}
+
+.grid thead {
+    display: table-header-group;
+}
+
+.grid tr {
+    page-break-inside: avoid;
+}
+
+.grid .header-row th {
+    background-color: #ebf2fa;
+    color: #1a58a1;
+    font-weight: 600;
+    text-align: right;
+    padding: 8px 10px;
+}
+
+.summary-table {
+    font-size: 12.5px;
+}
+
+.summary-table .header-row th {
+    padding: 9px 12px;
+}
+
+.grid .header-row .left, .grid td.left {
+    text-align: left;
+}
+
+.grid .header-row .center, .grid td.center {
+    text-align: center;
+}
+
+.grid td {
+    text-align: right;
+}
+
+.grid .title-row th {
+    text-align: left;
+    padding: 20px 0 12px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a58a1;
+}
+
+.continuation {
+    margin-left: 6px;
+    font-size: 14px;
+    font-weight: 400;
+    color: #586375;
+}
+
+.continuation::after {
+    content: -fs-running-attr(data-continuation, start);
+}
+
+.class-row td {
+    padding: 8px 12px;
+    border-top: 1px solid #c3cbd8;
+    font-weight: 700;
+}
+
+.class-chip {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 8px;
+    border-radius: 3px;
+}
+
+.summary-type-row td {
+    padding: 6px 12px;
+    border-top: 1px solid #eef1f6;
+    color: #3d4757;
+}
+
+.summary-type-row td.type-label {
+    padding-left: 29px;
+}
+
+.page-cell {
+    color: #586375;
+    font-weight: 400;
+}
+
+.page-ref {
+    color: #586375;
+    text-decoration: none;
+}
+
+.page-ref::after {
+    content: target-counter(attr(href), page);
+}
+
+.grand-total-row td {
+    padding: 10px 12px;
+    background-color: #eef1f6;
+    border-top: 1px solid #c3cbd8;
+    font-weight: 700;
+}
+
+.type-heading-row td {
+    padding: 7px 10px;
+    background-color: #f7f9fc;
+    border-bottom: 1px solid #c3cbd8;
+    font-weight: 700;
+}
+
+.position-row td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #e6e9ef;
+}
+
+.position-row td.asset {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.total-row td {
+    padding: 9px 10px;
+    background-color: #eef1f6;
+    font-weight: 700;
+}
+
+.muted {
+    font-weight: 400;
+    color: #586375;
+}
+
+.grid td.positive, .positive {
+    color: #0f7a4c;
+}
+
+.grid td.negative, .negative {
+    color: #c92a42;
+}
+</style>
+</head>
+<body>
+
+<div class="running-header">
+    <table class="band">
+        <tr>
+            <td>
+                <span class="logo logo-small"><span class="logo-base"></span><span class="logo-bar-short"></span><span class="logo-bar-medium"></span><span class="logo-bar-tall"></span><span class="logo-dot"></span></span>
+                <span class="brand-title">Relatório de investimentos</span>
+            </td>
+            <td class="band-date">Posição em: <strong th:text="${formatter.date(report.generatedAt)}">01/01/2026</strong></td>
+        </tr>
+    </table>
+</div>
+
+<div class="running-footer">
+    <table class="footer-table">
+        <tr>
+            <td><span class="footer-brand">Invest<span class="footer-brand-accent">Log</span></span> · investlog.com.br</td>
+            <td class="footer-generated">Gerado em <span th:text="${formatter.date(report.generatedAt)}">01/01/2026</span> às <span th:text="${formatter.time(report.generatedAt)}">00h00</span> · Página <span class="page-number"></span> de <span class="page-count"></span></td>
+        </tr>
+    </table>
+</div>
+
+<div class="cover">
+    <table class="cover-top">
+        <tr>
+            <td>
+                <span class="logo logo-large"><span class="logo-base"></span><span class="logo-bar-short"></span><span class="logo-bar-medium"></span><span class="logo-bar-tall"></span><span class="logo-dot"></span></span>
+                <span class="brand-title">Relatório de investimentos</span>
+            </td>
+            <td class="band-date">Posição em: <strong th:text="${formatter.date(report.generatedAt)}">01/01/2026</strong></td>
+        </tr>
+    </table>
+    <div class="cover-rule"></div>
+    <table class="cover-meta">
+        <tr>
+            <td>
+                <span class="meta-label">Titular</span>
+                <span class="meta-value" th:text="${report.holderName}">Titular</span>
+            </td>
+            <td class="meta-center">
+                <span class="meta-label">Moeda</span>
+                <span class="meta-value meta-value-currency"><span th:text="${formatter.currencyDescription()}">BRL</span><th:block th:each="exchangeRate : ${report.exchangeRates}"> · <span th:text="${formatter.exchangeRate(exchangeRate)}">1 USD = R$ 1,00</span></th:block></span>
+            </td>
+            <td class="meta-right">
+                <span class="meta-label">Posições</span>
+                <span class="meta-value" th:text="${report.totals.positionCount}">0</span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="content">
+
+    <div class="summary">
+        <h2>Resumo da posição consolidada</h2>
+        <table class="grid summary-table">
+            <colgroup>
+                <col style="width: 20%"/>
+                <col style="width: 8%"/>
+                <col/>
+                <col/>
+                <col/>
+                <col style="width: 11%"/>
+                <col style="width: 9%"/>
+                <col style="width: 7%"/>
+            </colgroup>
+            <thead>
+                <tr class="header-row">
+                    <th class="left">Classe / tipo</th>
+                    <th class="center">Posições</th>
+                    <th th:text="|Investido (${formatter.currencySymbol()})|">Investido</th>
+                    <th th:text="|Valor atual (${formatter.currencySymbol()})|">Valor atual</th>
+                    <th th:text="|Resultado (${formatter.currencySymbol()})|">Resultado</th>
+                    <th>Resultado (%)</th>
+                    <th>% do total</th>
+                    <th>Página</th>
+                </tr>
+            </thead>
+            <tbody>
+                <th:block th:each="section, sectionStatus : ${report.sections}">
+                    <tr class="class-row">
+                        <td class="left"><span class="class-chip" th:style="|background-color: ${formatter.kindColor(section.kind)}|"></span><span th:text="${formatter.kindLabel(section.kind)}">Classe</span></td>
+                        <td class="center" th:text="${section.totals.positionCount}">0</td>
+                        <td th:text="${formatter.money(section.totals.costBasis)}">0</td>
+                        <td th:text="${formatter.money(section.totals.currentValue)}">0</td>
+                        <td th:class="${formatter.tone(section.totals.result)}" th:text="${formatter.signedMoney(section.totals.result)}">0</td>
+                        <td th:class="${formatter.tone(section.totals.result)}" th:text="${formatter.signedPercentage(section.totals.resultPercentage)}">0</td>
+                        <td th:text="${formatter.share(section.totals.share)}">0</td>
+                        <td class="page-cell"><a class="page-ref" th:href="|#section-${sectionStatus.index}|"></a></td>
+                    </tr>
+                    <th:block th:if="${section.showsTypeGroups}">
+                        <tr class="summary-type-row" th:each="typeGroup, typeStatus : ${section.typeGroups}">
+                            <td class="left type-label" th:text="${typeGroup.label}">Tipo</td>
+                            <td class="center" th:text="${typeGroup.totals.positionCount}">0</td>
+                            <td th:text="${formatter.money(typeGroup.totals.costBasis)}">0</td>
+                            <td th:text="${formatter.money(typeGroup.totals.currentValue)}">0</td>
+                            <td th:class="${formatter.tone(typeGroup.totals.result)}" th:text="${formatter.signedMoney(typeGroup.totals.result)}">0</td>
+                            <td th:class="${formatter.tone(typeGroup.totals.result)}" th:text="${formatter.signedPercentage(typeGroup.totals.resultPercentage)}">0</td>
+                            <td th:text="${formatter.share(typeGroup.totals.share)}">0</td>
+                            <td class="page-cell"><a class="page-ref" th:href="|#section-${sectionStatus.index}-type-${typeStatus.index}|"></a></td>
+                        </tr>
+                    </th:block>
+                </th:block>
+                <tr class="grand-total-row">
+                    <td class="left">Total geral</td>
+                    <td class="center" th:text="${report.totals.positionCount}">0</td>
+                    <td th:text="${formatter.money(report.totals.costBasis)}">0</td>
+                    <td th:text="${formatter.money(report.totals.currentValue)}">0</td>
+                    <td th:class="${formatter.tone(report.totals.result)}" th:text="${formatter.signedMoney(report.totals.result)}">0</td>
+                    <td th:class="${formatter.tone(report.totals.result)}" th:text="${formatter.signedPercentage(report.totals.resultPercentage)}">0</td>
+                    <td th:text="${formatter.share(report.totals.share)}">0</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section" th:each="section, sectionStatus : ${report.sections}"
+         th:with="stocks=${section.kind.name() == 'STOCKS'}, funds=${section.kind.name() == 'FUNDS'}, labelSpan=${stocks ? 4 : (funds ? 1 : 3)}, columnCount=${stocks ? 8 : (funds ? 5 : 7)}">
+        <table class="grid section-table">
+            <colgroup th:if="${stocks}">
+                <col style="width: 23%"/>
+                <col style="width: 17%"/>
+                <col style="width: 8%"/>
+                <col style="width: 9%"/>
+                <col/>
+                <col/>
+                <col/>
+                <col style="width: 8%"/>
+            </colgroup>
+            <colgroup th:if="${!stocks and !funds}">
+                <col style="width: 23%"/>
+                <col style="width: 10%"/>
+                <col style="width: 13%"/>
+                <col/>
+                <col/>
+                <col/>
+                <col style="width: 8%"/>
+            </colgroup>
+            <colgroup th:if="${funds}">
+                <col style="width: 46%"/>
+                <col/>
+                <col/>
+                <col/>
+                <col style="width: 8%"/>
+            </colgroup>
+            <thead>
+                <tr class="title-row">
+                    <th th:colspan="${columnCount}"><span th:text="|Custódia em ${formatter.kindLabel(section.kind)}|">Custódia</span><span class="continuation"></span></th>
+                </tr>
+                <tr class="header-row">
+                    <th class="left" th:text="${funds} ? 'Fundo' : 'Ativo'">Ativo</th>
+                    <th class="left" th:if="${stocks}">Segmento</th>
+                    <th th:unless="${funds}">Quantidade</th>
+                    <th th:unless="${funds}">Preço atual</th>
+                    <th th:text="|Investido (${formatter.currencySymbol()})|">Investido</th>
+                    <th th:text="|Valor atual (${formatter.currencySymbol()})|">Valor atual</th>
+                    <th th:text="|Resultado (${formatter.currencySymbol()})|">Resultado</th>
+                    <th>Result. %</th>
+                </tr>
+            </thead>
+            <tbody>
+                <th:block th:each="typeGroup, typeStatus : ${section.typeGroups}">
+                    <tr class="type-heading-row" data-continuation="(continuação)" th:if="${section.showsTypeGroups}">
+                        <td class="left" th:colspan="${labelSpan}" th:id="${typeStatus.first} ? |section-${sectionStatus.index}| : null"><span th:id="|section-${sectionStatus.index}-type-${typeStatus.index}|" th:text="${typeGroup.label}">Tipo</span> <span class="muted" th:text="|· ${formatter.positionCount(typeGroup.totals.positionCount)}|">· 0 posições</span></td>
+                        <td th:text="${formatter.money(typeGroup.totals.costBasis)}">0</td>
+                        <td th:text="${formatter.money(typeGroup.totals.currentValue)}">0</td>
+                        <td th:class="${formatter.tone(typeGroup.totals.result)}" th:text="${formatter.signedMoney(typeGroup.totals.result)}">0</td>
+                        <td th:class="${formatter.tone(typeGroup.totals.result)}" th:text="${formatter.signedPercentage(typeGroup.totals.resultPercentage)}">0</td>
+                    </tr>
+                    <tr class="position-row" data-continuation="(continuação)" th:each="position, positionStatus : ${typeGroup.positions}" th:with="sectionAnchor=${!section.showsTypeGroups and typeStatus.first and positionStatus.first} ? |section-${sectionStatus.index}| : null">
+                        <td class="left asset" th:if="${funds}" th:id="${sectionAnchor}" th:text="${position.name}">Fundo</td>
+                        <td class="left asset" th:unless="${funds}" th:id="${sectionAnchor}"><strong th:text="${position.ticker}">TICK</strong> <span class="muted" th:if="${position.name != position.ticker}" th:text="${position.name}">Nome</span></td>
+                        <td class="left asset" th:if="${stocks}" th:text="${position.segment} ?: '—'">Segmento</td>
+                        <td th:unless="${funds}" th:text="${formatter.quantity(position.quantity)}">0</td>
+                        <td th:unless="${funds}" th:text="${formatter.money(position.currentPrice)}">0</td>
+                        <td th:text="${formatter.money(position.costBasis)}">0</td>
+                        <td th:text="${formatter.money(position.currentValue)}">0</td>
+                        <td th:class="${formatter.tone(position.result)}" th:text="${formatter.signedMoney(position.result)}">0</td>
+                        <td th:class="${formatter.tone(position.result)}" th:text="${formatter.signedPercentage(position.resultPercentage)}">0</td>
+                    </tr>
+                </th:block>
+                <tr class="total-row" data-continuation="(continuação)">
+                    <td class="left" th:colspan="${labelSpan}"><span th:text="|Total ${formatter.kindLabel(section.kind)}|">Total</span> <span class="muted" th:text="|· ${formatter.positionCount(section.totals.positionCount)}|">· 0 posições</span></td>
+                    <td th:text="${formatter.money(section.totals.costBasis)}">0</td>
+                    <td th:text="${formatter.money(section.totals.currentValue)}">0</td>
+                    <td th:class="${formatter.tone(section.totals.result)}" th:text="${formatter.signedMoney(section.totals.result)}">0</td>
+                    <td th:class="${formatter.tone(section.totals.result)}" th:text="${formatter.signedPercentage(section.totals.resultPercentage)}">0</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>
