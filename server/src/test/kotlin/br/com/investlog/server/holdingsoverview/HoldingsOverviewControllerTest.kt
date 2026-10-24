@@ -37,9 +37,9 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .id
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Overview Test Type"}""")
+            .body("""{"name":"Overview Test Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -49,7 +49,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"OVTST3",
+                """{"typeId":"$stockTypeId","ticker":"OVTST3",
                    "currentPrice":50.00,
                    "lot":{"lotDate":"2025-01-15","quantity":10,"price":45.00}}"""
             )
@@ -183,7 +183,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"OVSML3",
+                """{"typeId":"$stockTypeId","ticker":"OVSML3",
                    "currentPrice":12.00,
                    "lot":{"lotDate":"2025-02-01","quantity":1,"price":10.00}}"""
             )
@@ -280,9 +280,9 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
     @Order(17)
     fun `GET holdings with a single typeLabel containing a comma matches it whole`() {
         val commaStockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Overview, Comma Type"}""")
+            .body("""{"name":"Overview, Comma Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -292,7 +292,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$secondWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$commaStockTypeId","ticker":"OVCOM3",
+                """{"typeId":"$commaStockTypeId","ticker":"OVCOM3",
                    "currentPrice":20.00,
                    "lot":{"lotDate":"2025-03-01","quantity":5,"price":18.00}}"""
             )
@@ -319,9 +319,9 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .id
 
         val secondStockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Overview Second Type"}""")
+            .body("""{"name":"Overview Second Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -331,7 +331,7 @@ class HoldingsOverviewControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$secondWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$secondStockTypeId","ticker":"OVSEC3",
+                """{"typeId":"$secondStockTypeId","ticker":"OVSEC3",
                    "currentPrice":20.00,
                    "lot":{"lotDate":"2025-03-01","quantity":5,"price":18.00}}"""
             )

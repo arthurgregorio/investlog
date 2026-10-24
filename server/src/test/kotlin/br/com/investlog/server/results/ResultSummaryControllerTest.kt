@@ -27,9 +27,9 @@ class ResultSummaryControllerTest : BaseIntegrationTest() {
     @BeforeAll
     fun setup() {
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Summary Stock Type"}""")
+            .body("""{"name":"Summary Stock Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -61,7 +61,7 @@ class ResultSummaryControllerTest : BaseIntegrationTest() {
         .body(
             """
             {
-              "stockTypeId":"$stockTypeId",
+              "typeId":"$stockTypeId",
               "ticker":"$ticker",
               "currentPrice":30.00,
               "lot":{"lotDate":"2026-01-10","quantity":100,"price":20.00}

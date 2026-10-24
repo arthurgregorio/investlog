@@ -1,5 +1,6 @@
 package br.com.investlog.server.stockholdings.services
 
+import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.NotFoundException
@@ -10,8 +11,10 @@ import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
-import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingSegmentRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingUpdateRequest
+import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
+import br.com.investlog.server.typelists.services.HoldingTypeService
+import br.com.investlog.server.typelists.services.SegmentService
 import br.com.investlog.server.wallets.services.WalletService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -23,6 +26,8 @@ import java.util.UUID
 @Transactional(readOnly = true)
 class StockHoldingService(
     private val walletService: WalletService,
+    private val holdingTypeService: HoldingTypeService,
+    private val segmentService: SegmentService,
     private val holdingRepo: StockHoldingRepository,
     private val lotRepo: StockLotRepository,
 ) {
@@ -41,12 +46,10 @@ class StockHoldingService(
     @Transactional
     fun create(walletExternalId: UUID, request: StockHoldingCreateRequest): StockHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
-        val stockTypeId = holdingRepo.findStockTypeInternalId(request.stockTypeId)
-            ?: throw NotFoundException("Tipo de ação não encontrado: ${request.stockTypeId}")
         return holdingRepo.create(
             walletInternalId = walletId,
-            stockTypeInternalId = stockTypeId,
-            stockSegmentInternalId = request.stockSegmentId?.let(::resolveStockSegmentId),
+            typeInternalId = holdingTypeService.resolveId(request.typeId, WalletKind.STOCKS),
+            segmentInternalId = request.segmentId?.let(segmentService::resolveId),
             ticker = request.ticker,
             name = request.name ?: request.ticker.uppercase(),
             currentPrice = request.currentPrice,
@@ -61,13 +64,10 @@ class StockHoldingService(
         request: StockHoldingUpdateRequest
     ): StockHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
-        val stockTypeId = request.stockTypeId?.let {
-            holdingRepo.findStockTypeInternalId(it) ?: throw NotFoundException("Tipo de ação não encontrado: $it")
-        }
         return holdingRepo.update(
             walletInternalId = walletId,
             externalId = holdingExternalId,
-            stockTypeInternalId = stockTypeId,
+            typeInternalId = request.typeId?.let { typeId -> holdingTypeService.resolveId(typeId, WalletKind.STOCKS) },
             ticker = request.ticker,
             name = request.name,
             currentPrice = request.currentPrice,
@@ -79,13 +79,13 @@ class StockHoldingService(
     fun updateSegment(
         walletExternalId: UUID,
         holdingExternalId: UUID,
-        request: StockHoldingSegmentRequest,
+        request: HoldingSegmentRequest,
     ): StockHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
         return holdingRepo.updateSegment(
             walletInternalId = walletId,
             externalId = holdingExternalId,
-            stockSegmentInternalId = request.stockSegmentId?.let(::resolveStockSegmentId),
+            segmentInternalId = request.segmentId?.let(segmentService::resolveId),
         ) ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
     }
 
@@ -133,8 +133,4 @@ class StockHoldingService(
         }
         return lot
     }
-
-    private fun resolveStockSegmentId(externalId: UUID): Long =
-        holdingRepo.findStockSegmentInternalId(externalId)
-            ?: throw NotFoundException("Segmento não encontrado: $externalId")
 }

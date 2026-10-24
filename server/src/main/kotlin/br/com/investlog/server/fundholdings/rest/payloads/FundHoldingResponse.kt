@@ -7,7 +7,10 @@ import java.util.UUID
 data class FundHoldingResponse(
     val id: UUID,
     val walletId: UUID,
-    val fundTypeId: UUID,
+    val typeId: UUID,
+    val typeName: String,
+    val segmentId: UUID?,
+    val segmentName: String?,
     val name: String,
     val contributions: List<ContributionResponse>,
     val currentValue: BigDecimal?,
