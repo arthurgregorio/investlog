@@ -451,6 +451,129 @@ class AuthControllerTest : BaseIntegrationTest() {
             .let { assertEquals("admin@admin.com", it?.email) }
     }
 
+    @Test
+    @Order(18)
+    fun `a blocked account's correct password and current code on totp verify returns the blocked error and no session`() {
+        val adminCookie = adminSessionCookie()
+        val userId = registerApprovedUser("Verificar Bloqueada", "verify-blocked@example.com", adminCookie)
+        val secret = enrollTotp("verify-blocked@example.com")
+
+        restTestClient.post()
+            .uri("/private/v1/auth/totp/verify")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"verify-blocked@example.com","password":"Senha123","code":"${currentTotpCode(secret)}"}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$userId/block")
+            .header("Cookie", adminCookie)
+            .exchange()
+            .expectStatus().isOk()
+
+        val result = restTestClient.post()
+            .uri("/private/v1/auth/totp/verify")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"verify-blocked@example.com","password":"Senha123","code":"${currentTotpCode(secret)}"}""")
+            .exchange()
+            .expectStatus().isUnauthorized()
+            .returnResult<Map<String, Any?>>()
+
+        assertEquals("Login falhou. Entre em contato com um administrador.", result.responseBody?.get("detail"))
+        assertTrue(result.responseHeaders.getFirst("Set-Cookie").isNullOrEmpty())
+    }
+
+    @Test
+    @Order(19)
+    fun `totp verify is rejected for an account that already has totp enabled`() {
+        val adminCookie = adminSessionCookie()
+        registerApprovedUser("Verificar Habilitada", "verify-enabled@example.com", adminCookie)
+        val secret = enrollTotp("verify-enabled@example.com")
+
+        restTestClient.post()
+            .uri("/private/v1/auth/totp/verify")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"verify-enabled@example.com","password":"Senha123","code":"${currentTotpCode(secret)}"}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        val responseHeaders = restTestClient.post()
+            .uri("/private/v1/auth/totp/verify")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"verify-enabled@example.com","password":"Senha123","code":"${currentTotpCode(secret)}"}""")
+            .exchange()
+            .expectStatus().isEqualTo(409)
+            .returnResult<Unit>()
+            .responseHeaders
+
+        assertTrue(responseHeaders.getFirst("Set-Cookie").isNullOrEmpty())
+    }
+
+    @Test
+    @Order(20)
+    fun `totp enroll is rejected for a blocked account`() {
+        val adminCookie = adminSessionCookie()
+        val userId = registerApprovedUser("Inscrever Bloqueada", "enroll-blocked@example.com", adminCookie)
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$userId/block")
+            .header("Cookie", adminCookie)
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.post()
+            .uri("/private/v1/auth/totp/enroll")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"enroll-blocked@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isUnauthorized()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let { assertEquals("Login falhou. Entre em contato com um administrador.", it?.get("detail")) }
+    }
+
+    private fun registerApprovedUser(name: String, email: String, adminCookie: String): String {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"$name","email":"$email","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val userId = (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .header("Cookie", adminCookie)
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == email }["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$userId/approve")
+            .header("Cookie", adminCookie)
+            .exchange()
+            .expectStatus().isOk()
+
+        return userId
+    }
+
+    private fun enrollTotp(email: String): String =
+        restTestClient.post()
+            .uri("/private/v1/auth/totp/enroll")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"$email","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<TotpEnrollResponse>()
+            .responseBody
+            ?.secretKey
+            ?: error("Enroll did not return a secret")
+
     @Nested
     @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
     @AutoConfigureRestTestClient

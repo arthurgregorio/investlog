@@ -671,6 +671,111 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
             }
     }
 
+    @Test
+    @Order(25)
+    fun `an admin session opened before that admin is blocked is rejected by every users-admin operation`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Admin Bloqueado","email":"admin-bloqueado@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Aguardando","email":"aguardando@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val blockedAdminId = userByEmail("admin-bloqueado@example.com")["id"] as String
+        val pendingUserId = userByEmail("aguardando@example.com")["id"] as String
+        val totpEnabledUserId = userByEmail("naoadmin@example.com")["id"] as String
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$blockedAdminId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$blockedAdminId/role")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"role":"ADMIN"}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        val secret = restTestClient.post()
+            .uri("/private/v1/auth/totp/enroll")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"admin-bloqueado@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<TotpEnrollResponse>()
+            .responseBody
+            ?.secretKey
+            ?: error("Enroll did not return a secret")
+
+        val code = DefaultCodeGenerator().generate(secret, System.currentTimeMillis() / 1000L / 30L)
+
+        val blockedAdminCookie = restTestClient.post()
+            .uri("/private/v1/auth/totp/verify")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"admin-bloqueado@example.com","password":"Senha123","code":"$code"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders
+            .getFirst("Set-Cookie")
+            ?.substringBefore(";")
+            ?: error("Verify did not set a session cookie")
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$blockedAdminId/block")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.get()
+            .uri("/private/v1/users")
+            .header("Cookie", blockedAdminCookie)
+            .exchange()
+            .expectStatus().isEqualTo(403)
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let { assertEquals("pending_approval", it?.get("error")) }
+
+        listOf(
+            "/private/v1/users/$blockedAdminId/unblock",
+            "/private/v1/users/$pendingUserId/approve",
+            "/private/v1/users/$totpEnabledUserId/totp-reset",
+        ).forEach { uri ->
+            restTestClient.patch()
+                .uri(uri)
+                .header("Cookie", blockedAdminCookie)
+                .exchange()
+                .expectStatus().isEqualTo(403)
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                .let { assertEquals("pending_approval", it?.get("error"), uri) }
+        }
+
+        assertEquals("BLOCKED", userByEmail("admin-bloqueado@example.com")["status"])
+        assertEquals("PENDING", userByEmail("aguardando@example.com")["status"])
+        assertEquals(true, userByEmail("naoadmin@example.com")["totpEnabled"])
+    }
+
+    private fun userByEmail(email: String): Map<*, *> =
+        (
+            restTestClient.get()
+                .uri("/private/v1/users?size=200")
+                .exchange()
+                .expectStatus().isOk()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+                ?.get("content") as List<*>
+            )
+            .map { it as Map<*, *> }
+            .single { it["email"] == email }
+
     companion object {
         private lateinit var approveTargetId: String
         private lateinit var blockTargetId: String
