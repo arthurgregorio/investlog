@@ -138,7 +138,10 @@ In detail:
   `ROLE_ADMIN` in `SecurityConfiguration`. `block`/`changeRole`/`delete`/`resetPassword` all guard
   against the caller targeting their own account (`SelfActionNotAllowedException`, 400) to
   prevent a self-lockout; `approve`, `unblock`, and `resetTotp` don't need the guard since
-  self-targeting them is a genuine no-op, not a lockout.
+  self-targeting them is a genuine no-op, not a lockout. Every operation, reads included, starts
+  with `requireApprovedCaller()`, the live `CurrentUserProvider` check, because the route's
+  `ROLE_ADMIN` gate is cached at login and would otherwise let a blocked admin's open session
+  unblock itself (issue #489).
 - `shared/persistence` — `pagedModelOf(content, pageable, total)`, the single place jOOQ page
   results become `org.springframework.data.web.PagedModel<T>` for collection endpoints.
 - `shared/exceptions` — domain exceptions (`NotFoundException`, `InvalidCredentialsException`,
@@ -369,6 +372,11 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
 - **`establishSession` is the only session-issuing code path** — every login flow (password,
   TOTP verify, and Phase 4's Google callback) must funnel through it rather than open-coding a
   second way to mint a session, or a gate implemented in one path silently won't apply to another.
+  The same goes for password checks: every path that takes a password goes through
+  `verifyActiveCredentials`, which rejects a `BLOCKED` account only after the password matched.
+  `/auth/totp/verify` only confirms a pending enrollment and refuses an account whose TOTP is
+  already enabled, so signing in to an enrolled account goes through `/auth/login` alone (issue
+  #489).
 - **Trusted devices** (`auth/services/TrustedDeviceService.kt`) let a verified device skip the TOTP
   step. `trust()` issues a random token, stores only its hash via `TrustedDeviceRepository`, and
   sets a `trusted_device` cookie scoped to `path=/private/v1/auth`; `isTrusted()` re-hashes the
