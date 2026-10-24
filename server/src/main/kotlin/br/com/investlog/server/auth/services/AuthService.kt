@@ -61,11 +61,7 @@ class AuthService(
     fun login(request: LoginRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): LoginResult {
 
         val clientIp = clientIpResolver.resolve(servletRequest)
-        val user = verifyCredentials(request.email, request.password, clientIp)
-
-        if (user.status == CurrentUser.Status.BLOCKED) {
-            throw InvalidCredentialsException(BLOCKED_MESSAGE)
-        }
+        val user = verifyActiveCredentials(request.email, request.password, clientIp)
 
         if (!totpRequired) {
             return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
@@ -106,10 +102,10 @@ class AuthService(
     @Transactional
     fun enrollTotp(request: TotpEnrollRequest, servletRequest: HttpServletRequest): TotpEnrollResponse {
 
-        val user = verifyCredentials(request.email, request.password, clientIpResolver.resolve(servletRequest))
+        val user = verifyActiveCredentials(request.email, request.password, clientIpResolver.resolve(servletRequest))
 
         if (user.totpEnabled) {
-            throw TotpAlreadyEnabledException("O TOTP já está habilitado para esta conta")
+            throw TotpAlreadyEnabledException(TOTP_ALREADY_ENABLED_MESSAGE)
         }
 
         val secret = totpService.generateSecret()
@@ -125,7 +121,11 @@ class AuthService(
     fun verifyTotp(request: TotpVerifyRequest, servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): SessionResponse {
 
         val clientIp = clientIpResolver.resolve(servletRequest)
-        val user = verifyCredentials(request.email, request.password, clientIp)
+        val user = verifyActiveCredentials(request.email, request.password, clientIp)
+
+        if (user.totpEnabled) {
+            throw TotpAlreadyEnabledException(TOTP_ALREADY_ENABLED_MESSAGE)
+        }
 
         val attemptKey = AttemptKeys.of(request.email, clientIp)
         totpAttemptLimiter.checkNotLocked(attemptKey)
@@ -189,11 +189,7 @@ class AuthService(
         val pending = googleLinkTokenStore.consume(request.linkToken)
             ?: throw InvalidCredentialsException("Solicitação de vínculo expirada ou inválida — entre novamente com o Google")
 
-        val user = verifyCredentials(pending.email, request.password, clientIpResolver.resolve(servletRequest))
-
-        if (user.status == CurrentUser.Status.BLOCKED) {
-            throw InvalidCredentialsException(BLOCKED_MESSAGE)
-        }
+        val user = verifyActiveCredentials(pending.email, request.password, clientIpResolver.resolve(servletRequest))
 
         userRepository.linkGoogleAccount(user.id, pending.googleSub)
 
@@ -221,6 +217,17 @@ class AuthService(
     fun logout(servletRequest: HttpServletRequest) {
         servletRequest.getSession(false)?.invalidate()
         SecurityContextHolder.clearContext()
+    }
+
+    private fun verifyActiveCredentials(email: String, password: String, clientIp: String): CurrentUser {
+
+        val user = verifyCredentials(email, password, clientIp)
+
+        if (user.status == CurrentUser.Status.BLOCKED) {
+            throw InvalidCredentialsException(BLOCKED_MESSAGE)
+        }
+
+        return user
     }
 
     private fun verifyCredentials(email: String, password: String, clientIp: String): CurrentUser {
@@ -280,5 +287,6 @@ class AuthService(
         private const val INVALID_TOTP_CODE_MESSAGE = "Código TOTP inválido"
         private const val INVALID_CREDENTIALS_MESSAGE = "E-mail ou senha inválidos"
         private const val BLOCKED_MESSAGE = "Login falhou. Entre em contato com um administrador."
+        private const val TOTP_ALREADY_ENABLED_MESSAGE = "O TOTP já está habilitado para esta conta"
     }
 }

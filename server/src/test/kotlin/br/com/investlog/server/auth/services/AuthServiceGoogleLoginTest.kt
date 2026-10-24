@@ -8,7 +8,6 @@ import br.com.investlog.server.auth.services.AuthService
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.security.UserRepository
-import br.com.investlog.server.usersadmin.services.UsersAdminService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletRequest
@@ -28,9 +27,6 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var userRepository: UserRepository
-
-    @Autowired
-    lateinit var usersAdminService: UsersAdminService
 
     @Autowired
     lateinit var googleLinkTokenStore: GoogleLinkTokenStore
@@ -123,7 +119,10 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
 
         val user = userRepository.findByEmail("aprovada@example.com")
             ?: error("User was not created by the first Google login")
-        usersAdminService.approve(user.externalId)
+        restTestClient.patch()
+            .uri("/private/v1/users/${user.externalId}/approve")
+            .exchange()
+            .expectStatus().isOk()
 
         val secondRequest = MockHttpServletRequest()
         val secondResponse = MockHttpServletResponse()
@@ -211,9 +210,6 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
         val user = userRepository.findByEmail("bloqueada-link@example.com")
             ?: error("User was not created by register")
 
-        // requireNotSelf (called by block()) resolves the acting admin from the security context,
-        // which only exists on a real HTTP request — go through restTestClient (auto-authenticated
-        // as admin) rather than calling usersAdminService directly, as the other tests here do.
         restTestClient.patch()
             .uri("/private/v1/users/${user.externalId}/approve")
             .exchange()

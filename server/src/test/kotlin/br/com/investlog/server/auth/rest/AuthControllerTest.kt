@@ -454,8 +454,7 @@ class AuthControllerTest : BaseIntegrationTest() {
     @Test
     @Order(18)
     fun `a blocked account's correct password and current code on totp verify returns the blocked error and no session`() {
-        val adminCookie = adminSessionCookie()
-        val userId = registerApprovedUser("Verificar Bloqueada", "verify-blocked@example.com", adminCookie)
+        val userId = registerApprovedUser("Verificar Bloqueada", "verify-blocked@example.com", adminSessionCookie())
         val secret = enrollTotp("verify-blocked@example.com")
 
         restTestClient.post()
@@ -467,7 +466,7 @@ class AuthControllerTest : BaseIntegrationTest() {
 
         restTestClient.patch()
             .uri("/private/v1/users/$userId/block")
-            .header("Cookie", adminCookie)
+            .header("Cookie", adminSessionCookie())
             .exchange()
             .expectStatus().isOk()
 
@@ -697,14 +696,6 @@ class AuthControllerTest : BaseIntegrationTest() {
                 .responseBody
                 .let { assertEquals("too_many_totp_attempts", it?.get("error")) }
 
-            // The limiter is shared: /auth/totp/verify is blocked too, for the same account
-            restTestClient.post()
-                .uri("/private/v1/auth/totp/verify")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body("""{"email":"totp-lockout@example.com","password":"Senha123","code":"${currentTotpCode(secret)}"}""")
-                .exchange()
-                .expectStatus().isEqualTo(429)
-
             Thread.sleep(15100)
 
             restTestClient.post()
@@ -718,6 +709,30 @@ class AuthControllerTest : BaseIntegrationTest() {
         @Test
         @Order(2)
         fun `admin totp-reset clears an active lockout immediately, without waiting for the window`() {
+            val targetId = (
+                restTestClient.get()
+                    .uri("/private/v1/users?size=200")
+                    .exchange()
+                    .expectStatus().isOk()
+                    .returnResult<Map<String, Any?>>()
+                    .responseBody
+                    ?.get("content") as List<*>
+                )
+                .map { it as Map<*, *> }
+                .single { it["email"] == "totp-lockout@example.com" }["id"] as String
+
+            restTestClient.patch()
+                .uri("/private/v1/users/$targetId/totp-reset")
+                .exchange()
+                .expectStatus().isOk()
+
+            restTestClient.post()
+                .uri("/private/v1/auth/totp/enroll")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"email":"totp-lockout@example.com","password":"Senha123"}""")
+                .exchange()
+                .expectStatus().isOk()
+
             repeat(2) {
                 restTestClient.post()
                     .uri("/private/v1/auth/totp/verify")
@@ -733,18 +748,6 @@ class AuthControllerTest : BaseIntegrationTest() {
                 .body("""{"email":"totp-lockout@example.com","password":"Senha123","code":"000000"}""")
                 .exchange()
                 .expectStatus().isEqualTo(429)
-
-            val targetId = (
-                restTestClient.get()
-                    .uri("/private/v1/users?size=200")
-                    .exchange()
-                    .expectStatus().isOk()
-                    .returnResult<Map<String, Any?>>()
-                    .responseBody
-                    ?.get("content") as List<*>
-                )
-                .map { it as Map<*, *> }
-                .single { it["email"] == "totp-lockout@example.com" }["id"] as String
 
             restTestClient.patch()
                 .uri("/private/v1/users/$targetId/totp-reset")
