@@ -7,9 +7,10 @@ import java.util.UUID
 data class StockHoldingResponse(
     val id: UUID,
     val walletId: UUID,
-    val stockTypeId: UUID,
-    val stockSegmentId: UUID?,
-    val stockSegmentName: String?,
+    val typeId: UUID,
+    val typeName: String,
+    val segmentId: UUID?,
+    val segmentName: String?,
     val ticker: String,
     val name: String,
     val currentPrice: BigDecimal?,

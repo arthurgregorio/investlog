@@ -155,15 +155,7 @@ In detail:
 - `profile` — `GET`/`PATCH /private/v1/profile`, `PATCH /private/v1/profile/password`, following
   the flat `<feature>/<Controller>.kt` + `services/` + `rest/payloads/` layout every feature
   package uses (no `domain/` layer, no `rest/controllers/` subfolder — dropped repo-wide).
-- `typelists` — `GET`/`POST`/`PUT`/`DELETE /private/v1/stock-types`, `.../fund-types` and
-  `.../stock-segments`, paginated, sharing one set of payloads (`TypeResponse`/`TypeCreateRequest`/
-  `TypeUpdateRequest`) since all three resources are `{id, name}`. Extends the `profile` layout
-  with a `repositories/` folder. A stock segment (#343) is optional on a stock holding: set on
-  create through `stockSegmentId`, changed or cleared through `PUT
-  /wallets/{walletId}/stock-holdings/{holdingId}/segment` (the holding `PATCH` treats `null` as
-  "keep", so it cannot clear it), and exposed as `segment_label` in both holdings views, where
-  `holdings_report_rows` aggregates it with `MAX` rather than grouping by it so same-ticker rows
-  still merge.
+- `typelists` — two global, admin-written lists (issue #479). `GET`/`POST`/`PUT`/`DELETE /private/v1/holding-types` is the one type list for every holding kind: each row of `finances.holding_types` declares the kinds it applies to in a `kinds finances.wallet_kind[]` column, `GET` takes an optional `kind` that keeps only the types whose `kinds` contain it, and the payloads are `HoldingTypeCreateRequest`/`HoldingTypeUpdateRequest`/`HoldingTypeResponse` (`kinds` must be non-empty). `HoldingTypeService.resolveId(typeId, kind)` is what every holding service calls: an unknown type is 404 and a type whose `kinds` lack the holding's kind is 400 (`HoldingTypeKindMismatchException`); removing a kind that a holding of that kind still uses is 409 (`HoldingTypeKindInUseException`). `/private/v1/segments` (`finances.segments`) is `{id, name}` and reuses `TypeResponse`/`TypeCreateRequest`/`TypeUpdateRequest`. Both `usageCount`s sum the three holding tables. Extends the `profile` layout with a `repositories/` folder. Stock and fund holdings require a `typeId`; crypto's is optional, because a fresh install has no crypto type until an admin creates one (the migration seeds `Cripto` for existing crypto holdings). A segment is optional on every kind: set on create through `segmentId`, changed or cleared through `PUT /wallets/{walletId}/{stock|fund|crypto}-holdings/{holdingId}/segment` (the holding `PATCH` treats `null` as "keep", so it cannot clear it), and exposed as `segment_label` in both holdings views, where `holdings_report_rows` aggregates it with `MAX` rather than grouping by it so same-ticker rows still merge.
 - `currencyrates` — `GET`/`PUT /private/v1/currency-rates`, addressed by `currencyCode` (not
   `external_id`); `PUT` upserts and, when `isBase: true`, clears the previous base row in the
   same transaction. Owns `CurrencyCode` (`currencyrates/rest/payloads/CurrencyCode.kt`) — the

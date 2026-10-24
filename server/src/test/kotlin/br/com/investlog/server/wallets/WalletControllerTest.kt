@@ -121,9 +121,9 @@ class WalletControllerTest : BaseIntegrationTest() {
         val wallet = createWallet("Wallet With Holdings", WalletKind.STOCKS, "BRL")
 
         val stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Wallet Gain Test Type"}""")
+            .body("""{"name":"Wallet Gain Test Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -133,7 +133,7 @@ class WalletControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/${wallet.id}/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"WGAIN3",
+                """{"typeId":"$stockTypeId","ticker":"WGAIN3",
                    "currentPrice":60.00,
                    "lot":{"lotDate":"2025-01-01","quantity":10,"price":50.00}}"""
             )

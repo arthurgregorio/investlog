@@ -32,9 +32,9 @@ class OverviewSummaryPayloadTest : BaseIntegrationTest() {
             .expectStatus().isOk()
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Summary Payload Type"}""")
+            .body("""{"name":"Summary Payload Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -64,7 +64,7 @@ class OverviewSummaryPayloadTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"$ticker",$currentPriceField
+                """{"typeId":"$stockTypeId","ticker":"$ticker",$currentPriceField
                    "lot":{"lotDate":"2025-01-15","quantity":$quantity,"price":$price}}"""
             )
             .exchange()

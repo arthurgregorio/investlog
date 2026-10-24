@@ -7,6 +7,7 @@ import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequ
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingUpdateRequest
+import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -50,6 +52,14 @@ class FundHoldingController(
         @Valid @RequestBody request: FundHoldingUpdateRequest,
     ): ResponseEntity<FundHoldingResponse> =
         ResponseEntity.ok(service.update(walletId, holdingId, request))
+
+    @PutMapping("/{holdingId}/segment")
+    fun updateSegment(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @RequestBody request: HoldingSegmentRequest,
+    ): ResponseEntity<FundHoldingResponse> =
+        ResponseEntity.ok(service.updateSegment(walletId, holdingId, request))
 
     @DeleteMapping("/{holdingId}")
     fun delete(@PathVariable walletId: UUID, @PathVariable holdingId: UUID): ResponseEntity<Void> {

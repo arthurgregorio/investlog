@@ -7,8 +7,11 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.PositiveOrZero
 import java.math.BigDecimal
+import java.util.UUID
 
 data class CryptoHoldingCreateRequest(
+    val typeId: UUID? = null,
+    val segmentId: UUID? = null,
     @field:Valid
     @field:NotNull
     val lot: LotCreateRequest,

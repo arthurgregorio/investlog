@@ -3,6 +3,7 @@ package br.com.investlog.server.stockholdings
 import br.com.investlog.server.BaseIntegrationTest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
+import br.com.investlog.server.typelists.rest.payloads.HoldingTypeResponse
 import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import org.junit.jupiter.api.BeforeAll
@@ -41,9 +42,9 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .id
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Ação ON"}""")
+            .body("""{"name":"Ação ON","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -57,7 +58,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"$ticker",
                   "name":"Petrobras",
                   "currentPrice":38.50,
@@ -208,7 +209,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"PETR-4",
                   "lot":{"lotDate":"2024-01-15","quantity":100,"price":35.00}
                 }
@@ -254,7 +255,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$unknownTypeId",
+                  "typeId":"$unknownTypeId",
                   "ticker":"PETR4",
                   "lot":{"lotDate":"2024-01-15","quantity":100,"price":35.00}
                 }
@@ -263,7 +264,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isNotFound()
             .expectBody()
-            .jsonPath("$.detail").isEqualTo("Tipo de ação não encontrado: $unknownTypeId")
+            .jsonPath("$.detail").isEqualTo("Tipo não encontrado: $unknownTypeId")
     }
 
     @Test
@@ -275,11 +276,11 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
         restTestClient.patch()
             .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"stockTypeId":"$unknownTypeId"}""")
+            .body("""{"typeId":"$unknownTypeId"}""")
             .exchange()
             .expectStatus().isNotFound()
             .expectBody()
-            .jsonPath("$.detail").isEqualTo("Tipo de ação não encontrado: $unknownTypeId")
+            .jsonPath("$.detail").isEqualTo("Tipo não encontrado: $unknownTypeId")
     }
 
     @Test
@@ -372,8 +373,8 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
     fun `creates a holding without a segment by default`() {
         val holding = createHolding("SEGM3")
 
-        assertNull(holding.stockSegmentId)
-        assertNull(holding.stockSegmentName)
+        assertNull(holding.segmentId)
+        assertNull(holding.segmentName)
     }
 
     @Test
@@ -387,8 +388,8 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
-                  "stockSegmentId":"${segment.id}",
+                  "typeId":"$stockTypeId",
+                  "segmentId":"${segment.id}",
                   "ticker":"TAEE11",
                   "lot":{"lotDate":"2024-01-15","quantity":10,"price":35.00}
                 }
@@ -399,8 +400,8 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .returnResult<StockHoldingResponse>()
             .responseBody!!
 
-        assertEquals(segment.id, holding.stockSegmentId)
-        assertEquals("Energia", holding.stockSegmentName)
+        assertEquals(segment.id, holding.segmentId)
+        assertEquals("Energia", holding.segmentName)
     }
 
     @Test
@@ -414,8 +415,8 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
-                  "stockSegmentId":"$unknownSegmentId",
+                  "typeId":"$stockTypeId",
+                  "segmentId":"$unknownSegmentId",
                   "ticker":"PETR4",
                   "lot":{"lotDate":"2024-01-15","quantity":100,"price":35.00}
                 }
@@ -435,16 +436,16 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
         val technology = createSegment("Tecnologia")
 
         val withIndustry = updateSegment(holding.id, "\"${industry.id}\"")
-        assertEquals(industry.id, withIndustry.stockSegmentId)
-        assertEquals("Indústria", withIndustry.stockSegmentName)
+        assertEquals(industry.id, withIndustry.segmentId)
+        assertEquals("Indústria", withIndustry.segmentName)
 
         val withTechnology = updateSegment(holding.id, "\"${technology.id}\"")
-        assertEquals(technology.id, withTechnology.stockSegmentId)
-        assertEquals("Tecnologia", withTechnology.stockSegmentName)
+        assertEquals(technology.id, withTechnology.segmentId)
+        assertEquals("Tecnologia", withTechnology.segmentName)
 
         val cleared = updateSegment(holding.id, "null")
-        assertNull(cleared.stockSegmentId)
-        assertNull(cleared.stockSegmentName)
+        assertNull(cleared.segmentId)
+        assertNull(cleared.segmentName)
 
         val fetched = restTestClient.get()
             .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}")
@@ -452,7 +453,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .expectStatus().isOk()
             .returnResult<StockHoldingResponse>()
             .responseBody!!
-        assertNull(fetched.stockSegmentId)
+        assertNull(fetched.segmentId)
     }
 
     @Test
@@ -464,7 +465,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
         restTestClient.put()
             .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}/segment")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"stockSegmentId":"$unknownSegmentId"}""")
+            .body("""{"segmentId":"$unknownSegmentId"}""")
             .exchange()
             .expectStatus().isNotFound()
             .expectBody()
@@ -479,7 +480,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
         restTestClient.put()
             .uri("/private/v1/wallets/$walletId/stock-holdings/$unknownHoldingId/segment")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"stockSegmentId":null}""")
+            .body("""{"segmentId":null}""")
             .exchange()
             .expectStatus().isNotFound()
             .expectBody()
@@ -636,6 +637,93 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .jsonPath("$.content[0].costBasis").isEqualTo(3400.0)
     }
 
+    @Test
+    @Order(35)
+    fun `exposes the type name and changes the type through the patch`() {
+        val holding = createHolding("TYPE3")
+        assertEquals(stockTypeId, holding.typeId)
+        assertEquals("Ação ON", holding.typeName)
+
+        val preferred = createHoldingType("Ação PN", "STOCKS")
+        val patched = restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"typeId":"${preferred.id}"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<StockHoldingResponse>()
+            .responseBody!!
+
+        assertEquals(preferred.id, patched.typeId)
+        assertEquals("Ação PN", patched.typeName)
+    }
+
+    @Test
+    @Order(36)
+    fun `rejects a type that does not apply to stocks with 400`() {
+        val fundOnly = createHoldingType("Só Fundos", "FUNDS")
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"${fundOnly.id}",
+                  "ticker":"WRNG3",
+                  "lot":{"lotDate":"2024-01-15","quantity":10,"price":10.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo não se aplica a este tipo de carteira")
+
+        val holding = createHolding("KEEP3")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"typeId":"${fundOnly.id}"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+
+        assertEquals(stockTypeId, findHolding(holding.id).typeId)
+    }
+
+    @Test
+    @Order(37)
+    fun `returns 404 with the type id when creating a holding with an unknown type`() {
+        val unknownTypeId = UUID.randomUUID()
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"$unknownTypeId",
+                  "ticker":"UNKN3",
+                  "lot":{"lotDate":"2024-01-15","quantity":10,"price":10.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo não encontrado: $unknownTypeId")
+    }
+
+    private fun createHoldingType(name: String, kind: String): HoldingTypeResponse =
+        restTestClient.post()
+            .uri("/private/v1/holding-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"$name","kinds":["$kind"]}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<HoldingTypeResponse>()
+            .responseBody!!
+
     private fun addLot(holdingId: UUID, body: String): LotResponse =
         restTestClient.post()
             .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId/lots")
@@ -672,7 +760,7 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
 
     private fun createSegment(name: String): TypeResponse =
         restTestClient.post()
-            .uri("/private/v1/stock-segments")
+            .uri("/private/v1/segments")
             .contentType(MediaType.APPLICATION_JSON)
             .body("""{"name":"$name"}""")
             .exchange()
@@ -680,11 +768,11 @@ class StockHoldingControllerTest : BaseIntegrationTest() {
             .returnResult<TypeResponse>()
             .responseBody!!
 
-    private fun updateSegment(holdingId: UUID, stockSegmentIdJson: String): StockHoldingResponse =
+    private fun updateSegment(holdingId: UUID, segmentIdJson: String): StockHoldingResponse =
         restTestClient.put()
             .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId/segment")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"stockSegmentId":$stockSegmentIdJson}""")
+            .body("""{"segmentId":$segmentIdJson}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<StockHoldingResponse>()
