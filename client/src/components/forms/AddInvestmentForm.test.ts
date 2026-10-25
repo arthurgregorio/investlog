@@ -26,9 +26,8 @@ function buildForm(overrides: Partial<AddInvestmentFormState> = {}): AddInvestme
   return reactive({
     kind: 'STOCKS',
     walletId: 'wallet-1',
-    stockTypeId: '',
-    stockSegmentId: '',
-    fundTypeId: '',
+    typeId: '',
+    segmentId: '',
     ticker: '',
     name: '',
     date: new Date(),
@@ -67,15 +66,15 @@ describe('AddInvestmentForm', () => {
     pinia = createTestingPinia({
       initialState: {
         typesList: {
-          stockTypes: [
-            { id: 'stock-type-1', name: 'Ação', usageCount: 0 },
-            { id: 'stock-type-2', name: 'FII', usageCount: 0 },
+          holdingTypes: [
+            { id: 'stock-type-1', name: 'Ação', kinds: ['STOCKS'], usageCount: 0 },
+            { id: 'stock-type-2', name: 'FII', kinds: ['STOCKS'], usageCount: 0 },
+            { id: 'fund-type-1', name: 'Renda Fixa', kinds: ['FUNDS'], usageCount: 0 },
+            { id: 'fund-type-2', name: 'Multimercado', kinds: ['FUNDS'], usageCount: 0 },
+            { id: 'crypto-type-1', name: 'Moeda', kinds: ['CRYPTO'], usageCount: 0 },
+            { id: 'crypto-type-2', name: 'Token', kinds: ['CRYPTO'], usageCount: 0 },
           ],
-          fundTypes: [
-            { id: 'fund-type-1', name: 'Renda Fixa', usageCount: 0 },
-            { id: 'fund-type-2', name: 'Multimercado', usageCount: 0 },
-          ],
-          stockSegments: [
+          segments: [
             { id: 'segment-1', name: 'Energia', usageCount: 0 },
             { id: 'segment-2', name: 'Tecnologia', usageCount: 0 },
           ],
@@ -126,7 +125,7 @@ describe('AddInvestmentForm', () => {
       const form = buildForm()
       const wrapper = mountForm(form)
 
-      const segmentSelect = wrapper.find('select[data-testid="stock-segment-select"]')
+      const segmentSelect = wrapper.find('select[data-testid="segment-select"]')
       expect(segmentSelect.findAll('option').map((option) => option.text())).toEqual([
         'Sem segmento',
         'Energia',
@@ -136,7 +135,19 @@ describe('AddInvestmentForm', () => {
 
       await segmentSelect.setValue('segment-2')
 
-      expect(form.stockSegmentId).toBe('segment-2')
+      expect(form.segmentId).toBe('segment-2')
+    })
+
+    it('offers only the stock types and writes the chosen one back', async () => {
+      const form = buildForm()
+      const wrapper = mountForm(form)
+
+      const typeSelect = wrapper.find('select[data-testid="type-select"]')
+      expect(typeSelect.findAll('option').map((option) => option.text())).toEqual(['Ação', 'FII'])
+
+      await typeSelect.setValue('stock-type-2')
+
+      expect(form.typeId).toBe('stock-type-2')
     })
 
     it('writes the typed quantity, price and current price back to the form as numbers', async () => {
@@ -196,15 +207,50 @@ describe('AddInvestmentForm', () => {
   })
 
   describe('crypto', () => {
-    it('shows the crypto ticker and name placeholders and no stock type selector', () => {
+    it('shows the crypto ticker and name placeholders', () => {
       const wrapper = mountForm(buildForm({ kind: 'CRYPTO' }))
 
       expect(labelsOf(wrapper)).toContain('Sigla / código')
       expect(labelsOf(wrapper)).not.toContain('Ticker')
-      expect(labelsOf(wrapper)).not.toContain('Tipo')
       expect(wrapper.find('input[placeholder="BTC"]').exists()).toBe(true)
       expect(wrapper.find('input[placeholder="Bitcoin"]').exists()).toBe(true)
       expect(wrapper.findAll('input[type="number"]')).toHaveLength(3)
+    })
+
+    it('offers an optional type picker with only the crypto types, and a segment picker', async () => {
+      const form = buildForm({ kind: 'CRYPTO' })
+      const wrapper = mountForm(form)
+
+      expect(labelsOf(wrapper)).toEqual([
+        'Tipo de investimento',
+        'Carteira',
+        'Tipo (opcional)',
+        'Segmento (opcional)',
+        'Sigla / código',
+        'Nome (opcional)',
+        'Data da aquisição',
+        'Quantidade',
+        'Preço na aquisição',
+        'Preço atual (opcional)',
+      ])
+      const typeSelect = wrapper.find('select[data-testid="type-select"]')
+      expect(typeSelect.findAll('option').map((option) => option.text())).toEqual([
+        'Sem tipo',
+        'Moeda',
+        'Token',
+      ])
+      const segmentSelect = wrapper.find('select[data-testid="segment-select"]')
+      expect(segmentSelect.findAll('option').map((option) => option.text())).toEqual([
+        'Sem segmento',
+        'Energia',
+        'Tecnologia',
+      ])
+
+      await typeSelect.setValue('crypto-type-2')
+      await segmentSelect.setValue('segment-1')
+
+      expect(form.typeId).toBe('crypto-type-2')
+      expect(form.segmentId).toBe('segment-1')
     })
   })
 
@@ -215,7 +261,8 @@ describe('AddInvestmentForm', () => {
       expect(labelsOf(wrapper)).toEqual([
         'Tipo de investimento',
         'Carteira',
-        'Tipo de fundo',
+        'Tipo',
+        'Segmento (opcional)',
         'Nome do fundo',
         'Taxa de administração (% a.a.)',
         'Taxa de performance (%)',
@@ -223,10 +270,14 @@ describe('AddInvestmentForm', () => {
         'Valor aportado',
         'Valor atual (opcional)',
       ])
+      const typeSelect = wrapper.find('select[data-testid="type-select"]')
+      expect(typeSelect.findAll('option').map((option) => option.text())).toEqual([
+        'Renda Fixa',
+        'Multimercado',
+      ])
       const optionLabels = wrapper.findAll('option').map((option) => option.text())
-      expect(optionLabels).toContain('Renda Fixa')
-      expect(optionLabels).toContain('Multimercado')
       expect(optionLabels).not.toContain('FII')
+      expect(optionLabels).not.toContain('Moeda')
       expect(wrapper.find('input[placeholder="PETR4"]').exists()).toBe(false)
       expect(wrapper.findAll('input[type="number"]')).toHaveLength(4)
     })

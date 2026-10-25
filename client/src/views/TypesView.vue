@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import AssetTypeTable from '@/components/settings/AssetTypeTable.vue'
+import HoldingTypeModal from '@/components/settings/HoldingTypeModal.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SegmentedTabs from '@/components/ui/SegmentedTabs.vue'
@@ -15,8 +16,16 @@ import { useAuthStore } from '@/stores/auth'
 const typesListStore = useTypesListStore()
 const auth = useAuthStore()
 
-const activeKind = ref<AssetTypeKind>('stock')
-const { copy, types, addType, renameType, confirmRemoveType } = useAssetTypeActions(activeKind)
+const activeKind = ref<AssetTypeKind>('type')
+const {
+  copy,
+  types,
+  holdingTypeModal,
+  addType,
+  renameType,
+  confirmRemoveType,
+  closeHoldingTypeModal,
+} = useAssetTypeActions(activeKind)
 
 onMounted(() => {
   typesListStore.load()
@@ -29,7 +38,7 @@ onMounted(() => {
 
     <PageHeader
       title="Tipos"
-      description="Gerencie os tipos de ação, de fundo e os segmentos usados no cadastro."
+      description="Gerencie os tipos e os segmentos usados no cadastro dos investimentos."
     />
 
     <div class="inv-controls">
@@ -62,8 +71,15 @@ onMounted(() => {
       :types="types"
       :noun="copy.noun"
       :editable="auth.isAdmin"
+      :show-kinds="activeKind === 'type'"
       @rename="renameType"
       @remove="confirmRemoveType"
+    />
+
+    <HoldingTypeModal
+      v-if="holdingTypeModal"
+      :holding-type="holdingTypeModal.holdingType"
+      @close="closeHoldingTypeModal"
     />
   </div>
 </template>

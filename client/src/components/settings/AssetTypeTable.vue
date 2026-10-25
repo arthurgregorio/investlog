@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import Card from '@/components/ui/Card.vue'
-import type { AssetType } from '@/types'
+import { WALLET_TYPES } from '@/utils/walletTypes'
+import type { AssetType, HoldingType } from '@/types'
 
-defineProps<{ types: AssetType[]; noun: string; editable: boolean }>()
+defineProps<{
+  types: (AssetType | HoldingType)[]
+  noun: string
+  editable: boolean
+  showKinds?: boolean
+}>()
 
-const emit = defineEmits<{ rename: [type: AssetType]; remove: [type: AssetType] }>()
+const emit = defineEmits<{
+  rename: [type: AssetType | HoldingType]
+  remove: [type: AssetType | HoldingType]
+}>()
 </script>
 
 <template>
@@ -15,6 +24,7 @@ const emit = defineEmits<{ rename: [type: AssetType]; remove: [type: AssetType] 
           <thead>
             <tr>
               <th>Nome</th>
+              <th v-if="showKinds">Aplica-se a</th>
               <th class="c-num has-text-right">Investimentos</th>
               <th v-if="editable" class="c-act is-wide">Ações</th>
             </tr>
@@ -22,6 +32,13 @@ const emit = defineEmits<{ rename: [type: AssetType]; remove: [type: AssetType] 
           <tbody>
             <tr v-for="type in types" :key="type.id">
               <td class="has-text-weight-bold">{{ type.name }}</td>
+              <td v-if="showKinds">
+                <div v-if="'kinds' in type" class="tags" data-testid="type-kinds">
+                  <span v-for="kind in type.kinds" :key="kind" class="tag">{{
+                    WALLET_TYPES[kind].label
+                  }}</span>
+                </div>
+              </td>
               <td class="c-num has-text-right">{{ type.usageCount }}</td>
               <td v-if="editable" class="c-act">
                 <div class="is-flex is-gap-1 is-justify-content-center">

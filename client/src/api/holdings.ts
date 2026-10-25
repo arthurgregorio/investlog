@@ -3,11 +3,19 @@ import type {
   ContributionDetail,
   CryptoHoldingDetail,
   FundHoldingDetail,
+  HoldingDetail,
   HoldingRow,
   LotDetail,
   PagedResponse,
   StockHoldingDetail,
+  WalletKind,
 } from '@/types'
+
+const HOLDING_PATH: Record<WalletKind, string> = {
+  STOCKS: 'stock-holdings',
+  CRYPTO: 'crypto-holdings',
+  FUNDS: 'fund-holdings',
+}
 
 export interface LotUpdatePayload {
   lotDate: string
@@ -58,8 +66,8 @@ export const holdingsApi = {
   createStockHolding(
     walletId: string,
     payload: {
-      stockTypeId: string
-      stockSegmentId?: string
+      typeId: string
+      segmentId?: string
       ticker: string
       name?: string
       currentPrice?: number
@@ -71,14 +79,15 @@ export const holdingsApi = {
       .then((r) => r.data)
   },
 
-  updateStockHoldingSegment(
+  updateHoldingSegment(
+    kind: WalletKind,
     walletId: string,
     holdingId: string,
-    stockSegmentId: string | null,
-  ): Promise<StockHoldingDetail> {
+    segmentId: string | null,
+  ): Promise<HoldingDetail> {
     return apiClient
-      .put<StockHoldingDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}/segment`, {
-        stockSegmentId,
+      .put<HoldingDetail>(`/wallets/${walletId}/${HOLDING_PATH[kind]}/${holdingId}/segment`, {
+        segmentId,
       })
       .then((r) => r.data)
   },
@@ -92,7 +101,7 @@ export const holdingsApi = {
   updateStockHolding(
     walletId: string,
     holdingId: string,
-    payload: { stockTypeId?: string; currentPrice?: number; frozen?: boolean },
+    payload: { typeId?: string; currentPrice?: number; frozen?: boolean },
   ): Promise<StockHoldingDetail> {
     return apiClient
       .patch<StockHoldingDetail>(`/wallets/${walletId}/stock-holdings/${holdingId}`, payload)
@@ -120,6 +129,8 @@ export const holdingsApi = {
   createCryptoHolding(
     walletId: string,
     payload: {
+      typeId?: string
+      segmentId?: string
       ticker: string
       name?: string
       currentPrice?: number
@@ -140,7 +151,7 @@ export const holdingsApi = {
   updateCryptoHolding(
     walletId: string,
     holdingId: string,
-    payload: { stockTypeId?: string; currentPrice?: number; frozen?: boolean },
+    payload: { typeId?: string; currentPrice?: number; frozen?: boolean },
   ): Promise<CryptoHoldingDetail> {
     return apiClient
       .patch<CryptoHoldingDetail>(`/wallets/${walletId}/crypto-holdings/${holdingId}`, payload)
@@ -168,7 +179,8 @@ export const holdingsApi = {
   createFundHolding(
     walletId: string,
     payload: {
-      fundTypeId: string
+      typeId: string
+      segmentId?: string
       name: string
       currentValue?: number
       administrationFeeRate?: number
@@ -189,7 +201,7 @@ export const holdingsApi = {
     walletId: string,
     holdingId: string,
     payload: {
-      fundTypeId?: string
+      typeId?: string
       currentValue?: number
       administrationFeeRate?: number
       performanceFeeRate?: number

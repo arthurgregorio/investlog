@@ -18,7 +18,7 @@ import { useAuthStore } from '@/stores/auth'
 import { holdingTypeLabel } from '@/utils/holdingLabels'
 import { badgeColor } from '@/utils/walletTypes'
 import type { LedgerRow } from '@/utils/holdingLedger'
-import type { FundHoldingDetail, HoldingRow, StockHoldingDetail } from '@/types'
+import type { FundHoldingDetail, HoldingRow } from '@/types'
 
 type HoldingModal =
   'addPosition' | 'editPurchase' | 'updatePrice' | 'editTags' | 'withdraw' | 'reinvest' | 'move'
@@ -61,7 +61,6 @@ const panel = useTemplateRef<HTMLElement>('panel')
 const activeModal = ref<HoldingModal | null>(null)
 const editedPurchase = ref<PositionEntry | null>(null)
 
-const isStock = computed(() => props.row.kind === 'STOCKS')
 const displayName = computed(() => props.row.ticker ?? props.row.name)
 const secondLine = computed(() => (props.row.ticker ? props.row.name : 'Fundo de investimento'))
 
@@ -69,18 +68,8 @@ const fundDetail = computed(() =>
   isFund.value && detail.value ? (detail.value as FundHoldingDetail) : null,
 )
 
-const stockDetail = computed(() =>
-  isStock.value && detail.value ? (detail.value as StockHoldingDetail) : null,
-)
-
-const tagsDetail = computed(() => {
-  if (stockDetail.value) return { kind: 'STOCKS' as const, typeId: stockDetail.value.stockTypeId }
-  if (fundDetail.value) return { kind: 'FUNDS' as const, typeId: fundDetail.value.fundTypeId }
-  return null
-})
-
 const segmentName = computed(
-  () => stockDetail.value?.stockSegmentName ?? props.row.segmentLabel ?? 'Sem segmento',
+  () => detail.value?.segmentName ?? props.row.segmentLabel ?? 'Sem segmento',
 )
 
 const currentAmount = computed<number | null>(() =>
@@ -234,9 +223,7 @@ onMounted(() => {
                 >{{ holdingTypeLabel(row) }}</span
               >
               <span class="type-tag" data-testid="drawer-wallet">{{ row.walletName }}</span>
-              <span v-if="isStock" class="type-tag" data-testid="drawer-segment">{{
-                segmentName
-              }}</span>
+              <span class="type-tag" data-testid="drawer-segment">{{ segmentName }}</span>
             </div>
           </div>
           <b-button
@@ -287,7 +274,6 @@ onMounted(() => {
           </b-button>
           <HoldingActionsDropdown
             :is-fund="isFund"
-            :is-stock="isStock"
             :is-frozen="row.frozen"
             :is-admin="auth.isAdmin"
             @update-price="activeModal = 'updatePrice'"
@@ -358,12 +344,12 @@ onMounted(() => {
   />
 
   <EditHoldingTagsModal
-    v-if="activeModal === 'editTags' && tagsDetail"
+    v-if="activeModal === 'editTags' && detail"
     :holding-id="row.id"
     :wallet-id="row.walletId"
-    :kind="tagsDetail.kind"
-    :initial-type-id="tagsDetail.typeId"
-    :initial-segment-id="stockDetail?.stockSegmentId ?? null"
+    :kind="row.kind"
+    :initial-type-id="detail.typeId"
+    :initial-segment-id="detail.segmentId"
     @updated="refresh"
     @close="closeModal"
   />

@@ -1,62 +1,48 @@
-import { computed, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { useDialog, useToast } from 'buefy'
 import { safeHtml, useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useTypesListStore } from '@/stores/typesList'
-import type { AssetType } from '@/types'
+import type { AssetType, HoldingType } from '@/types'
 
-export type AssetTypeKind = 'stock' | 'fund' | 'segment'
+export type AssetTypeKind = 'type' | 'segment'
 
 interface AssetTypeKindCopy {
   label: string
   description: string
-  addTitle: string
   emptyTitle: string
   emptyText: string
   newLabel: string
   noun: string
 }
 
-interface AssetTypeOperations {
-  list: () => AssetType[]
-  add: (name: string) => Promise<AssetType>
-  update: (id: string, name: string) => Promise<AssetType>
-  remove: (id: string) => Promise<void>
-}
-
 export const ASSET_TYPE_KIND_COPY: Record<AssetTypeKind, AssetTypeKindCopy> = {
-  stock: {
-    label: 'Tipos de ação',
-    description: 'Cadastrados antes de registrar uma ação (escolhidos no formulário).',
-    addTitle: 'Novo tipo de ação',
+  type: {
+    label: 'Tipos',
+    description:
+      'Cadastrados antes de registrar um investimento (escolhidos no formulário). Cada tipo vale para as classes marcadas.',
     emptyTitle: 'Nenhum tipo ainda',
-    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar uma ação.',
-    newLabel: 'Novo tipo',
-    noun: 'tipo',
-  },
-  fund: {
-    label: 'Tipos de fundo',
-    description: 'Cadastrados antes de registrar um fundo (escolhidos no formulário).',
-    addTitle: 'Novo tipo de fundo',
-    emptyTitle: 'Nenhum tipo ainda',
-    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar um fundo.',
+    emptyText: 'Crie o primeiro tipo para poder selecioná-lo ao registrar um investimento.',
     newLabel: 'Novo tipo',
     noun: 'tipo',
   },
   segment: {
     label: 'Segmentos',
-    description: 'Setores de atuação das ações (opcional no formulário).',
-    addTitle: 'Novo segmento',
+    description: 'Setores de atuação dos investimentos (opcional no formulário).',
     emptyTitle: 'Nenhum segmento ainda',
-    emptyText: 'Crie o primeiro segmento para poder selecioná-lo ao registrar uma ação.',
+    emptyText: 'Crie o primeiro segmento para poder selecioná-lo ao registrar um investimento.',
     newLabel: 'Novo segmento',
     noun: 'segmento',
   },
 }
 
-export const ASSET_TYPE_KIND_TABS = (['stock', 'fund', 'segment'] as const).map((kind) => ({
+export const ASSET_TYPE_KIND_TABS = (['type', 'segment'] as const).map((kind) => ({
   value: kind,
   label: ASSET_TYPE_KIND_COPY[kind].label,
 }))
+
+export interface HoldingTypeModalState {
+  holdingType: HoldingType | null
+}
 
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
@@ -68,82 +54,84 @@ export function useAssetTypeActions(kind: Ref<AssetTypeKind>) {
   const { confirm } = useConfirmDialog()
   const typesListStore = useTypesListStore()
 
-  const operations: Record<AssetTypeKind, AssetTypeOperations> = {
-    stock: {
-      list: () => typesListStore.stockTypes,
-      add: (name) => typesListStore.addStockType(name),
-      update: (id, name) => typesListStore.updateStockType(id, name),
-      remove: (id) => typesListStore.removeStockType(id),
-    },
-    fund: {
-      list: () => typesListStore.fundTypes,
-      add: (name) => typesListStore.addFundType(name),
-      update: (id, name) => typesListStore.updateFundType(id, name),
-      remove: (id) => typesListStore.removeFundType(id),
-    },
-    segment: {
-      list: () => typesListStore.stockSegments,
-      add: (name) => typesListStore.addStockSegment(name),
-      update: (id, name) => typesListStore.updateStockSegment(id, name),
-      remove: (id) => typesListStore.removeStockSegment(id),
-    },
-  }
+  const holdingTypeModal = ref<HoldingTypeModalState | null>(null)
 
   const copy = computed(() => ASSET_TYPE_KIND_COPY[kind.value])
-  const types = computed(() => operations[kind.value].list())
+  const types = computed<(AssetType | HoldingType)[]>(() =>
+    kind.value === 'type' ? typesListStore.holdingTypes : typesListStore.segments,
+  )
 
   function notify(verb: string) {
     toast.open({ message: `${capitalize(copy.value.noun)} ${verb}.`, type: 'is-success' })
   }
 
   function addType() {
-    const { noun, addTitle } = copy.value
-    const { add } = operations[kind.value]
+    if (kind.value === 'type') {
+      holdingTypeModal.value = { holdingType: null }
+      return
+    }
     dialog.prompt({
-      title: addTitle,
+      title: 'Novo segmento',
       message: 'Nome:',
-      inputAttrs: { placeholder: `Nome do ${noun}` },
+      inputAttrs: { placeholder: 'Nome do segmento' },
       confirmText: 'Criar',
       cancelText: 'Cancelar',
       onConfirm: async (name: string) => {
         const trimmedName = name.trim()
         if (!trimmedName) return
-        await add(trimmedName)
+        await typesListStore.addSegment(trimmedName)
         notify('criado')
       },
     })
   }
 
-  function renameType(type: AssetType) {
-    const { noun } = copy.value
-    const { update } = operations[kind.value]
+  function renameType(type: AssetType | HoldingType) {
+    if ('kinds' in type) {
+      holdingTypeModal.value = { holdingType: type }
+      return
+    }
     dialog.prompt({
-      title: `Renomear ${noun}`,
+      title: 'Renomear segmento',
       message: 'Nome:',
-      inputAttrs: { value: type.name, placeholder: `Nome do ${noun}` },
+      inputAttrs: { value: type.name, placeholder: 'Nome do segmento' },
       confirmText: 'Salvar',
       cancelText: 'Cancelar',
       onConfirm: async (name: string) => {
         const trimmedName = name.trim()
         if (!trimmedName || trimmedName === type.name) return
-        await update(type.id, trimmedName)
+        await typesListStore.updateSegment(type.id, trimmedName)
         notify('renomeado')
       },
     })
   }
 
-  function confirmRemoveType(type: AssetType) {
-    const { remove } = operations[kind.value]
+  function confirmRemoveType(type: AssetType | HoldingType) {
     confirm({
       title: `Remover ${copy.value.noun}`,
       message: safeHtml`Remover <strong>${type.name}</strong>? Esta ação <strong>não pode ser desfeita</strong>.`,
       confirmText: 'Remover',
       onConfirm: async () => {
-        await remove(type.id)
+        if ('kinds' in type) {
+          await typesListStore.removeHoldingType(type.id)
+        } else {
+          await typesListStore.removeSegment(type.id)
+        }
         notify('removido')
       },
     })
   }
 
-  return { copy, types, addType, renameType, confirmRemoveType }
+  function closeHoldingTypeModal() {
+    holdingTypeModal.value = null
+  }
+
+  return {
+    copy,
+    types,
+    holdingTypeModal,
+    addType,
+    renameType,
+    confirmRemoveType,
+    closeHoldingTypeModal,
+  }
 }

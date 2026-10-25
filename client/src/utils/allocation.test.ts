@@ -380,11 +380,11 @@ describe('computeAllocation by type', () => {
 })
 
 describe('WALLET_KIND_GROUPINGS', () => {
-  it('offers type and segment to stocks, type to funds and nothing beyond holdings to crypto', () => {
+  it('offers holding, type and segment to every kind', () => {
     expect(WALLET_KIND_GROUPINGS).toEqual({
       STOCKS: ['holding', 'type', 'segment'],
-      FUNDS: ['holding', 'type'],
-      CRYPTO: ['holding'],
+      FUNDS: ['holding', 'type', 'segment'],
+      CRYPTO: ['holding', 'type', 'segment'],
     })
   })
 })

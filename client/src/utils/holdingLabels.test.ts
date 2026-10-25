@@ -12,7 +12,8 @@ describe('holdingTypeLabel', () => {
     expect(holdingTypeLabel({ kind: 'FUNDS', typeLabel: null })).toBe('Fundo')
   })
 
-  it('always labels crypto as Cripto', () => {
-    expect(holdingTypeLabel({ kind: 'CRYPTO', typeLabel: 'Ignorado' })).toBe('Cripto')
+  it('labels crypto with its type, falling back to Cripto', () => {
+    expect(holdingTypeLabel({ kind: 'CRYPTO', typeLabel: 'Token' })).toBe('Token')
+    expect(holdingTypeLabel({ kind: 'CRYPTO', typeLabel: null })).toBe('Cripto')
   })
 })

@@ -122,9 +122,14 @@ describe('HoldingsTableRow', () => {
     expect(cells[3]).toBe(fmt.money(3300, 'BRL'))
   })
 
-  it('labels crypto and an untyped stock by their kind', () => {
+  it('labels a typed crypto by its type and an untyped crypto or stock by their kind', () => {
     expect(
-      mountRow({ row: { ...stockRow, kind: 'CRYPTO' } })
+      mountRow({ row: { ...stockRow, kind: 'CRYPTO', typeLabel: 'Moeda' } })
+        .get('.type-tag')
+        .text(),
+    ).toBe('Moeda')
+    expect(
+      mountRow({ row: { ...stockRow, kind: 'CRYPTO', typeLabel: null } })
         .get('.type-tag')
         .text(),
     ).toBe('Cripto')

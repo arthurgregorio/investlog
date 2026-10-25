@@ -4,17 +4,17 @@ import { createTestingPinia } from '@pinia/testing'
 import TypesView from './TypesView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTypesListStore } from '@/stores/typesList'
-import type { AssetType } from '@/types'
+import type { AssetType, HoldingType } from '@/types'
 import { expectDialogShowsLiterally } from '@/test/expectDialogShowsLiterally'
 
 vi.mock('@/api/assetTypes', () => ({ assetTypesApi: {} }))
 
-const stockTypes: AssetType[] = [
-  { id: 'stock-type-1', name: 'Ordinária', usageCount: 0 },
-  { id: 'stock-type-2', name: 'Preferencial', usageCount: 3 },
+const holdingTypes: HoldingType[] = [
+  { id: 'type-1', name: 'Ordinária', kinds: ['STOCKS'], usageCount: 0 },
+  { id: 'type-2', name: 'Preferencial', kinds: ['STOCKS', 'FUNDS'], usageCount: 3 },
+  { id: 'type-3', name: 'Multimercado', kinds: ['CRYPTO', 'FUNDS'], usageCount: 0 },
 ]
-const fundTypes: AssetType[] = [{ id: 'fund-type-1', name: 'Multimercado', usageCount: 0 }]
-const stockSegments: AssetType[] = [
+const segments: AssetType[] = [
   { id: 'segment-1', name: 'Energia', usageCount: 0 },
   { id: 'segment-2', name: 'Tecnologia', usageCount: 2 },
 ]
@@ -28,14 +28,13 @@ function flushPromises() {
 async function mountView(options: { isAdmin?: boolean; loaded?: boolean } = {}) {
   const { isAdmin = true, loaded = true } = options
   const wrapper = mount(TypesView, {
-    global: { plugins: [createTestingPinia()] },
+    global: { plugins: [createTestingPinia()], config: { errorHandler: () => undefined } },
     attachTo: document.body,
   })
   activeWrapper = wrapper
   const typesListStore = useTypesListStore()
-  typesListStore.stockTypes = stockTypes
-  typesListStore.fundTypes = fundTypes
-  typesListStore.stockSegments = stockSegments
+  typesListStore.holdingTypes = holdingTypes
+  typesListStore.segments = segments
   typesListStore.loaded = loaded
   useAuthStore().session = {
     name: 'Admin',
@@ -70,6 +69,32 @@ async function confirmDialog(label: string) {
   await flushPromises()
 }
 
+function modalNameInput() {
+  return document.body.querySelector('[data-testid="holding-type-name"]') as HTMLInputElement
+}
+
+function modalKindInput(kind: string) {
+  return document.body.querySelector(
+    `[data-testid="holding-type-kind-${kind}"] input`,
+  ) as HTMLInputElement
+}
+
+async function typeName(value: string) {
+  const input = modalNameInput()
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  await flushPromises()
+}
+
+async function toggleKind(kind: string) {
+  modalKindInput(kind).click()
+  await flushPromises()
+}
+
+function modalSubmit() {
+  return document.body.querySelector('[data-testid="holding-type-submit"]') as HTMLButtonElement
+}
+
 function tableNames(wrapper: VueWrapper) {
   return wrapper.findAll('tbody td:first-child').map((cell) => cell.text())
 }
@@ -94,21 +119,33 @@ describe('TypesView', () => {
     expect(typesListStore.load).toHaveBeenCalledTimes(1)
   })
 
-  it('lists the stock types first with their usage counts and switches to the fund types', async () => {
+  it('has two tabs, Tipos and Segmentos, with Tipos first', async () => {
     const { wrapper } = await mountView()
 
-    expect(tableNames(wrapper)).toEqual(['Ordinária', 'Preferencial'])
-    expect(wrapper.findAll('tbody .c-num').map((cell) => cell.text())).toEqual(['0', '3'])
-
-    await wrapper.findAll('[role="tab"]')[1].trigger('click')
-
-    expect(tableNames(wrapper)).toEqual(['Multimercado'])
-    expect(wrapper.find('.set-desc').text()).toContain('fundo')
+    expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual(['Tipos', 'Segmentos'])
+    expect(tableNames(wrapper)).toEqual(['Ordinária', 'Preferencial', 'Multimercado'])
   })
 
-  it('shows the empty state for the active kind only once the store has loaded', async () => {
+  it('shows the kinds each type applies to as tags', async () => {
+    const { wrapper } = await mountView()
+
+    expect(wrapper.findAll('thead th').map((cell) => cell.text())).toEqual([
+      'Nome',
+      'Aplica-se a',
+      'Investimentos',
+      'Ações',
+    ])
+    expect(wrapper.findAll('[data-testid="type-kinds"]').map((cell) => cell.text())).toEqual([
+      'Ações',
+      'AçõesFundos',
+      'CriptoFundos',
+    ])
+    expect(wrapper.findAll('tbody .c-num').map((cell) => cell.text())).toEqual(['0', '3', '0'])
+  })
+
+  it('shows the empty state only once the store has loaded', async () => {
     const { wrapper, typesListStore } = await mountView({ loaded: false })
-    typesListStore.stockTypes = []
+    typesListStore.holdingTypes = []
     await flushPromises()
 
     expect(wrapper.find('.empty').exists()).toBe(false)
@@ -117,7 +154,6 @@ describe('TypesView', () => {
     await flushPromises()
 
     expect(wrapper.find('.empty-title').text()).toBe('Nenhum tipo ainda')
-    expect(wrapper.find('.empty-text').text()).toContain('ação')
   })
 
   it('hides every management control from a non-admin user', async () => {
@@ -126,85 +162,130 @@ describe('TypesView', () => {
     expect(wrapper.text()).not.toContain('Novo tipo')
     expect(wrapper.findAll('thead th').map((cell) => cell.text())).toEqual([
       'Nome',
+      'Aplica-se a',
       'Investimentos',
     ])
     expect(wrapper.find('.c-act').exists()).toBe(false)
   })
 
-  it('creates a stock type from the prompt, trimming the name', async () => {
+  it('creates a type applying to two kinds from the modal, trimming the name', async () => {
     const { wrapper, typesListStore } = await mountView()
 
     await newTypeButton(wrapper).trigger('click')
-    await answerPrompt('  Units  ', 'Criar')
+    await flushPromises()
+    await typeName('  Units  ')
+    await toggleKind('STOCKS')
+    await toggleKind('FUNDS')
+    modalSubmit().click()
+    await flushPromises()
 
-    expect(typesListStore.addStockType).toHaveBeenCalledWith('Units')
-    expect(typesListStore.addFundType).not.toHaveBeenCalled()
+    expect(typesListStore.addHoldingType).toHaveBeenCalledWith('Units', ['STOCKS', 'FUNDS'])
     expect(document.body.textContent).toContain('Tipo criado.')
+    expect(document.body.querySelector('.modal-card')).toBeNull()
   })
 
-  it('creates a fund type when the fund tab is active', async () => {
-    const { wrapper, typesListStore } = await mountView()
-
-    await wrapper.findAll('[role="tab"]')[1].trigger('click')
-    await newTypeButton(wrapper).trigger('click')
-    await answerPrompt('Renda fixa', 'Criar')
-
-    expect(typesListStore.addFundType).toHaveBeenCalledWith('Renda fixa')
-    expect(typesListStore.addStockType).not.toHaveBeenCalled()
-  })
-
-  it('ignores a blank name typed into the create prompt', async () => {
+  it('sends the kinds in display order whatever order they were ticked', async () => {
     const { wrapper, typesListStore } = await mountView()
 
     await newTypeButton(wrapper).trigger('click')
-    await answerPrompt('   ', 'Criar')
+    await flushPromises()
+    await typeName('Cripto e ações')
+    await toggleKind('CRYPTO')
+    await toggleKind('STOCKS')
+    modalSubmit().click()
+    await flushPromises()
 
-    expect(typesListStore.addStockType).not.toHaveBeenCalled()
-    expect(document.body.textContent).not.toContain('Tipo criado.')
+    expect(typesListStore.addHoldingType).toHaveBeenCalledWith('Cripto e ações', [
+      'STOCKS',
+      'CRYPTO',
+    ])
   })
 
-  it('renames a stock type and skips the call when the name is unchanged', async () => {
+  it('does not let a type be created with no kind or with a blank name', async () => {
     const { wrapper, typesListStore } = await mountView()
 
-    await wrapper.findAll('tbody tr')[0].find('button').trigger('click')
-    await answerPrompt('Ordinária', 'Salvar')
+    await newTypeButton(wrapper).trigger('click')
+    await flushPromises()
+    await typeName('Sem classe')
 
-    expect(typesListStore.updateStockType).not.toHaveBeenCalled()
+    expect(modalSubmit().disabled).toBe(true)
+    modalSubmit().click()
+    await flushPromises()
 
-    await wrapper.findAll('tbody tr')[0].find('button').trigger('click')
-    await answerPrompt('Ordinária nominativa', 'Salvar')
+    await toggleKind('CRYPTO')
+    expect(modalSubmit().disabled).toBe(false)
+    await typeName('   ')
+    expect(modalSubmit().disabled).toBe(true)
 
-    expect(typesListStore.updateStockType).toHaveBeenCalledWith(
-      'stock-type-1',
-      'Ordinária nominativa',
+    expect(typesListStore.addHoldingType).not.toHaveBeenCalled()
+  })
+
+  it('edits a type in the modal, prefilled with its name and kinds', async () => {
+    const { wrapper, typesListStore } = await mountView()
+
+    await wrapper.findAll('tbody tr')[1].find('button').trigger('click')
+    await flushPromises()
+
+    expect(modalNameInput().value).toBe('Preferencial')
+    expect(modalKindInput('STOCKS').checked).toBe(true)
+    expect(modalKindInput('CRYPTO').checked).toBe(false)
+    expect(modalKindInput('FUNDS').checked).toBe(true)
+
+    await toggleKind('CRYPTO')
+    await typeName('Preferencial nominativa')
+    modalSubmit().click()
+    await flushPromises()
+
+    expect(typesListStore.updateHoldingType).toHaveBeenCalledWith(
+      'type-2',
+      'Preferencial nominativa',
+      ['STOCKS', 'CRYPTO', 'FUNDS'],
     )
-    expect(document.body.textContent).toContain('Tipo renomeado.')
+    expect(document.body.textContent).toContain('Tipo atualizado.')
   })
 
-  it('renames a fund type through the fund action', async () => {
+  it('keeps the modal open when the server refuses the change', async () => {
+    const { wrapper, typesListStore } = await mountView()
+    vi.mocked(typesListStore.updateHoldingType).mockRejectedValue(new Error('em uso'))
+
+    await wrapper.findAll('tbody tr')[1].find('button').trigger('click')
+    await flushPromises()
+    await toggleKind('FUNDS')
+    modalSubmit().click()
+    await flushPromises()
+
+    expect(document.body.querySelector('.modal-card')).not.toBeNull()
+    expect(document.body.textContent).not.toContain('Tipo atualizado.')
+  })
+
+  it('closes the modal on Cancelar without saving', async () => {
     const { wrapper, typesListStore } = await mountView()
 
-    await wrapper.findAll('[role="tab"]')[1].trigger('click')
-    await wrapper.findAll('tbody tr')[0].find('button').trigger('click')
-    await answerPrompt('Multimercado macro', 'Salvar')
+    await newTypeButton(wrapper).trigger('click')
+    await flushPromises()
+    bodyButton('Cancelar')?.click()
+    await flushPromises()
 
-    expect(typesListStore.updateFundType).toHaveBeenCalledWith('fund-type-1', 'Multimercado macro')
+    expect(document.body.querySelector('.modal-card')).toBeNull()
+    expect(typesListStore.addHoldingType).not.toHaveBeenCalled()
   })
 
-  it('removes an unused stock type after confirmation', async () => {
+  it('removes an unused type after confirmation', async () => {
     const { wrapper, typesListStore } = await mountView()
 
     await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
     await confirmDialog('Remover')
 
-    expect(typesListStore.removeStockType).toHaveBeenCalledWith('stock-type-1')
+    expect(typesListStore.removeHoldingType).toHaveBeenCalledWith('type-1')
     expect(document.body.textContent).toContain('Tipo removido.')
   })
 
   it('shows a type name containing markup literally in the remove confirmation', async () => {
     const markupName = '<img src=x onerror=alert(1)>'
     const { wrapper, typesListStore } = await mountView()
-    typesListStore.stockTypes = [{ id: 'stock-type-3', name: markupName, usageCount: 0 }]
+    typesListStore.holdingTypes = [
+      { id: 'type-9', name: markupName, kinds: ['STOCKS'], usageCount: 0 },
+    ]
     await flushPromises()
 
     await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
@@ -213,23 +294,13 @@ describe('TypesView', () => {
     expectDialogShowsLiterally(markupName)
   })
 
-  it('removes a fund type through the fund action', async () => {
-    const { wrapper, typesListStore } = await mountView()
-
-    await wrapper.findAll('[role="tab"]')[1].trigger('click')
-    await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
-    await confirmDialog('Remover')
-
-    expect(typesListStore.removeFundType).toHaveBeenCalledWith('fund-type-1')
-  })
-
   it('does not remove anything when the confirmation is cancelled', async () => {
     const { wrapper, typesListStore } = await mountView()
 
     await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
     await confirmDialog('Cancelar')
 
-    expect(typesListStore.removeStockType).not.toHaveBeenCalled()
+    expect(typesListStore.removeHoldingType).not.toHaveBeenCalled()
   })
 
   it('disables the delete control of a type that is in use', async () => {
@@ -262,19 +333,19 @@ describe('TypesView', () => {
 
     async function openSegments() {
       const mounted = await mountView()
-      await mounted.wrapper.findAll('[role="tab"]')[2].trigger('click')
+      await mounted.wrapper.findAll('[role="tab"]')[1].trigger('click')
       return mounted
     }
 
-    it('is the third tab and lists the segments with their usage counts', async () => {
+    it('lists the segments with their usage counts and no kinds column', async () => {
       const { wrapper } = await openSegments()
 
-      expect(wrapper.findAll('[role="tab"]').map((tab) => tab.text())).toEqual([
-        'Tipos de ação',
-        'Tipos de fundo',
-        'Segmentos',
-      ])
       expect(tableNames(wrapper)).toEqual(['Energia', 'Tecnologia'])
+      expect(wrapper.findAll('thead th').map((cell) => cell.text())).toEqual([
+        'Nome',
+        'Investimentos',
+        'Ações',
+      ])
       expect(wrapper.findAll('tbody .c-num').map((cell) => cell.text())).toEqual(['0', '2'])
       expect(wrapper.find('.set-desc').text()).toContain('Setores de atuação')
     })
@@ -284,20 +355,17 @@ describe('TypesView', () => {
 
       await newSegmentButton(wrapper).trigger('click')
       await answerPrompt('Saúde', 'Criar')
-      expect(typesListStore.addStockSegment).toHaveBeenCalledWith('Saúde')
-      expect(typesListStore.addStockType).not.toHaveBeenCalled()
+      expect(typesListStore.addSegment).toHaveBeenCalledWith('Saúde')
+      expect(typesListStore.addHoldingType).not.toHaveBeenCalled()
       expect(document.body.textContent).toContain('Segmento criado.')
 
       await wrapper.findAll('tbody tr')[0].find('button').trigger('click')
       await answerPrompt('Energia elétrica', 'Salvar')
-      expect(typesListStore.updateStockSegment).toHaveBeenCalledWith(
-        'segment-1',
-        'Energia elétrica',
-      )
+      expect(typesListStore.updateSegment).toHaveBeenCalledWith('segment-1', 'Energia elétrica')
 
       await wrapper.findAll('tbody tr')[0].findAll('button')[1].trigger('click')
       await confirmDialog('Remover')
-      expect(typesListStore.removeStockSegment).toHaveBeenCalledWith('segment-1')
+      expect(typesListStore.removeSegment).toHaveBeenCalledWith('segment-1')
       expect(document.body.textContent).toContain('Segmento removido.')
     })
 
@@ -310,7 +378,7 @@ describe('TypesView', () => {
 
     it('shows the segment empty state', async () => {
       const { wrapper, typesListStore } = await openSegments()
-      typesListStore.stockSegments = []
+      typesListStore.segments = []
       await flushPromises()
 
       expect(wrapper.find('.empty-title').text()).toBe('Nenhum segmento ainda')

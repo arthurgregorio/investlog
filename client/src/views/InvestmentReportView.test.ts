@@ -64,7 +64,7 @@ const holdings: HoldingRow[] = [
     kind: 'CRYPTO',
     name: 'Bitcoin',
     ticker: 'BTC',
-    typeLabel: null,
+    typeLabel: 'Moeda',
     walletId: 'wallet-3',
     walletName: 'Cripto',
     quantity: 0.5,
@@ -251,7 +251,7 @@ describe('InvestmentReportView', () => {
     expect(wrapper.find('.report-paper').exists()).toBe(false)
   })
 
-  it('nests the report kind, then type or ticker, then wallet, in a fixed order', async () => {
+  it('nests the report kind, then type, then wallet, in a fixed order', async () => {
     const { wrapper } = await mountView()
 
     expect(wrapper.findAll('.report-kind-head h2').map((heading) => heading.text())).toEqual([
@@ -280,7 +280,7 @@ describe('InvestmentReportView', () => {
       kindSection(wrapper, 'Cripto')
         .findAll('.report-subgroup-title')
         .map((title) => title.text()),
-    ).toEqual(['BTC'])
+    ).toEqual(['Moeda'])
     expect(
       kindSection(wrapper, 'Fundos')
         .findAll('.report-subgroup-title')
