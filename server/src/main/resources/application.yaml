@@ -16,6 +16,7 @@ server:
 logging:
   level:
     org.jooq.Constants: off
+    com.openhtmltopdf: warn
 
 investlog:
   demo-mode:
