@@ -1,5 +1,11 @@
 <script setup lang="ts">
-defineProps<{ title: string; subtitle?: string; wide?: boolean }>()
+withDefaults(
+  defineProps<{ title: string; subtitle?: string; wide?: boolean; dismissible?: boolean }>(),
+  {
+    subtitle: undefined,
+    dismissible: true,
+  },
+)
 const emit = defineEmits<{ close: [] }>()
 </script>
 
@@ -8,13 +14,18 @@ const emit = defineEmits<{ close: [] }>()
     :model-value="true"
     has-modal-card
     trap-focus
-    :can-cancel="['escape', 'outside']"
+    :can-cancel="dismissible ? ['escape', 'outside'] : false"
     @close="emit('close')"
   >
     <div class="modal-card" :class="{ 'is-wide': wide }">
       <header class="modal-card-head">
         <p class="modal-card-title">{{ title }}</p>
-        <b-button icon-left="close" aria-label="Fechar" @click="emit('close')" />
+        <b-button
+          icon-left="close"
+          aria-label="Fechar"
+          :disabled="!dismissible"
+          @click="emit('close')"
+        />
       </header>
       <section class="modal-card-body">
         <p v-if="subtitle" class="subtitle is-6 mb-4">{{ subtitle }}</p>

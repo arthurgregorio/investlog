@@ -436,22 +436,41 @@ describe('useInvestmentFilters', () => {
     expect(onReload.mock.lastCall?.[0].hideFrozen).toBeUndefined()
   })
 
-  it('carries the hide-frozen flag into the report query', async () => {
+  it('carries the hide-frozen flag into the report params', async () => {
     const { filters } = await mountFilters('?filter=FUNDS&hideFrozen=true&page=2')
 
-    expect(filters.reportQuery()).toEqual({ filter: 'FUNDS', hideFrozen: 'true' })
+    expect(filters.reportParams()).toEqual({
+      kind: 'FUNDS',
+      typeLabel: undefined,
+      walletId: undefined,
+      search: undefined,
+      hideFrozen: true,
+    })
   })
 
-  it('builds the report query from the filters, without sort or page', async () => {
+  it('builds the report params from the filters, without sort or page', async () => {
     const { filters } = await mountFilters(
-      '?filter=STOCKS&walletId=wallet-1&type=FII&search=%20petr%20&sort=gain,asc&page=2',
+      '?filter=STOCKS&walletId=wallet-1&walletId=wallet-2&type=FII&type=ETF&search=%20petr%20&sort=gain,asc&page=2',
     )
 
-    expect(filters.reportQuery()).toEqual({
-      filter: 'STOCKS',
-      walletId: ['wallet-1'],
-      type: ['FII'],
+    expect(filters.reportParams()).toEqual({
+      kind: 'STOCKS',
+      typeLabel: ['FII', 'ETF'],
+      walletId: ['wallet-1', 'wallet-2'],
       search: 'petr',
+      hideFrozen: undefined,
+    })
+  })
+
+  it('sends no kind and no filters when nothing is active', async () => {
+    const { filters } = await mountFilters()
+
+    expect(filters.reportParams()).toEqual({
+      kind: undefined,
+      typeLabel: undefined,
+      walletId: undefined,
+      search: undefined,
+      hideFrozen: undefined,
     })
   })
 })

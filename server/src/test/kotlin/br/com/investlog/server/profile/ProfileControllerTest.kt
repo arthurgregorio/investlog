@@ -9,7 +9,6 @@ import br.com.investlog.server.profile.rest.payloads.PasswordChangeRequest
 import br.com.investlog.server.profile.rest.payloads.ProfileResponse
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.security.UserRepository
-import br.com.investlog.server.usersadmin.services.UsersAdminService
 import dev.samstevens.totp.code.DefaultCodeGenerator
 import org.junit.jupiter.api.Order
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,9 +36,6 @@ class ProfileControllerTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var userRepository: UserRepository
-
-    @Autowired
-    lateinit var usersAdminService: UsersAdminService
 
     @Test
     @Order(1)
@@ -163,7 +159,10 @@ class ProfileControllerTest : BaseIntegrationTest() {
         )
 
         val user = userRepository.findByEmail("googleuser-password@example.com")!!
-        usersAdminService.approve(user.externalId)
+        restTestClient.patch()
+            .uri("/private/v1/users/${user.externalId}/approve")
+            .exchange()
+            .expectStatus().isOk()
 
         assertFailsWith<AccountNotLocalException> {
             profileService.changePassword(

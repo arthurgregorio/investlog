@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, useTemplateRef } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import HoldingsTable from '@/components/investments/HoldingsTable.vue'
 import InvestmentsFilterRail from '@/components/investments/InvestmentsFilterRail.vue'
+import ExportReportModal from '@/components/investments/ExportReportModal.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import type { HoldingsFilterParams } from '@/api/holdings'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useOverviewStore } from '@/stores/overview'
 import { useTypesListStore } from '@/stores/typesList'
@@ -29,7 +30,6 @@ const typesListStore = useTypesListStore()
 const walletsStore = useWalletsStore()
 const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
-const router = useRouter()
 const modals = useModals()
 const holdingsTable = useTemplateRef('holdingsTable')
 
@@ -146,9 +146,10 @@ function openAddInvestment() {
   modals.openAddInvestment(kind, walletId)
 }
 
+const exportReportParams = ref<HoldingsFilterParams>()
+
 function openReport() {
-  const { href } = router.resolve({ name: 'investments-report', query: filters.reportQuery() })
-  window.open(href, '_blank')
+  exportReportParams.value = filters.reportParams()
 }
 
 function onHoldingsChanged() {
@@ -248,5 +249,11 @@ function onHoldingsChanged() {
         />
       </Card>
     </div>
+
+    <ExportReportModal
+      v-if="exportReportParams"
+      :params="exportReportParams"
+      @close="exportReportParams = undefined"
+    />
   </div>
 </template>

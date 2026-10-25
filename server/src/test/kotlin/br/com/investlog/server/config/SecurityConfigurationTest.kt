@@ -4,7 +4,6 @@ import br.com.investlog.server.BaseIntegrationTest
 import br.com.investlog.server.auth.rest.payloads.SessionResponse
 import br.com.investlog.server.auth.rest.payloads.TotpEnrollResponse
 import br.com.investlog.server.shared.security.UserRepository
-import br.com.investlog.server.usersadmin.services.UsersAdminService
 import dev.samstevens.totp.code.DefaultCodeGenerator
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
@@ -26,9 +25,6 @@ class SecurityConfigurationTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var userRepository: UserRepository
-
-    @Autowired
-    lateinit var usersAdminService: UsersAdminService
 
     @Test
     fun `authenticated requests reach private endpoints`() {
@@ -86,7 +82,10 @@ class SecurityConfigurationTest : BaseIntegrationTest() {
             .expectStatus().isCreated()
 
         val user = userRepository.findByEmail(email) ?: error("User was not created by register")
-        usersAdminService.approve(user.externalId)
+        restTestClient.patch()
+            .uri("/private/v1/users/${user.externalId}/approve")
+            .exchange()
+            .expectStatus().isOk()
 
         val secret = restTestClient.post()
             .uri("/private/v1/auth/totp/enroll")

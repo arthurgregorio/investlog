@@ -115,6 +115,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `reinvestments` | Exiting one holding into another and `finances.reinvestments` — see **Reinvestments** |
 | `walletdetail` | `GET /wallets/{id}/detail`, the per-wallet dashboard payload — see **Wallet detail** |
 | `walletledger` | `GET /wallets/{id}/ledger`, every event that touched a wallet — see **Wallet ledger** |
+| `investmentreport` | `GET /holdings/report/pdf`, the consolidated investment report as a PDF — see **Investment report PDF** |
 | `overview` | Portfolio summary and the monthly invested series |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
 | `typelists`, `currencyrates`, `configurations` | Reference data and runtime feature toggles |
@@ -138,7 +139,10 @@ In detail:
   `ROLE_ADMIN` in `SecurityConfiguration`. `block`/`changeRole`/`delete`/`resetPassword` all guard
   against the caller targeting their own account (`SelfActionNotAllowedException`, 400) to
   prevent a self-lockout; `approve`, `unblock`, and `resetTotp` don't need the guard since
-  self-targeting them is a genuine no-op, not a lockout.
+  self-targeting them is a genuine no-op, not a lockout. Every operation, reads included, starts
+  with `requireApprovedCaller()`, the live `CurrentUserProvider` check, because the route's
+  `ROLE_ADMIN` gate is cached at login and would otherwise let a blocked admin's open session
+  unblock itself (issue #489).
 - `shared/persistence` — `pagedModelOf(content, pageable, total)`, the single place jOOQ page
   results become `org.springframework.data.web.PagedModel<T>` for collection endpoints.
 - `shared/exceptions` — domain exceptions (`NotFoundException`, `InvalidCredentialsException`,
@@ -253,6 +257,12 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 
 **A purchase or contribution is listed under the wallet whose holding owns it today.** The lot tables keep no wallet history. A whole move of a holding with no exits carries its original lots across, so the destination lists them with their original dates and the origin no longer does. A partial move, or a whole move of a holding that already had exits, writes one new lot or contribution on the destination dated the move day, which shows as a purchase next to the `MOVE_IN` row. A reinvestment is two events that are never merged: a `REINVESTMENT` row on the source, whose `counterpart_name` is the destination's ticker (or name) resolved through `finances.reinvestments`, and an ordinary purchase or contribution on the destination.
 
+### Investment report PDF
+
+`investmentreport` serves `GET /private/v1/holdings/report/pdf` (issue #492), the A4 landscape report behind Investimentos' "Exportar relatório". It takes the same filters as `GET /holdings/report`, reads the same `holdings_report_rows` through `HoldingsOverviewRepository.findAllForReport`, and answers `204` when they select nothing. `InvestmentReportService` converts every amount into the user's `preferredCurrency` (wallet rate over display rate, through `CurrencyRateRepository.findRateOrAnchor`), merges each asset across wallets by (`kind`, `typeLabel`, upper-cased ticker), or by name for funds, and groups and totals it class → type. Its `consolidate` is a pure companion function, so the merge rules are unit-tested without a database. A class whose rows all lack a type label renders without type rows; since #479 every crypto holding has one (the seeded "Cripto" type at least), so crypto groups by type like the other classes. `InvestmentReportPdfRenderer` fills `templates/reports/investment-report.html` with Thymeleaf (`org.thymeleaf:thymeleaf`, the bare engine with its own `ClassLoaderTemplateResolver` in `InvestmentReportTemplateConfiguration`, not the MVC starter) and prints it with `io.github.openhtmltopdf:openhtmltopdf-pdfbox`, embedding Inter from `src/main/resources/fonts/`. The renderer swaps openhtmltopdf's default logger, which prints INFO lines to its own console handler on every render and ignores `logging.level`, for `openhtmltopdf-slf4j`'s `Slf4jLogger` (issue #502), so `com.openhtmltopdf` is set to `warn` in `application.yaml` like any other logger.
+
+**openhtmltopdf is a CSS 2.1 engine that parses the template as XML.** The template must stay well-formed XHTML, with no named entities and every value through `th:text`, and its CSS cannot use flexbox, grid, `rgba()` or inline SVG, so layout is tables and the logo mark is positioned spans. The running header and footer are `position: running(...)` elements, the first page suppresses the header through `@page :first`, and "(continuação)" comes from `-fs-running-attr(data-continuation, start)` in the repeated `thead`, which is empty on a table's first page. The summary's "Página" column points `target-counter` at a cell of each section's first body row: an id inside a repeated `thead`, or on a block wrapping the table, resolves to the wrong page.
+
 ### Price sync
 
 Three schedulers refresh prices in place, each gated by its own `ConfigurationKey` toggle
@@ -361,6 +371,11 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
 - **`establishSession` is the only session-issuing code path** — every login flow (password,
   TOTP verify, and Phase 4's Google callback) must funnel through it rather than open-coding a
   second way to mint a session, or a gate implemented in one path silently won't apply to another.
+  The same goes for password checks: every path that takes a password goes through
+  `verifyActiveCredentials`, which rejects a `BLOCKED` account only after the password matched.
+  `/auth/totp/verify` only confirms a pending enrollment and refuses an account whose TOTP is
+  already enabled, so signing in to an enrolled account goes through `/auth/login` alone (issue
+  #489).
 - **Trusted devices** (`auth/services/TrustedDeviceService.kt`) let a verified device skip the TOTP
   step. `trust()` issues a random token, stores only its hash via `TrustedDeviceRepository`, and
   sets a `trusted_device` cookie scoped to `path=/private/v1/auth`; `isTrusted()` re-hashes the

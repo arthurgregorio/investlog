@@ -28,6 +28,11 @@ export interface ContributionUpdatePayload {
   amount: number
 }
 
+export interface ReportPdf {
+  blob: Blob
+  fileName: string
+}
+
 export interface HoldingsFilterParams {
   kind?: string
   typeLabel?: string | string[]
@@ -39,6 +44,13 @@ export interface HoldingsFilterParams {
 // Spring binds a list only from repeated keys (walletId=a&walletId=b), not from axios's default
 // walletId[]=a form.
 const REPEATED_KEYS = { indexes: null } as const
+
+const DEFAULT_REPORT_FILE_NAME = 'relatorio-investimentos.pdf'
+
+function reportFileName(contentDisposition: unknown): string {
+  if (typeof contentDisposition !== 'string') return DEFAULT_REPORT_FILE_NAME
+  return /filename="?([^";]+)"?/i.exec(contentDisposition)?.[1] ?? DEFAULT_REPORT_FILE_NAME
+}
 
 export const holdingsApi = {
   findAll(
@@ -53,6 +65,24 @@ export const holdingsApi = {
     return apiClient
       .get<HoldingRow[]>('/holdings/report', { params, paramsSerializer: REPEATED_KEYS })
       .then((r) => r.data)
+  },
+
+  downloadReportPdf(params: HoldingsFilterParams, signal?: AbortSignal): Promise<ReportPdf | null> {
+    return apiClient
+      .get<Blob>('/holdings/report/pdf', {
+        params,
+        paramsSerializer: REPEATED_KEYS,
+        responseType: 'blob',
+        signal,
+      })
+      .then((response) =>
+        response.status === 204
+          ? null
+          : {
+              blob: response.data,
+              fileName: reportFileName(response.headers['content-disposition']),
+            },
+      )
   },
 
   // --- Stock holdings ---
