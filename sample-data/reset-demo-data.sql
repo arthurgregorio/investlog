@@ -7,7 +7,7 @@
 -- accent color, preferred currency, avatar) are untouched — only financial/demo data resets.
 --
 -- Order matters: wallets must go first (cascades to every holding/lot/contribution, admin's
--- included), so stock_types/fund_types have no remaining holding references and non-admin
+-- included), so holding_types/segments have no remaining holding references and non-admin
 -- users have no remaining wallet reference (finances.wallets.user_id has no ON DELETE CASCADE).
 --
 -- Wrapped in one transaction (with ON_ERROR_STOP=1 in the invoking psql call, see
@@ -21,11 +21,11 @@ BEGIN;
 DELETE FROM finances.wallet_moves;
 DELETE FROM finances.wallets;
 
--- 2. Global type lists (finances.stock_types/fund_types have carried no user_id since
---    24-1200-make-settings-global.xml) and the stock segments — safe now that no holding references them.
-DELETE FROM finances.stock_segments;
-DELETE FROM finances.stock_types;
-DELETE FROM finances.fund_types;
+-- 2. Global holding types (every kind) and segments — finances.holding_types/segments carry no
+--    user_id, and deleting them is safe now that no holding references them. The migration's own
+--    "Cripto" type goes too and sample-data.sql recreates it.
+DELETE FROM finances.segments;
+DELETE FROM finances.holding_types;
 
 -- 3. Global currency rates. BRL is the base; USD is pinned to the rate the seeded USD wallets and
 --    crypto lots were priced against, instead of Liquibase's default (24-1200-make-settings-global.xml,
