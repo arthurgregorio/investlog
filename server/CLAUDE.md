@@ -272,6 +272,8 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 
 **Only `origin = 'PURCHASE'` lots and contributions spend cash.** `lot_origin` on `stock_lots`, `crypto_lots` and `fund_contributions` marks the ones `ReinvestmentRepository` (`REINVESTMENT`) and `MovableHoldingRepository` (`MOVE`) write. A reinvestment's result and its destination lot both stay out of the replay, so it leaves no cash behind and counts nothing twice. Rows written before the column existed were tagged by matching `created_at` with their reinvestment or move row, since both are inserted in one transaction.
 
+**The replay reads `purchase_amount`, not quantity × price.** A partial move rescales the origin's lots down by the cost it carries away, and replaying the rescaled amounts would hand back cash those purchases really spent. So every lot and contribution keeps what it cost when made, in `purchase_amount`. A `BEFORE INSERT` trigger fills it on every insert path except a move's destination lot, which stays null because the origin still accounts for that money. A user edit through the three lot and contribution repositories shifts it by the change in amount.
+
 **A replay that ends below zero is a refusal, not a state.** Purchases adapt, so only a fixed debit can overdraw. `CashService.shortfallOf` finds the first one, and every write that can strand one checks it inside its transaction:
 - a new transfer or bank withdrawal (400, "Maior que o caixa disponível em …");
 - deleting a transfer the destination already spent (409);

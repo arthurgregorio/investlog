@@ -495,6 +495,49 @@ class CashControllerTest : BaseIntegrationTest() {
     }
 
     @Test
+    fun `a partial move rescales the origin's lots without giving back cash its purchases spent`() {
+        val originId = createWallet("Caixa Reescala Origem")
+        val destinationId = createWallet("Caixa Reescala Destino")
+        val holdingId = createStockHolding(originId, "EGIE3", "2024-01-10", "10", "30")
+        withdrawFromStock(originId, holdingId, "2024-02-01", "4", "50")
+        addStockLot(originId, holdingId, "2024-02-15", "2", "50")
+        assertAmount("100", wallet(originId).cash)
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$originId/moves")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"destinationWalletId":"$destinationId","items":[{"holdingId":"$holdingId","quantity":3}]}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        assertAmount("100", wallet(originId).cash)
+        assertAmount("0", wallet(destinationId).cash)
+
+        val purchase = ledger(originId).first { row -> row["date"] == "2024-02-15" }
+        assertAmount("100", purchase["cashUsed"])
+        assertAmount("0", purchase["newMoney"])
+    }
+
+    @Test
+    fun `editing a purchase changes how much cash it spends`() {
+        val walletId = createWallet("Caixa Edição")
+        val holdingId = createStockHolding(walletId, "CPLE6", "2024-01-10", "10", "10")
+        withdrawFromStock(walletId, holdingId, "2024-02-01", "5", "20")
+        addStockLot(walletId, holdingId, "2024-02-15", "2", "20")
+        assertAmount("60", wallet(walletId).cash)
+
+        val lotId = ledger(walletId).first { row -> row["date"] == "2024-02-15" }["id"]
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/stock-holdings/$holdingId/lots/$lotId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"lotDate":"2024-02-15","quantity":4}""")
+            .exchange()
+            .expectStatus().is2xxSuccessful()
+
+        assertAmount("20", wallet(walletId).cash)
+    }
+
+    @Test
     fun `moving a holding whose withdrawn cash already left the origin is refused`() {
         val originId = createWallet("Caixa Mover Origem")
         val destinationId = createWallet("Caixa Mover Destino")

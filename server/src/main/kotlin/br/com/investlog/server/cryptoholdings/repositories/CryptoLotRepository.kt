@@ -37,6 +37,12 @@ class CryptoLotRepository(private val dsl: DSLContext) {
             put(CRYPTO_LOTS.LOT_DATE, request.lotDate)
             request.quantity?.let { put(CRYPTO_LOTS.QUANTITY, it) }
             request.price?.let { put(CRYPTO_LOTS.PRICE, it) }
+            val newQuantity = request.quantity?.let { DSL.`val`(it) } ?: CRYPTO_LOTS.QUANTITY
+            val newPrice = request.price?.let { DSL.`val`(it) } ?: CRYPTO_LOTS.PRICE
+            put(
+                CRYPTO_LOTS.PURCHASE_AMOUNT,
+                CRYPTO_LOTS.PURCHASE_AMOUNT.plus(newQuantity.mul(newPrice).minus(CRYPTO_LOTS.QUANTITY.mul(CRYPTO_LOTS.PRICE))),
+            )
         }
         val rec = dsl.update(CRYPTO_LOTS)
             .set(changes)

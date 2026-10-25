@@ -6,6 +6,7 @@ import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequ
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
 import org.jooq.DSLContext
 import org.jooq.Field
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Repository
 import java.util.UUID
 
@@ -35,7 +36,13 @@ class FundContributionRepository(
     ): ContributionResponse? {
         val changes = buildMap<Field<*>, Any> {
             put(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE, request.contributionDate)
-            request.amount?.let { put(FUND_CONTRIBUTIONS.AMOUNT, it) }
+            request.amount?.let { amount ->
+                put(FUND_CONTRIBUTIONS.AMOUNT, amount)
+                put(
+                    FUND_CONTRIBUTIONS.PURCHASE_AMOUNT,
+                    FUND_CONTRIBUTIONS.PURCHASE_AMOUNT.plus(DSL.`val`(amount).minus(FUND_CONTRIBUTIONS.AMOUNT)),
+                )
+            }
         }
         val rec = dsl.update(FUND_CONTRIBUTIONS)
             .set(changes)
