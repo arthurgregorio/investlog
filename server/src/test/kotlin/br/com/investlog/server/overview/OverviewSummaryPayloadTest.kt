@@ -83,7 +83,7 @@ class OverviewSummaryPayloadTest : BaseIntegrationTest() {
     @Order(1)
     fun `the summary in the anchor currency converts every wallet at its stored rate`() {
         assertEquals(
-            """{"displayCurrency":"BRL","totalCostBasis":2549.9300000000000000000000,"totalCurrentValue":2040.0000000000000000000000,"totalGain":-509.9300000000000000000000,"totalGainPct":-19.9978038600,"kindSummaries":[{"kind":"STOCKS","holdingCount":3,"totalCostBasis":2549.9300000000000000000000,"totalCurrentValue":2040.0000000000000000000000,"totalGain":-509.9300000000000000000000,"totalGainPct":-19.9978038600}]}""",
+            """{"displayCurrency":"BRL","totalCostBasis":2549.9300000000000000000000,"totalCurrentValue":2040.0000000000000000000000,"totalCash":0,"totalGain":-509.9300000000000000000000,"totalGainPct":-19.9978038600,"kindSummaries":[{"kind":"STOCKS","holdingCount":3,"totalCostBasis":2549.9300000000000000000000,"totalCurrentValue":2040.0000000000000000000000,"totalGain":-509.9300000000000000000000,"totalGainPct":-19.9978038600}]}""",
             summaryBody(),
         )
     }
@@ -99,7 +99,7 @@ class OverviewSummaryPayloadTest : BaseIntegrationTest() {
             .expectStatus().isOk()
 
         assertEquals(
-            """{"displayCurrency":"USD","totalCostBasis":364.2757142857142857130000,"totalCurrentValue":291.4285714285714285700000,"totalGain":-72.8471428571428571430000,"totalGainPct":-19.9978038600,"kindSummaries":[{"kind":"STOCKS","holdingCount":3,"totalCostBasis":364.2757142857142857130000,"totalCurrentValue":291.4285714285714285700000,"totalGain":-72.8471428571428571430000,"totalGainPct":-19.9978038600}]}""",
+            """{"displayCurrency":"USD","totalCostBasis":364.2757142857142857130000,"totalCurrentValue":291.4285714285714285700000,"totalCash":0,"totalGain":-72.8471428571428571430000,"totalGainPct":-19.9978038600,"kindSummaries":[{"kind":"STOCKS","holdingCount":3,"totalCostBasis":364.2757142857142857130000,"totalCurrentValue":291.4285714285714285700000,"totalGain":-72.8471428571428571430000,"totalGainPct":-19.9978038600}]}""",
             summaryBody(),
         )
     }

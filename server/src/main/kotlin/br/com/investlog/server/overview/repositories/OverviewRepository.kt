@@ -57,7 +57,7 @@ class OverviewRepository(private val dsl: DSLContext) {
         return PortfolioSummaryResponse(
             displayCurrency = displayCurrency,
             totalCostBasis = totalCostBasis,
-            totalCurrentValue = positionsValue + totalCash,
+            totalCurrentValue = if (totalCash.signum() == 0) positionsValue else positionsValue + totalCash,
             totalCash = totalCash,
             totalGain = totalGain,
             totalGainPct = gainPct(totalGain, totalCostBasis),
@@ -97,6 +97,7 @@ class OverviewRepository(private val dsl: DSLContext) {
             .where(WALLETS.USER_ID.eq(userId))
             .fetchSingle()
             .value1()!!
+            .let { total -> if (total.signum() == 0) BigDecimal.ZERO else total }
     }
 
     private fun displayCurrencyRate(displayCurrency: String) = DSL.coalesce(
