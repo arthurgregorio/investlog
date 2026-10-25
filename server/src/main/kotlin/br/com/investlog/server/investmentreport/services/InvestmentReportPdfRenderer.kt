@@ -2,6 +2,8 @@ package br.com.investlog.server.investmentreport.services
 
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
+import com.openhtmltopdf.slf4j.Slf4jLogger
+import com.openhtmltopdf.util.XRLog
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Component
 import org.thymeleaf.TemplateEngine
@@ -11,6 +13,10 @@ import java.util.Locale
 
 @Component
 class InvestmentReportPdfRenderer(private val reportTemplateEngine: TemplateEngine) {
+
+    init {
+        XRLog.setLoggerImpl(Slf4jLogger())
+    }
 
     fun render(report: InvestmentReport): ByteArray {
         val context = Context(Locale.forLanguageTag("pt-BR")).apply {

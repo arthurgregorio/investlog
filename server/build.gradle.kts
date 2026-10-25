@@ -81,6 +81,7 @@ dependencies {
     // pdf reports
     implementation("org.thymeleaf:thymeleaf")
     implementation("io.github.openhtmltopdf:openhtmltopdf-pdfbox:$openHtmlToPdfVersion")
+    implementation("io.github.openhtmltopdf:openhtmltopdf-slf4j:$openHtmlToPdfVersion")
 
     // logging
     implementation("io.github.oshai:kotlin-logging-jvm:$kotlinLoggingJvmVersion")
