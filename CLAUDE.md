@@ -202,10 +202,16 @@ work: features, fixes, maintenance, documentation.
   server, client, and docs/infra. Sub-issue bodies use the ordinary feature skeleton, scoped to that
   chunk, and open by stating which branch they target: *"Subtask of #211. Targets the
   `feature/211-wallet-relocation` branch, not `main`."* (#212 and #213 are the worked examples.)
-- Sub-issue PRs target the **umbrella's feature branch** — never `main`, and never another
-  sub-issue's branch. A sub-issue that builds on a sibling waits for the sibling to land on the
-  feature branch and branches from there; stacking one sub-PR on another (as #274 did on #273) hides
-  it from every check that looks at the feature branch.
+- Sub-issue PRs target the **umbrella's feature branch** — never `main`. The one exception is a
+  **stack**: siblings inside one umbrella don't wait for each other. A sub-issue that builds on an
+  unmerged sibling branches from that sibling's branch and opens its PR against it, so the diff shows
+  only its own changes (CI runs on every `pull_request`, so the stacked PR is still checked). Its body
+  names the PR it is stacked on. Once the sibling is squash-merged into the feature branch, rebase
+  the stacked branch with `git rebase --onto <feature-branch> <sibling-branch>` and retarget its PR
+  to the feature branch. A stack has one parent: a sub-issue that needs several unmerged siblings
+  waits for them instead of merging their branches together. Waiting is for dependencies **across**
+  umbrellas — see [Dependencies point at the
+  umbrella](#dependencies-point-at-the-umbrella-never-at-one-of-its-subtasks).
 - Once every sub-issue has landed on the feature branch, **one PR merges the feature branch into
   `main`, and that PR closes the umbrella issue and every one of its sub-issues** — see
   [Closing sub-issues](#closing-sub-issues-the-umbrella-pr-does-it).
@@ -374,8 +380,9 @@ every closing keyword in its body. When opening it:
 A sub-issue may still be closed by hand as soon as its PR merges into the feature branch, but that's
 a courtesy. The umbrella PR is what guarantees it.
 
-**The user merges sub-PRs and asks for the umbrella PR.** When an umbrella's subtasks are done, open
-each sub-PR into the feature branch, link it, and stop there. Never merge a sub-PR, and never open
+**The user merges sub-PRs and asks for the umbrella PR.** Work through every subtask of the
+umbrella, stacking where a sibling isn't merged yet, open and link each sub-PR, then stop and give
+the user the merge order. Never merge a sub-PR, and never open
 the umbrella PR into `main` unasked: the user validates the work on the feature branch, merges the
 sub-PRs, and then asks for the umbrella PR. GitHub can't open it before that anyway, since the
 feature branch has no commits beyond `main` until the first sub-PR merges.
