@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AxiosError, type AxiosAdapter } from 'axios'
+import { AxiosError, CanceledError, type AxiosAdapter } from 'axios'
 
 const toastOpen = vi.hoisted(() => vi.fn())
 const auth = vi.hoisted(() => ({
@@ -146,5 +146,16 @@ describe('apiClient session handling', () => {
 
     expect(auth.expireSession).not.toHaveBeenCalled()
     expect(routerPush).toHaveBeenCalledWith({ name: 'login' })
+  })
+})
+
+describe('apiClient cancelled requests', () => {
+  it('rejects a deliberately cancelled request without a toast', async () => {
+    toastOpen.mockClear()
+    apiClient.defaults.adapter = () => Promise.reject(new CanceledError())
+
+    await expect(apiClient.get('/holdings/report/pdf')).rejects.toBeInstanceOf(CanceledError)
+
+    expect(toastOpen).not.toHaveBeenCalled()
   })
 })

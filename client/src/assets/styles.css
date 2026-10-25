@@ -1455,88 +1455,6 @@ a {
   }
 }
 
-.report-page {
-  max-width: 980px;
-}
-
-.report-paper {
-  width: 210mm;
-  margin: 0 auto;
-  padding: 14mm 12mm;
-  position: relative;
-  background: var(--surface);
-  box-shadow:
-    0 1px 3px color-mix(in srgb, var(--ink) 8%, transparent),
-    0 12px 32px color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: 3px;
-  color: var(--text);
-}
-
-.report-page-break {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 0;
-  border-top: 1px dashed var(--border);
-  pointer-events: none;
-}
-
-.report-page-break-label {
-  position: absolute;
-  top: -9px;
-  right: 12mm;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  padding: 1px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-}
-
-.report-kind-section {
-  margin-top: 15px;
-}
-
-.report-kind-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
-}
-
-.report-kind-head h2 {
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0;
-  flex: 1;
-  color: var(--text);
-}
-
-.report-subgroup {
-  margin-top: 15px;
-  break-inside: avoid;
-}
-
-.report-subgroup-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 5px;
-  margin: 0 0 6px;
-}
-
-h3.report-subgroup-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-2);
-  margin: 0;
-  flex: 1;
-}
-
 @media (width <= 860px) {
   .auth-aside {
     display: none;
@@ -1622,8 +1540,7 @@ h3.report-subgroup-title {
   }
 
   .app-header,
-  .topnav,
-  .no-print {
+  .topnav {
     display: none;
   }
 
@@ -1645,25 +1562,7 @@ h3.report-subgroup-title {
   body,
   .app-root,
   .main,
-  .app-content,
-  .report-page {
+  .app-content {
     background: var(--bulma-white);
-  }
-
-  .report-page {
-    max-width: none;
-    width: 100%;
-    padding: 0;
-  }
-
-  /* The A4 "paper" card look (shadow, rounded corner, fixed width) is a
-     screen-only preview aid — real pagination/margins come from @page, and
-     a soft shadow with no page below it to fall on would otherwise print
-     as a faint gray band past the last page's content. */
-  .report-paper {
-    width: 100%;
-    padding: 0;
-    box-shadow: none;
-    border-radius: 0;
   }
 }

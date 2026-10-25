@@ -51,6 +51,9 @@ apiClient.interceptors.response.use(
     return response
   },
   (error) => {
+    if (axios.isCancel(error)) {
+      return Promise.reject(error)
+    }
     if (error.response) {
       recordServerActivity()
     }

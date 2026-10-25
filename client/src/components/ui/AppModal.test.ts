@@ -78,4 +78,20 @@ describe('AppModal', () => {
 
     expect(wrapper.emitted('close')).toBeTruthy()
   })
+
+  describe('when not dismissible', () => {
+    it('disables the header close button and ignores escape and the backdrop', async () => {
+      const wrapper = mountModal({ dismissible: false })
+
+      const closeButton = document.body.querySelector<HTMLButtonElement>(
+        'button[aria-label="Fechar"]',
+      )
+      document.body.querySelector<HTMLElement>('.modal-background')?.click()
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', keyCode: 27 }))
+      await flushPromises()
+
+      expect(closeButton?.disabled).toBe(true)
+      expect(wrapper.emitted('close')).toBeUndefined()
+    })
+  })
 })
