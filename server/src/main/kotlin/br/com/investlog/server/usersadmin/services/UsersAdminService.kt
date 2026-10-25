@@ -8,6 +8,7 @@ import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionExce
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.security.AuthProvider
+import br.com.investlog.server.shared.security.CurrentUser
 import br.com.investlog.server.shared.security.CurrentUser.Status
 import br.com.investlog.server.shared.security.CurrentUserProvider
 import br.com.investlog.server.shared.security.DemoModeGuard
@@ -33,15 +34,22 @@ class UsersAdminService(
     private val demoModeGuard: DemoModeGuard,
 ) {
 
-    fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> = usersAdminRepository.findAll(pageable)
+    fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> {
+        requireApprovedCaller()
+        return usersAdminRepository.findAll(pageable)
+    }
 
     @Transactional
-    fun approve(externalId: UUID): UserAdminResponse = updateStatus(externalId, Status.APPROVED)
+    fun approve(externalId: UUID): UserAdminResponse {
+        requireApprovedCaller()
+        return updateStatus(externalId, Status.APPROVED)
+    }
 
     @Transactional
     fun block(externalId: UUID): UserAdminResponse {
+        val caller = requireApprovedCaller()
         val user = requireUser(externalId)
-        requireNotSelf(user)
+        requireNotSelf(caller, user)
         demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
         requireCurrentStatus(user, Status.APPROVED, "bloquear")
         return updateStatus(externalId, Status.BLOCKED)
@@ -49,6 +57,7 @@ class UsersAdminService(
 
     @Transactional
     fun unblock(externalId: UUID): UserAdminResponse {
+        requireApprovedCaller()
         val user = requireUser(externalId)
         requireCurrentStatus(user, Status.BLOCKED, "desbloquear")
         return updateStatus(externalId, Status.APPROVED)
@@ -56,14 +65,16 @@ class UsersAdminService(
 
     @Transactional
     fun changeRole(externalId: UUID, request: RoleUpdateRequest): UserAdminResponse {
+        val caller = requireApprovedCaller()
         val user = requireUser(externalId)
-        requireNotSelf(user)
+        requireNotSelf(caller, user)
         demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
         return usersAdminRepository.updateRole(user.id!!, request.role)
     }
 
     @Transactional
     fun resetTotp(externalId: UUID): UserAdminResponse {
+        requireApprovedCaller()
         val user = requireUser(externalId)
         totpAttemptLimiter.clearAllFor(user.email!!)
         return usersAdminRepository.resetTotp(user.id!!)
@@ -71,16 +82,18 @@ class UsersAdminService(
 
     @Transactional
     fun delete(externalId: UUID) {
+        val caller = requireApprovedCaller()
         val user = requireUser(externalId)
-        requireNotSelf(user)
+        requireNotSelf(caller, user)
         demoModeGuard.assertNotProtectedAdminAccount(user.email!!)
         usersAdminRepository.deleteByExternalId(externalId)
     }
 
     @Transactional
     fun resetPassword(externalId: UUID, request: PasswordResetRequest): UserAdminResponse {
+        val caller = requireApprovedCaller()
         val user = requireUser(externalId)
-        requireNotSelf(user)
+        requireNotSelf(caller, user)
 
         if (AuthProvider.valueOf(user.authProvider!!) != AuthProvider.LOCAL) {
             throw AccountNotLocalException("Redefinições de senha estão disponíveis apenas para contas locais")
@@ -98,12 +111,14 @@ class UsersAdminService(
         return usersAdminRepository.updateStatus(user.id!!, status)
     }
 
+    private fun requireApprovedCaller(): CurrentUser = currentUserProvider.getCurrentUser()
+
     private fun requireUser(externalId: UUID): UsersRecord =
         usersAdminRepository.findByExternalId(externalId)
             ?: throw NotFoundException("Usuário $externalId não encontrado")
 
-    private fun requireNotSelf(user: UsersRecord) {
-        if (user.id == currentUserProvider.getCurrentUser().id) {
+    private fun requireNotSelf(caller: CurrentUser, user: UsersRecord) {
+        if (user.id == caller.id) {
             throw SelfActionNotAllowedException("Esta ação não pode ser aplicada à sua própria conta")
         }
     }
