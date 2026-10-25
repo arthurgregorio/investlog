@@ -23,6 +23,7 @@ import type {
 vi.mock('@/api/holdings', () => ({
   holdingsApi: {
     findAll: vi.fn(),
+    downloadReportPdf: vi.fn(),
     getStockHolding: vi.fn(),
     getCryptoHolding: vi.fn(),
     getFundHolding: vi.fn(),
@@ -170,14 +171,7 @@ function flushPromises() {
 async function mountView(options: MountOptions = {}) {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [
-      { path: '/investments', name: 'investments', component: { template: '<div />' } },
-      {
-        path: '/investments/report',
-        name: 'investments-report',
-        component: { template: '<div />' },
-      },
-    ],
+    routes: [{ path: '/investments', name: 'investments', component: { template: '<div />' } }],
   })
   router.push(`/investments${options.query ?? ''}`)
   await router.isReady()
@@ -286,6 +280,10 @@ function headerButton(wrapper: VueWrapper, label: string) {
   return wrapper.findAll('.head-actions button').find((button) => button.text() === label)!
 }
 
+function exportModal() {
+  return document.body.querySelector('.modal-card')
+}
+
 function exportButton(wrapper: VueWrapper) {
   return headerButton(wrapper, 'Exportar relatório')
 }
@@ -309,6 +307,7 @@ function drawerText() {
 describe('InvestmentsView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(holdingsApi.downloadReportPdf).mockReturnValue(new Promise(() => {}))
   })
 
   afterEach(() => {
@@ -842,12 +841,12 @@ describe('InvestmentsView', () => {
     })
 
     it('carries the box into the exported report', async () => {
-      const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
       const { wrapper } = await mountView({ query: '?hideFrozen=true' })
 
       await exportButton(wrapper).trigger('click')
+      await flushPromises()
 
-      expect(String(openWindow.mock.calls[0][0])).toBe('/investments/report?hideFrozen=true')
+      expect(vi.mocked(holdingsApi.downloadReportPdf).mock.calls[0][0].hideFrozen).toBe(true)
     })
   })
 
@@ -1391,42 +1390,78 @@ describe('InvestmentsView', () => {
       expect(modals.openAddInvestment).toHaveBeenCalledWith(undefined, undefined)
     })
 
-    it('carries several wallets and types into the report as repeated keys', async () => {
-      const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
+    it('sends several wallets and types to the report as repeated lists', async () => {
       const { wrapper } = await mountView({
         query: '?filter=STOCKS&walletId=wallet-1&walletId=wallet-4&type=FII&type=ETF',
       })
 
       await exportButton(wrapper).trigger('click')
+      await flushPromises()
 
-      expect(String(openWindow.mock.calls[0][0])).toBe(
-        '/investments/report?filter=STOCKS&walletId=wallet-1&walletId=wallet-4&type=FII&type=ETF',
+      expect(holdingsApi.downloadReportPdf).toHaveBeenCalledExactlyOnceWith(
+        {
+          kind: 'STOCKS',
+          walletId: ['wallet-1', 'wallet-4'],
+          typeLabel: ['FII', 'ETF'],
+          search: undefined,
+          hideFrozen: undefined,
+        },
+        expect.any(AbortSignal),
       )
     })
 
-    it('opens the report in a new tab carrying the active filters but not the sort or page', async () => {
+    it('opens the export popup in place carrying the active filters but not the sort or page', async () => {
       const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
-      const { wrapper } = await mountView({
+      const { wrapper, router } = await mountView({
         query: '?filter=STOCKS&walletId=wallet-1&type=FII&search=petr&sort=gain,asc&page=2',
       })
 
       await exportButton(wrapper).trigger('click')
+      await flushPromises()
 
-      expect(openWindow).toHaveBeenCalledTimes(1)
-      const [href, target] = openWindow.mock.calls[0]
-      expect(target).toBe('_blank')
-      expect(String(href)).toBe(
-        '/investments/report?filter=STOCKS&walletId=wallet-1&type=FII&search=petr',
+      expect(exportModal()).not.toBeNull()
+      expect(exportModal()!.textContent).toContain('Gerando o PDF…')
+      expect(openWindow).not.toHaveBeenCalled()
+      expect(router.currentRoute.value.path).toBe('/investments')
+      expect(holdingsApi.downloadReportPdf).toHaveBeenCalledExactlyOnceWith(
+        {
+          kind: 'STOCKS',
+          walletId: ['wallet-1'],
+          typeLabel: ['FII'],
+          search: 'petr',
+          hideFrozen: undefined,
+        },
+        expect.any(AbortSignal),
       )
     })
 
-    it('opens an unfiltered report when no filter is active', async () => {
-      const openWindow = vi.spyOn(window, 'open').mockReturnValue(null)
+    it('requests an unfiltered report when no filter is active', async () => {
       const { wrapper } = await mountView()
 
       await exportButton(wrapper).trigger('click')
+      await flushPromises()
 
-      expect(String(openWindow.mock.calls[0][0])).toBe('/investments/report')
+      expect(holdingsApi.downloadReportPdf).toHaveBeenCalledExactlyOnceWith(
+        {
+          kind: undefined,
+          walletId: undefined,
+          typeLabel: undefined,
+          search: undefined,
+          hideFrozen: undefined,
+        },
+        expect.any(AbortSignal),
+      )
+    })
+
+    it('removes the popup when it is cancelled', async () => {
+      const { wrapper } = await mountView()
+
+      await exportButton(wrapper).trigger('click')
+      await flushPromises()
+      document.body.querySelector<HTMLButtonElement>('[data-testid="export-cancel"]')!.click()
+      await flushPromises()
+
+      expect(exportModal()).toBeNull()
     })
   })
 

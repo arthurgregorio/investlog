@@ -1,6 +1,7 @@
 import { onMounted, onScopeDispose, readonly, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
+import type { HoldingsFilterParams } from '@/api/holdings'
 import type { WalletKind } from '@/types'
 import {
   DEFAULT_SORT,
@@ -106,7 +107,17 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
     return values.length > 0 ? [...values] : undefined
   }
 
-  function reportQuery(): LocationQueryRaw {
+  function reportParams(): HoldingsFilterParams {
+    return {
+      kind: activeFilter.value === 'all' ? undefined : activeFilter.value,
+      typeLabel: listOrUndefined(typeLabelFilter.value),
+      walletId: listOrUndefined(walletIdFilter.value),
+      search: trimmedSearch(),
+      hideFrozen: hideFrozenFilter.value || undefined,
+    }
+  }
+
+  function filterQuery(): LocationQueryRaw {
     const query: LocationQueryRaw = {}
     if (activeFilter.value !== 'all') query.filter = activeFilter.value
     if (walletIdFilter.value.length > 0) query.walletId = [...walletIdFilter.value]
@@ -118,7 +129,7 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
   }
 
   function buildQuery(pageNumber: number): LocationQueryRaw {
-    const query = reportQuery()
+    const query = filterQuery()
     const sort = sortParam(currentSort())
     if (sort !== DEFAULT_SORT_PARAM) query.sort = sort
     if (pageNumber > 0) query.page = String(pageNumber + 1)
@@ -242,6 +253,6 @@ export function useInvestmentFilters(options: InvestmentFiltersOptions) {
     clearFilters,
     toggleSort,
     reload,
-    reportQuery,
+    reportParams,
   }
 }
