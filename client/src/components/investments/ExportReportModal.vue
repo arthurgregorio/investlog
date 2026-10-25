@@ -74,11 +74,11 @@ onBeforeUnmount(() => abortController?.abort())
           <p class="has-text-grey">O download começou automaticamente.</p>
         </div>
         <div
-          class="is-flex is-align-items-center is-align-self-stretch is-gap-2 box has-background-white-bis has-text-left py-2 px-3 mb-0"
+          class="export-file is-flex is-align-items-center is-align-self-stretch is-gap-2 has-text-left py-2 px-3"
           data-testid="export-file"
         >
-          <b-icon icon="file-pdf-box" type="is-danger" />
-          <span class="has-text-weight-semibold is-size-7">{{ report.fileName }}</span>
+          <b-icon icon="file-outline" type="is-danger" />
+          <span class="export-file-name has-text-weight-semibold">{{ report.fileName }}</span>
         </div>
       </template>
 
@@ -118,3 +118,19 @@ onBeforeUnmount(() => abortController?.abort())
     </template>
   </AppModal>
 </template>
+
+<style scoped>
+.export-file {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.export-file-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>
