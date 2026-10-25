@@ -57,17 +57,13 @@ function totalsOf(rows: { costBasis: number; currentValue: number }[]): ReportTo
 }
 
 function subGroupKey(holding: HoldingRow): { key: string; label: string } {
-  if (holding.kind === 'CRYPTO') {
-    const ticker = holding.ticker ?? holding.name
-    return { key: ticker, label: ticker }
-  }
   const label = holding.typeLabel ?? 'Outros'
   return { key: label, label }
 }
 
 /**
  * Purely presentational: nests the already backend-merged flat rows into
- * Kind -> Type/Ticker -> Wallet, with a subtotal at every level and one grand total.
+ * Kind -> Type -> Wallet, with a subtotal at every level and one grand total.
  * No dedup/merge logic here — same-wallet same-ticker merging already happened in the
  * finances.holdings_report_rows SQL view.
  */

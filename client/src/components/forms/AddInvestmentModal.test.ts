@@ -40,8 +40,10 @@ function mountModal(
     initialState: {
       wallets: { wallets: options.wallets ?? [wallet('stocks-1', 'STOCKS')] },
       typesList: {
-        stockTypes: [{ id: 'stock-type-1', name: 'Ação', usageCount: 0 }],
-        fundTypes: [{ id: 'fund-type-1', name: 'Renda Fixa', usageCount: 0 }],
+        holdingTypes: [
+          { id: 'stock-type-1', name: 'Ação', kinds: ['STOCKS'], usageCount: 0 },
+          { id: 'fund-type-1', name: 'Renda Fixa', kinds: ['FUNDS'], usageCount: 0 },
+        ],
       },
     },
   })
@@ -105,7 +107,7 @@ describe('AddInvestmentModal', () => {
     expect(holdingsApi.createStockHolding).toHaveBeenCalledWith(
       'stocks-1',
       expect.objectContaining({
-        stockTypeId: 'stock-type-1',
+        typeId: 'stock-type-1',
         ticker: 'PETR4',
         lot: expect.objectContaining({ quantity: 10, price: 36.5 }),
       }),
@@ -152,7 +154,7 @@ describe('AddInvestmentModal', () => {
     expect(holdingsApi.createFundHolding).toHaveBeenCalledWith(
       'funds-1',
       expect.objectContaining({
-        fundTypeId: 'fund-type-1',
+        typeId: 'fund-type-1',
         name: 'Tesouro Selic',
         contribution: expect.objectContaining({ amount: 1500 }),
       }),

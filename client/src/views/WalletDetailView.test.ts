@@ -178,18 +178,20 @@ describe('WalletDetailView', () => {
     expect(holdingsApi.findAllForReport).toHaveBeenCalledTimes(1)
   })
 
-  it('offers the by-segment grouping on a stock wallet only', async () => {
-    vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([mockRow])
-    const groupingControl =
-      '[data-testid="allocation-card"] [data-testid="allocation-grouping-segment"]'
+  it.each(['STOCKS', 'CRYPTO', 'FUNDS'] as const)(
+    'offers the by-segment grouping on a %s wallet',
+    async (kind) => {
+      vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([mockRow])
 
-    const stockWallet = await mountView(detailOf())
-    expect(stockWallet.wrapper.find(groupingControl).exists()).toBe(true)
-    stockWallet.wrapper.unmount()
+      const { wrapper } = await mountView(detailOf({ kind }))
 
-    const cryptoWallet = await mountView(detailOf({ kind: 'CRYPTO' }))
-    expect(cryptoWallet.wrapper.find(groupingControl).exists()).toBe(false)
-  })
+      expect(
+        wrapper
+          .find('[data-testid="allocation-card"] [data-testid="allocation-grouping-segment"]')
+          .exists(),
+      ).toBe(true)
+    },
+  )
 
   it('shows the allocation empty state for a wallet with no holdings', async () => {
     const { wrapper } = await mountView(detailOf())

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 defineProps<{
   isFund: boolean
-  isStock: boolean
   isFrozen: boolean
   isAdmin: boolean
 }>()
@@ -42,7 +41,6 @@ const emit = defineEmits<{
       {{ isFund ? 'Atualizar valor atual' : 'Atualizar preço' }}
     </b-dropdown-item>
     <b-dropdown-item
-      v-if="isStock || isFund"
       aria-role="listitem"
       data-testid="holding-edit-tags"
       @click="emit('edit-tags')"

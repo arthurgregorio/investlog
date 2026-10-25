@@ -33,7 +33,7 @@ vi.mock('@/api/holdings', () => ({
     updateStockHolding: vi.fn(),
     updateCryptoHolding: vi.fn(),
     updateFundHolding: vi.fn(),
-    updateStockHoldingSegment: vi.fn(),
+    updateHoldingSegment: vi.fn(),
     deleteStockHolding: vi.fn(),
     deleteCryptoHolding: vi.fn(),
     deleteFundHolding: vi.fn(),
@@ -140,9 +140,10 @@ function stockDetailWithWithdrawals(): StockHoldingDetail {
   return {
     id: 'holding-1',
     walletId: 'wallet-1',
-    stockTypeId: 'type-1',
-    stockSegmentId: null,
-    stockSegmentName: null,
+    typeId: 'type-1',
+    typeName: 'Ação PN',
+    segmentId: null,
+    segmentName: null,
     ticker: 'PETR4',
     name: 'Petróleo Brasileiro',
     currentPrice: 34.8,
@@ -169,9 +170,10 @@ function stockDetailWithoutWithdrawals(): StockHoldingDetail {
   return {
     id: 'holding-1',
     walletId: 'wallet-1',
-    stockTypeId: 'type-1',
-    stockSegmentId: null,
-    stockSegmentName: null,
+    typeId: 'type-1',
+    typeName: 'Ação PN',
+    segmentId: null,
+    segmentName: null,
     ticker: 'PETR4',
     name: 'Petróleo Brasileiro',
     currentPrice: 34.8,
@@ -185,6 +187,10 @@ function cryptoDetail(): CryptoHoldingDetail {
   return {
     id: 'holding-3',
     walletId: 'wallet-3',
+    typeId: null,
+    typeName: null,
+    segmentId: null,
+    segmentName: null,
     ticker: 'BTC',
     name: 'Bitcoin',
     currentPrice: 180000,
@@ -198,7 +204,10 @@ function fundDetail(overrides: Partial<FundHoldingDetail> = {}): FundHoldingDeta
   return {
     id: 'holding-2',
     walletId: 'wallet-2',
-    fundTypeId: 'type-2',
+    typeId: 'type-2',
+    typeName: 'Renda Fixa',
+    segmentId: null,
+    segmentName: null,
     name: 'Tesouro IPCA+',
     currentValue: 3000,
     administrationFeeRate: null,
@@ -475,7 +484,7 @@ describe('HoldingDrawer', () => {
     it('shows the ticker, the name, the type, the wallet and the segment of a stock', async () => {
       const wrapper = await mountLoadedDrawer(stockRow, {
         ...stockDetailWithoutWithdrawals(),
-        stockSegmentName: 'Energia',
+        segmentName: 'Energia',
       })
 
       expect(wrapper.get('.t-name').text()).toBe('Petróleo Brasileiro')
@@ -525,13 +534,35 @@ describe('HoldingDrawer', () => {
       expect(wrapper.get('[data-testid="drawer-price"]').text()).toBe('—')
     })
 
-    it('shows a fund by name, with no segment and no current price', async () => {
-      const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
+    it('shows a fund by name, with its segment and no current price', async () => {
+      const wrapper = await mountLoadedDrawer(fundRow, {
+        ...fundDetail(),
+        segmentName: 'Renda fixa pública',
+      })
 
       expect(wrapper.get('h2.drawer-title').text()).toBe('Tesouro IPCA+')
       expect(wrapper.get('.t-name').text()).toBe('Fundo de investimento')
-      expect(wrapper.find('[data-testid="drawer-segment"]').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="drawer-segment"]').text()).toBe('Renda fixa pública')
       expect(wrapper.find('[data-testid="drawer-price"]').exists()).toBe(false)
+    })
+
+    it('shows the type and the segment of a crypto holding, with Sem segmento as the fallback', async () => {
+      const typedRow = { ...cryptoRow, typeLabel: 'Moeda' }
+      const wrapper = await mountLoadedDrawer(typedRow, {
+        ...cryptoDetail(),
+        typeId: 'crypto-type-1',
+        typeName: 'Moeda',
+        segmentId: 'segment-1',
+        segmentName: 'Camada 1',
+      })
+
+      expect(wrapper.get('[data-testid="drawer-type"]').text()).toBe('Moeda')
+      expect(wrapper.get('[data-testid="drawer-segment"]').text()).toBe('Camada 1')
+      wrapper.unmount()
+
+      const untyped = await mountLoadedDrawer(cryptoRow, cryptoDetail())
+      expect(untyped.get('[data-testid="drawer-type"]').text()).toBe('Cripto')
+      expect(untyped.get('[data-testid="drawer-segment"]').text()).toBe('Sem segmento')
     })
 
     it('keeps the wallet currency when it is not asked to convert', async () => {
@@ -846,27 +877,24 @@ describe('HoldingDrawer', () => {
   })
 
   describe('tags', () => {
-    it.each(kindCases)(
-      'offers Editar tags on a $label holding only when it has a type',
-      async ({ row, detail }) => {
-        await mountLoadedDrawer(row, detail())
+    it.each(kindCases)('offers Editar tags on a $label holding', async ({ row, detail }) => {
+      await mountLoadedDrawer(row, detail())
 
-        expect(actionLabels().includes('Editar tags')).toBe(row.kind !== 'CRYPTO')
-      },
-    )
+      expect(actionLabels()).toContain('Editar tags')
+    })
 
     it('edits a stock segment preselected and reloads the detail after saving', async () => {
-      vi.mocked(holdingsApi.updateStockHoldingSegment).mockResolvedValue(
-        stockDetailWithoutWithdrawals(),
-      )
+      vi.mocked(holdingsApi.updateHoldingSegment).mockResolvedValue(stockDetailWithoutWithdrawals())
       const wrapper = await mountLoadedDrawer(stockRow, {
         ...stockDetailWithoutWithdrawals(),
-        stockSegmentId: 'segment-1',
-        stockSegmentName: 'Energia',
+        segmentId: 'segment-1',
+        segmentName: 'Energia',
       })
 
-      useTypesListStore().stockTypes = [{ id: 'type-1', name: 'Ação PN', usageCount: 1 }]
-      useTypesListStore().stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 1 }]
+      useTypesListStore().holdingTypes = [
+        { id: 'type-1', name: 'Ação PN', kinds: ['STOCKS'], usageCount: 1 },
+      ]
+      useTypesListStore().segments = [{ id: 'segment-1', name: 'Energia', usageCount: 1 }]
       await chooseAction('Editar tags')
       const typeSelect = wrapper.find('select[data-testid="edit-tags-type"]')
       expect((typeSelect.element as HTMLSelectElement).value).toBe('type-1')
@@ -876,7 +904,8 @@ describe('HoldingDrawer', () => {
       await modalButton(wrapper, 'Salvar').trigger('click')
       await flushPromises()
 
-      expect(holdingsApi.updateStockHoldingSegment).toHaveBeenCalledWith(
+      expect(holdingsApi.updateHoldingSegment).toHaveBeenCalledWith(
+        'STOCKS',
         'wallet-1',
         'holding-1',
         null,
@@ -890,12 +919,11 @@ describe('HoldingDrawer', () => {
       vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue(fundDetail())
       const wrapper = await mountLoadedDrawer(fundRow, fundDetail())
 
-      useTypesListStore().fundTypes = [
-        { id: 'type-2', name: 'Renda fixa', usageCount: 1 },
-        { id: 'type-3', name: 'Multimercado', usageCount: 0 },
+      useTypesListStore().holdingTypes = [
+        { id: 'type-2', name: 'Renda fixa', kinds: ['FUNDS'], usageCount: 1 },
+        { id: 'type-3', name: 'Multimercado', kinds: ['FUNDS'], usageCount: 0 },
       ]
       await chooseAction('Editar tags')
-      expect(wrapper.find('select[data-testid="edit-tags-segment"]').exists()).toBe(false)
       const typeSelect = wrapper.find('select[data-testid="edit-tags-type"]')
       expect((typeSelect.element as HTMLSelectElement).value).toBe('type-2')
       await typeSelect.setValue('type-3')
@@ -903,9 +931,45 @@ describe('HoldingDrawer', () => {
       await flushPromises()
 
       expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith(fundRow.walletId, fundRow.id, {
-        fundTypeId: 'type-3',
+        typeId: 'type-3',
       })
       expect(holdingsApi.getFundHolding).toHaveBeenCalledTimes(2)
+      expect(wrapper.emitted('positionAdded')).toHaveLength(1)
+    })
+
+    it('edits the type and the segment of a crypto holding without a type yet', async () => {
+      vi.mocked(holdingsApi.updateCryptoHolding).mockResolvedValue(cryptoDetail())
+      vi.mocked(holdingsApi.updateHoldingSegment).mockResolvedValue(cryptoDetail())
+      const wrapper = await mountLoadedDrawer(cryptoRow, cryptoDetail())
+
+      useTypesListStore().holdingTypes = [
+        { id: 'type-4', name: 'Moeda', kinds: ['CRYPTO'], usageCount: 0 },
+        { id: 'type-1', name: 'Ação PN', kinds: ['STOCKS'], usageCount: 1 },
+      ]
+      useTypesListStore().segments = [{ id: 'segment-1', name: 'Camada 1', usageCount: 0 }]
+      await chooseAction('Editar tags')
+      const typeSelect = wrapper.find('select[data-testid="edit-tags-type"]')
+      expect(typeSelect.findAll('option').map((option) => option.text())).toEqual([
+        'Sem tipo',
+        'Moeda',
+      ])
+      await typeSelect.setValue('type-4')
+      await wrapper.find('select[data-testid="edit-tags-segment"]').setValue('segment-1')
+      await modalButton(wrapper, 'Salvar').trigger('click')
+      await flushPromises()
+
+      expect(holdingsApi.updateCryptoHolding).toHaveBeenCalledWith(
+        cryptoRow.walletId,
+        cryptoRow.id,
+        { typeId: 'type-4' },
+      )
+      expect(holdingsApi.updateHoldingSegment).toHaveBeenCalledWith(
+        'CRYPTO',
+        cryptoRow.walletId,
+        cryptoRow.id,
+        'segment-1',
+      )
+      expect(holdingsApi.getCryptoHolding).toHaveBeenCalledTimes(2)
       expect(wrapper.emitted('positionAdded')).toHaveLength(1)
     })
   })
