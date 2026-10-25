@@ -18,98 +18,110 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class FundTypeControllerTest : BaseIntegrationTest() {
+class SegmentControllerTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var restTestClient: RestTestClient
 
     @Test
     @Order(1)
-    fun `returns the seeded default fund types initially`() {
+    fun `returns no segments initially`() {
         restTestClient.get()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/segments")
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.page.totalElements").isEqualTo(3)
+            .jsonPath("$.page.totalElements").isEqualTo(0)
+            .jsonPath("$.page.size").isEqualTo(20)
             .jsonPath("$.content").isArray()
     }
 
     @Test
     @Order(2)
-    fun `creates a fund type`() {
+    fun `creates a segment`() {
         val response = restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/segments")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Fundos Imobiliários"}""")
+            .body("""{"name":"Tecnologia"}""")
             .exchange()
             .expectStatus().isCreated()
             .returnResult<TypeResponse>()
             .responseBody
 
-        assertEquals("Fundos Imobiliários", response?.name)
+        assertEquals("Tecnologia", response?.name)
         createdId = response?.id
     }
 
     @Test
     @Order(3)
-    fun `lists the created fund type`() {
+    fun `lists the created segment`() {
         restTestClient.get()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/segments")
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.page.totalElements").isEqualTo(4)
-            .jsonPath("$.content[0].name").isEqualTo("Fundos Imobiliários")
+            .jsonPath("$.page.totalElements").isEqualTo(1)
+            .jsonPath("$.content[0].name").isEqualTo("Tecnologia")
     }
 
     @Test
     @Order(4)
     fun `rejects a duplicate name with 409`() {
         restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/segments")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Fundos Imobiliários"}""")
+            .body("""{"name":"Tecnologia"}""")
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.CONFLICT)
     }
 
     @Test
     @Order(5)
-    fun `deletes the created fund type`() {
+    fun `rejects a blank name with 400`() {
+        restTestClient.post()
+            .uri("/private/v1/segments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":""}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(6)
+    fun `deletes the created segment`() {
         restTestClient.delete()
-            .uri("/private/v1/fund-types/${createdId}")
+            .uri("/private/v1/segments/${createdId}")
             .exchange()
             .expectStatus().isNoContent()
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     fun `returns 404 when deleting an unknown id`() {
         restTestClient.delete()
-            .uri("/private/v1/fund-types/${UUID.randomUUID()}")
+            .uri("/private/v1/segments/${UUID.randomUUID()}")
             .exchange()
             .expectStatus().isNotFound()
     }
 
     @Test
-    @Order(7)
-    fun `admin creates a global fund type visible to any approved user`() {
+    @Order(8)
+    fun `admin creates a global segment visible to any approved user`() {
         val response = restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/segments")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Fundo Compartilhado"}""")
+            .body("""{"name":"Segmento Compartilhado"}""")
             .exchange()
             .expectStatus().isCreated()
             .returnResult<TypeResponse>()
             .responseBody
 
-        sharedTypeId = response!!.id
+        sharedSegmentId = response!!.id
 
-        val cookie = registerApproveAndLogin("fund-types-reader@example.com", "Senha123")
+        val cookie = registerApproveAndLogin("segments-reader@example.com", "Senha123")
 
         val listResponse = restTestClient.get()
-            .uri("/private/v1/fund-types?size=200")
+            .uri("/private/v1/segments?size=200")
             .header("Cookie", cookie)
             .exchange()
             .expectStatus().isOk()
@@ -118,16 +130,16 @@ class FundTypeControllerTest : BaseIntegrationTest() {
 
         @Suppress("UNCHECKED_CAST")
         val content = listResponse?.get("content") as List<Map<String, Any?>>
-        assertTrue(content.any { it["name"] == "Fundo Compartilhado" })
+        assertTrue(content.any { it["name"] == "Segmento Compartilhado" })
     }
 
     @Test
-    @Order(8)
-    fun `a non-admin is forbidden from creating or deleting a fund type`() {
-        val cookie = registerApproveAndLogin("fund-types-writer@example.com", "Senha123")
+    @Order(9)
+    fun `a non-admin is forbidden from creating or deleting a segment`() {
+        val cookie = registerApproveAndLogin("segments-writer@example.com", "Senha123")
 
         restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/segments")
             .header("Cookie", cookie)
             .contentType(MediaType.APPLICATION_JSON)
             .body("""{"name":"Tentativa Não Admin"}""")
@@ -135,43 +147,43 @@ class FundTypeControllerTest : BaseIntegrationTest() {
             .expectStatus().isEqualTo(403)
 
         restTestClient.delete()
-            .uri("/private/v1/fund-types/$sharedTypeId")
+            .uri("/private/v1/segments/$sharedSegmentId")
             .header("Cookie", cookie)
             .exchange()
             .expectStatus().isEqualTo(403)
     }
 
     @Test
-    @Order(9)
-    fun `renames a fund type`() {
+    @Order(10)
+    fun `renames a segment`() {
         val original = restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/segments")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Tipo Para Renomear"}""")
+            .body("""{"name":"Segmento Para Renomear"}""")
             .exchange()
             .expectStatus().isCreated()
             .returnResult<TypeResponse>()
             .responseBody!!
 
         val renamed = restTestClient.put()
-            .uri("/private/v1/fund-types/${original.id}")
+            .uri("/private/v1/segments/${original.id}")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Tipo Renomeado"}""")
+            .body("""{"name":"Segmento Renomeado"}""")
             .exchange()
             .expectStatus().isOk()
             .returnResult<TypeResponse>()
             .responseBody!!
 
         assertEquals(original.id, renamed.id)
-        assertEquals("Tipo Renomeado", renamed.name)
+        assertEquals("Segmento Renomeado", renamed.name)
         assertEquals(0, renamed.usageCount)
     }
 
     @Test
-    @Order(10)
+    @Order(11)
     fun `returns 404 when renaming an unknown id`() {
         restTestClient.put()
-            .uri("/private/v1/fund-types/${UUID.randomUUID()}")
+            .uri("/private/v1/segments/${UUID.randomUUID()}")
             .contentType(MediaType.APPLICATION_JSON)
             .body("""{"name":"Não Importa"}""")
             .exchange()
@@ -179,12 +191,12 @@ class FundTypeControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(11)
-    fun `a non-admin is forbidden from renaming a fund type`() {
-        val cookie = registerApproveAndLogin("fund-types-renamer@example.com", "Senha123")
+    @Order(12)
+    fun `a non-admin is forbidden from renaming a segment`() {
+        val cookie = registerApproveAndLogin("segments-renamer@example.com", "Senha123")
 
         restTestClient.put()
-            .uri("/private/v1/fund-types/$sharedTypeId")
+            .uri("/private/v1/segments/$sharedSegmentId")
             .header("Cookie", cookie)
             .contentType(MediaType.APPLICATION_JSON)
             .body("""{"name":"Tentativa Não Admin"}""")
@@ -193,12 +205,12 @@ class FundTypeControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    @Order(12)
-    fun `rejects deleting a fund type that is in use`() {
-        val inUseType = restTestClient.post()
-            .uri("/private/v1/fund-types")
+    @Order(13)
+    fun `rejects deleting a segment that is in use`() {
+        val inUseSegment = restTestClient.post()
+            .uri("/private/v1/segments")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Tipo Em Uso"}""")
+            .body("""{"name":"Segmento Em Uso"}""")
             .exchange()
             .expectStatus().isCreated()
             .returnResult<TypeResponse>()
@@ -207,7 +219,7 @@ class FundTypeControllerTest : BaseIntegrationTest() {
         val walletId = restTestClient.post()
             .uri("/private/v1/wallets")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Wallet Tipo Em Uso","kind":"funds","currency":"BRL"}""")
+            .body("""{"name":"Wallet Segmento Em Uso","kind":"stocks","currency":"BRL"}""")
             .exchange()
             .expectStatus().isCreated()
             .returnResult<WalletResponse>()
@@ -215,15 +227,43 @@ class FundTypeControllerTest : BaseIntegrationTest() {
             .id
 
         restTestClient.post()
-            .uri("/private/v1/wallets/$walletId/fund-holdings")
+            .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
                 """
                 {
-                  "fundTypeId":"${inUseType.id}",
+                  "typeId":"${firstTypeId("STOCKS")}",
+                  "segmentId":"${inUseSegment.id}",
+                  "ticker":"TESTE4",
                   "name":"Teste",
-                  "currentValue":100.00,
-                  "contribution":{"contributionDate":"2024-01-10","amount":100.00}
+                  "currentPrice":10.00,
+                  "lot":{"lotDate":"2024-01-15","quantity":10,"price":10.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+
+        val fundWalletId = restTestClient.post()
+            .uri("/private/v1/wallets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Wallet Fundo Segmento Em Uso","kind":"funds","currency":"BRL"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<WalletResponse>()
+            .responseBody!!
+            .id
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$fundWalletId/fund-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"${firstTypeId("FUNDS")}",
+                  "segmentId":"${inUseSegment.id}",
+                  "name":"Fundo Segmentado",
+                  "contribution":{"contributionDate":"2024-01-15","amount":100.00}
                 }
                 """.trimIndent()
             )
@@ -231,7 +271,7 @@ class FundTypeControllerTest : BaseIntegrationTest() {
             .expectStatus().isCreated()
 
         val listResponse = restTestClient.get()
-            .uri("/private/v1/fund-types?size=200")
+            .uri("/private/v1/segments?size=200")
             .exchange()
             .expectStatus().isOk()
             .returnResult<Map<String, Any?>>()
@@ -239,12 +279,25 @@ class FundTypeControllerTest : BaseIntegrationTest() {
 
         @Suppress("UNCHECKED_CAST")
         val content = listResponse?.get("content") as List<Map<String, Any?>>
-        assertEquals(1, content.single { it["id"] == inUseType.id.toString() }["usageCount"])
+        assertEquals(2, content.single { it["id"] == inUseSegment.id.toString() }["usageCount"])
 
         restTestClient.delete()
-            .uri("/private/v1/fund-types/${inUseType.id}")
+            .uri("/private/v1/segments/${inUseSegment.id}")
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+    }
+
+    private fun firstTypeId(kind: String): String {
+        val listResponse = restTestClient.get()
+            .uri("/private/v1/holding-types?kind=$kind")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+
+        @Suppress("UNCHECKED_CAST")
+        val content = listResponse?.get("content") as List<Map<String, Any?>>
+        return content.first()["id"] as String
     }
 
     private fun registerApproveAndLogin(email: String, password: String): String {
@@ -300,6 +353,6 @@ class FundTypeControllerTest : BaseIntegrationTest() {
 
     companion object {
         private var createdId: UUID? = null
-        private lateinit var sharedTypeId: UUID
+        private lateinit var sharedSegmentId: UUID
     }
 }

@@ -38,6 +38,8 @@ const walletOptions = computed(() =>
   })),
 )
 
+const kindTypes = computed(() => typesListStore.typesForKind(props.form.kind))
+
 const kindLabelPt = computed(() =>
   props.form.kind === 'STOCKS' ? 'ações' : props.form.kind === 'CRYPTO' ? 'cripto' : 'fundos',
 )
@@ -85,31 +87,27 @@ const kindLabelPt = computed(() =>
           </b-select>
         </b-field>
 
-        <b-field v-if="form.kind === 'STOCKS'" label="Tipo" class="cell is-col-span-2-mobile">
-          <b-select v-model="form.stockTypeId">
-            <option
-              v-for="stockType in typesListStore.stockTypes"
-              :key="stockType.id"
-              :value="stockType.id"
-            >
-              {{ stockType.name }}
+        <b-field
+          :label="form.kind === 'CRYPTO' ? 'Tipo (opcional)' : 'Tipo'"
+          class="cell is-col-span-2-mobile"
+        >
+          <b-select v-model="form.typeId" data-testid="type-select">
+            <option v-if="form.kind === 'CRYPTO'" value="">Sem tipo</option>
+            <option v-for="holdingType in kindTypes" :key="holdingType.id" :value="holdingType.id">
+              {{ holdingType.name }}
             </option>
           </b-select>
         </b-field>
 
-        <b-field
-          v-if="form.kind === 'STOCKS'"
-          label="Segmento (opcional)"
-          class="cell is-col-span-2-mobile"
-        >
-          <b-select v-model="form.stockSegmentId" data-testid="stock-segment-select">
+        <b-field label="Segmento (opcional)" class="cell is-col-span-2-mobile">
+          <b-select v-model="form.segmentId" data-testid="segment-select">
             <option value="">Sem segmento</option>
             <option
-              v-for="stockSegment in typesListStore.stockSegments"
-              :key="stockSegment.id"
-              :value="stockSegment.id"
+              v-for="segment in typesListStore.segments"
+              :key="segment.id"
+              :value="segment.id"
             >
-              {{ stockSegment.name }}
+              {{ segment.name }}
             </option>
           </b-select>
         </b-field>
@@ -150,18 +148,7 @@ const kindLabelPt = computed(() =>
         </template>
 
         <template v-else>
-          <b-field label="Tipo de fundo" class="cell is-col-span-2-mobile">
-            <b-select v-model="form.fundTypeId">
-              <option
-                v-for="fundType in typesListStore.fundTypes"
-                :key="fundType.id"
-                :value="fundType.id"
-              >
-                {{ fundType.name }}
-              </option>
-            </b-select>
-          </b-field>
-          <b-field label="Nome do fundo" class="cell is-col-span-2-mobile">
+          <b-field label="Nome do fundo" class="cell is-col-span-2">
             <b-input v-model="form.name" placeholder="ex.: Tesouro Selic 2029" />
           </b-field>
           <b-field label="Taxa de administração (% a.a.)" class="cell is-col-span-2-mobile">

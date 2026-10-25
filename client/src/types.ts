@@ -75,6 +75,8 @@ export interface AssetType {
   usageCount: number
 }
 
+export type HoldingType = AssetType & { kinds: WalletKind[] }
+
 export interface CurrencyRate {
   currencyCode: string
   rate: number
@@ -113,9 +115,10 @@ export interface WithdrawalDetail {
 export interface StockHoldingDetail {
   id: string
   walletId: string
-  stockTypeId: string
-  stockSegmentId: string | null
-  stockSegmentName: string | null
+  typeId: string
+  typeName: string
+  segmentId: string | null
+  segmentName: string | null
   ticker: string
   name: string
   currentPrice: number | null
@@ -127,6 +130,10 @@ export interface StockHoldingDetail {
 export interface CryptoHoldingDetail {
   id: string
   walletId: string
+  typeId: string | null
+  typeName: string | null
+  segmentId: string | null
+  segmentName: string | null
   ticker: string
   name: string
   currentPrice: number | null
@@ -138,7 +145,10 @@ export interface CryptoHoldingDetail {
 export interface FundHoldingDetail {
   id: string
   walletId: string
-  fundTypeId: string
+  typeId: string
+  typeName: string
+  segmentId: string | null
+  segmentName: string | null
   name: string
   currentValue: number | null
   administrationFeeRate: number | null

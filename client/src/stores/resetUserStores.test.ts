@@ -139,12 +139,11 @@ const storeCases: StoreCase[] = [
     name: 'typesList',
     useStore: useTypesListStore,
     seed: {
-      stockTypes: [{ id: 'type-1' }],
-      fundTypes: [{ id: 'type-2' }],
-      stockSegments: [{ id: 'segment-1' }],
+      holdingTypes: [{ id: 'type-1' }],
+      segments: [{ id: 'segment-1' }],
       loaded: true,
     },
-    initial: { stockTypes: [], fundTypes: [], stockSegments: [], loaded: false, loading: false },
+    initial: { holdingTypes: [], segments: [], loaded: false, loading: false },
   },
   {
     name: 'rates',

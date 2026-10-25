@@ -17,8 +17,8 @@ export const TOP_POSITIONS_COUNT = 3
 
 export const WALLET_KIND_GROUPINGS: Record<WalletKind, AllocationGrouping[]> = {
   STOCKS: ['holding', 'type', 'segment'],
-  FUNDS: ['holding', 'type'],
-  CRYPTO: ['holding'],
+  FUNDS: ['holding', 'type', 'segment'],
+  CRYPTO: ['holding', 'type', 'segment'],
 }
 
 export interface AllocationEntry {

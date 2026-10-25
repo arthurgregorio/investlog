@@ -46,14 +46,14 @@ class WalletLedgerControllerTest : BaseIntegrationTest() {
 
     @BeforeAll
     fun setup() {
-        stockTypeId = createType("/private/v1/stock-types", "Ledger Ação")
-        fundTypeId = createType("/private/v1/fund-types", "Ledger Fundo")
+        stockTypeId = createHoldingType("Ledger Ação", "STOCKS")
+        fundTypeId = createHoldingType("Ledger Fundo", "FUNDS")
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createHoldingType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .returnResult<TypeResponse>()
         .responseBody!!
@@ -76,7 +76,7 @@ class WalletLedgerControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"$ticker",
                   "name":"Holding $ticker",
                   "currentPrice":40,
@@ -126,7 +126,7 @@ class WalletLedgerControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"$name",
                   "currentValue":$currentValue,
                   "contribution":{"contributionDate":"2024-01-10","amount":$contribution}

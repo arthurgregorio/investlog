@@ -335,14 +335,15 @@ describe('AllocationDonut', () => {
       expect(groupingLabels(wrapper)).toEqual(['Por ativo', 'Por tipo', 'Por segmento'])
     })
 
-    it('offers Por ativo and Por tipo on a fund wallet', () => {
-      const wrapper = mountDonut(mixedRows, WALLET_KIND_GROUPINGS.FUNDS)
+    it('offers Por ativo, Por tipo and Por segmento on fund and crypto wallets', () => {
+      const expected = ['Por ativo', 'Por tipo', 'Por segmento']
 
-      expect(groupingLabels(wrapper)).toEqual(['Por ativo', 'Por tipo'])
+      expect(groupingLabels(mountDonut(mixedRows, WALLET_KIND_GROUPINGS.FUNDS))).toEqual(expected)
+      expect(groupingLabels(mountDonut(mixedRows, WALLET_KIND_GROUPINGS.CRYPTO))).toEqual(expected)
     })
 
-    it('shows no grouping control on a crypto wallet or when no groupings are given', () => {
-      expect(groupingLabels(mountDonut(mixedRows, WALLET_KIND_GROUPINGS.CRYPTO))).toEqual([])
+    it('shows no grouping control when only the holding grouping is given or none at all', () => {
+      expect(groupingLabels(mountDonut(mixedRows, ['holding']))).toEqual([])
       expect(groupingLabels(mountDonut(mixedRows))).toEqual([])
     })
 
@@ -357,7 +358,7 @@ describe('AllocationDonut', () => {
       await wrapper.find('[data-testid="allocation-grouping-segment"]').trigger('click')
       expect(legendTexts(wrapper)).toHaveLength(1)
 
-      await wrapper.setProps({ groupings: WALLET_KIND_GROUPINGS.FUNDS })
+      await wrapper.setProps({ groupings: ['holding', 'type'] })
 
       expect(legendTexts(wrapper)).toHaveLength(2)
       expect(

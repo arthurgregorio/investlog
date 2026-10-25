@@ -4,7 +4,6 @@ import HoldingActionsDropdown from './HoldingActionsDropdown.vue'
 
 interface DropdownProps {
   isFund: boolean
-  isStock: boolean
   isFrozen: boolean
   isAdmin: boolean
 }
@@ -13,7 +12,7 @@ let activeWrapper: VueWrapper | undefined
 
 function mountDropdown(props: Partial<DropdownProps> = {}) {
   activeWrapper = mount(HoldingActionsDropdown, {
-    props: { isFund: false, isStock: true, isFrozen: false, isAdmin: true, ...props },
+    props: { isFund: false, isFrozen: false, isAdmin: true, ...props },
     attachTo: document.body,
   })
   return activeWrapper
@@ -68,7 +67,7 @@ describe('HoldingActionsDropdown', () => {
   })
 
   it('uses the fund wording, keeps Editar tags and hides Remover from a non-admin', () => {
-    mountDropdown({ isFund: true, isStock: false, isAdmin: false })
+    mountDropdown({ isFund: true, isAdmin: false })
 
     expect(labels()).toEqual([
       'Resgatar',
@@ -78,12 +77,6 @@ describe('HoldingActionsDropdown', () => {
       'Editar tags',
       'Congelar',
     ])
-  })
-
-  it('leaves Editar tags out for crypto, which has neither type nor segment', () => {
-    mountDropdown({ isFund: false, isStock: false })
-
-    expect(labels()).not.toContain('Editar tags')
   })
 
   it.each([

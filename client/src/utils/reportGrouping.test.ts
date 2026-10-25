@@ -118,19 +118,19 @@ describe('groupHoldingsForReport', () => {
     ])
   })
 
-  it('groups crypto by ticker and falls back to the name when the ticker is missing', () => {
+  it('groups crypto by its type like any other kind, with Outros for an untyped one', () => {
     const grouping = groupHoldingsForReport(
       [
-        holdingRow({ id: 'a', kind: 'CRYPTO', ticker: 'BTC', name: 'Bitcoin', typeLabel: null }),
-        holdingRow({ id: 'b', kind: 'CRYPTO', ticker: null, name: 'Token Raro', typeLabel: null }),
+        holdingRow({ id: 'a', kind: 'CRYPTO', ticker: 'BTC', name: 'Bitcoin', typeLabel: 'Moeda' }),
+        holdingRow({ id: 'b', kind: 'CRYPTO', ticker: 'ETH', name: 'Ether', typeLabel: 'Moeda' }),
+        holdingRow({ id: 'c', kind: 'CRYPTO', ticker: 'XYZ', name: 'Token Raro', typeLabel: null }),
       ],
       keepAmount,
     )
 
-    expect(grouping.kindGroups[0].subGroups.map((subGroup) => subGroup.key)).toEqual([
-      'BTC',
-      'Token Raro',
-    ])
+    const subGroups = grouping.kindGroups[0].subGroups
+    expect(subGroups.map((subGroup) => subGroup.key)).toEqual(['Moeda', 'Outros'])
+    expect(subGroups[0].walletGroups[0].rows).toHaveLength(2)
   })
 
   it('labels holdings without a type as Outros', () => {

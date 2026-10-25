@@ -45,12 +45,21 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
 
     @BeforeAll
     fun setup() {
-        stockTypeId = createType("/private/v1/stock-types", "Ação ON")
-        fundTypeId = createType("/private/v1/fund-types", "Fundos Imobiliários")
+        stockTypeId = createHoldingType("Ação ON", "STOCKS")
+        fundTypeId = createHoldingType("Fundos Imobiliários", "FUNDS")
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createHoldingType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("""{"name":"$name","kinds":["$kind"]}""")
+        .exchange()
+        .returnResult<TypeResponse>()
+        .responseBody!!
+        .id
+
+    private fun createSegment(name: String): UUID = restTestClient.post()
+        .uri("/private/v1/segments")
         .contentType(MediaType.APPLICATION_JSON)
         .body("""{"name":"$name"}""")
         .exchange()
@@ -74,7 +83,7 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"$ticker",
                   "name":"Holding $ticker",
                   "currentPrice":40,
@@ -113,7 +122,7 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"$name",
                   "currentValue":$currentValue,
                   "contribution":{"contributionDate":"2024-01-10","amount":$contribution}
@@ -580,11 +589,11 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
         val origin = createWallet("Origem Segmento", "stocks")
         val destination = createWallet("Destino Segmento", "stocks")
         val holdingId = createStockHolding(origin, "TAEE11", "10", "30")
-        val segmentId = createType("/private/v1/stock-segments", "Energia")
+        val segmentId = createSegment("Energia")
         restTestClient.put()
             .uri("/private/v1/wallets/$origin/stock-holdings/$holdingId/segment")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"stockSegmentId":"$segmentId"}""")
+            .body("""{"segmentId":"$segmentId"}""")
             .exchange()
             .expectStatus().isOk()
 
@@ -633,5 +642,115 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
         assertEquals(HoldingStatus.COMPLETED, completed.get(overview.STATUS))
         assertEquals(0, BigDecimal.ZERO.compareTo(completed.get(overview.COST_BASIS)))
         assertNull(completed.get(overview.GAIN_PCT))
+    }
+
+    @Test
+    @Order(21)
+    fun `a partial stock move keeps the type and the segment on the copy`() {
+        val origin = createWallet("Origem Tipo Ação", "stocks")
+        val destination = createWallet("Destino Tipo Ação", "stocks")
+        val holdingId = createStockHolding(origin, "CPLE6", "10", "8")
+        setSegment(origin, "stock-holdings", holdingId, createSegment("Elétricas"))
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId","quantity":4}]}""")
+            .expectStatus().isCreated()
+
+        assertEquals(listOf(Classification("Ação ON", "Elétricas")), activeClassifications(destination))
+        assertEquals(listOf(Classification("Ação ON", "Elétricas")), activeClassifications(origin))
+    }
+
+    @Test
+    @Order(22)
+    fun `a partial crypto move keeps the type and the segment on the copy`() {
+        val origin = createWallet("Origem Tipo Cripto", "crypto")
+        val destination = createWallet("Destino Tipo Cripto", "crypto")
+        val holdingId = createCryptoHolding(origin, "DOT", "10", "5")
+        val cryptoTypeId = createHoldingType("Cripto Movida", "CRYPTO")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$origin/crypto-holdings/$holdingId")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"typeId":"$cryptoTypeId"}""")
+            .exchange()
+            .expectStatus().isOk()
+        setSegment(origin, "crypto-holdings", holdingId, createSegment("Interoperabilidade"))
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId","quantity":3}]}""")
+            .expectStatus().isCreated()
+
+        assertEquals(listOf(Classification("Cripto Movida", "Interoperabilidade")), activeClassifications(destination))
+    }
+
+    @Test
+    @Order(23)
+    fun `a whole fund move keeps the type and the segment and merges only into a fund of the same type`() {
+        val origin = createWallet("Origem Tipo Fundo", "funds")
+        val destination = createWallet("Destino Tipo Fundo", "funds")
+        val otherFundTypeId = createHoldingType("Outro Fundo", "FUNDS")
+        createFundHoldingOfType(destination, "Fundo Gêmeo", otherFundTypeId)
+        val holdingId = createFundHolding(origin, "Fundo Gêmeo", "1000", "1000")
+        setSegment(origin, "fund-holdings", holdingId, createSegment("Lajes Corporativas"))
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$holdingId"}]}""")
+            .expectStatus().isCreated()
+
+        assertEquals(
+            listOf(Classification("Fundos Imobiliários", "Lajes Corporativas"), Classification("Outro Fundo", null)),
+            activeClassifications(destination).sortedBy { classification -> classification.typeLabel },
+        )
+
+        val secondOrigin = createWallet("Origem Fundo Igual", "funds")
+        val sameTypeHoldingId = createFundHolding(secondOrigin, "Fundo Gêmeo", "500", "500")
+
+        move(secondOrigin, """{"destinationWalletId":"$destination","items":[{"holdingId":"$sameTypeHoldingId"}]}""")
+            .expectStatus().isCreated()
+
+        val twins = positions(destination, "Fundo Gêmeo")
+            .filter { position -> position.status == HoldingStatus.ACTIVE }
+            .sortedBy { position -> position.costBasis }
+        assertEquals(2, twins.size)
+        assertAmount("200", twins[0].costBasis)
+        assertAmount("1500", twins[1].costBasis)
+    }
+
+    private data class Classification(val typeLabel: String?, val segmentLabel: String?)
+
+    private fun activeClassifications(walletId: UUID): List<Classification> {
+        val overview = HOLDINGS_OVERVIEW.`as`("overview")
+        val wallets = WALLETS.`as`("wallets")
+
+        return dsl.select(overview.TYPE_LABEL, overview.SEGMENT_LABEL)
+            .from(overview)
+            .join(wallets).on(wallets.ID.eq(overview.WALLET_ID))
+            .where(wallets.EXTERNAL_ID.eq(walletId))
+            .and(overview.STATUS.eq(HoldingStatus.ACTIVE))
+            .orderBy(overview.HOLDING_ID)
+            .fetch { record -> Classification(record.get(overview.TYPE_LABEL), record.get(overview.SEGMENT_LABEL)) }
+    }
+
+    private fun setSegment(walletId: UUID, holdingsPath: String, holdingId: UUID, segmentId: UUID) {
+        restTestClient.put()
+            .uri("/private/v1/wallets/$walletId/$holdingsPath/$holdingId/segment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"segmentId":"$segmentId"}""")
+            .exchange()
+            .expectStatus().isOk()
+    }
+
+    private fun createFundHoldingOfType(walletId: UUID, name: String, typeId: UUID) {
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"$typeId",
+                  "name":"$name",
+                  "currentValue":200,
+                  "contribution":{"contributionDate":"2024-01-10","amount":200}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
     }
 }

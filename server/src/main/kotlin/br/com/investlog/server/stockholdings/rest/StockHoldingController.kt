@@ -6,8 +6,8 @@ import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
-import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingSegmentRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingUpdateRequest
+import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -55,7 +55,7 @@ class StockHoldingController(private val service: StockHoldingService) {
     fun updateSegment(
         @PathVariable walletId: UUID,
         @PathVariable holdingId: UUID,
-        @RequestBody request: StockHoldingSegmentRequest,
+        @RequestBody request: HoldingSegmentRequest,
     ): ResponseEntity<StockHoldingResponse> =
         ResponseEntity.ok(service.updateSegment(walletId, holdingId, request))
 

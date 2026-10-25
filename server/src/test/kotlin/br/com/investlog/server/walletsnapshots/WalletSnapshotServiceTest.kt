@@ -46,9 +46,9 @@ class WalletSnapshotServiceTest : BaseIntegrationTest() {
         emptyWalletId = createWallet("Empty Wallet")
 
         val stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Ação ON"}""")
+            .body("""{"name":"Ação ON","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -60,7 +60,7 @@ class WalletSnapshotServiceTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"PETR4",
                   "name":"Petrobras",
                   "currentPrice":38.50,
