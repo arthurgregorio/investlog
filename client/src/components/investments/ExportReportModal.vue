@@ -74,7 +74,7 @@ onBeforeUnmount(() => abortController?.abort())
           <p class="has-text-grey">O download começou automaticamente.</p>
         </div>
         <div
-          class="is-flex is-align-items-center is-gap-2 box has-background-white-bis py-2 px-3 mb-0"
+          class="is-flex is-align-items-center is-align-self-stretch is-gap-2 box has-background-white-bis has-text-left py-2 px-3 mb-0"
           data-testid="export-file"
         >
           <b-icon icon="file-pdf-box" type="is-danger" />
