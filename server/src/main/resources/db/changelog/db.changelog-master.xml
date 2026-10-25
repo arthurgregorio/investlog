@@ -47,5 +47,6 @@
     <include file="db/changelog/changes/2026/10/20-1100-net-full-exit-cost-basis-residue.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/10/25-1000-create-wallet-cash.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/10/25-1010-add-purchase-amount.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/10/25-1100-create-capital-timeline-view.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
