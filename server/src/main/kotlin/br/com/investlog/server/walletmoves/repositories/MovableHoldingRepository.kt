@@ -1,6 +1,7 @@
 package br.com.investlog.server.walletmoves.repositories
 
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
+import br.com.investlog.server.jooq.finances.enums.LotOrigin
 import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
@@ -40,6 +41,7 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
         val lotDate: Field<LocalDate?>,
         val quantity: Field<BigDecimal?>,
         val price: Field<BigDecimal?>,
+        val origin: Field<LotOrigin?>,
     )
 
     fun findHolding(walletInternalId: Long, kind: WalletKind, externalId: UUID): MovableHolding? {
@@ -208,6 +210,7 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
             .set(lots.lotDate, lotDate)
             .set(lots.quantity, quantity)
             .set(lots.price, price)
+            .set(lots.origin, LotOrigin.MOVE)
             .execute()
     }
 
@@ -241,6 +244,7 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
             .set(FUND_CONTRIBUTIONS.FUND_HOLDING_ID, holding.id)
             .set(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE, contributionDate)
             .set(FUND_CONTRIBUTIONS.AMOUNT, amount)
+            .set(FUND_CONTRIBUTIONS.ORIGIN, LotOrigin.MOVE)
             .execute()
     }
 
@@ -302,12 +306,12 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
     private fun lotColumnsOf(kind: WalletKind) = when (kind) {
         WalletKind.STOCKS -> LotColumns(
             STOCK_LOTS, STOCK_LOTS.ID, STOCK_LOTS.STOCK_HOLDING_ID, STOCK_LOTS.LOT_DATE,
-            STOCK_LOTS.QUANTITY, STOCK_LOTS.PRICE,
+            STOCK_LOTS.QUANTITY, STOCK_LOTS.PRICE, STOCK_LOTS.ORIGIN,
         )
 
         WalletKind.CRYPTO -> LotColumns(
             CRYPTO_LOTS, CRYPTO_LOTS.ID, CRYPTO_LOTS.CRYPTO_HOLDING_ID, CRYPTO_LOTS.LOT_DATE,
-            CRYPTO_LOTS.QUANTITY, CRYPTO_LOTS.PRICE,
+            CRYPTO_LOTS.QUANTITY, CRYPTO_LOTS.PRICE, CRYPTO_LOTS.ORIGIN,
         )
 
         WalletKind.FUNDS -> throw IllegalArgumentException("Fund holdings have contributions, not lots")

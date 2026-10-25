@@ -115,6 +115,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `reinvestments` | Exiting one holding into another and `finances.reinvestments` — see **Reinvestments** |
 | `walletdetail` | `GET /wallets/{id}/detail`, the per-wallet dashboard payload — see **Wallet detail** |
 | `walletledger` | `GET /wallets/{id}/ledger`, every event that touched a wallet — see **Wallet ledger** |
+| `cash` | Each wallet's cash, transfers between wallets, withdrawals to the bank and the reconciliation list — see **Wallet cash** |
 | `investmentreport` | `GET /holdings/report/pdf`, the consolidated investment report as a PDF — see **Investment report PDF** |
 | `overview` | Portfolio summary and the monthly invested series |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
@@ -259,11 +260,25 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 
 ### Wallet ledger
 
-`walletledger` serves `GET /private/v1/wallets/{walletId}/ledger`, the paginated feed behind the wallet detail's Movimentações tab (issue #462). Each row is one event read from `finances.wallet_ledger`, a `UNION ALL` view over what is already stored: `PURCHASE` from the two lot tables, `CONTRIBUTION` from `fund_contributions`, `WITHDRAWAL` and `REINVESTMENT` from `finances.results`, and `MOVE_IN` / `MOVE_OUT` from `finances.wallet_moves`, one branch per side. Rows come newest first, ordered by `event_date`, then `created_at`, then `event_id`, so pages stay stable. The controller calls `WalletLedgerRepository` directly, since there is nothing to do between the query and the response.
+`walletledger` serves `GET /private/v1/wallets/{walletId}/ledger`, the paginated feed behind the wallet detail's Movimentações tab (issue #462). Each row is one event read from `finances.wallet_ledger`, a `UNION ALL` view over what is already stored: `PURCHASE` from the two lot tables, `CONTRIBUTION` from `fund_contributions`, `WITHDRAWAL` and `REINVESTMENT` from `finances.results`, `MOVE_IN` / `MOVE_OUT` from `finances.wallet_moves`, one branch per side, and `TRANSFER_IN` / `TRANSFER_OUT` / `CASH_WITHDRAWAL` from the two cash tables (#508), whose `counterpart_name` is the other wallet or the bank. Rows come newest first, ordered by `event_date`, then `created_at`, then `event_id`, so pages stay stable. `WalletLedgerService` joins each page to the wallet's cash replay: purchases and contributions get `cashUsed` / `newMoney`, and every row gets `cashBalance` — the replay's balance for a cash event, otherwise the balance as of the row's date and `created_at`.
 
 **The view has no status filter.** The events of `COMPLETED` holdings are the reason it exists: once a holding is fully exited it leaves the investments list, and the ledger is the only place its purchases and withdrawals still show. Only a holding deleted outright drops out, because its lots, contributions and results cascade with it.
 
 **A purchase or contribution is listed under the wallet whose holding owns it today.** The lot tables keep no wallet history. A whole move of a holding with no exits carries its original lots across, so the destination lists them with their original dates and the origin no longer does. A partial move, or a whole move of a holding that already had exits, writes one new lot or contribution on the destination dated the move day, which shows as a purchase next to the `MOVE_IN` row. A reinvestment is two events that are never merged: a `REINVESTMENT` row on the source, whose `counterpart_name` is the destination's ticker (or name) resolved through `finances.reinvestments`, and an ordinary purchase or contribution on the destination.
+
+### Wallet cash
+
+`cash` gives every wallet a cash balance in its own currency (issue #508). It belongs to no strategy and is never a holding. **It is replayed, not stored**: `finances.wallet_cash_replay(wallet_id)`, a `plpgsql` set-returning function, walks the wallet's events in date order (credits before debits on the same date, then `created_at`, then id) and returns each one with the running `balance`. A `WITHDRAWAL` result and a transfer in credit the balance. A transfer out and a bank withdrawal debit their whole amount. A purchase lot or contribution takes `min(balance, amount)` as its `cash_used`, and the rest is `new_money`. Storing a running total would go wrong on every backdated entry, and reconciliation registers 2025 transfers on purpose. `finances.wallet_cash` is the last balance per wallet. `WalletRepository`, `WalletDetailService` and `OverviewRepository.findSummary` add it to the current value, never to the gain.
+
+**Only `origin = 'PURCHASE'` lots and contributions spend cash.** `lot_origin` on `stock_lots`, `crypto_lots` and `fund_contributions` marks the ones `ReinvestmentRepository` (`REINVESTMENT`) and `MovableHoldingRepository` (`MOVE`) write. A reinvestment's result and its destination lot both stay out of the replay, so it leaves no cash behind and counts nothing twice. Rows written before the column existed were tagged by matching `created_at` with their reinvestment or move row, since both are inserted in one transaction.
+
+**A replay that ends below zero is a refusal, not a state.** Purchases adapt, so only a fixed debit can overdraw. `CashService.shortfallOf` finds the first one, and every write that can strand one checks it inside its transaction:
+- a new transfer or bank withdrawal (400, "Maior que o caixa disponível em …");
+- deleting a transfer the destination already spent (409);
+- undoing a resgate whose cash left (`WithdrawalService.deleteWithdrawal`, 409);
+- a move that carries a holding's results away from cash that was already sent on (`WalletMoveService`, 400).
+
+`GET /cash-reconciliation` lists the wallets with `cash_reconciled = FALSE` and cash above zero. Each entry carries the resgates credited since the balance was last zero, and a suggestion: the purchase in another wallet, 0–30 days after the first source, whose new money converted at current rates is closest to the cash, within 25%. The migration flagged every wallet holding cash on release. `POST /wallets/{id}/cash-reconciliation` ("Continua em caixa") clears the flag, and a wallet whose cash reaches zero simply drops off the list.
 
 ### Investment report PDF
 

@@ -4,6 +4,8 @@ import br.com.investlog.server.jooq.finances.tables.references.CONTRIBUTIONS_TIM
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_VALUED
+import br.com.investlog.server.jooq.finances.tables.references.WALLETS
+import br.com.investlog.server.jooq.finances.tables.references.WALLET_CASH
 import br.com.investlog.server.overview.rest.payloads.KindSummaryResponse
 import br.com.investlog.server.overview.rest.payloads.PortfolioSummaryResponse
 import br.com.investlog.server.overview.rest.payloads.SeriesPointResponse
@@ -48,13 +50,15 @@ class OverviewRepository(private val dsl: DSLContext) {
             }
 
         val totalCostBasis = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCostBasis }
-        val totalCurrentValue = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCurrentValue }
-        val totalGain = totalCurrentValue - totalCostBasis
+        val positionsValue = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCurrentValue }
+        val totalGain = positionsValue - totalCostBasis
+        val totalCash = findTotalCash(userId, displayCurrency)
 
         return PortfolioSummaryResponse(
             displayCurrency = displayCurrency,
             totalCostBasis = totalCostBasis,
-            totalCurrentValue = totalCurrentValue,
+            totalCurrentValue = positionsValue + totalCash,
+            totalCash = totalCash,
             totalGain = totalGain,
             totalGainPct = gainPct(totalGain, totalCostBasis),
             kindSummaries = kindSummaries,
@@ -81,6 +85,18 @@ class OverviewRepository(private val dsl: DSLContext) {
                     totalInvested = record.get("total_invested", BigDecimal::class.java)!!,
                 )
             }
+    }
+
+    private fun findTotalCash(userId: Long, displayCurrency: String): BigDecimal {
+        val appliedRate = DSL.coalesce(CURRENCY_RATES.RATE, BigDecimal.ONE).div(displayCurrencyRate(displayCurrency))
+
+        return dsl.select(DSL.coalesce(DSL.sum(WALLET_CASH.CASH.mul(appliedRate)), BigDecimal.ZERO))
+            .from(WALLET_CASH)
+            .join(WALLETS).on(WALLETS.ID.eq(WALLET_CASH.WALLET_ID))
+            .leftJoin(CURRENCY_RATES).on(CURRENCY_RATES.CURRENCY_CODE.eq(WALLETS.CURRENCY))
+            .where(WALLETS.USER_ID.eq(userId))
+            .fetchSingle()
+            .value1()!!
     }
 
     private fun displayCurrencyRate(displayCurrency: String) = DSL.coalesce(

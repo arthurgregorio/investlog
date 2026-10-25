@@ -6,6 +6,7 @@ data class PortfolioSummaryResponse(
     val displayCurrency: String,
     val totalCostBasis: BigDecimal,
     val totalCurrentValue: BigDecimal,
+    val totalCash: BigDecimal,
     val totalGain: BigDecimal,
     val totalGainPct: BigDecimal?,
     val kindSummaries: List<KindSummaryResponse>,

@@ -1,6 +1,7 @@
 package br.com.investlog.server.wallets.repositories
 
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
+import br.com.investlog.server.jooq.finances.tables.references.WALLET_CASH
 import br.com.investlog.server.jooq.finances.tables.references.WALLET_TOTALS
 import br.com.investlog.server.shared.utils.pagedModelOf
 import br.com.investlog.server.wallets.rest.payloads.WalletKind
@@ -83,26 +84,35 @@ class WalletRepository(private val dsl: DSLContext) {
             WALLETS.EXTERNAL_ID, WALLETS.NAME, WALLETS.KIND, WALLETS.CURRENCY, WALLETS.CREATED_AT,
             HOLDING_COUNT, TOTAL_INVESTED,
             WALLET_TOTALS.CURRENT_VALUE, WALLET_TOTALS.GAIN, WALLET_TOTALS.GAIN_PCT,
+            WALLETS.CASH_RECONCILED, CASH,
         )
             .from(WALLETS)
             .leftJoin(WALLET_TOTALS).on(WALLET_TOTALS.WALLET_ID.eq(WALLETS.ID))
+            .leftJoin(WALLET_CASH).on(WALLET_CASH.WALLET_ID.eq(WALLETS.ID))
 
-    private fun Record.toResponse() =
-        WalletResponse(
+    private fun Record.toResponse(): WalletResponse {
+        val cash = get(CASH)!!
+        val positionsValue = get(WALLET_TOTALS.CURRENT_VALUE)
+
+        return WalletResponse(
             id = get(WALLETS.EXTERNAL_ID)!!,
             name = get(WALLETS.NAME)!!,
             kind = WalletKind.fromText(get(WALLETS.KIND)!!.literal),
             currency = get(WALLETS.CURRENCY)!!,
             holdingCount = get(HOLDING_COUNT)!!.toInt(),
             totalInvested = get(TOTAL_INVESTED)!!,
-            currentValue = get(WALLET_TOTALS.CURRENT_VALUE),
+            currentValue = if (cash.signum() == 0) positionsValue else (positionsValue ?: BigDecimal.ZERO) + cash,
             gain = get(WALLET_TOTALS.GAIN),
             gainPct = get(WALLET_TOTALS.GAIN_PCT),
+            cash = cash,
+            cashReconciled = get(WALLETS.CASH_RECONCILED)!!,
             createdAt = get(WALLETS.CREATED_AT)!!,
         )
+    }
 
     private companion object {
         val HOLDING_COUNT = DSL.coalesce(WALLET_TOTALS.HOLDING_COUNT, 0L).`as`("holding_count")
         val TOTAL_INVESTED = DSL.coalesce(WALLET_TOTALS.TOTAL_INVESTED, BigDecimal.ZERO).`as`("total_invested")
+        val CASH = DSL.coalesce(WALLET_CASH.CASH, BigDecimal.ZERO).`as`("cash")
     }
 }

@@ -3,6 +3,7 @@ package br.com.investlog.server.walletledger.rest
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.security.CurrentUserProvider
 import br.com.investlog.server.walletledger.repositories.WalletLedgerRepository
+import br.com.investlog.server.walletledger.services.WalletLedgerService
 import br.com.investlog.server.walletledger.rest.payloads.WalletLedgerEntryResponse
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -18,6 +19,7 @@ import java.util.UUID
 class WalletLedgerController(
     private val currentUserProvider: CurrentUserProvider,
     private val walletLedgerRepository: WalletLedgerRepository,
+    private val walletLedgerService: WalletLedgerService,
 ) {
 
     @GetMapping
@@ -30,6 +32,6 @@ class WalletLedgerController(
         val internalWalletId = walletLedgerRepository.findWalletId(userId, walletId)
             ?: throw NotFoundException("Carteira não encontrada")
 
-        return ResponseEntity.ok(walletLedgerRepository.findByWallet(internalWalletId, pageable))
+        return ResponseEntity.ok(walletLedgerService.findByWallet(internalWalletId, pageable))
     }
 }
