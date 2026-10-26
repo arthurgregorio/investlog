@@ -358,6 +358,8 @@ describe('App', () => {
           currentValue: 110,
           gain: 10,
           gainPct: 10,
+          cash: 0,
+          cashReconciled: true,
           createdAt: '2026-01-01',
         },
       ]

@@ -87,6 +87,20 @@ describe('WalletDetailHeader', () => {
     expect(wrapper.emitted('remove')).toHaveLength(1)
   })
 
+  it('shows the cash figure and the cash actions only while the wallet has cash', async () => {
+    const withoutCash = mountHeader(walletDetailOf())
+    expect(withoutCash.find('[data-testid="wallet-cash"]').exists()).toBe(false)
+    expect(withoutCash.find('[data-testid="wallet-transfer-cash"]').exists()).toBe(false)
+
+    const wrapper = mountHeader(walletDetailOf({ cash: 1234.5 }))
+    expect(wrapper.get('[data-testid="wallet-cash"]').text()).toContain('R$ 1.234,50')
+    await wrapper.get('[data-testid="wallet-transfer-cash"]').trigger('click')
+    await wrapper.get('[data-testid="wallet-withdraw-cash"]').trigger('click')
+
+    expect(wrapper.emitted('transfer')).toHaveLength(1)
+    expect(wrapper.emitted('withdraw-to-bank')).toHaveLength(1)
+  })
+
   it('hides Remover from a non-admin', () => {
     const wrapper = mountHeader(walletDetailOf(), false)
 

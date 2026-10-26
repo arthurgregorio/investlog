@@ -79,6 +79,8 @@ interface TableProps {
   sortable: boolean
   sortKey: string | null
   sortDirection: 'asc' | 'desc'
+  cash: number
+  cashCurrency: string
 }
 
 let activeWrapper: VueWrapper | undefined
@@ -130,6 +132,21 @@ describe('HoldingsTable', () => {
   afterEach(() => {
     activeWrapper?.unmount()
     activeWrapper = undefined
+  })
+
+  it('pins a cash row above the holdings only while there is cash, and forwards its actions', async () => {
+    expect(mountTable().find('[data-testid="cash-row"]').exists()).toBe(false)
+    activeWrapper?.unmount()
+
+    const wrapper = mountTable({ cash: 250, cashCurrency: 'USD' })
+    const firstBodyRow = wrapper.get('tbody tr')
+    expect(firstBodyRow.attributes('data-testid')).toBe('cash-row')
+    expect(wrapper.get('[data-testid="cash-row-value"]').text()).toBe('US$ 250,00')
+    await wrapper.get('[data-testid="cash-row-transfer"]').trigger('click')
+    await wrapper.get('[data-testid="cash-row-withdraw"]').trigger('click')
+
+    expect(wrapper.emitted('transfer-cash')).toHaveLength(1)
+    expect(wrapper.emitted('withdraw-cash')).toHaveLength(1)
   })
 
   it('renders one row per holding and marks the frozen one', () => {

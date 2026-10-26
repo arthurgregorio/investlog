@@ -26,6 +26,7 @@ const summary: PortfolioSummary = {
   displayCurrency: 'BRL',
   totalCostBasis: 10000,
   totalCurrentValue: 12000,
+  totalCash: 0,
   totalGain: 2000,
   totalGainPct: 20,
   kindSummaries: [
@@ -59,6 +60,8 @@ function walletOf(id: string, kind: WalletKind): WalletResponse {
     currentValue: 1100,
     gain: 100,
     gainPct: 10,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2026-01-01T00:00:00Z',
   }
 }

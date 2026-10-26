@@ -29,6 +29,9 @@ const { formatConverted } = useDisplayMoney()
         WALLET_TYPES[wallet.kind].label
       }}</b-tag>
       <span class="cur-chip">{{ wallet.currency }}</span>
+      <b-tag v-if="wallet.cash > 0" type="is-success is-light" data-testid="wallet-cash-tag">
+        $$ disponível
+      </b-tag>
     </template>
     <template #actions>
       <b-tooltip label="Detalhes" position="is-left">

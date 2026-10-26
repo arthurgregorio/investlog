@@ -1591,6 +1591,8 @@ describe('HoldingDrawer', () => {
           currentValue: 6960,
           gain: 1308,
           gainPct: 23.1,
+          cash: 0,
+          cashReconciled: true,
           createdAt: '2026-01-01T00:00:00Z',
         }
         const walletsStore = useWalletsStore()

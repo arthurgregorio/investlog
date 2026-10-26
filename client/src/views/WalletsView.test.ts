@@ -21,6 +21,8 @@ function walletOf(id: string, name: string): WalletResponse {
     currentValue: 1100,
     gain: 100,
     gainPct: 10,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2026-01-01T00:00:00Z',
   }
 }
@@ -34,6 +36,11 @@ async function mountView(wallets: WalletResponse[]) {
     history: createMemoryHistory(),
     routes: [
       { path: '/wallets', name: 'wallets', component: WalletsView },
+      {
+        path: '/wallets/conciliar',
+        name: 'cash-reconciliation',
+        component: { template: '<div />' },
+      },
       { path: '/wallets/:id', name: 'wallet-detail', component: { template: '<div />' } },
       { path: '/investments', name: 'investments', component: { template: '<div />' } },
     ],
@@ -128,5 +135,42 @@ describe('WalletsView', () => {
     walletsStore.loading = false
     await flushPromises()
     expect(wrapper.find('.loading-overlay').exists()).toBe(false)
+  })
+
+  describe('cash reconciliation banner', () => {
+    it('stays hidden while every wallet with cash is reconciled', async () => {
+      const { wrapper } = await mountView([
+        { ...walletOf('wallet-1', 'Um'), cash: 500 },
+        { ...walletOf('wallet-2', 'Dois'), cashReconciled: false },
+      ])
+
+      expect(wrapper.find('[data-testid="cash-reconciliation-banner"]').exists()).toBe(false)
+    })
+
+    it('counts the unreconciled wallets and their cash in the display currency', async () => {
+      const { wrapper } = await mountView([
+        { ...walletOf('wallet-1', 'Um'), cash: 500, cashReconciled: false },
+        { ...walletOf('wallet-2', 'Dois'), currency: 'USD', cash: 100, cashReconciled: false },
+      ])
+
+      expect(wrapper.get('[data-testid="cash-reconciliation-banner"]').text()).toContain(
+        '2 carteiras têm caixa de resgates antigos · R$ 600,00',
+      )
+      expect(useCurrencyStore().convert).toHaveBeenCalledWith(100, 'USD')
+    })
+
+    it('uses the singular for one wallet and opens the reconciliation page', async () => {
+      const { wrapper, router } = await mountView([
+        { ...walletOf('wallet-1', 'Um'), cash: 500, cashReconciled: false },
+      ])
+
+      expect(wrapper.get('[data-testid="cash-reconciliation-banner"]').text()).toContain(
+        '1 carteira tem caixa de resgates antigos',
+      )
+      await wrapper.get('[data-testid="cash-reconciliation-open"]').trigger('click')
+      await flushPromises()
+
+      expect(router.currentRoute.value.name).toBe('cash-reconciliation')
+    })
   })
 })

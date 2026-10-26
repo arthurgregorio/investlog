@@ -10,6 +10,7 @@ const mockSummary: PortfolioSummary = {
   displayCurrency: 'BRL',
   totalCostBasis: 10000,
   totalCurrentValue: 11000,
+  totalCash: 0,
   totalGain: 1000,
   totalGainPct: 10,
   kindSummaries: [

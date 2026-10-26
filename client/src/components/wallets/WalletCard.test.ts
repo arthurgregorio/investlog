@@ -16,6 +16,8 @@ function walletOf(overrides: Partial<WalletResponse> = {}): WalletResponse {
     currentValue: 1200,
     gain: 200,
     gainPct: 20,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2026-01-01T00:00:00Z',
     ...overrides,
   }
@@ -65,5 +67,14 @@ describe('WalletCard', () => {
 
     expect(wrapper.emitted('open')).toHaveLength(1)
     expect(wrapper.emitted('show-investments')).toHaveLength(1)
+  })
+
+  it('tags a wallet with cash as "$$ disponível" without showing the amount', () => {
+    expect(mountCard(walletOf()).find('[data-testid="wallet-cash-tag"]').exists()).toBe(false)
+
+    const wrapper = mountCard(walletOf({ cash: 987.65 }))
+
+    expect(wrapper.get('[data-testid="wallet-cash-tag"]').text()).toBe('$$ disponível')
+    expect(wrapper.text()).not.toContain('987,65')
   })
 })
