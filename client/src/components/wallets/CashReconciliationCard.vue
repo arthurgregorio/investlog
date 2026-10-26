@@ -270,7 +270,7 @@ async function submit() {
       </div>
 
       <p v-if="line.destination === 'keep'" class="is-size-7 has-text-grey">
-        O que não for destinado acima fica no caixa desta carteira.
+        O valor continua no caixa desta carteira, disponível para compras.
       </p>
 
       <div v-else class="fixed-grid has-2-cols">
@@ -338,7 +338,9 @@ async function submit() {
       </div>
     </div>
 
-    <template #foot>
+    <div
+      class="is-flex is-align-items-center is-justify-content-space-between is-flex-wrap-wrap is-gap-2 mt-4"
+    >
       <b-button
         type="is-ghost"
         size="is-small"
@@ -371,6 +373,6 @@ async function submit() {
           Registrar
         </b-button>
       </div>
-    </template>
+    </div>
   </EntityCard>
 </template>
