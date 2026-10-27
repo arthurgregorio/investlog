@@ -7,6 +7,7 @@ data class InvestmentReportPosition(
     val name: String,
     val segment: String?,
     val quantity: BigDecimal?,
+    val averagePrice: BigDecimal?,
     val currentPrice: BigDecimal?,
     val costBasis: BigDecimal,
     val currentValue: BigDecimal?,

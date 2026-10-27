@@ -160,6 +160,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             assertContains(text, "Custódia em Ações")
             assertContains(text, "Custódia em Cripto")
             assertContains(text, "Custódia em Fundos")
+            assertContains(text, "Quantidade Preço médio Preço atual")
             assertContains(text, "Total geral 5 ")
             assertFalse(text.contains("Pdf Stocks"))
             assertFalse(text.contains("Pdf Crypto USD"))
@@ -172,7 +173,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
         val text = pdfText("/private/v1/holdings/report/pdf")
 
         assertEquals(1, occurrences(text, "PDFBTC"))
-        assertContains(text, "PDFBTC 3 73,33 180,00 220,00 +40,00 +22,2%")
+        assertContains(text, "PDFBTC 3 60,00 73,33 180,00 220,00 +40,00 +22,2%")
         assertContains(text, "1 USD = R$ 5,00")
         assertContains(text, "Total Cripto · 1 posição 180,00 220,00 +40,00 +22,2%")
     }
@@ -184,7 +185,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
 
         assertContains(text, "$commaTypeLabel · 1 posição 450,00 500,00 +50,00 +11,1%")
         assertContains(text, "$otherTypeLabel · 2 posições 100,00 110,00 +10,00 +10,0%")
-        assertContains(text, "PDFA3 Empresa P — 10 50,00 450,00 500,00 +50,00 +11,1%")
+        assertContains(text, "PDFA3 Empresa P — 10 45,00 50,00 450,00 500,00 +50,00 +11,1%")
         assertContains(text, "Pdf Renda Fixa · 1 posição 1.000,00 1.100,00 +100,00 +10,0%")
     }
 
@@ -219,7 +220,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
     fun `GET report pdf honours the walletId filter`() {
         val text = pdfText("/private/v1/holdings/report/pdf?walletId={walletId}", usdCryptoWalletId)
 
-        assertContains(text, "PDFBTC 2 60,00 100,00 120,00 +20,00 +20,0%")
+        assertContains(text, "PDFBTC 2 50,00 60,00 100,00 120,00 +20,00 +20,0%")
         assertEquals(0, occurrences(text, "PDFA3"))
     }
 
