@@ -4,21 +4,27 @@ import { createTestingPinia } from '@pinia/testing'
 import EditHoldingTagsModal from './EditHoldingTagsModal.vue'
 import { holdingsApi } from '@/api/holdings'
 import { useTypesListStore } from '@/stores/typesList'
-import type { FundHoldingDetail, StockHoldingDetail } from '@/types'
+import type {
+  CryptoHoldingDetail,
+  FundHoldingDetail,
+  StockHoldingDetail,
+  WalletKind,
+} from '@/types'
 
 vi.mock('@/api/holdings', () => ({
   holdingsApi: {
     updateStockHolding: vi.fn(),
     updateFundHolding: vi.fn(),
-    updateStockHoldingSegment: vi.fn(),
+    updateCryptoHolding: vi.fn(),
+    updateHoldingSegment: vi.fn(),
   },
 }))
 
 let activeWrapper: VueWrapper | undefined
 
 interface ModalOptions {
-  kind?: 'STOCKS' | 'FUNDS'
-  initialTypeId?: string
+  kind?: WalletKind
+  initialTypeId?: string | null
   initialSegmentId?: string | null
 }
 
@@ -29,15 +35,15 @@ function mountModal({
 }: ModalOptions = {}) {
   const pinia = createTestingPinia()
   const typesListStore = useTypesListStore(pinia)
-  typesListStore.stockTypes = [
-    { id: 'stock-type-1', name: 'Ordinária', usageCount: 1 },
-    { id: 'stock-type-2', name: 'FII', usageCount: 1 },
+  typesListStore.holdingTypes = [
+    { id: 'stock-type-1', name: 'Ordinária', kinds: ['STOCKS'], usageCount: 1 },
+    { id: 'stock-type-2', name: 'FII', kinds: ['STOCKS'], usageCount: 1 },
+    { id: 'fund-type-1', name: 'Renda fixa', kinds: ['FUNDS'], usageCount: 1 },
+    { id: 'fund-type-2', name: 'Multimercado', kinds: ['FUNDS'], usageCount: 0 },
+    { id: 'crypto-type-1', name: 'Moeda', kinds: ['CRYPTO'], usageCount: 1 },
+    { id: 'crypto-type-2', name: 'Token', kinds: ['CRYPTO'], usageCount: 0 },
   ]
-  typesListStore.fundTypes = [
-    { id: 'fund-type-1', name: 'Renda fixa', usageCount: 1 },
-    { id: 'fund-type-2', name: 'Multimercado', usageCount: 0 },
-  ]
-  typesListStore.stockSegments = [
+  typesListStore.segments = [
     { id: 'segment-1', name: 'Energia', usageCount: 1 },
     { id: 'segment-2', name: 'Tecnologia', usageCount: 0 },
   ]
@@ -75,7 +81,8 @@ describe('EditHoldingTagsModal', () => {
     vi.clearAllMocks()
     vi.mocked(holdingsApi.updateStockHolding).mockResolvedValue({} as StockHoldingDetail)
     vi.mocked(holdingsApi.updateFundHolding).mockResolvedValue({} as FundHoldingDetail)
-    vi.mocked(holdingsApi.updateStockHoldingSegment).mockResolvedValue({} as StockHoldingDetail)
+    vi.mocked(holdingsApi.updateCryptoHolding).mockResolvedValue({} as CryptoHoldingDetail)
+    vi.mocked(holdingsApi.updateHoldingSegment).mockResolvedValue({} as StockHoldingDetail)
   })
 
   afterEach(() => {
@@ -109,9 +116,9 @@ describe('EditHoldingTagsModal', () => {
     await save(wrapper)
 
     expect(holdingsApi.updateStockHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
-      stockTypeId: 'stock-type-2',
+      typeId: 'stock-type-2',
     })
-    expect(holdingsApi.updateStockHoldingSegment).not.toHaveBeenCalled()
+    expect(holdingsApi.updateHoldingSegment).not.toHaveBeenCalled()
     expect(document.body.textContent).toContain('Tags atualizadas.')
     expect(wrapper.emitted('updated')).toHaveLength(1)
     expect(wrapper.emitted('close')).toHaveLength(1)
@@ -125,7 +132,8 @@ describe('EditHoldingTagsModal', () => {
     await save(wrapper)
 
     expect(holdingsApi.updateStockHolding).toHaveBeenCalledTimes(1)
-    expect(holdingsApi.updateStockHoldingSegment).toHaveBeenCalledWith(
+    expect(holdingsApi.updateHoldingSegment).toHaveBeenCalledWith(
+      'STOCKS',
       'wallet-1',
       'holding-1',
       null,
@@ -133,23 +141,81 @@ describe('EditHoldingTagsModal', () => {
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
-  it('offers only the fund types for a fund and saves the fund type', async () => {
+  it('offers only the fund types for a fund and saves the type and the segment', async () => {
     const wrapper = mountModal({ kind: 'FUNDS', initialTypeId: 'fund-type-1' })
 
     expect(optionTexts(typeSelect(wrapper))).toEqual(['Renda fixa', 'Multimercado'])
-    expect(segmentSelect(wrapper).exists()).toBe(false)
+    expect(optionTexts(segmentSelect(wrapper))).toEqual(['Sem segmento', 'Energia', 'Tecnologia'])
 
     await typeSelect(wrapper).setValue('fund-type-2')
+    await segmentSelect(wrapper).setValue('segment-2')
     await save(wrapper)
 
     expect(holdingsApi.updateFundHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
-      fundTypeId: 'fund-type-2',
+      typeId: 'fund-type-2',
     })
+    expect(holdingsApi.updateHoldingSegment).toHaveBeenCalledWith(
+      'FUNDS',
+      'wallet-1',
+      'holding-1',
+      'segment-2',
+    )
     expect(holdingsApi.updateStockHolding).not.toHaveBeenCalled()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('offers only the crypto types for a crypto holding and saves the type and the segment', async () => {
+    const wrapper = mountModal({ kind: 'CRYPTO', initialTypeId: 'crypto-type-1' })
+
+    expect(optionTexts(typeSelect(wrapper))).toEqual(['Moeda', 'Token'])
+
+    await typeSelect(wrapper).setValue('crypto-type-2')
+    await segmentSelect(wrapper).setValue('segment-1')
+    await save(wrapper)
+
+    expect(holdingsApi.updateCryptoHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
+      typeId: 'crypto-type-2',
+    })
+    expect(holdingsApi.updateHoldingSegment).toHaveBeenCalledWith(
+      'CRYPTO',
+      'wallet-1',
+      'holding-1',
+      'segment-1',
+    )
+    expect(holdingsApi.updateStockHolding).not.toHaveBeenCalled()
+    expect(holdingsApi.updateFundHolding).not.toHaveBeenCalled()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  describe('a crypto holding without a type', () => {
+    it('shows Sem tipo selected and saves nothing for the type until one is chosen', async () => {
+      const wrapper = mountModal({ kind: 'CRYPTO', initialTypeId: null })
+
+      expect(optionTexts(typeSelect(wrapper))).toEqual(['Sem tipo', 'Moeda', 'Token'])
+      expect((typeSelect(wrapper).element as HTMLSelectElement).value).toBe('')
+      expect(submitButton(wrapper).attributes('disabled')).toBeDefined()
+
+      await segmentSelect(wrapper).setValue('segment-1')
+      await save(wrapper)
+
+      expect(holdingsApi.updateCryptoHolding).not.toHaveBeenCalled()
+      expect(holdingsApi.updateHoldingSegment).toHaveBeenCalledTimes(1)
+    })
+
+    it('sets the type when one is chosen', async () => {
+      const wrapper = mountModal({ kind: 'CRYPTO', initialTypeId: null })
+
+      await typeSelect(wrapper).setValue('crypto-type-1')
+      await save(wrapper)
+
+      expect(holdingsApi.updateCryptoHolding).toHaveBeenCalledWith('wallet-1', 'holding-1', {
+        typeId: 'crypto-type-1',
+      })
+    })
   })
 
   it('stays open when every save fails', async () => {
-    vi.mocked(holdingsApi.updateStockHoldingSegment).mockRejectedValue(new Error('network'))
+    vi.mocked(holdingsApi.updateHoldingSegment).mockRejectedValue(new Error('network'))
     const wrapper = mountModal()
 
     await segmentSelect(wrapper).setValue('segment-2')
@@ -160,7 +226,7 @@ describe('EditHoldingTagsModal', () => {
   })
 
   it('reports the saved half and stays open when only one save fails', async () => {
-    vi.mocked(holdingsApi.updateStockHoldingSegment).mockRejectedValue(new Error('network'))
+    vi.mocked(holdingsApi.updateHoldingSegment).mockRejectedValue(new Error('network'))
     const wrapper = mountModal()
 
     await typeSelect(wrapper).setValue('stock-type-2')

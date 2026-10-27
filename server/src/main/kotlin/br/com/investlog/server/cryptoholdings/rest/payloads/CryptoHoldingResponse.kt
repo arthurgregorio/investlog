@@ -8,6 +8,10 @@ import java.util.UUID
 data class CryptoHoldingResponse(
     val id: UUID,
     val walletId: UUID,
+    val typeId: UUID?,
+    val typeName: String?,
+    val segmentId: UUID?,
+    val segmentName: String?,
     val ticker: String,
     val name: String,
     val currentPrice: BigDecimal?,

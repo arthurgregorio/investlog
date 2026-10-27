@@ -43,9 +43,9 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
 
-        val commaTypeId = createType("/private/v1/stock-types", commaTypeLabel)
-        val otherTypeId = createType("/private/v1/stock-types", otherTypeLabel)
-        val fundTypeId = createType("/private/v1/fund-types", "Pdf Renda Fixa")
+        val commaTypeId = createType(commaTypeLabel, "STOCKS")
+        val otherTypeId = createType(otherTypeLabel, "STOCKS")
+        val fundTypeId = createType("Pdf Renda Fixa", "FUNDS")
 
         stockWalletId = createWallet("Pdf Stocks", "STOCKS", "BRL")
         val brlCryptoWalletId = createWallet("Pdf Crypto BRL", "CRYPTO", "BRL")
@@ -70,17 +70,17 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$fundWalletId/fund-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"fundTypeId":"$fundTypeId","name":"Fundo Pdf Renda","currentValue":1100.00,
+                """{"typeId":"$fundTypeId","name":"Fundo Pdf Renda","currentValue":1100.00,
                    "contribution":{"contributionDate":"2025-01-10","amount":1000.00}}"""
             )
             .exchange()
             .expectStatus().isCreated()
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .expectStatus().isCreated()
         .returnResult<TypeResponse>()
@@ -101,7 +101,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$stockWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$typeId","ticker":"$ticker","name":"Empresa ${ticker.first()}","currentPrice":$currentPrice,
+                """{"typeId":"$typeId","ticker":"$ticker","name":"Empresa ${ticker.first()}","currentPrice":$currentPrice,
                    "lot":{"lotDate":"2025-01-15","quantity":$quantity,"price":$price}}"""
             )
             .exchange()

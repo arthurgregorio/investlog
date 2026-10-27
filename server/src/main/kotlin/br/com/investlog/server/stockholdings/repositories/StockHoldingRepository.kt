@@ -1,10 +1,10 @@
 package br.com.investlog.server.stockholdings.repositories
 
+import br.com.investlog.server.jooq.finances.tables.references.HOLDING_TYPES
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
+import br.com.investlog.server.jooq.finances.tables.references.SEGMENTS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_LOTS
-import br.com.investlog.server.jooq.finances.tables.references.STOCK_SEGMENTS
-import br.com.investlog.server.jooq.finances.tables.references.STOCK_TYPES
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
@@ -27,8 +27,8 @@ class StockHoldingRepository(
 
     fun findAll(walletInternalId: Long, pageable: Pageable): PagedModel<StockHoldingResponse> {
         val wallets = WALLETS.`as`("wallets")
-        val stockTypes = STOCK_TYPES.`as`("stock_types")
-        val stockSegments = STOCK_SEGMENTS.`as`("stock_segments")
+        val holdingTypes = HOLDING_TYPES.`as`("holding_types")
+        val segments = SEGMENTS.`as`("segments")
         val stockHoldings = STOCK_HOLDINGS.`as`("stock_holdings")
 
         val lotsField = DSL.multiset(
@@ -70,9 +70,10 @@ class StockHoldingRepository(
         val content = dsl.select(
             stockHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
-            stockTypes.EXTERNAL_ID,
-            stockSegments.EXTERNAL_ID,
-            stockSegments.NAME,
+            holdingTypes.EXTERNAL_ID,
+            holdingTypes.NAME,
+            segments.EXTERNAL_ID,
+            segments.NAME,
             stockHoldings.TICKER,
             stockHoldings.NAME,
             stockHoldings.CURRENT_PRICE,
@@ -82,8 +83,8 @@ class StockHoldingRepository(
         )
             .from(stockHoldings)
             .join(wallets).on(wallets.ID.eq(stockHoldings.WALLET_ID))
-            .join(stockTypes).on(stockTypes.ID.eq(stockHoldings.STOCK_TYPE_ID))
-            .leftJoin(stockSegments).on(stockSegments.ID.eq(stockHoldings.STOCK_SEGMENT_ID))
+            .join(holdingTypes).on(holdingTypes.ID.eq(stockHoldings.HOLDING_TYPE_ID))
+            .leftJoin(segments).on(segments.ID.eq(stockHoldings.SEGMENT_ID))
             .where(stockHoldings.WALLET_ID.eq(walletInternalId))
             .orderBy(stockHoldings.CREATED_AT.desc())
             .limit(pageable.pageSize)
@@ -92,9 +93,10 @@ class StockHoldingRepository(
                 StockHoldingResponse(
                     id = rec.get(stockHoldings.EXTERNAL_ID)!!,
                     walletId = rec.get(wallets.EXTERNAL_ID)!!,
-                    stockTypeId = rec.get(stockTypes.EXTERNAL_ID)!!,
-                    stockSegmentId = rec.get(stockSegments.EXTERNAL_ID),
-                    stockSegmentName = rec.get(stockSegments.NAME),
+                    typeId = rec.get(holdingTypes.EXTERNAL_ID)!!,
+                    typeName = rec.get(holdingTypes.NAME)!!,
+                    segmentId = rec.get(segments.EXTERNAL_ID),
+                    segmentName = rec.get(segments.NAME),
                     ticker = rec.get(stockHoldings.TICKER)!!,
                     name = rec.get(stockHoldings.NAME)!!,
                     currentPrice = rec.get(stockHoldings.CURRENT_PRICE),
@@ -113,8 +115,8 @@ class StockHoldingRepository(
 
     fun create(
         walletInternalId: Long,
-        stockTypeInternalId: Long,
-        stockSegmentInternalId: Long?,
+        typeInternalId: Long,
+        segmentInternalId: Long?,
         ticker: String,
         name: String,
         currentPrice: BigDecimal?,
@@ -122,8 +124,8 @@ class StockHoldingRepository(
     ): StockHoldingResponse {
         val holdingId = dsl.insertInto(STOCK_HOLDINGS)
             .set(STOCK_HOLDINGS.WALLET_ID, walletInternalId)
-            .set(STOCK_HOLDINGS.STOCK_TYPE_ID, stockTypeInternalId)
-            .set(STOCK_HOLDINGS.STOCK_SEGMENT_ID, stockSegmentInternalId)
+            .set(STOCK_HOLDINGS.HOLDING_TYPE_ID, typeInternalId)
+            .set(STOCK_HOLDINGS.SEGMENT_ID, segmentInternalId)
             .set(STOCK_HOLDINGS.TICKER, ticker.uppercase())
             .set(STOCK_HOLDINGS.NAME, name)
             .set(STOCK_HOLDINGS.CURRENT_PRICE, currentPrice)
@@ -158,19 +160,9 @@ class StockHoldingRepository(
             .where(STOCK_HOLDINGS.ID.eq(internalId))
             .fetchSingle(STOCK_HOLDINGS.FROZEN)!!
 
-    fun findStockTypeInternalId(externalId: UUID): Long? =
-        dsl.select(STOCK_TYPES.ID).from(STOCK_TYPES)
-            .where(STOCK_TYPES.EXTERNAL_ID.eq(externalId))
-            .fetchOne(STOCK_TYPES.ID)
-
-    fun findStockSegmentInternalId(externalId: UUID): Long? =
-        dsl.select(STOCK_SEGMENTS.ID).from(STOCK_SEGMENTS)
-            .where(STOCK_SEGMENTS.EXTERNAL_ID.eq(externalId))
-            .fetchOne(STOCK_SEGMENTS.ID)
-
-    fun updateSegment(walletInternalId: Long, externalId: UUID, stockSegmentInternalId: Long?): StockHoldingResponse? {
+    fun updateSegment(walletInternalId: Long, externalId: UUID, segmentInternalId: Long?): StockHoldingResponse? {
         val holdingId = dsl.update(STOCK_HOLDINGS)
-            .set(STOCK_HOLDINGS.STOCK_SEGMENT_ID, stockSegmentInternalId)
+            .set(STOCK_HOLDINGS.SEGMENT_ID, segmentInternalId)
             .set(STOCK_HOLDINGS.UPDATED_AT, OffsetDateTime.now())
             .where(STOCK_HOLDINGS.WALLET_ID.eq(walletInternalId))
             .and(STOCK_HOLDINGS.EXTERNAL_ID.eq(externalId))
@@ -183,7 +175,7 @@ class StockHoldingRepository(
     fun update(
         walletInternalId: Long,
         externalId: UUID,
-        stockTypeInternalId: Long?,
+        typeInternalId: Long?,
         ticker: String?,
         name: String?,
         currentPrice: BigDecimal?,
@@ -195,7 +187,7 @@ class StockHoldingRepository(
             .fetchOne() ?: return null
 
         dsl.update(STOCK_HOLDINGS)
-            .set(STOCK_HOLDINGS.STOCK_TYPE_ID, stockTypeInternalId ?: existing.stockTypeId!!)
+            .set(STOCK_HOLDINGS.HOLDING_TYPE_ID, typeInternalId ?: existing.holdingTypeId!!)
             .set(STOCK_HOLDINGS.TICKER, (ticker ?: existing.ticker!!).uppercase())
             .set(STOCK_HOLDINGS.NAME, name ?: existing.name!!)
             .set(STOCK_HOLDINGS.CURRENT_PRICE, currentPrice ?: existing.currentPrice)
@@ -215,8 +207,8 @@ class StockHoldingRepository(
 
     private fun findByInternalId(internalId: Long, walletInternalId: Long): StockHoldingResponse? {
         val wallets = WALLETS.`as`("wallets")
-        val stockTypes = STOCK_TYPES.`as`("stock_types")
-        val stockSegments = STOCK_SEGMENTS.`as`("stock_segments")
+        val holdingTypes = HOLDING_TYPES.`as`("holding_types")
+        val segments = SEGMENTS.`as`("segments")
         val stockHoldings = STOCK_HOLDINGS.`as`("stock_holdings")
 
         val lotsField = DSL.multiset(
@@ -258,9 +250,10 @@ class StockHoldingRepository(
         return dsl.select(
             stockHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
-            stockTypes.EXTERNAL_ID,
-            stockSegments.EXTERNAL_ID,
-            stockSegments.NAME,
+            holdingTypes.EXTERNAL_ID,
+            holdingTypes.NAME,
+            segments.EXTERNAL_ID,
+            segments.NAME,
             stockHoldings.TICKER,
             stockHoldings.NAME,
             stockHoldings.CURRENT_PRICE,
@@ -270,17 +263,18 @@ class StockHoldingRepository(
         )
             .from(stockHoldings)
             .join(wallets).on(wallets.ID.eq(stockHoldings.WALLET_ID))
-            .join(stockTypes).on(stockTypes.ID.eq(stockHoldings.STOCK_TYPE_ID))
-            .leftJoin(stockSegments).on(stockSegments.ID.eq(stockHoldings.STOCK_SEGMENT_ID))
+            .join(holdingTypes).on(holdingTypes.ID.eq(stockHoldings.HOLDING_TYPE_ID))
+            .leftJoin(segments).on(segments.ID.eq(stockHoldings.SEGMENT_ID))
             .where(stockHoldings.ID.eq(internalId))
             .and(stockHoldings.WALLET_ID.eq(walletInternalId))
             .fetchOne { rec ->
                 StockHoldingResponse(
                     id = rec.get(stockHoldings.EXTERNAL_ID)!!,
                     walletId = rec.get(wallets.EXTERNAL_ID)!!,
-                    stockTypeId = rec.get(stockTypes.EXTERNAL_ID)!!,
-                    stockSegmentId = rec.get(stockSegments.EXTERNAL_ID),
-                    stockSegmentName = rec.get(stockSegments.NAME),
+                    typeId = rec.get(holdingTypes.EXTERNAL_ID)!!,
+                    typeName = rec.get(holdingTypes.NAME)!!,
+                    segmentId = rec.get(segments.EXTERNAL_ID),
+                    segmentName = rec.get(segments.NAME),
                     ticker = rec.get(stockHoldings.TICKER)!!,
                     name = rec.get(stockHoldings.NAME)!!,
                     currentPrice = rec.get(stockHoldings.CURRENT_PRICE),

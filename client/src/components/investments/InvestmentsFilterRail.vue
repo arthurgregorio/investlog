@@ -31,9 +31,9 @@ const CLASSES: { value: InvestmentKindFilter; label: string }[] = [
 ]
 
 const typeHint = computed(() =>
-  props.activeFilter === 'CRYPTO'
-    ? 'Cripto não tem tipos de ativo.'
-    : 'Escolha Ações ou Fundos para filtrar por tipo.',
+  props.activeFilter === 'all'
+    ? 'Escolha uma classe para filtrar por tipo.'
+    : 'Nenhum tipo cadastrado para esta classe.',
 )
 
 function classDot(filter: InvestmentKindFilter) {

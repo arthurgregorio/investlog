@@ -13,7 +13,7 @@ import { useTypesListStore } from '@/stores/typesList'
 import { useWalletsStore } from '@/stores/wallets'
 import { ModalKey } from '@/composables/useModals'
 import type {
-  AssetType,
+  HoldingType,
   HoldingRow,
   KindSummary,
   StockHoldingDetail,
@@ -111,9 +111,10 @@ const unpricedRow: HoldingRow = {
 const stockDetail: StockHoldingDetail = {
   id: 'holding-1',
   walletId: 'wallet-1',
-  stockTypeId: 'type-1',
-  stockSegmentId: null,
-  stockSegmentName: null,
+  typeId: 'type-1',
+  typeName: 'Ação PN',
+  segmentId: null,
+  segmentName: null,
   ticker: 'PETR4',
   name: 'Petróleo Brasileiro',
   currentPrice: 34.8,
@@ -143,12 +144,13 @@ const wallets = [
   walletOf('wallet-3', 'Carteira Fundos', 'FUNDS'),
 ]
 
-const stockTypes: AssetType[] = [
-  { id: 'type-1', name: 'Ação PN', usageCount: 1 },
-  { id: 'type-2', name: 'FII', usageCount: 2 },
+const holdingTypes: HoldingType[] = [
+  { id: 'type-1', name: 'Ação PN', kinds: ['STOCKS'], usageCount: 1 },
+  { id: 'type-2', name: 'FII', kinds: ['STOCKS'], usageCount: 2 },
+  { id: 'type-3', name: 'Renda Fixa', kinds: ['FUNDS'], usageCount: 1 },
+  { id: 'type-4', name: 'Moeda', kinds: ['CRYPTO'], usageCount: 1 },
+  { id: 'type-5', name: 'Token', kinds: ['CRYPTO'], usageCount: 0 },
 ]
-
-const fundTypes: AssetType[] = [{ id: 'type-3', name: 'Renda Fixa', usageCount: 1 }]
 
 interface MountOptions {
   query?: string
@@ -187,8 +189,7 @@ async function mountView(options: MountOptions = {}) {
     demoModeEnabled: false,
   }
   useWalletsStore().wallets = wallets
-  useTypesListStore().stockTypes = stockTypes
-  useTypesListStore().fundTypes = fundTypes
+  useTypesListStore().holdingTypes = holdingTypes
   const holdingsListStore = useHoldingsListStore()
   holdingsListStore.rows = options.rows ?? [stockRow, cryptoRow, fundRow]
   holdingsListStore.loaded = options.loaded ?? true
@@ -695,18 +696,25 @@ describe('InvestmentsView', () => {
       expect(walletCheckbox(wrapper, 'wallet-3').element.checked).toBe(true)
     })
 
-    it('offers no asset type under Todas as classes or Cripto and says why', async () => {
+    it('offers no asset type under Todas as classes and says why', async () => {
       const { wrapper } = await mountView()
 
       expect(typeLabels(wrapper)).toEqual([])
       expect(wrapper.get('[data-testid="type-hint"]').text()).toBe(
-        'Escolha Ações ou Fundos para filtrar por tipo.',
+        'Escolha uma classe para filtrar por tipo.',
       )
+    })
+
+    it('offers the crypto types under Cripto and the fund types under Fundos', async () => {
+      const { wrapper } = await mountView()
 
       await classRadio(wrapper, 'CRYPTO').trigger('change')
       await flushPromises()
+      expect(typeLabels(wrapper)).toEqual(['Moeda', 'Token'])
 
-      expect(wrapper.get('[data-testid="type-hint"]').text()).toBe('Cripto não tem tipos de ativo.')
+      await classRadio(wrapper, 'FUNDS').trigger('change')
+      await flushPromises()
+      expect(typeLabels(wrapper)).toEqual(['Renda Fixa'])
     })
 
     it('offers the stock types under Ações and filters by several of them', async () => {
@@ -1142,7 +1150,10 @@ describe('InvestmentsView', () => {
     const fundDetail = {
       id: 'holding-3',
       walletId: 'wallet-3',
-      fundTypeId: 'type-3',
+      typeId: 'type-3',
+      typeName: 'Renda Fixa',
+      segmentId: null,
+      segmentName: null,
       name: 'Tesouro IPCA+',
       currentValue: 3300,
       administrationFeeRate: null,
@@ -1180,6 +1191,10 @@ describe('InvestmentsView', () => {
       vi.mocked(holdingsApi.getCryptoHolding).mockResolvedValue({
         id: 'holding-2',
         walletId: 'wallet-2',
+        typeId: null,
+        typeName: null,
+        segmentId: null,
+        segmentName: null,
         ticker: 'BTC',
         name: 'Bitcoin',
         currentPrice: 180000,

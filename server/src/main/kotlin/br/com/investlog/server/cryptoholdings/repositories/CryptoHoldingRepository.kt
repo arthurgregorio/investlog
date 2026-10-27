@@ -3,7 +3,9 @@ package br.com.investlog.server.cryptoholdings.repositories
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
+import br.com.investlog.server.jooq.finances.tables.references.HOLDING_TYPES
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
+import br.com.investlog.server.jooq.finances.tables.references.SEGMENTS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
@@ -25,6 +27,8 @@ class CryptoHoldingRepository(
 
     fun findAll(walletInternalId: Long, pageable: Pageable): PagedModel<CryptoHoldingResponse> {
         val wallets = WALLETS.`as`("wallets")
+        val holdingTypes = HOLDING_TYPES.`as`("holding_types")
+        val segments = SEGMENTS.`as`("segments")
         val cryptoHoldings = CRYPTO_HOLDINGS.`as`("crypto_holdings")
 
         val lotsField = DSL.multiset(
@@ -66,6 +70,10 @@ class CryptoHoldingRepository(
         val content = dsl.select(
             cryptoHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
+            holdingTypes.EXTERNAL_ID,
+            holdingTypes.NAME,
+            segments.EXTERNAL_ID,
+            segments.NAME,
             cryptoHoldings.TICKER,
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
@@ -75,6 +83,8 @@ class CryptoHoldingRepository(
         )
             .from(cryptoHoldings)
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
+            .leftJoin(holdingTypes).on(holdingTypes.ID.eq(cryptoHoldings.HOLDING_TYPE_ID))
+            .leftJoin(segments).on(segments.ID.eq(cryptoHoldings.SEGMENT_ID))
             .where(cryptoHoldings.WALLET_ID.eq(walletInternalId))
             .orderBy(cryptoHoldings.CREATED_AT.desc())
             .limit(pageable.pageSize)
@@ -83,6 +93,10 @@ class CryptoHoldingRepository(
                 CryptoHoldingResponse(
                     id = rec.get(cryptoHoldings.EXTERNAL_ID)!!,
                     walletId = rec.get(wallets.EXTERNAL_ID)!!,
+                    typeId = rec.get(holdingTypes.EXTERNAL_ID),
+                    typeName = rec.get(holdingTypes.NAME),
+                    segmentId = rec.get(segments.EXTERNAL_ID),
+                    segmentName = rec.get(segments.NAME),
                     ticker = rec.get(cryptoHoldings.TICKER)!!,
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),
@@ -101,47 +115,43 @@ class CryptoHoldingRepository(
 
     fun create(
         walletInternalId: Long,
+        typeInternalId: Long?,
+        segmentInternalId: Long?,
         ticker: String,
         name: String,
         currentPrice: BigDecimal?,
         lot: LotCreateRequest
     ): CryptoHoldingResponse {
-        val holding = dsl.insertInto(CRYPTO_HOLDINGS)
+        val holdingId = dsl.insertInto(CRYPTO_HOLDINGS)
             .set(CRYPTO_HOLDINGS.WALLET_ID, walletInternalId)
+            .set(CRYPTO_HOLDINGS.HOLDING_TYPE_ID, typeInternalId)
+            .set(CRYPTO_HOLDINGS.SEGMENT_ID, segmentInternalId)
             .set(CRYPTO_HOLDINGS.TICKER, ticker.uppercase())
             .set(CRYPTO_HOLDINGS.NAME, name)
             .set(CRYPTO_HOLDINGS.CURRENT_PRICE, currentPrice)
-            .returning()
-            .fetchSingle()
+            .returning(CRYPTO_HOLDINGS.ID)
+            .fetchSingle(CRYPTO_HOLDINGS.ID)!!
 
-        val lotRec = dsl.insertInto(CRYPTO_LOTS)
-            .set(CRYPTO_LOTS.CRYPTO_HOLDING_ID, holding.id)
+        dsl.insertInto(CRYPTO_LOTS)
+            .set(CRYPTO_LOTS.CRYPTO_HOLDING_ID, holdingId)
             .set(CRYPTO_LOTS.LOT_DATE, lot.lotDate)
             .set(CRYPTO_LOTS.QUANTITY, lot.quantity)
             .set(CRYPTO_LOTS.PRICE, lot.price)
-            .returning()
-            .fetchSingle()
+            .execute()
 
-        val walletExternalId = dsl.select(WALLETS.EXTERNAL_ID).from(WALLETS)
-            .where(WALLETS.ID.eq(walletInternalId)).fetchSingle(WALLETS.EXTERNAL_ID)!!
+        return findByInternalId(holdingId, walletInternalId)!!
+    }
 
-        return CryptoHoldingResponse(
-            id = holding.externalId!!,
-            walletId = walletExternalId,
-            ticker = holding.ticker!!,
-            name = holding.name!!,
-            currentPrice = holding.currentPrice,
-            frozen = holding.frozen!!,
-            lots = listOf(
-                LotResponse(
-                    id = lotRec.externalId!!,
-                    lotDate = lotRec.lotDate!!,
-                    quantity = lotRec.quantity!!,
-                    price = lotRec.price!!,
-                )
-            ),
-            withdrawals = emptyList(),
-        )
+    fun updateSegment(walletInternalId: Long, externalId: UUID, segmentInternalId: Long?): CryptoHoldingResponse? {
+        val holdingId = dsl.update(CRYPTO_HOLDINGS)
+            .set(CRYPTO_HOLDINGS.SEGMENT_ID, segmentInternalId)
+            .set(CRYPTO_HOLDINGS.UPDATED_AT, OffsetDateTime.now())
+            .where(CRYPTO_HOLDINGS.WALLET_ID.eq(walletInternalId))
+            .and(CRYPTO_HOLDINGS.EXTERNAL_ID.eq(externalId))
+            .returning(CRYPTO_HOLDINGS.ID)
+            .fetchOne(CRYPTO_HOLDINGS.ID) ?: return null
+
+        return findByInternalId(holdingId, walletInternalId)
     }
 
     fun findByExternalId(walletInternalId: Long, externalId: UUID): CryptoHoldingResponse? {
@@ -165,6 +175,7 @@ class CryptoHoldingRepository(
     fun update(
         walletInternalId: Long,
         externalId: UUID,
+        typeInternalId: Long?,
         ticker: String?,
         name: String?,
         currentPrice: BigDecimal?,
@@ -176,6 +187,7 @@ class CryptoHoldingRepository(
             .fetchOne() ?: return null
 
         dsl.update(CRYPTO_HOLDINGS)
+            .set(CRYPTO_HOLDINGS.HOLDING_TYPE_ID, typeInternalId ?: existing.holdingTypeId)
             .set(CRYPTO_HOLDINGS.TICKER, (ticker ?: existing.ticker!!).uppercase())
             .set(CRYPTO_HOLDINGS.NAME, name ?: existing.name!!)
             .set(CRYPTO_HOLDINGS.CURRENT_PRICE, currentPrice ?: existing.currentPrice)
@@ -195,6 +207,8 @@ class CryptoHoldingRepository(
 
     private fun findByInternalId(internalId: Long, walletInternalId: Long): CryptoHoldingResponse? {
         val wallets = WALLETS.`as`("wallets")
+        val holdingTypes = HOLDING_TYPES.`as`("holding_types")
+        val segments = SEGMENTS.`as`("segments")
         val cryptoHoldings = CRYPTO_HOLDINGS.`as`("crypto_holdings")
 
         val lotsField = DSL.multiset(
@@ -236,6 +250,10 @@ class CryptoHoldingRepository(
         return dsl.select(
             cryptoHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
+            holdingTypes.EXTERNAL_ID,
+            holdingTypes.NAME,
+            segments.EXTERNAL_ID,
+            segments.NAME,
             cryptoHoldings.TICKER,
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
@@ -245,12 +263,18 @@ class CryptoHoldingRepository(
         )
             .from(cryptoHoldings)
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
+            .leftJoin(holdingTypes).on(holdingTypes.ID.eq(cryptoHoldings.HOLDING_TYPE_ID))
+            .leftJoin(segments).on(segments.ID.eq(cryptoHoldings.SEGMENT_ID))
             .where(cryptoHoldings.ID.eq(internalId))
             .and(cryptoHoldings.WALLET_ID.eq(walletInternalId))
             .fetchOne { rec ->
                 CryptoHoldingResponse(
                     id = rec.get(cryptoHoldings.EXTERNAL_ID)!!,
                     walletId = rec.get(wallets.EXTERNAL_ID)!!,
+                    typeId = rec.get(holdingTypes.EXTERNAL_ID),
+                    typeName = rec.get(holdingTypes.NAME),
+                    segmentId = rec.get(segments.EXTERNAL_ID),
+                    segmentName = rec.get(segments.NAME),
                     ticker = rec.get(cryptoHoldings.TICKER)!!,
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),

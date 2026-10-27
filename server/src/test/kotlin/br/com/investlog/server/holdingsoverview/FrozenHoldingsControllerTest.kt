@@ -37,8 +37,8 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
         stocksWalletId = createWallet("Frozen Stocks Wallet", "stocks")
         cryptoWalletId = createWallet("Frozen Crypto Wallet", "crypto")
         fundsWalletId = createWallet("Frozen Funds Wallet", "funds")
-        stockTypeId = createType("/private/v1/stock-types", "Ação Congelada")
-        fundTypeId = createType("/private/v1/fund-types", "Fundo Congelado")
+        stockTypeId = createHoldingType("Ação Congelada", "STOCKS")
+        fundTypeId = createHoldingType("Fundo Congelado", "FUNDS")
     }
 
     private fun createWallet(name: String, kind: String): UUID = restTestClient.post()
@@ -50,10 +50,10 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
         .responseBody!!
         .id
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createHoldingType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .returnResult<TypeResponse>()
         .responseBody!!
@@ -65,7 +65,7 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
         .body(
             """
             {
-              "stockTypeId":"$stockTypeId",
+              "typeId":"$stockTypeId",
               "ticker":"$ticker",
               "name":"Holding $ticker",
               "currentPrice":10.00,
@@ -102,7 +102,7 @@ class FrozenHoldingsControllerTest : BaseIntegrationTest() {
         .body(
             """
             {
-              "fundTypeId":"$fundTypeId",
+              "typeId":"$fundTypeId",
               "name":"$name",
               "currentValue":1100.00,
               "contribution":{"contributionDate":"2024-01-10","amount":1000.00}

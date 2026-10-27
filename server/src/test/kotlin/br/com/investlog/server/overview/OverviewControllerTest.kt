@@ -30,9 +30,9 @@ class OverviewControllerTest : BaseIntegrationTest() {
     @BeforeAll
     fun setup() {
         val stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Overview Stock Type"}""")
+            .body("""{"name":"Overview Stock Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -51,7 +51,7 @@ class OverviewControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"OVRVW3","currentPrice":60.00,
+                """{"typeId":"$stockTypeId","ticker":"OVRVW3","currentPrice":60.00,
                    "lot":{"lotDate":"2025-03-10","quantity":5,"price":50.00}}"""
             )
             .exchange()
@@ -139,9 +139,9 @@ class OverviewControllerTest : BaseIntegrationTest() {
             .responseBody!!
 
         val usdStockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"USD Overview Stock Type"}""")
+            .body("""{"name":"USD Overview Stock Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -160,7 +160,7 @@ class OverviewControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$usdWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$usdStockTypeId","ticker":"USDOV3","currentPrice":110.00,
+                """{"typeId":"$usdStockTypeId","ticker":"USDOV3","currentPrice":110.00,
                    "lot":{"lotDate":"2025-04-10","quantity":2,"price":100.00}}"""
             )
             .exchange()

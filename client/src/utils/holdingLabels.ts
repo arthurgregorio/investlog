@@ -1,6 +1,11 @@
-import type { HoldingRow } from '@/types'
+import type { HoldingRow, WalletKind } from '@/types'
+
+const FALLBACK_TYPE_LABELS: Record<WalletKind, string> = {
+  STOCKS: 'Ação',
+  CRYPTO: 'Cripto',
+  FUNDS: 'Fundo',
+}
 
 export function holdingTypeLabel(holding: Pick<HoldingRow, 'kind' | 'typeLabel'>): string {
-  if (holding.kind === 'CRYPTO') return 'Cripto'
-  return holding.typeLabel ?? (holding.kind === 'FUNDS' ? 'Fundo' : 'Ação')
+  return holding.typeLabel ?? FALLBACK_TYPE_LABELS[holding.kind]
 }

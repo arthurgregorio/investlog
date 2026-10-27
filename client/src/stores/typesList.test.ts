@@ -2,208 +2,194 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useTypesListStore } from './typesList'
 import { assetTypesApi } from '@/api/assetTypes'
+import type { HoldingType } from '@/types'
 
 vi.mock('@/api/assetTypes', () => ({
   assetTypesApi: {
-    findAllStockTypes: vi.fn(),
-    createStockType: vi.fn(),
-    updateStockType: vi.fn(),
-    removeStockType: vi.fn(),
-    findAllFundTypes: vi.fn(),
-    createFundType: vi.fn(),
-    updateFundType: vi.fn(),
-    removeFundType: vi.fn(),
-    findAllStockSegments: vi.fn(),
-    createStockSegment: vi.fn(),
-    updateStockSegment: vi.fn(),
-    removeStockSegment: vi.fn(),
+    findAllHoldingTypes: vi.fn(),
+    createHoldingType: vi.fn(),
+    updateHoldingType: vi.fn(),
+    removeHoldingType: vi.fn(),
+    findAllSegments: vi.fn(),
+    createSegment: vi.fn(),
+    updateSegment: vi.fn(),
+    removeSegment: vi.fn(),
   },
 }))
 
-const stockType = { id: 'stock-1', name: 'Ação Ordinária', usageCount: 3 }
-const fundType = { id: 'fund-1', name: 'Renda Fixa', usageCount: 0 }
-const stockSegment = { id: 'segment-1', name: 'Tecnologia', usageCount: 2 }
+const stockType: HoldingType = {
+  id: 'stock-1',
+  name: 'Ação Ordinária',
+  kinds: ['STOCKS'],
+  usageCount: 3,
+}
+const sharedType: HoldingType = {
+  id: 'shared-1',
+  name: 'Renda Variável',
+  kinds: ['STOCKS', 'CRYPTO', 'FUNDS'],
+  usageCount: 1,
+}
+const fundType: HoldingType = { id: 'fund-1', name: 'Renda Fixa', kinds: ['FUNDS'], usageCount: 0 }
+const segment = { id: 'segment-1', name: 'Tecnologia', usageCount: 2 }
 
 describe('typesList store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    vi.mocked(assetTypesApi.findAllStockSegments).mockResolvedValue([])
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([])
+    vi.mocked(assetTypesApi.findAllSegments).mockResolvedValue([])
   })
 
-  it('loads stock and fund types', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
+  it('loads the holding types and the segments together', async () => {
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([stockType, fundType])
+    vi.mocked(assetTypesApi.findAllSegments).mockResolvedValue([segment])
 
     const store = useTypesListStore()
     await store.load()
 
-    expect(store.stockTypes).toEqual([stockType])
-    expect(store.fundTypes).toEqual([fundType])
+    expect(store.holdingTypes).toEqual([stockType, fundType])
+    expect(store.segments).toEqual([segment])
+    expect(store.loaded).toBe(true)
   })
 
-  it('loads the stock segments with the types', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllStockSegments).mockResolvedValue([stockSegment])
+  it('typesForKind keeps the types that apply to the kind, including shared ones', async () => {
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([
+      stockType,
+      sharedType,
+      fundType,
+    ])
 
     const store = useTypesListStore()
     await store.load()
 
-    expect(store.stockSegments).toEqual([stockSegment])
-  })
-
-  it('addStockSegment, updateStockSegment and removeStockSegment keep the list in step', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllStockSegments).mockResolvedValue([stockSegment])
-    const created = { id: 'segment-2', name: 'Energia', usageCount: 0 }
-    const renamed = { ...stockSegment, name: 'Tecnologia da Informação' }
-    vi.mocked(assetTypesApi.createStockSegment).mockResolvedValue(created)
-    vi.mocked(assetTypesApi.updateStockSegment).mockResolvedValue(renamed)
-    vi.mocked(assetTypesApi.removeStockSegment).mockResolvedValue(undefined)
-
-    const store = useTypesListStore()
-    await store.load()
-
-    expect(await store.addStockSegment('Energia')).toEqual(created)
-    expect(store.stockSegments).toEqual([stockSegment, created])
-
-    await store.updateStockSegment(stockSegment.id, 'Tecnologia da Informação')
-    expect(assetTypesApi.updateStockSegment).toHaveBeenCalledWith(
-      stockSegment.id,
-      'Tecnologia da Informação',
-    )
-    expect(store.stockSegments).toEqual([renamed, created])
-
-    await store.removeStockSegment(created.id)
-    expect(assetTypesApi.removeStockSegment).toHaveBeenCalledWith(created.id)
-    expect(store.stockSegments).toEqual([renamed])
+    expect(store.typesForKind('STOCKS').map((type) => type.id)).toEqual(['stock-1', 'shared-1'])
+    expect(store.typesForKind('CRYPTO').map((type) => type.id)).toEqual(['shared-1'])
+    expect(store.typesForKind('FUNDS').map((type) => type.id)).toEqual(['shared-1', 'fund-1'])
   })
 
   it('load fetches only once until refresh is called', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
-
     const store = useTypesListStore()
     await store.load()
     await store.load()
-    expect(assetTypesApi.findAllStockTypes).toHaveBeenCalledTimes(1)
+    expect(assetTypesApi.findAllHoldingTypes).toHaveBeenCalledTimes(1)
 
     await store.refresh()
-    expect(assetTypesApi.findAllStockTypes).toHaveBeenCalledTimes(2)
-    expect(assetTypesApi.findAllFundTypes).toHaveBeenCalledTimes(2)
+    expect(assetTypesApi.findAllHoldingTypes).toHaveBeenCalledTimes(2)
+    expect(assetTypesApi.findAllSegments).toHaveBeenCalledTimes(2)
   })
 
   it('load clears the loading flag and keeps the lists empty when a request fails', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockRejectedValue(new Error('network'))
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([stockType])
+    vi.mocked(assetTypesApi.findAllSegments).mockRejectedValue(new Error('network'))
 
     const store = useTypesListStore()
     await expect(store.load()).rejects.toThrow('network')
 
     expect(store.loading).toBe(false)
     expect(store.loaded).toBe(false)
-    expect(store.stockTypes).toEqual([])
-    expect(store.fundTypes).toEqual([])
+    expect(store.holdingTypes).toEqual([])
+    expect(store.segments).toEqual([])
   })
 
-  it('addFundType appends the created type', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
-    const created = { id: 'fund-2', name: 'Multimercado', usageCount: 0 }
-    vi.mocked(assetTypesApi.createFundType).mockResolvedValue(created)
+  it('reset empties both lists and the flags', async () => {
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([stockType])
+    vi.mocked(assetTypesApi.findAllSegments).mockResolvedValue([segment])
 
     const store = useTypesListStore()
     await store.load()
-    const result = await store.addFundType('Multimercado')
+    store.reset()
 
-    expect(assetTypesApi.createFundType).toHaveBeenCalledWith('Multimercado')
+    expect(store.holdingTypes).toEqual([])
+    expect(store.segments).toEqual([])
+    expect(store.loaded).toBe(false)
+  })
+
+  it('addHoldingType sends the kinds and appends the created type', async () => {
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([stockType])
+    const created: HoldingType = {
+      id: 'fund-2',
+      name: 'Multimercado',
+      kinds: ['CRYPTO', 'FUNDS'],
+      usageCount: 0,
+    }
+    vi.mocked(assetTypesApi.createHoldingType).mockResolvedValue(created)
+
+    const store = useTypesListStore()
+    await store.load()
+    const result = await store.addHoldingType('Multimercado', ['CRYPTO', 'FUNDS'])
+
+    expect(assetTypesApi.createHoldingType).toHaveBeenCalledWith('Multimercado', [
+      'CRYPTO',
+      'FUNDS',
+    ])
     expect(result).toEqual(created)
-    expect(store.fundTypes).toEqual([fundType, created])
+    expect(store.holdingTypes).toEqual([stockType, created])
   })
 
-  it('leaves the lists untouched when a create or remove fails', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
-    vi.mocked(assetTypesApi.createStockType).mockRejectedValue(new Error('duplicate'))
-    vi.mocked(assetTypesApi.removeFundType).mockRejectedValue(new Error('in use'))
+  it('updateHoldingType replaces the type in place', async () => {
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([stockType, fundType])
+    const updated: HoldingType = { ...stockType, name: 'Ações', kinds: ['STOCKS', 'FUNDS'] }
+    vi.mocked(assetTypesApi.updateHoldingType).mockResolvedValue(updated)
+
+    const store = useTypesListStore()
+    await store.load()
+    await store.updateHoldingType(stockType.id, 'Ações', ['STOCKS', 'FUNDS'])
+
+    expect(assetTypesApi.updateHoldingType).toHaveBeenCalledWith(stockType.id, 'Ações', [
+      'STOCKS',
+      'FUNDS',
+    ])
+    expect(store.holdingTypes).toEqual([updated, fundType])
+  })
+
+  it('removeHoldingType drops the type from the list', async () => {
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([stockType, fundType])
+    vi.mocked(assetTypesApi.removeHoldingType).mockResolvedValue(undefined)
+
+    const store = useTypesListStore()
+    await store.load()
+    await store.removeHoldingType(stockType.id)
+
+    expect(assetTypesApi.removeHoldingType).toHaveBeenCalledWith(stockType.id)
+    expect(store.holdingTypes).toEqual([fundType])
+  })
+
+  it('leaves the list untouched when a create, update or remove fails', async () => {
+    vi.mocked(assetTypesApi.findAllHoldingTypes).mockResolvedValue([stockType])
+    vi.mocked(assetTypesApi.createHoldingType).mockRejectedValue(new Error('duplicate'))
+    vi.mocked(assetTypesApi.updateHoldingType).mockRejectedValue(new Error('in use'))
+    vi.mocked(assetTypesApi.removeHoldingType).mockRejectedValue(new Error('in use'))
 
     const store = useTypesListStore()
     await store.load()
 
-    await expect(store.addStockType('Ação Ordinária')).rejects.toThrow('duplicate')
-    await expect(store.removeFundType(fundType.id)).rejects.toThrow('in use')
+    await expect(store.addHoldingType('Ação Ordinária', ['STOCKS'])).rejects.toThrow('duplicate')
+    await expect(store.updateHoldingType(stockType.id, 'x', ['FUNDS'])).rejects.toThrow('in use')
+    await expect(store.removeHoldingType(stockType.id)).rejects.toThrow('in use')
 
-    expect(store.stockTypes).toEqual([stockType])
-    expect(store.fundTypes).toEqual([fundType])
+    expect(store.holdingTypes).toEqual([stockType])
   })
 
-  it('addStockType appends the created type', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])
-    const created = { id: 'stock-2', name: 'ETF', usageCount: 0 }
-    vi.mocked(assetTypesApi.createStockType).mockResolvedValue(created)
+  it('addSegment, updateSegment and removeSegment keep the list in step', async () => {
+    vi.mocked(assetTypesApi.findAllSegments).mockResolvedValue([segment])
+    const created = { id: 'segment-2', name: 'Energia', usageCount: 0 }
+    const renamed = { ...segment, name: 'Tecnologia da Informação' }
+    vi.mocked(assetTypesApi.createSegment).mockResolvedValue(created)
+    vi.mocked(assetTypesApi.updateSegment).mockResolvedValue(renamed)
+    vi.mocked(assetTypesApi.removeSegment).mockResolvedValue(undefined)
 
     const store = useTypesListStore()
     await store.load()
-    await store.addStockType('ETF')
 
-    expect(assetTypesApi.createStockType).toHaveBeenCalledWith('ETF')
-    expect(store.stockTypes).toEqual([created])
-  })
+    expect(await store.addSegment('Energia')).toEqual(created)
+    expect(store.segments).toEqual([segment, created])
 
-  it('updateStockType replaces the type in place', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])
-    const renamed = { ...stockType, name: 'Ações' }
-    vi.mocked(assetTypesApi.updateStockType).mockResolvedValue(renamed)
+    await store.updateSegment(segment.id, 'Tecnologia da Informação')
+    expect(assetTypesApi.updateSegment).toHaveBeenCalledWith(segment.id, 'Tecnologia da Informação')
+    expect(store.segments).toEqual([renamed, created])
 
-    const store = useTypesListStore()
-    await store.load()
-    await store.updateStockType(stockType.id, 'Ações')
-
-    expect(assetTypesApi.updateStockType).toHaveBeenCalledWith(stockType.id, 'Ações')
-    expect(store.stockTypes[0].name).toBe('Ações')
-  })
-
-  it('removeStockType drops the type from the list', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([stockType])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.removeStockType).mockResolvedValue(undefined)
-
-    const store = useTypesListStore()
-    await store.load()
-    await store.removeStockType(stockType.id)
-
-    expect(assetTypesApi.removeStockType).toHaveBeenCalledWith(stockType.id)
-    expect(store.stockTypes).toEqual([])
-  })
-
-  it('updateFundType replaces the type in place', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
-    const renamed = { ...fundType, name: 'Multimercado' }
-    vi.mocked(assetTypesApi.updateFundType).mockResolvedValue(renamed)
-
-    const store = useTypesListStore()
-    await store.load()
-    await store.updateFundType(fundType.id, 'Multimercado')
-
-    expect(assetTypesApi.updateFundType).toHaveBeenCalledWith(fundType.id, 'Multimercado')
-    expect(store.fundTypes[0].name).toBe('Multimercado')
-  })
-
-  it('removeFundType drops the type from the list', async () => {
-    vi.mocked(assetTypesApi.findAllStockTypes).mockResolvedValue([])
-    vi.mocked(assetTypesApi.findAllFundTypes).mockResolvedValue([fundType])
-    vi.mocked(assetTypesApi.removeFundType).mockResolvedValue(undefined)
-
-    const store = useTypesListStore()
-    await store.load()
-    await store.removeFundType(fundType.id)
-
-    expect(assetTypesApi.removeFundType).toHaveBeenCalledWith(fundType.id)
-    expect(store.fundTypes).toEqual([])
+    await store.removeSegment(created.id)
+    expect(assetTypesApi.removeSegment).toHaveBeenCalledWith(created.id)
+    expect(store.segments).toEqual([renamed])
   })
 })

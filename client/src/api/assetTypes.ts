@@ -1,58 +1,40 @@
 import { apiClient } from './client'
-import type { AssetType, PagedResponse } from '@/types'
+import type { AssetType, HoldingType, PagedResponse, WalletKind } from '@/types'
 
 export const assetTypesApi = {
-  findAllStockTypes(): Promise<AssetType[]> {
+  findAllHoldingTypes(kind?: WalletKind): Promise<HoldingType[]> {
     return apiClient
-      .get<PagedResponse<AssetType>>('/stock-types', { params: { size: 200 } })
+      .get<PagedResponse<HoldingType>>('/holding-types', { params: { kind, size: 200 } })
       .then((r) => r.data.content)
   },
 
-  createStockType(name: string): Promise<AssetType> {
-    return apiClient.post<AssetType>('/stock-types', { name }).then((r) => r.data)
+  createHoldingType(name: string, kinds: WalletKind[]): Promise<HoldingType> {
+    return apiClient.post<HoldingType>('/holding-types', { name, kinds }).then((r) => r.data)
   },
 
-  updateStockType(id: string, name: string): Promise<AssetType> {
-    return apiClient.put<AssetType>(`/stock-types/${id}`, { name }).then((r) => r.data)
+  updateHoldingType(id: string, name: string, kinds: WalletKind[]): Promise<HoldingType> {
+    return apiClient.put<HoldingType>(`/holding-types/${id}`, { name, kinds }).then((r) => r.data)
   },
 
-  removeStockType(id: string): Promise<void> {
-    return apiClient.delete(`/stock-types/${id}`).then(() => undefined)
+  removeHoldingType(id: string): Promise<void> {
+    return apiClient.delete(`/holding-types/${id}`).then(() => undefined)
   },
 
-  findAllStockSegments(): Promise<AssetType[]> {
+  findAllSegments(): Promise<AssetType[]> {
     return apiClient
-      .get<PagedResponse<AssetType>>('/stock-segments', { params: { size: 200 } })
+      .get<PagedResponse<AssetType>>('/segments', { params: { size: 200 } })
       .then((r) => r.data.content)
   },
 
-  createStockSegment(name: string): Promise<AssetType> {
-    return apiClient.post<AssetType>('/stock-segments', { name }).then((r) => r.data)
+  createSegment(name: string): Promise<AssetType> {
+    return apiClient.post<AssetType>('/segments', { name }).then((r) => r.data)
   },
 
-  updateStockSegment(id: string, name: string): Promise<AssetType> {
-    return apiClient.put<AssetType>(`/stock-segments/${id}`, { name }).then((r) => r.data)
+  updateSegment(id: string, name: string): Promise<AssetType> {
+    return apiClient.put<AssetType>(`/segments/${id}`, { name }).then((r) => r.data)
   },
 
-  removeStockSegment(id: string): Promise<void> {
-    return apiClient.delete(`/stock-segments/${id}`).then(() => undefined)
-  },
-
-  findAllFundTypes(): Promise<AssetType[]> {
-    return apiClient
-      .get<PagedResponse<AssetType>>('/fund-types', { params: { size: 200 } })
-      .then((r) => r.data.content)
-  },
-
-  createFundType(name: string): Promise<AssetType> {
-    return apiClient.post<AssetType>('/fund-types', { name }).then((r) => r.data)
-  },
-
-  updateFundType(id: string, name: string): Promise<AssetType> {
-    return apiClient.put<AssetType>(`/fund-types/${id}`, { name }).then((r) => r.data)
-  },
-
-  removeFundType(id: string): Promise<void> {
-    return apiClient.delete(`/fund-types/${id}`).then(() => undefined)
+  removeSegment(id: string): Promise<void> {
+    return apiClient.delete(`/segments/${id}`).then(() => undefined)
   },
 }

@@ -32,7 +32,7 @@ export default defineConfig({
       exclude: ['src/**/*.test.ts', 'src/test/**', 'src/main.ts', 'src/types.ts', 'src/api/**'],
       thresholds: {
         statements: 98,
-        lines: 98,
+        lines: 99,
         functions: 97,
         branches: 97,
       },

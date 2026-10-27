@@ -3,6 +3,8 @@ package br.com.investlog.server.config
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountException
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
+import br.com.investlog.server.shared.exceptions.HoldingTypeKindInUseException
+import br.com.investlog.server.shared.exceptions.HoldingTypeKindMismatchException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
@@ -157,6 +159,28 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleFrozenHolding(ex: FrozenHoldingException): ProblemDetail {
 
         val message = ex.message ?: "Esta posição está congelada"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(HoldingTypeKindMismatchException::class)
+    fun handleHoldingTypeKindMismatch(ex: HoldingTypeKindMismatchException): ProblemDetail {
+
+        val message = ex.message ?: "Tipo não se aplica a este tipo de carteira"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(HoldingTypeKindInUseException::class)
+    fun handleHoldingTypeKindInUse(ex: HoldingTypeKindInUseException): ProblemDetail {
+
+        val message = ex.message ?: "Este tipo ainda está em uso"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
         problemDetail.setProperty("timestamp", Instant.now())

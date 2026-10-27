@@ -55,14 +55,14 @@ class FullExitResidueMigrationTest : BaseIntegrationTest() {
         stocksWalletId = createWallet("Stocks Wallet", "stocks")
         cryptoWalletId = createWallet("Crypto Wallet", "crypto")
         fundsWalletId = createWallet("Funds Wallet", "funds")
-        stockTypeId = createType("/private/v1/stock-types", "Ação ON")
-        fundTypeId = createType("/private/v1/fund-types", "Fundos Imobiliários")
+        stockTypeId = createHoldingType("Ação ON", "STOCKS")
+        fundTypeId = createHoldingType("Fundos Imobiliários", "FUNDS")
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createHoldingType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .returnResult<TypeResponse>()
         .responseBody!!
@@ -84,7 +84,7 @@ class FullExitResidueMigrationTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"$ticker",
                   "name":"Holding $ticker",
                   "currentPrice":$price,
@@ -137,7 +137,7 @@ class FullExitResidueMigrationTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"$name",
                   "currentValue":$amount,
                   "contribution":{"contributionDate":"2024-01-10","amount":$amount}

@@ -9,7 +9,8 @@ import java.util.UUID
 
 data class FundHoldingCreateRequest(
     @field:NotNull
-    val fundTypeId: UUID,
+    val typeId: UUID,
+    val segmentId: UUID? = null,
     @field:NotBlank
     val name: String,
     @field:Valid @field:NotNull

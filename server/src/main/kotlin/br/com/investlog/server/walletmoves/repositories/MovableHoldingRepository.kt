@@ -30,6 +30,8 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
         val externalId: Field<UUID?>,
         val walletId: Field<Long?>,
         val status: Field<HoldingStatus?>,
+        val typeId: Field<Long?>,
+        val segmentId: Field<Long?>,
         val updatedAt: Field<OffsetDateTime?>,
     )
 
@@ -62,6 +64,11 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
             .fetchOne() ?: return null
 
         val holdingId = position.get(overview.HOLDING_ID)!!
+        val columns = holdingColumnsOf(kind)
+        val classification = dsl.select(columns.typeId, columns.segmentId)
+            .from(columns.table)
+            .where(columns.id.eq(holdingId))
+            .fetchSingle()
 
         return MovableHolding(
             id = holdingId,
@@ -70,8 +77,8 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
             status = position.get(overview.STATUS)!!,
             name = position.get(overview.NAME)!!,
             ticker = position.get(overview.TICKER),
-            typeId = findTypeId(kind, holdingId),
-            segmentId = findSegmentId(kind, holdingId),
+            typeId = classification.get(columns.typeId),
+            segmentId = classification.get(columns.segmentId),
             currentPrice = position.get(overview.CURRENT_PRICE),
             currentValue = position.get(overview.CURRENT_VALUE),
             quantity = position.get(overview.QUANTITY),
@@ -88,7 +95,7 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
         val sameAsset = when (holding.kind) {
             WalletKind.STOCKS -> DSL.upper(STOCK_HOLDINGS.TICKER).eq(holding.ticker!!.uppercase())
             WalletKind.CRYPTO -> DSL.upper(CRYPTO_HOLDINGS.TICKER).eq(holding.ticker!!.uppercase())
-            WalletKind.FUNDS -> FUND_HOLDINGS.NAME.eq(holding.name).and(FUND_HOLDINGS.FUND_TYPE_ID.eq(holding.typeId))
+            WalletKind.FUNDS -> FUND_HOLDINGS.NAME.eq(holding.name).and(FUND_HOLDINGS.HOLDING_TYPE_ID.eq(holding.typeId))
         }
 
         return dsl.select(columns.id, columns.externalId)
@@ -114,8 +121,8 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
     fun createCopy(holding: MovableHolding, walletInternalId: Long): HoldingReference = when (holding.kind) {
         WalletKind.STOCKS -> dsl.insertInto(STOCK_HOLDINGS)
             .set(STOCK_HOLDINGS.WALLET_ID, walletInternalId)
-            .set(STOCK_HOLDINGS.STOCK_TYPE_ID, holding.typeId)
-            .set(STOCK_HOLDINGS.STOCK_SEGMENT_ID, holding.segmentId)
+            .set(STOCK_HOLDINGS.HOLDING_TYPE_ID, holding.typeId)
+            .set(STOCK_HOLDINGS.SEGMENT_ID, holding.segmentId)
             .set(STOCK_HOLDINGS.TICKER, holding.ticker)
             .set(STOCK_HOLDINGS.NAME, holding.name)
             .set(STOCK_HOLDINGS.CURRENT_PRICE, holding.currentPrice)
@@ -124,6 +131,8 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
 
         WalletKind.CRYPTO -> dsl.insertInto(CRYPTO_HOLDINGS)
             .set(CRYPTO_HOLDINGS.WALLET_ID, walletInternalId)
+            .set(CRYPTO_HOLDINGS.HOLDING_TYPE_ID, holding.typeId)
+            .set(CRYPTO_HOLDINGS.SEGMENT_ID, holding.segmentId)
             .set(CRYPTO_HOLDINGS.TICKER, holding.ticker)
             .set(CRYPTO_HOLDINGS.NAME, holding.name)
             .set(CRYPTO_HOLDINGS.CURRENT_PRICE, holding.currentPrice)
@@ -260,42 +269,20 @@ class MovableHoldingRepository(private val dsl: DSLContext) {
             .execute()
     }
 
-    private fun findTypeId(kind: WalletKind, holdingId: Long): Long? = when (kind) {
-        WalletKind.STOCKS -> dsl.select(STOCK_HOLDINGS.STOCK_TYPE_ID)
-            .from(STOCK_HOLDINGS)
-            .where(STOCK_HOLDINGS.ID.eq(holdingId))
-            .fetchOne(STOCK_HOLDINGS.STOCK_TYPE_ID)
-
-        WalletKind.FUNDS -> dsl.select(FUND_HOLDINGS.FUND_TYPE_ID)
-            .from(FUND_HOLDINGS)
-            .where(FUND_HOLDINGS.ID.eq(holdingId))
-            .fetchOne(FUND_HOLDINGS.FUND_TYPE_ID)
-
-        WalletKind.CRYPTO -> null
-    }
-
-    private fun findSegmentId(kind: WalletKind, holdingId: Long): Long? =
-        if (kind == WalletKind.STOCKS) {
-            dsl.select(STOCK_HOLDINGS.STOCK_SEGMENT_ID)
-                .from(STOCK_HOLDINGS)
-                .where(STOCK_HOLDINGS.ID.eq(holdingId))
-                .fetchOne(STOCK_HOLDINGS.STOCK_SEGMENT_ID)
-        } else null
-
     private fun holdingColumnsOf(kind: WalletKind) = when (kind) {
         WalletKind.STOCKS -> HoldingColumns(
             STOCK_HOLDINGS, STOCK_HOLDINGS.ID, STOCK_HOLDINGS.EXTERNAL_ID, STOCK_HOLDINGS.WALLET_ID,
-            STOCK_HOLDINGS.STATUS, STOCK_HOLDINGS.UPDATED_AT,
+            STOCK_HOLDINGS.STATUS, STOCK_HOLDINGS.HOLDING_TYPE_ID, STOCK_HOLDINGS.SEGMENT_ID, STOCK_HOLDINGS.UPDATED_AT,
         )
 
         WalletKind.CRYPTO -> HoldingColumns(
             CRYPTO_HOLDINGS, CRYPTO_HOLDINGS.ID, CRYPTO_HOLDINGS.EXTERNAL_ID, CRYPTO_HOLDINGS.WALLET_ID,
-            CRYPTO_HOLDINGS.STATUS, CRYPTO_HOLDINGS.UPDATED_AT,
+            CRYPTO_HOLDINGS.STATUS, CRYPTO_HOLDINGS.HOLDING_TYPE_ID, CRYPTO_HOLDINGS.SEGMENT_ID, CRYPTO_HOLDINGS.UPDATED_AT,
         )
 
         WalletKind.FUNDS -> HoldingColumns(
             FUND_HOLDINGS, FUND_HOLDINGS.ID, FUND_HOLDINGS.EXTERNAL_ID, FUND_HOLDINGS.WALLET_ID,
-            FUND_HOLDINGS.STATUS, FUND_HOLDINGS.UPDATED_AT,
+            FUND_HOLDINGS.STATUS, FUND_HOLDINGS.HOLDING_TYPE_ID, FUND_HOLDINGS.SEGMENT_ID, FUND_HOLDINGS.UPDATED_AT,
         )
     }
 

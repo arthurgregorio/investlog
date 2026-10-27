@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="24-1000-1" author="${claude}">
+        <comment>
+            One global type list for every holding kind (issue #479). Each type declares the kinds it
+            applies to. Stock types are copied with kinds {STOCKS} and fund types with {FUNDS}, both
+            keeping their external_id so ids the client cached stay valid; a fund type whose name a
+            stock type already uses becomes "name (fundo)", so filtering by type label returns exactly
+            the holdings it did before. A "Cripto" type is seeded for the existing crypto holdings.
+            The rollback drops the table; the copies are rebuilt from it by 24-1000-5's rollback.
+        </comment>
+        <sql>
+            CREATE TABLE finances.holding_types (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                name TEXT NOT NULL,
+                kinds finances.wallet_kind[] NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT holding_types_name_key UNIQUE (name),
+                CONSTRAINT holding_types_kinds_not_empty CHECK (cardinality(kinds) <![CDATA[>]]> 0)
+            );
+
+            INSERT INTO finances.holding_types (external_id, name, kinds, created_at)
+            SELECT stock_types.external_id, stock_types.name, '{STOCKS}', stock_types.created_at
+            FROM finances.stock_types;
+
+            INSERT INTO finances.holding_types (external_id, name, kinds, created_at)
+            SELECT
+                fund_types.external_id,
+                CASE
+                    WHEN EXISTS (SELECT 1 FROM finances.stock_types WHERE stock_types.name = fund_types.name)
+                        THEN fund_types.name || ' (fundo)'
+                    ELSE fund_types.name
+                END,
+                '{FUNDS}',
+                fund_types.created_at
+            FROM finances.fund_types;
+
+            INSERT INTO finances.holding_types (name, kinds) VALUES ('Cripto', '{CRYPTO}');
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.holding_types;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1000-2" author="${claude}">
+        <comment>
+            Point every holding at its holding_types row, matched through the external_id the copy
+            kept. Stocks and funds always had a type, so the column is required there. Crypto stays
+            nullable: a fresh install has no crypto type until an admin creates one, and a required
+            type would block adding crypto until then.
+        </comment>
+        <sql>
+            ALTER TABLE finances.stock_holdings
+                ADD COLUMN holding_type_id BIGINT REFERENCES finances.holding_types(id) ON DELETE RESTRICT;
+            ALTER TABLE finances.fund_holdings
+                ADD COLUMN holding_type_id BIGINT REFERENCES finances.holding_types(id) ON DELETE RESTRICT;
+            ALTER TABLE finances.crypto_holdings
+                ADD COLUMN holding_type_id BIGINT REFERENCES finances.holding_types(id) ON DELETE RESTRICT;
+
+            UPDATE finances.stock_holdings
+            SET holding_type_id = holding_types.id
+            FROM finances.stock_types
+            JOIN finances.holding_types ON holding_types.external_id = stock_types.external_id
+            WHERE stock_types.id = stock_holdings.stock_type_id;
+
+            UPDATE finances.fund_holdings
+            SET holding_type_id = holding_types.id
+            FROM finances.fund_types
+            JOIN finances.holding_types ON holding_types.external_id = fund_types.external_id
+            WHERE fund_types.id = fund_holdings.fund_type_id;
+
+            UPDATE finances.crypto_holdings
+            SET holding_type_id = (SELECT id FROM finances.holding_types WHERE name = 'Cripto');
+
+            ALTER TABLE finances.stock_holdings ALTER COLUMN holding_type_id SET NOT NULL;
+            ALTER TABLE finances.fund_holdings ALTER COLUMN holding_type_id SET NOT NULL;
+
+            CREATE INDEX idx_stock_holdings_holding_type_id ON finances.stock_holdings (holding_type_id);
+            CREATE INDEX idx_fund_holdings_holding_type_id ON finances.fund_holdings (holding_type_id);
+            CREATE INDEX idx_crypto_holdings_holding_type_id ON finances.crypto_holdings (holding_type_id);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.stock_holdings DROP COLUMN holding_type_id;
+                ALTER TABLE finances.fund_holdings DROP COLUMN holding_type_id;
+                ALTER TABLE finances.crypto_holdings DROP COLUMN holding_type_id;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1000-3" author="${claude}">
+        <comment>
+            The stock segment list becomes the segment list of every kind. The views follow the
+            renames on their own, since Postgres tracks them by OID. Rolling back drops every fund
+            and crypto segment, which cannot be kept without the columns.
+        </comment>
+        <sql>
+            ALTER TABLE finances.stock_segments RENAME TO segments;
+            ALTER TABLE finances.segments RENAME CONSTRAINT stock_segments_pkey TO segments_pkey;
+            ALTER TABLE finances.segments RENAME CONSTRAINT stock_segments_external_id_key TO segments_external_id_key;
+            ALTER TABLE finances.segments RENAME CONSTRAINT stock_segments_name_key TO segments_name_key;
+            ALTER SEQUENCE finances.stock_segments_id_seq RENAME TO segments_id_seq;
+
+            ALTER TABLE finances.stock_holdings RENAME COLUMN stock_segment_id TO segment_id;
+            ALTER TABLE finances.stock_holdings
+                RENAME CONSTRAINT stock_holdings_stock_segment_id_fkey TO stock_holdings_segment_id_fkey;
+            ALTER INDEX finances.idx_stock_holdings_stock_segment_id RENAME TO idx_stock_holdings_segment_id;
+
+            ALTER TABLE finances.fund_holdings
+                ADD COLUMN segment_id BIGINT REFERENCES finances.segments(id) ON DELETE RESTRICT;
+            ALTER TABLE finances.crypto_holdings
+                ADD COLUMN segment_id BIGINT REFERENCES finances.segments(id) ON DELETE RESTRICT;
+
+            CREATE INDEX idx_fund_holdings_segment_id ON finances.fund_holdings (segment_id);
+            CREATE INDEX idx_crypto_holdings_segment_id ON finances.crypto_holdings (segment_id);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.crypto_holdings DROP COLUMN segment_id;
+                ALTER TABLE finances.fund_holdings DROP COLUMN segment_id;
+
+                ALTER INDEX finances.idx_stock_holdings_segment_id RENAME TO idx_stock_holdings_stock_segment_id;
+                ALTER TABLE finances.stock_holdings
+                    RENAME CONSTRAINT stock_holdings_segment_id_fkey TO stock_holdings_stock_segment_id_fkey;
+                ALTER TABLE finances.stock_holdings RENAME COLUMN segment_id TO stock_segment_id;
+
+                ALTER SEQUENCE finances.segments_id_seq RENAME TO stock_segments_id_seq;
+                ALTER TABLE finances.segments RENAME CONSTRAINT segments_name_key TO stock_segments_name_key;
+                ALTER TABLE finances.segments RENAME CONSTRAINT segments_external_id_key TO stock_segments_external_id_key;
+                ALTER TABLE finances.segments RENAME CONSTRAINT segments_pkey TO stock_segments_pkey;
+                ALTER TABLE finances.segments RENAME TO stock_segments;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1000-4" author="${claude}">
+        <comment>
+            holdings_overview reads type_label from holding_types and segment_label from segments
+            for every kind; crypto LEFT JOINs the type because its type is optional. Every column
+            keeps its name, type and position, so holdings_report_rows, holdings_valued and
+            wallet_totals, which read it by column name, need no change. The rollback restores the
+            definition 06-1000-add-owner-wallet-and-gain-to-holdings-overview left, written against
+            the segment names 24-1000-3's rollback renames back afterwards.
+        </comment>
+        <sql>
+            CREATE OR REPLACE VIEW finances.holdings_overview AS
+            SELECT
+                holdings.holding_id,
+                holdings.external_id,
+                holdings.wallet_id,
+                holdings.kind,
+                holdings.status,
+                holdings.name,
+                holdings.ticker,
+                holdings.type_label,
+                holdings.current_price,
+                holdings.quantity,
+                holdings.cost_basis,
+                holdings.current_value,
+                holdings.frozen,
+                holdings.segment_label,
+                holdings.user_id,
+                holdings.wallet_external_id,
+                holdings.wallet_name,
+                holdings.wallet_currency,
+                holdings.current_value - holdings.cost_basis AS gain,
+                CASE
+                    WHEN holdings.cost_basis <![CDATA[<>]]> 0
+                        THEN ROUND((holdings.current_value - holdings.cost_basis) / holdings.cost_basis, 10) * 100
+                END AS gain_pct
+            FROM (
+                SELECT
+                    stock_holdings.id AS holding_id,
+                    stock_holdings.external_id,
+                    stock_holdings.wallet_id,
+                    'STOCKS'::finances.wallet_kind AS kind,
+                    stock_holdings.status,
+                    stock_holdings.name,
+                    stock_holdings.ticker,
+                    holding_types.name AS type_label,
+                    stock_holdings.current_price,
+                    COALESCE(SUM(stock_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.stock_holding_id = stock_holdings.id
+                    ) AS quantity,
+                    COALESCE(SUM(stock_lots.quantity * stock_lots.price), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.stock_holding_id = stock_holdings.id
+                    ) AS cost_basis,
+                    stock_holdings.current_price * (
+                        COALESCE(SUM(stock_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.stock_holding_id = stock_holdings.id
+                        )
+                    ) AS current_value,
+                    stock_holdings.frozen,
+                    segments.name AS segment_label,
+                    wallets.user_id,
+                    wallets.external_id AS wallet_external_id,
+                    wallets.name AS wallet_name,
+                    wallets.currency AS wallet_currency
+                FROM finances.stock_holdings
+                JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+                JOIN finances.holding_types ON holding_types.id = stock_holdings.holding_type_id
+                LEFT JOIN finances.segments ON segments.id = stock_holdings.segment_id
+                LEFT JOIN finances.stock_lots ON stock_lots.stock_holding_id = stock_holdings.id
+                GROUP BY stock_holdings.id, stock_holdings.external_id, stock_holdings.wallet_id,
+                         stock_holdings.status, stock_holdings.name, stock_holdings.ticker,
+                         holding_types.name, stock_holdings.current_price, stock_holdings.frozen,
+                         wallets.id, segments.name
+
+                UNION ALL
+
+                SELECT
+                    crypto_holdings.id AS holding_id,
+                    crypto_holdings.external_id,
+                    crypto_holdings.wallet_id,
+                    'CRYPTO'::finances.wallet_kind AS kind,
+                    crypto_holdings.status,
+                    crypto_holdings.name,
+                    crypto_holdings.ticker,
+                    holding_types.name AS type_label,
+                    crypto_holdings.current_price,
+                    COALESCE(SUM(crypto_lots.quantity), 0) - (
+                        SELECT COALESCE(SUM(results.quantity), 0)
+                        FROM finances.results
+                        WHERE results.crypto_holding_id = crypto_holdings.id
+                    ) AS quantity,
+                    COALESCE(SUM(crypto_lots.quantity * crypto_lots.price), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.crypto_holding_id = crypto_holdings.id
+                    ) AS cost_basis,
+                    crypto_holdings.current_price * (
+                        COALESCE(SUM(crypto_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.crypto_holding_id = crypto_holdings.id
+                        )
+                    ) AS current_value,
+                    crypto_holdings.frozen,
+                    segments.name AS segment_label,
+                    wallets.user_id,
+                    wallets.external_id AS wallet_external_id,
+                    wallets.name AS wallet_name,
+                    wallets.currency AS wallet_currency
+                FROM finances.crypto_holdings
+                JOIN finances.wallets ON wallets.id = crypto_holdings.wallet_id
+                LEFT JOIN finances.holding_types ON holding_types.id = crypto_holdings.holding_type_id
+                LEFT JOIN finances.segments ON segments.id = crypto_holdings.segment_id
+                LEFT JOIN finances.crypto_lots ON crypto_lots.crypto_holding_id = crypto_holdings.id
+                GROUP BY crypto_holdings.id, crypto_holdings.external_id, crypto_holdings.wallet_id,
+                         crypto_holdings.status, crypto_holdings.name, crypto_holdings.ticker,
+                         holding_types.name, crypto_holdings.current_price, crypto_holdings.frozen,
+                         wallets.id, segments.name
+
+                UNION ALL
+
+                SELECT
+                    fund_holdings.id AS holding_id,
+                    fund_holdings.external_id,
+                    fund_holdings.wallet_id,
+                    'FUNDS'::finances.wallet_kind AS kind,
+                    fund_holdings.status,
+                    fund_holdings.name,
+                    NULL::TEXT AS ticker,
+                    holding_types.name AS type_label,
+                    NULL::NUMERIC AS current_price,
+                    NULL::NUMERIC AS quantity,
+                    COALESCE(SUM(fund_contributions.amount), 0) - (
+                        SELECT COALESCE(SUM(results.cost_basis), 0)
+                        FROM finances.results
+                        WHERE results.fund_holding_id = fund_holdings.id
+                    ) AS cost_basis,
+                    fund_holdings.current_value,
+                    fund_holdings.frozen,
+                    segments.name AS segment_label,
+                    wallets.user_id,
+                    wallets.external_id AS wallet_external_id,
+                    wallets.name AS wallet_name,
+                    wallets.currency AS wallet_currency
+                FROM finances.fund_holdings
+                JOIN finances.wallets ON wallets.id = fund_holdings.wallet_id
+                JOIN finances.holding_types ON holding_types.id = fund_holdings.holding_type_id
+                LEFT JOIN finances.segments ON segments.id = fund_holdings.segment_id
+                LEFT JOIN finances.fund_contributions ON fund_contributions.fund_holding_id = fund_holdings.id
+                GROUP BY fund_holdings.id, fund_holdings.external_id, fund_holdings.wallet_id,
+                         fund_holdings.status, fund_holdings.name, holding_types.name,
+                         fund_holdings.current_value, fund_holdings.frozen,
+                         wallets.id, segments.name
+            ) AS holdings;
+        </sql>
+        <rollback>
+            <sql>
+                CREATE OR REPLACE VIEW finances.holdings_overview AS
+                SELECT
+                    holdings.holding_id,
+                    holdings.external_id,
+                    holdings.wallet_id,
+                    holdings.kind,
+                    holdings.status,
+                    holdings.name,
+                    holdings.ticker,
+                    holdings.type_label,
+                    holdings.current_price,
+                    holdings.quantity,
+                    holdings.cost_basis,
+                    holdings.current_value,
+                    holdings.frozen,
+                    holdings.segment_label,
+                    holdings.user_id,
+                    holdings.wallet_external_id,
+                    holdings.wallet_name,
+                    holdings.wallet_currency,
+                    holdings.current_value - holdings.cost_basis AS gain,
+                    CASE
+                        WHEN holdings.cost_basis <![CDATA[<>]]> 0
+                            THEN ROUND((holdings.current_value - holdings.cost_basis) / holdings.cost_basis, 10) * 100
+                    END AS gain_pct
+                FROM (
+                    SELECT
+                        stock_holdings.id AS holding_id,
+                        stock_holdings.external_id,
+                        stock_holdings.wallet_id,
+                        'STOCKS'::finances.wallet_kind AS kind,
+                        stock_holdings.status,
+                        stock_holdings.name,
+                        stock_holdings.ticker,
+                        stock_types.name AS type_label,
+                        stock_holdings.current_price,
+                        COALESCE(SUM(stock_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.stock_holding_id = stock_holdings.id
+                        ) AS quantity,
+                        COALESCE(SUM(stock_lots.quantity * stock_lots.price), 0) - (
+                            SELECT COALESCE(SUM(results.cost_basis), 0)
+                            FROM finances.results
+                            WHERE results.stock_holding_id = stock_holdings.id
+                        ) AS cost_basis,
+                        stock_holdings.current_price * (
+                            COALESCE(SUM(stock_lots.quantity), 0) - (
+                                SELECT COALESCE(SUM(results.quantity), 0)
+                                FROM finances.results
+                                WHERE results.stock_holding_id = stock_holdings.id
+                            )
+                        ) AS current_value,
+                        stock_holdings.frozen,
+                        stock_segments.name AS segment_label,
+                        wallets.user_id,
+                        wallets.external_id AS wallet_external_id,
+                        wallets.name AS wallet_name,
+                        wallets.currency AS wallet_currency
+                    FROM finances.stock_holdings
+                    JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+                    LEFT JOIN finances.segments AS stock_segments ON stock_segments.id = stock_holdings.segment_id
+                    JOIN finances.stock_types ON stock_types.id = stock_holdings.stock_type_id
+                    LEFT JOIN finances.stock_lots ON stock_lots.stock_holding_id = stock_holdings.id
+                    GROUP BY stock_holdings.id, stock_holdings.external_id, stock_holdings.wallet_id,
+                             stock_holdings.status, stock_holdings.name, stock_holdings.ticker,
+                             stock_types.name, stock_holdings.current_price, stock_holdings.frozen,
+                             wallets.id, stock_segments.name
+
+                    UNION ALL
+
+                    SELECT
+                        crypto_holdings.id AS holding_id,
+                        crypto_holdings.external_id,
+                        crypto_holdings.wallet_id,
+                        'CRYPTO'::finances.wallet_kind AS kind,
+                        crypto_holdings.status,
+                        crypto_holdings.name,
+                        crypto_holdings.ticker,
+                        NULL::TEXT AS type_label,
+                        crypto_holdings.current_price,
+                        COALESCE(SUM(crypto_lots.quantity), 0) - (
+                            SELECT COALESCE(SUM(results.quantity), 0)
+                            FROM finances.results
+                            WHERE results.crypto_holding_id = crypto_holdings.id
+                        ) AS quantity,
+                        COALESCE(SUM(crypto_lots.quantity * crypto_lots.price), 0) - (
+                            SELECT COALESCE(SUM(results.cost_basis), 0)
+                            FROM finances.results
+                            WHERE results.crypto_holding_id = crypto_holdings.id
+                        ) AS cost_basis,
+                        crypto_holdings.current_price * (
+                            COALESCE(SUM(crypto_lots.quantity), 0) - (
+                                SELECT COALESCE(SUM(results.quantity), 0)
+                                FROM finances.results
+                                WHERE results.crypto_holding_id = crypto_holdings.id
+                            )
+                        ) AS current_value,
+                        crypto_holdings.frozen,
+                        NULL::TEXT AS segment_label,
+                        wallets.user_id,
+                        wallets.external_id AS wallet_external_id,
+                        wallets.name AS wallet_name,
+                        wallets.currency AS wallet_currency
+                    FROM finances.crypto_holdings
+                    JOIN finances.wallets ON wallets.id = crypto_holdings.wallet_id
+                    LEFT JOIN finances.crypto_lots ON crypto_lots.crypto_holding_id = crypto_holdings.id
+                    GROUP BY crypto_holdings.id, crypto_holdings.external_id, crypto_holdings.wallet_id,
+                             crypto_holdings.status, crypto_holdings.name, crypto_holdings.ticker,
+                             crypto_holdings.current_price, crypto_holdings.frozen,
+                             wallets.id
+
+                    UNION ALL
+
+                    SELECT
+                        fund_holdings.id AS holding_id,
+                        fund_holdings.external_id,
+                        fund_holdings.wallet_id,
+                        'FUNDS'::finances.wallet_kind AS kind,
+                        fund_holdings.status,
+                        fund_holdings.name,
+                        NULL::TEXT AS ticker,
+                        fund_types.name AS type_label,
+                        NULL::NUMERIC AS current_price,
+                        NULL::NUMERIC AS quantity,
+                        COALESCE(SUM(fund_contributions.amount), 0) - (
+                            SELECT COALESCE(SUM(results.cost_basis), 0)
+                            FROM finances.results
+                            WHERE results.fund_holding_id = fund_holdings.id
+                        ) AS cost_basis,
+                        fund_holdings.current_value,
+                        fund_holdings.frozen,
+                        NULL::TEXT AS segment_label,
+                        wallets.user_id,
+                        wallets.external_id AS wallet_external_id,
+                        wallets.name AS wallet_name,
+                        wallets.currency AS wallet_currency
+                    FROM finances.fund_holdings
+                    JOIN finances.wallets ON wallets.id = fund_holdings.wallet_id
+                    JOIN finances.fund_types ON fund_types.id = fund_holdings.fund_type_id
+                    LEFT JOIN finances.fund_contributions ON fund_contributions.fund_holding_id = fund_holdings.id
+                    GROUP BY fund_holdings.id, fund_holdings.external_id, fund_holdings.wallet_id,
+                             fund_holdings.status, fund_holdings.name, fund_types.name,
+                             fund_holdings.current_value, fund_holdings.frozen,
+                             wallets.id
+                ) AS holdings;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="24-1000-5" author="${claude}">
+        <comment>
+            Drop the kind-specific type columns and tables now that no view reads them. Without
+            CASCADE, so any dependent object left behind fails the migration instead of vanishing.
+            The rollback is lossy by nature: it rebuilds stock_types from the types whose kinds
+            contain STOCKS and fund_types from those containing FUNDS with the " (fundo)" suffix
+            stripped, both keeping the external_id, and repoints the holdings through it. Types
+            that only apply to crypto, the seeded "Cripto" included, have nowhere to go back to.
+        </comment>
+        <sql>
+            ALTER TABLE finances.stock_holdings DROP COLUMN stock_type_id;
+            ALTER TABLE finances.fund_holdings DROP COLUMN fund_type_id;
+            DROP TABLE finances.stock_types;
+            DROP TABLE finances.fund_types;
+        </sql>
+        <rollback>
+            <sql>
+                CREATE TABLE finances.stock_types (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                    name TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    CONSTRAINT stock_types_name_key UNIQUE (name)
+                );
+
+                CREATE TABLE finances.fund_types (
+                    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                    name TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                    CONSTRAINT fund_types_name_key UNIQUE (name)
+                );
+
+                INSERT INTO finances.stock_types (external_id, name, created_at)
+                SELECT external_id, name, created_at
+                FROM finances.holding_types
+                WHERE 'STOCKS' = ANY (kinds);
+
+                INSERT INTO finances.fund_types (external_id, name, created_at)
+                SELECT external_id, regexp_replace(name, ' \(fundo\)$', ''), created_at
+                FROM finances.holding_types
+                WHERE 'FUNDS' = ANY (kinds);
+
+                ALTER TABLE finances.stock_holdings
+                    ADD COLUMN stock_type_id BIGINT REFERENCES finances.stock_types(id) ON DELETE RESTRICT;
+                ALTER TABLE finances.fund_holdings
+                    ADD COLUMN fund_type_id BIGINT REFERENCES finances.fund_types(id) ON DELETE RESTRICT;
+
+                UPDATE finances.stock_holdings
+                SET stock_type_id = stock_types.id
+                FROM finances.holding_types
+                JOIN finances.stock_types ON stock_types.external_id = holding_types.external_id
+                WHERE holding_types.id = stock_holdings.holding_type_id;
+
+                UPDATE finances.fund_holdings
+                SET fund_type_id = fund_types.id
+                FROM finances.holding_types
+                JOIN finances.fund_types ON fund_types.external_id = holding_types.external_id
+                WHERE holding_types.id = fund_holdings.holding_type_id;
+
+                ALTER TABLE finances.stock_holdings ALTER COLUMN stock_type_id SET NOT NULL;
+                ALTER TABLE finances.fund_holdings ALTER COLUMN fund_type_id SET NOT NULL;
+
+                CREATE INDEX idx_stock_holdings_stock_type_id ON finances.stock_holdings (stock_type_id);
+                CREATE INDEX idx_fund_holdings_fund_type_id ON finances.fund_holdings (fund_type_id);
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

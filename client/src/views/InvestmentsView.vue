@@ -77,9 +77,8 @@ const classCounts = computed(() => {
 })
 
 const typeOptions = computed(() => {
-  if (activeFilter.value === 'STOCKS') return typesListStore.stockTypes
-  if (activeFilter.value === 'FUNDS') return typesListStore.fundTypes
-  return []
+  if (activeFilter.value === 'all') return []
+  return typesListStore.typesForKind(activeFilter.value)
 })
 
 function walletsOfClass(filter: InvestmentKindFilter) {

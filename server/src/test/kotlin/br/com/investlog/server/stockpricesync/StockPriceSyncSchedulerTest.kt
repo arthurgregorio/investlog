@@ -59,9 +59,9 @@ class StockPriceSyncSchedulerTest : BaseIntegrationTest() {
             .id
 
         val stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Ação Scheduler Guard"}""")
+            .body("""{"name":"Ação Scheduler Guard","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -73,7 +73,7 @@ class StockPriceSyncSchedulerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"GUARD3",
                   "name":"GUARD3",
                   "currentPrice":10.00,
