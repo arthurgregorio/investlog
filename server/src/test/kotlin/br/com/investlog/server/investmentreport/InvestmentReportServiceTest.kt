@@ -83,6 +83,7 @@ class InvestmentReportServiceTest {
         assertAmount("76000", position.currentValue)
         assertAmount("-9000", position.result)
         assertRounded("439306.3584", position.currentPrice)
+        assertRounded("491329.4798", position.averagePrice)
         assertRounded("-10.5882", position.resultPercentage)
         assertEquals(1, report.totals.positionCount)
     }
@@ -119,6 +120,7 @@ class InvestmentReportServiceTest {
         assertAmount("1650", positions[1].currentValue)
         assertNull(positions[1].quantity)
         assertNull(positions[1].currentPrice)
+        assertNull(positions[1].averagePrice)
         assertEquals("OAK", positions[1].ticker)
     }
 
@@ -164,6 +166,7 @@ class InvestmentReportServiceTest {
         assertAmount("818", position.costBasis)
         assertAmount("941.6", position.currentValue)
         assertRounded("313.8667", position.currentPrice)
+        assertRounded("272.6667", position.averagePrice)
         assertEquals(listOf("USD"), report.exchangeRates.map { exchangeRate -> exchangeRate.currency })
         assertAmount("5.18", report.exchangeRates.single().rate)
     }
@@ -232,10 +235,11 @@ class InvestmentReportServiceTest {
     }
 
     @Test
-    fun `a position with zero quantity has no current price`() {
+    fun `a position with zero quantity has no current or average price`() {
         val position = consolidate(listOf(row(quantity = "0", currentValue = "10"))).sections.single().typeGroups.single().positions.single()
 
         assertNull(position.currentPrice)
+        assertNull(position.averagePrice)
     }
 
     @Test
