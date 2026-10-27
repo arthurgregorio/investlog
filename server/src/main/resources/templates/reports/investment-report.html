@@ -500,12 +500,13 @@ h2 {
     </div>
 
     <div class="section" th:each="section, sectionStatus : ${report.sections}"
-         th:with="stocks=${section.kind.name() == 'STOCKS'}, funds=${section.kind.name() == 'FUNDS'}, labelSpan=${stocks ? 4 : (funds ? 1 : 3)}, columnCount=${stocks ? 8 : (funds ? 5 : 7)}">
+         th:with="stocks=${section.kind.name() == 'STOCKS'}, funds=${section.kind.name() == 'FUNDS'}, labelSpan=${stocks ? 5 : (funds ? 1 : 4)}, columnCount=${stocks ? 9 : (funds ? 5 : 8)}">
         <table class="grid section-table">
             <colgroup th:if="${stocks}">
-                <col style="width: 23%"/>
-                <col style="width: 17%"/>
+                <col style="width: 21%"/>
+                <col style="width: 14%"/>
                 <col style="width: 8%"/>
+                <col style="width: 9%"/>
                 <col style="width: 9%"/>
                 <col/>
                 <col/>
@@ -513,9 +514,10 @@ h2 {
                 <col style="width: 8%"/>
             </colgroup>
             <colgroup th:if="${!stocks and !funds}">
-                <col style="width: 23%"/>
+                <col style="width: 21%"/>
                 <col style="width: 10%"/>
-                <col style="width: 13%"/>
+                <col style="width: 12%"/>
+                <col style="width: 12%"/>
                 <col/>
                 <col/>
                 <col/>
@@ -536,6 +538,7 @@ h2 {
                     <th class="left" th:text="${funds} ? 'Fundo' : 'Ativo'">Ativo</th>
                     <th class="left" th:if="${stocks}">Segmento</th>
                     <th th:unless="${funds}">Quantidade</th>
+                    <th th:unless="${funds}">Preço médio</th>
                     <th th:unless="${funds}">Preço atual</th>
                     <th th:text="|Investido (${formatter.currencySymbol()})|">Investido</th>
                     <th th:text="|Valor atual (${formatter.currencySymbol()})|">Valor atual</th>
@@ -556,7 +559,8 @@ h2 {
                         <td class="left asset" th:if="${funds}" th:id="${sectionAnchor}" th:text="${position.name}">Fundo</td>
                         <td class="left asset" th:unless="${funds}" th:id="${sectionAnchor}"><strong th:text="${position.ticker}">TICK</strong> <span class="muted" th:if="${position.name != position.ticker}" th:text="${position.name}">Nome</span></td>
                         <td class="left asset" th:if="${stocks}" th:text="${position.segment} ?: '—'">Segmento</td>
-                        <td th:unless="${funds}" th:text="${formatter.quantity(position.quantity)}">0</td>
+                        <td th:unless="${funds}" th:text="${formatter.quantity(position.quantity, section.kind)}">0</td>
+                        <td th:unless="${funds}" th:text="${formatter.money(position.averagePrice)}">0</td>
                         <td th:unless="${funds}" th:text="${formatter.money(position.currentPrice)}">0</td>
                         <td th:text="${formatter.money(position.costBasis)}">0</td>
                         <td th:text="${formatter.money(position.currentValue)}">0</td>
