@@ -25,6 +25,7 @@ class HoldingTaxonomyMigrationTest : BaseIntegrationTest() {
     companion object {
         private const val CHANGELOG = "db/changelog/db.changelog-master.xml"
         private const val TAXONOMY_CHANGESETS = 5
+        private const val STRATEGY_CHANGESETS = 4
         private const val WALLET_PREFIX = "Migração"
     }
 
@@ -39,7 +40,7 @@ class HoldingTaxonomyMigrationTest : BaseIntegrationTest() {
     @Test
     @Order(1)
     fun `rolls back to the kind-specific type lists, then migrates them into one list without regrouping any holding`() {
-        runLiquibase { liquibase -> liquibase.rollback(TAXONOMY_CHANGESETS, "") }
+        runLiquibase { liquibase -> liquibase.rollback(STRATEGY_CHANGESETS + TAXONOMY_CHANGESETS, "") }
 
         val stockTypeExternalId = UUID.randomUUID()
         val fundTypeExternalId = UUID.randomUUID()

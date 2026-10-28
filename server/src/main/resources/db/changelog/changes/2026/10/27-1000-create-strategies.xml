@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="27-1000-1" author="${claude}">
+        <comment>
+            Per-user investment strategies and their classes (issue #518). A class carries a target
+            percentage of its strategy; the seeded default strategy ("Sem estratégia") has a single
+            default class ("Não definida") with no target, and neither can be renamed or removed.
+        </comment>
+        <sql>
+            CREATE TABLE finances.strategies (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                user_id BIGINT NOT NULL REFERENCES system.users(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                is_default BOOLEAN NOT NULL DEFAULT false,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT strategies_user_name_key UNIQUE (user_id, name)
+            );
+
+            CREATE UNIQUE INDEX strategies_one_default_per_user
+                ON finances.strategies (user_id) WHERE is_default;
+
+            CREATE TABLE finances.strategy_classes (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                strategy_id BIGINT NOT NULL REFERENCES finances.strategies(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                target_percentage NUMERIC(5, 2),
+                position INT NOT NULL,
+                is_default BOOLEAN NOT NULL DEFAULT false,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT strategy_classes_strategy_name_key UNIQUE (strategy_id, name),
+                CONSTRAINT strategy_classes_target_range
+                    CHECK (target_percentage IS NULL OR (target_percentage <![CDATA[>=]]> 0 AND target_percentage <![CDATA[<=]]> 100)),
+                CONSTRAINT strategy_classes_default_has_no_target
+                    CHECK (NOT is_default OR target_percentage IS NULL)
+            );
+
+            CREATE INDEX strategy_classes_strategy_id_idx ON finances.strategy_classes (strategy_id);
+        </sql>
+        <rollback>
+            <sql>
+                DROP TABLE finances.strategy_classes;
+                DROP TABLE finances.strategies;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="27-1000-2" author="${claude}">
+        <comment>
+            Seed "Sem estratégia / Não definida" for every existing user and attach every holding to
+            its owner's "Não definida". class_target_percentage is the holding's optional target in %
+            of its class; a blank target shares what the typed targets of the class leave.
+        </comment>
+        <sql>
+            INSERT INTO finances.strategies (user_id, name, is_default)
+            SELECT users.id, 'Sem estratégia', true FROM system.users;
+
+            INSERT INTO finances.strategy_classes (strategy_id, name, position, is_default)
+            SELECT strategies.id, 'Não definida', 0, true
+            FROM finances.strategies
+            WHERE strategies.is_default;
+
+            ALTER TABLE finances.stock_holdings
+                ADD COLUMN strategy_class_id BIGINT REFERENCES finances.strategy_classes(id) ON DELETE RESTRICT,
+                ADD COLUMN class_target_percentage NUMERIC(5, 2)
+                    CONSTRAINT stock_holdings_class_target_range
+                    CHECK (class_target_percentage IS NULL OR (class_target_percentage <![CDATA[>=]]> 0 AND class_target_percentage <![CDATA[<=]]> 100));
+            ALTER TABLE finances.crypto_holdings
+                ADD COLUMN strategy_class_id BIGINT REFERENCES finances.strategy_classes(id) ON DELETE RESTRICT,
+                ADD COLUMN class_target_percentage NUMERIC(5, 2)
+                    CONSTRAINT crypto_holdings_class_target_range
+                    CHECK (class_target_percentage IS NULL OR (class_target_percentage <![CDATA[>=]]> 0 AND class_target_percentage <![CDATA[<=]]> 100));
+            ALTER TABLE finances.fund_holdings
+                ADD COLUMN strategy_class_id BIGINT REFERENCES finances.strategy_classes(id) ON DELETE RESTRICT,
+                ADD COLUMN class_target_percentage NUMERIC(5, 2)
+                    CONSTRAINT fund_holdings_class_target_range
+                    CHECK (class_target_percentage IS NULL OR (class_target_percentage <![CDATA[>=]]> 0 AND class_target_percentage <![CDATA[<=]]> 100));
+
+            UPDATE finances.stock_holdings
+            SET strategy_class_id = strategy_classes.id
+            FROM finances.wallets
+            JOIN finances.strategies ON strategies.user_id = wallets.user_id AND strategies.is_default
+            JOIN finances.strategy_classes ON strategy_classes.strategy_id = strategies.id
+            WHERE wallets.id = stock_holdings.wallet_id;
+
+            UPDATE finances.crypto_holdings
+            SET strategy_class_id = strategy_classes.id
+            FROM finances.wallets
+            JOIN finances.strategies ON strategies.user_id = wallets.user_id AND strategies.is_default
+            JOIN finances.strategy_classes ON strategy_classes.strategy_id = strategies.id
+            WHERE wallets.id = crypto_holdings.wallet_id;
+
+            UPDATE finances.fund_holdings
+            SET strategy_class_id = strategy_classes.id
+            FROM finances.wallets
+            JOIN finances.strategies ON strategies.user_id = wallets.user_id AND strategies.is_default
+            JOIN finances.strategy_classes ON strategy_classes.strategy_id = strategies.id
+            WHERE wallets.id = fund_holdings.wallet_id;
+
+            ALTER TABLE finances.stock_holdings ALTER COLUMN strategy_class_id SET NOT NULL;
+            ALTER TABLE finances.crypto_holdings ALTER COLUMN strategy_class_id SET NOT NULL;
+            ALTER TABLE finances.fund_holdings ALTER COLUMN strategy_class_id SET NOT NULL;
+
+            CREATE INDEX stock_holdings_strategy_class_id_idx ON finances.stock_holdings (strategy_class_id);
+            CREATE INDEX crypto_holdings_strategy_class_id_idx ON finances.crypto_holdings (strategy_class_id);
+            CREATE INDEX fund_holdings_strategy_class_id_idx ON finances.fund_holdings (strategy_class_id);
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.stock_holdings DROP COLUMN strategy_class_id, DROP COLUMN class_target_percentage;
+                ALTER TABLE finances.crypto_holdings DROP COLUMN strategy_class_id, DROP COLUMN class_target_percentage;
+                ALTER TABLE finances.fund_holdings DROP COLUMN strategy_class_id, DROP COLUMN class_target_percentage;
+                DELETE FROM finances.strategy_classes;
+                DELETE FROM finances.strategies;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="27-1000-3" author="${claude}">
+        <comment>
+            Keep the defaults true for every insert path. A new user gets "Sem estratégia / Não
+            definida", and a holding inserted without a class (wallet moves, reinvestments, sample
+            data, tests) lands in its owner's "Não definida", so no caller has to know about strategies.
+        </comment>
+        <sql splitStatements="false">
+            CREATE FUNCTION finances.create_default_strategy() RETURNS trigger AS $$
+            DECLARE
+                default_strategy_id BIGINT;
+            BEGIN
+                INSERT INTO finances.strategies (user_id, name, is_default)
+                VALUES (NEW.id, 'Sem estratégia', true)
+                RETURNING id INTO default_strategy_id;
+
+                INSERT INTO finances.strategy_classes (strategy_id, name, position, is_default)
+                VALUES (default_strategy_id, 'Não definida', 0, true);
+
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER users_create_default_strategy
+                AFTER INSERT ON system.users
+                FOR EACH ROW EXECUTE FUNCTION finances.create_default_strategy();
+
+            CREATE FUNCTION finances.default_strategy_class() RETURNS trigger AS $$
+            BEGIN
+                IF NEW.strategy_class_id IS NULL THEN
+                    SELECT strategy_classes.id INTO NEW.strategy_class_id
+                    FROM finances.wallets
+                    JOIN finances.strategies ON strategies.user_id = wallets.user_id AND strategies.is_default
+                    JOIN finances.strategy_classes ON strategy_classes.strategy_id = strategies.id
+                    WHERE wallets.id = NEW.wallet_id;
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER stock_holdings_default_strategy_class
+                BEFORE INSERT ON finances.stock_holdings
+                FOR EACH ROW EXECUTE FUNCTION finances.default_strategy_class();
+            CREATE TRIGGER crypto_holdings_default_strategy_class
+                BEFORE INSERT ON finances.crypto_holdings
+                FOR EACH ROW EXECUTE FUNCTION finances.default_strategy_class();
+            CREATE TRIGGER fund_holdings_default_strategy_class
+                BEFORE INSERT ON finances.fund_holdings
+                FOR EACH ROW EXECUTE FUNCTION finances.default_strategy_class();
+        </sql>
+        <rollback>
+            <sql splitStatements="false">
+                DROP TRIGGER stock_holdings_default_strategy_class ON finances.stock_holdings;
+                DROP TRIGGER crypto_holdings_default_strategy_class ON finances.crypto_holdings;
+                DROP TRIGGER fund_holdings_default_strategy_class ON finances.fund_holdings;
+                DROP FUNCTION finances.default_strategy_class();
+                DROP TRIGGER users_create_default_strategy ON system.users;
+                DROP FUNCTION finances.create_default_strategy();
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="27-1000-4" author="${claude}">
+        <comment>
+            Every holding with its kind, owner, class and typed class target, so strategy reads and
+            the cross-kind holdings list resolve a holding's class through one relation.
+        </comment>
+        <sql>
+            CREATE VIEW finances.holding_strategy_classes AS
+            SELECT 'STOCKS'::finances.wallet_kind AS kind, stock_holdings.id AS holding_id,
+                   stock_holdings.external_id AS holding_external_id, wallets.user_id,
+                   stock_holdings.strategy_class_id, stock_holdings.class_target_percentage
+            FROM finances.stock_holdings
+            JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+            UNION ALL
+            SELECT 'CRYPTO'::finances.wallet_kind, crypto_holdings.id, crypto_holdings.external_id,
+                   wallets.user_id, crypto_holdings.strategy_class_id, crypto_holdings.class_target_percentage
+            FROM finances.crypto_holdings
+            JOIN finances.wallets ON wallets.id = crypto_holdings.wallet_id
+            UNION ALL
+            SELECT 'FUNDS'::finances.wallet_kind, fund_holdings.id, fund_holdings.external_id,
+                   wallets.user_id, fund_holdings.strategy_class_id, fund_holdings.class_target_percentage
+            FROM finances.fund_holdings
+            JOIN finances.wallets ON wallets.id = fund_holdings.wallet_id;
+        </sql>
+        <rollback>
+            <sql>DROP VIEW finances.holding_strategy_classes;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

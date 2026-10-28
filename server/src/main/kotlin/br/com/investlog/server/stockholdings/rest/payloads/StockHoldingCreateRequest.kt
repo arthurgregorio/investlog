@@ -11,6 +11,7 @@ import java.util.UUID
 data class StockHoldingCreateRequest(
     @field:NotNull val typeId: UUID,
     val segmentId: UUID? = null,
+    val strategyClassId: UUID? = null,
     @field:NotBlank
     @field:Pattern(regexp = "^[A-Za-z0-9]+$", message = "ticker deve conter apenas letras e números")
     val ticker: String,

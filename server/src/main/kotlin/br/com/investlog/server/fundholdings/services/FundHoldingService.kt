@@ -11,6 +11,8 @@ import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingUpdateReque
 import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import br.com.investlog.server.strategies.rest.payloads.HoldingClassRequest
+import br.com.investlog.server.strategies.services.StrategyClassService
 import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import br.com.investlog.server.typelists.services.HoldingTypeService
 import br.com.investlog.server.typelists.services.SegmentService
@@ -27,6 +29,7 @@ class FundHoldingService(
     private val walletService: WalletService,
     private val holdingTypeService: HoldingTypeService,
     private val segmentService: SegmentService,
+    private val strategyClassService: StrategyClassService,
     private val holdingRepo: FundHoldingRepository,
     private val contributionRepo: FundContributionRepository,
 ) {
@@ -49,6 +52,7 @@ class FundHoldingService(
             walletInternalId = walletId,
             typeInternalId = holdingTypeService.resolveId(request.typeId, WalletKind.FUNDS),
             segmentInternalId = request.segmentId?.let(segmentService::resolveId),
+            strategyClassInternalId = strategyClassService.resolveId(request.strategyClassId),
             name = request.name,
             currentValue = request.currentValue,
             administrationFeeRate = request.administrationFeeRate,
@@ -84,6 +88,19 @@ class FundHoldingService(
             externalId = holdingExternalId,
             segmentInternalId = request.segmentId?.let(segmentService::resolveId),
         ) ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
+    }
+
+    @Transactional
+    fun updateClass(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: HoldingClassRequest,
+    ): FundHoldingResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
+            ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
+        strategyClassService.assignHolding(WalletKind.FUNDS, holdingId, request.strategyClassId)
+        return findById(walletExternalId, holdingExternalId)
     }
 
     @Transactional
