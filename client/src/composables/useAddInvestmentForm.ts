@@ -3,6 +3,7 @@ import { useToast } from 'buefy'
 import { holdingsApi } from '@/api/holdings'
 import { useWalletsStore } from '@/stores/wallets'
 import { useTypesListStore } from '@/stores/typesList'
+import { useStrategiesStore } from '@/stores/strategies'
 import type { WalletKind, WalletResponse } from '@/types'
 
 export type InvestmentKind = WalletKind
@@ -12,6 +13,8 @@ interface AddInvestmentFormState {
   walletId: string
   typeId: string
   segmentId: string
+  strategyId: string
+  strategyClassId: string
   ticker: string
   name: string
   date: Date | null
@@ -35,12 +38,15 @@ export function useAddInvestmentForm(
   const toast = useToast()
   const walletsStore = useWalletsStore()
   const typesListStore = useTypesListStore()
+  const strategiesStore = useStrategiesStore()
 
   const form: AddInvestmentFormState = reactive({
     kind: initialKind ?? 'STOCKS',
     walletId: '' as string,
     typeId: '' as string,
     segmentId: '' as string,
+    strategyId: '' as string,
+    strategyClassId: '' as string,
     ticker: '',
     name: '',
     date: new Date() as Date | null,
@@ -109,6 +115,30 @@ export function useAddInvestmentForm(
     },
   )
 
+  function strategyClasses(strategyId: string) {
+    return strategiesStore.strategyById(strategyId)?.classes ?? []
+  }
+
+  watch(
+    () => strategiesStore.strategies,
+    (strategies) => {
+      if (!strategies.some((strategy) => strategy.id === form.strategyId)) {
+        form.strategyId = strategiesStore.defaultStrategy?.id ?? ''
+      }
+    },
+    { immediate: true },
+  )
+
+  watch(
+    () => strategyClasses(form.strategyId),
+    (classes) => {
+      if (!classes.some((strategyClass) => strategyClass.id === form.strategyClassId)) {
+        form.strategyClassId = classes[0]?.id ?? ''
+      }
+    },
+    { immediate: true },
+  )
+
   watch(
     () => typesListStore.segments,
     (segments) => {
@@ -129,6 +159,7 @@ export function useAddInvestmentForm(
         await holdingsApi.createStockHolding(form.walletId, {
           typeId: form.typeId,
           segmentId: form.segmentId || undefined,
+          strategyClassId: form.strategyClassId || undefined,
           ticker: form.ticker.trim().toUpperCase(),
           name: form.name.trim() || undefined,
           currentPrice: currentPriceNum,
@@ -138,6 +169,7 @@ export function useAddInvestmentForm(
         await holdingsApi.createCryptoHolding(form.walletId, {
           typeId: form.typeId || undefined,
           segmentId: form.segmentId || undefined,
+          strategyClassId: form.strategyClassId || undefined,
           ticker: form.ticker.trim().toUpperCase(),
           name: form.name.trim() || undefined,
           currentPrice: currentPriceNum,
@@ -149,6 +181,7 @@ export function useAddInvestmentForm(
         await holdingsApi.createFundHolding(form.walletId, {
           typeId: form.typeId,
           segmentId: form.segmentId || undefined,
+          strategyClassId: form.strategyClassId || undefined,
           name: form.name.trim(),
           currentValue: currentValueNum,
           ...(form.administrationFeeRate !== '' && {

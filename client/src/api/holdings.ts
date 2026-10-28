@@ -98,6 +98,7 @@ export const holdingsApi = {
     payload: {
       typeId: string
       segmentId?: string
+      strategyClassId?: string
       ticker: string
       name?: string
       currentPrice?: number
@@ -118,6 +119,19 @@ export const holdingsApi = {
     return apiClient
       .put<HoldingDetail>(`/wallets/${walletId}/${HOLDING_PATH[kind]}/${holdingId}/segment`, {
         segmentId,
+      })
+      .then((r) => r.data)
+  },
+
+  updateHoldingClass(
+    kind: WalletKind,
+    walletId: string,
+    holdingId: string,
+    strategyClassId: string,
+  ): Promise<HoldingDetail> {
+    return apiClient
+      .put<HoldingDetail>(`/wallets/${walletId}/${HOLDING_PATH[kind]}/${holdingId}/class`, {
+        strategyClassId,
       })
       .then((r) => r.data)
   },
@@ -161,6 +175,7 @@ export const holdingsApi = {
     payload: {
       typeId?: string
       segmentId?: string
+      strategyClassId?: string
       ticker: string
       name?: string
       currentPrice?: number
@@ -211,6 +226,7 @@ export const holdingsApi = {
     payload: {
       typeId: string
       segmentId?: string
+      strategyClassId?: string
       name: string
       currentValue?: number
       administrationFeeRate?: number

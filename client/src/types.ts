@@ -44,6 +44,10 @@ export interface HoldingRow {
   gain: number | null
   gainPct: number | null
   frozen: boolean
+  strategyId?: string | null
+  strategyName?: string | null
+  strategyClassId?: string | null
+  strategyClassName?: string | null
 }
 
 export interface KindSummary {
@@ -112,7 +116,7 @@ export interface WithdrawalDetail {
   profit: number
 }
 
-export interface StockHoldingDetail {
+export interface StockHoldingDetail extends Partial<HoldingStrategyTags> {
   id: string
   walletId: string
   typeId: string
@@ -127,7 +131,7 @@ export interface StockHoldingDetail {
   withdrawals: WithdrawalDetail[]
 }
 
-export interface CryptoHoldingDetail {
+export interface CryptoHoldingDetail extends Partial<HoldingStrategyTags> {
   id: string
   walletId: string
   typeId: string | null
@@ -142,7 +146,7 @@ export interface CryptoHoldingDetail {
   withdrawals: WithdrawalDetail[]
 }
 
-export interface FundHoldingDetail {
+export interface FundHoldingDetail extends Partial<HoldingStrategyTags> {
   id: string
   walletId: string
   typeId: string
@@ -356,4 +360,45 @@ export interface WalletLedgerEntry {
   amount: number | null
   profit: number | null
   counterpartName: string | null
+}
+
+export interface HoldingStrategyTags {
+  strategyId: string
+  strategyName: string
+  strategyClassId: string
+  strategyClassName: string
+}
+
+export interface StrategyClass {
+  id: string
+  name: string
+  targetPercentage: number | null
+  position: number
+  default: boolean
+  holdingCount: number
+  typedCount: number
+  typedPercentageSum: number
+  blankSharePercentage: number | null
+}
+
+export interface Strategy {
+  id: string
+  name: string
+  default: boolean
+  holdingCount: number
+  classes: StrategyClass[]
+}
+
+export interface ClassHolding {
+  kind: WalletKind
+  id: string
+  walletId: string
+  walletName: string
+  ticker: string | null
+  name: string
+  typeLabel: string | null
+  segmentLabel: string | null
+  frozen: boolean
+  targetPercentage: number | null
+  effectiveTargetPercentage: number
 }

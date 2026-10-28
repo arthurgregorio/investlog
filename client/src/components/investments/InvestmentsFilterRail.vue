@@ -24,7 +24,7 @@ const emit = defineEmits<{
 }>()
 
 const CLASSES: { value: InvestmentKindFilter; label: string }[] = [
-  { value: 'all', label: 'Todas as classes' },
+  { value: 'all', label: 'Todos os tipos' },
   { value: 'STOCKS', label: 'Ações' },
   { value: 'CRYPTO', label: 'Cripto' },
   { value: 'FUNDS', label: 'Fundos' },
@@ -32,8 +32,8 @@ const CLASSES: { value: InvestmentKindFilter; label: string }[] = [
 
 const typeHint = computed(() =>
   props.activeFilter === 'all'
-    ? 'Escolha uma classe para filtrar por tipo.'
-    : 'Nenhum tipo cadastrado para esta classe.',
+    ? 'Escolha um tipo de carteira para filtrar por tipo de ativo.'
+    : 'Nenhum tipo de ativo cadastrado para este tipo de carteira.',
 )
 
 function classDot(filter: InvestmentKindFilter) {
@@ -54,8 +54,8 @@ function classDot(filter: InvestmentKindFilter) {
     </div>
 
     <fieldset class="rail-group">
-      <legend class="is-sr-only">Classe</legend>
-      <p class="rail-title" aria-hidden="true">Classe</p>
+      <legend class="is-sr-only">Tipo de carteira</legend>
+      <p class="rail-title" aria-hidden="true">Tipo de carteira</p>
       <label
         v-for="option in CLASSES"
         :key="option.value"
@@ -128,13 +128,6 @@ function classDot(filter: InvestmentKindFilter) {
 </template>
 
 <style scoped>
-.filter-rail {
-  flex: 1 1 232px;
-  max-width: 256px;
-  min-width: 0;
-  margin-bottom: 0;
-}
-
 .rail-count {
   display: inline-grid;
   place-items: center;
@@ -148,83 +141,9 @@ function classDot(filter: InvestmentKindFilter) {
   font-weight: 700;
 }
 
-.rail-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  padding: 14px 16px;
-  border: 0;
-  border-top: 1px solid var(--border-2);
-}
-
-.rail-title {
-  margin-bottom: 6px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.rail-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 38px;
-  padding: 0 8px;
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 13.5px;
-}
-
-.rail-option:hover {
-  background: var(--surface-hover);
-}
-
-.rail-option.is-selected {
-  background: var(--primary-soft);
-}
-
-.rail-option input {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: var(--primary);
-}
-
-.rail-dot {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 3px;
-}
-
-.rail-label {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rail-side {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 .rail-hint {
   padding: 4px 8px;
   font-size: 12.5px;
   color: var(--text-muted);
-}
-
-@media (width <= 900px) {
-  .filter-rail {
-    flex-basis: 100%;
-    max-width: none;
-  }
 }
 </style>

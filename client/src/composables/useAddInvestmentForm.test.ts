@@ -4,6 +4,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAddInvestmentForm } from './useAddInvestmentForm'
 import { useWalletsStore } from '@/stores/wallets'
 import { useTypesListStore } from '@/stores/typesList'
+import { useStrategiesStore } from '@/stores/strategies'
+import { defaultStrategy, strategy } from '@/test/strategyFixtures'
 import * as holdingsApiModule from '@/api/holdings'
 import type { HoldingType, WalletResponse } from '@/types'
 
@@ -642,5 +644,52 @@ describe('useAddInvestmentForm', () => {
     await nextTick()
 
     expect(form.segmentId).toBe('')
+  })
+
+  describe('strategy and class', () => {
+    it('starts on the default strategy and its only class, and follows a strategy change', async () => {
+      const strategiesStore = useStrategiesStore()
+      strategiesStore.strategies = [strategy(), defaultStrategy()]
+
+      const { form } = useAddInvestmentForm('STOCKS')
+      expect(form.strategyId).toBe('strategy-default')
+      expect(form.strategyClassId).toBe('class-undefined')
+
+      form.strategyId = 'strategy-long'
+      await nextTick()
+      expect(form.strategyClassId).toBe('class-brazil')
+    })
+
+    it('picks the default strategy once a late strategies load brings it in', async () => {
+      const { form } = useAddInvestmentForm('STOCKS')
+      expect(form.strategyId).toBe('')
+      expect(form.strategyClassId).toBe('')
+
+      useStrategiesStore().strategies = [strategy(), defaultStrategy()]
+      await nextTick()
+      await nextTick()
+      expect(form.strategyId).toBe('strategy-default')
+      expect(form.strategyClassId).toBe('class-undefined')
+    })
+
+    it('sends the chosen class on create', async () => {
+      useStrategiesStore().strategies = [strategy(), defaultStrategy()]
+      const { form, submit } = useAddInvestmentForm('STOCKS')
+      form.strategyId = 'strategy-long'
+      await nextTick()
+      form.strategyClassId = 'class-abroad'
+      form.typeId = 'type-1'
+      form.ticker = 'PETR4'
+      form.quantity = 10
+      form.price = 30
+      form.date = new Date('2024-06-01')
+
+      await submit()
+
+      expect(holdingsApiModule.holdingsApi.createStockHolding).toHaveBeenCalledWith(
+        'wallet-stocks-1',
+        expect.objectContaining({ strategyClassId: 'class-abroad' }),
+      )
+    })
   })
 })

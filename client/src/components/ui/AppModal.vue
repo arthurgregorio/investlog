@@ -1,6 +1,12 @@
 <script setup lang="ts">
 withDefaults(
-  defineProps<{ title: string; subtitle?: string; wide?: boolean; dismissible?: boolean }>(),
+  defineProps<{
+    title: string
+    subtitle?: string
+    wide?: boolean
+    extraWide?: boolean
+    dismissible?: boolean
+  }>(),
   {
     subtitle: undefined,
     dismissible: true,
@@ -17,7 +23,7 @@ const emit = defineEmits<{ close: [] }>()
     :can-cancel="dismissible ? ['escape', 'outside'] : false"
     @close="emit('close')"
   >
-    <div class="modal-card" :class="{ 'is-wide': wide }">
+    <div class="modal-card" :class="{ 'is-wide': wide, 'is-extra-wide': extraWide }">
       <header class="modal-card-head">
         <p class="modal-card-title">{{ title }}</p>
         <b-button
