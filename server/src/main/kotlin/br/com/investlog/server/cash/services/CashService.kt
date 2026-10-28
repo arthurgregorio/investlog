@@ -33,14 +33,6 @@ class CashService(
     private val currencyRateRepository: CurrencyRateRepository,
 ) {
 
-    companion object {
-        private const val RATE_SCALE = 10
-        private const val SUGGESTION_WINDOW_DAYS = 30L
-        private val SUGGESTION_TOLERANCE = BigDecimal("0.25")
-        private val BRAZILIAN_LOCALE: Locale = Locale.of("pt", "BR")
-        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-    }
-
     @Transactional
     fun transfer(userId: Long, walletId: UUID, request: CashTransferRequest): CashTransferResponse {
         val origin = requireWallet(userId, walletId)
@@ -252,4 +244,12 @@ class CashService(
         ticker = ticker,
         amount = amount,
     )
+
+    companion object {
+        private const val RATE_SCALE = 10
+        private const val SUGGESTION_WINDOW_DAYS = 30L
+        private val SUGGESTION_TOLERANCE = BigDecimal("0.25")
+        private val BRAZILIAN_LOCALE: Locale = Locale.of("pt", "BR")
+        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    }
 }

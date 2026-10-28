@@ -25,10 +25,6 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class LotOriginMigrationTest : BaseIntegrationTest() {
 
-    companion object {
-        private const val MIGRATION_SQL = "db/changelog/changes/2026/10/25-1000-tag-lot-origins.sql"
-    }
-
     @Autowired
     lateinit var restTestClient: RestTestClient
 
@@ -169,5 +165,9 @@ class LotOriginMigrationTest : BaseIntegrationTest() {
             assertEquals(mapOf("ORIG3" to listOf(LotOrigin.MOVE)), stockOrigins(movedStockWalletId))
             assertEquals(listOf(LotOrigin.PURCHASE, LotOrigin.MOVE), fundOrigins(movedFundWalletId))
         }
+    }
+
+    companion object {
+        private const val MIGRATION_SQL = "db/changelog/changes/2026/10/25-1000-tag-lot-origins.sql"
     }
 }
