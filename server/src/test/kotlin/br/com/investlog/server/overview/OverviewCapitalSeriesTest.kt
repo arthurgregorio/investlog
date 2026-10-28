@@ -39,9 +39,9 @@ class OverviewCapitalSeriesTest : BaseIntegrationTest() {
             .expectStatus().isOk()
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Capital Series Type"}""")
+            .body("""{"name":"Capital Series Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -85,7 +85,7 @@ class OverviewCapitalSeriesTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"$ticker","currentPrice":50,
+                """{"typeId":"$stockTypeId","ticker":"$ticker","currentPrice":50,
                    "lot":{"lotDate":"$lotDate","quantity":$quantity,"price":$price}}"""
             )
             .exchange()

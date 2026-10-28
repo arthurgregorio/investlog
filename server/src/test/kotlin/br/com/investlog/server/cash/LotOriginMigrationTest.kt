@@ -38,8 +38,8 @@ class LotOriginMigrationTest : BaseIntegrationTest() {
 
     @BeforeAll
     fun setup() {
-        val stockTypeId = createType("/private/v1/stock-types", "Origem Ação")
-        val fundTypeId = createType("/private/v1/fund-types", "Origem Fundo")
+        val stockTypeId = createHoldingType("Origem Ação", "STOCKS")
+        val fundTypeId = createHoldingType("Origem Fundo", "FUNDS")
 
         stockWalletId = createWallet("Origem Ações", "stocks")
         val sourceId = createStock(stockWalletId, stockTypeId, "ORIG3")
@@ -64,7 +64,7 @@ class LotOriginMigrationTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$fundWalletId/fund-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"fundTypeId":"$fundTypeId","name":"Fundo Origem","currentValue":500,
+                """{"typeId":"$fundTypeId","name":"Fundo Origem","currentValue":500,
                 "contribution":{"contributionDate":"2024-01-10","amount":500}}"""
             )
             .exchange()
@@ -76,7 +76,7 @@ class LotOriginMigrationTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$movedFundWalletId/fund-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"fundTypeId":"$fundTypeId","name":"Fundo Origem","currentValue":50,
+                """{"typeId":"$fundTypeId","name":"Fundo Origem","currentValue":50,
                 "contribution":{"contributionDate":"2024-01-11","amount":50}}"""
             )
             .exchange()
@@ -87,10 +87,10 @@ class LotOriginMigrationTest : BaseIntegrationTest() {
         dsl.update(FUND_CONTRIBUTIONS).set(FUND_CONTRIBUTIONS.ORIGIN, LotOrigin.PURCHASE).execute()
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createHoldingType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .returnResult<TypeResponse>()
         .responseBody!!
@@ -109,7 +109,7 @@ class LotOriginMigrationTest : BaseIntegrationTest() {
         .uri("/private/v1/wallets/$walletId/stock-holdings")
         .contentType(MediaType.APPLICATION_JSON)
         .body(
-            """{"stockTypeId":"$stockTypeId","ticker":"$ticker","name":"Holding $ticker","currentPrice":20,
+            """{"typeId":"$stockTypeId","ticker":"$ticker","name":"Holding $ticker","currentPrice":20,
             "lot":{"lotDate":"2024-01-10","quantity":10,"price":10}}"""
         )
         .exchange()

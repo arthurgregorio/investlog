@@ -42,8 +42,8 @@ class CashControllerTest : BaseIntegrationTest() {
 
     @BeforeAll
     fun setup() {
-        stockTypeId = createType("/private/v1/stock-types", "Caixa Ação")
-        fundTypeId = createType("/private/v1/fund-types", "Caixa Fundo")
+        stockTypeId = createHoldingType("Caixa Ação", "STOCKS")
+        fundTypeId = createHoldingType("Caixa Fundo", "FUNDS")
 
         restTestClient.put()
             .uri("/private/v1/currency-rates/USD")
@@ -53,10 +53,10 @@ class CashControllerTest : BaseIntegrationTest() {
             .expectStatus().isOk()
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createHoldingType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .returnResult<TypeResponse>()
         .responseBody!!
@@ -78,7 +78,7 @@ class CashControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"$ticker",
                   "name":"Holding $ticker",
                   "currentPrice":50,
@@ -99,7 +99,7 @@ class CashControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"$name",
                   "currentValue":$amount,
                   "contribution":{"contributionDate":"$contributionDate","amount":$amount}
