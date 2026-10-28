@@ -179,15 +179,19 @@ In detail:
   `holdings_overview` VIEW, which carries the owner (`user_id`), the wallet's `wallet_external_id`, `wallet_name` and `wallet_currency`, and the `gain` and `gain_pct` columns, so the repository joins nothing and computes nothing. `gain_pct` is `ROUND(ratio, 10) * 100` — the ratio is rounded to ten places *before* scaling, which is how the Kotlin it replaced behaved and what keeps the payload digits unchanged.
 - `overview` — `GET /private/v1/overview` (portfolio summary: `baseCurrency`, totals, per-kind
   summaries with currency conversion) and `GET /private/v1/overview/series` (monthly cumulative
-  invested amounts for chart display). `findSeries` is one query against
-  `finances.contributions_timeline`, a `UNION ALL` of stock lots, crypto lots and fund
-  contributions with one row per purchase: it groups by the real `DATE` month and takes the running
-  total with `SUM(SUM(...)) OVER (ORDER BY month)`, so nothing is grouped, sorted or accumulated in
-  Kotlin. The view carries `wallet_amount` (the purchase in the wallet's own currency), `rate` and
-  `amount` (`wallet_amount` restated in the anchor currency); like `findSummary` below, `findSeries`
-  multiplies `wallet_amount * (rate / displayRate)` instead of dividing `amount`, to keep every
-  digit of the payload unchanged. The series charts money put in, so it counts every lot, completed
-  holdings included, and ignores withdrawals. `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
+  own-money and reinvested-profit amounts for chart display). `findSeries` is one query against
+  `finances.capital_timeline` (issue #509). Each row is one event in its wallet's currency, split
+  into `own_money_amount` and `reinvested_profit_amount`. Own money is a purchase's `new_money`
+  from the cash replay, plus transfers in, minus transfers out and bank withdrawals. Reinvested
+  profit is every exit's `profit`. Two corrections keep the total exact: a reinvestment adds its
+  lot's `purchase_amount` and takes away its exit's net amount, and a move's lot counts only when
+  it has a `purchase_amount`, which is only true of lots written before that column existed.
+  Summed over a user's wallets, the last point equals `totalCostBasis + totalCash` to the cent.
+  It groups by the real `DATE` month and takes both running totals with
+  `SUM(SUM(...)) OVER (ORDER BY month)`, so nothing is grouped, sorted or accumulated in Kotlin.
+  Like `findSummary` below, `findSeries` multiplies each amount by `rate / displayRate`, to keep
+  every digit of the payload unchanged. `totalInvested` stays in the payload as the sum of the
+  two. `findSummary` reads `finances.holdings_valued`, the one definition of currency conversion: every
   holding of `holdings_overview` with its wallet currency's `rate` (1 when it has no
   `currency_rates` row) and `cost_basis_anchor` / `current_value_anchor`, the amounts restated in
   the rates-anchor currency, the one whose own row stores rate 1. The display currency is a runtime

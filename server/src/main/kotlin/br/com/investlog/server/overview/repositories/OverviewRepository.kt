@@ -1,6 +1,6 @@
 package br.com.investlog.server.overview.repositories
 
-import br.com.investlog.server.jooq.finances.tables.references.CONTRIBUTIONS_TIMELINE
+import br.com.investlog.server.jooq.finances.tables.references.CAPITAL_TIMELINE
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_VALUED
@@ -66,23 +66,32 @@ class OverviewRepository(private val dsl: DSLContext) {
     }
 
     fun findSeries(userId: Long, displayCurrency: String): List<SeriesPointResponse> {
-        val timeline = CONTRIBUTIONS_TIMELINE.`as`("timeline")
+        val timeline = CAPITAL_TIMELINE.`as`("timeline")
+        val appliedRate = timeline.RATE.div(displayCurrencyRate(displayCurrency))
 
-        val monthlyAmount = DSL.sum(timeline.WALLET_AMOUNT.mul(timeline.RATE.div(displayCurrencyRate(displayCurrency))))
-        val cumulativeAmount = DSL.sum(monthlyAmount).over().orderBy(timeline.MONTH)
+        val cumulativeOwnMoney = DSL.sum(DSL.sum(timeline.OWN_MONEY_AMOUNT.mul(appliedRate)))
+            .over().orderBy(timeline.MONTH)
+        val cumulativeReinvestedProfit = DSL.sum(DSL.sum(timeline.REINVESTED_PROFIT_AMOUNT.mul(appliedRate)))
+            .over().orderBy(timeline.MONTH)
 
         return dsl.select(
             DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, timeline.MONTH).`as`("month"),
-            cumulativeAmount.`as`("total_invested"),
+            cumulativeOwnMoney.`as`("own_money"),
+            cumulativeReinvestedProfit.`as`("reinvested_profit"),
         )
             .from(timeline)
             .where(timeline.USER_ID.eq(userId))
             .groupBy(timeline.MONTH)
             .orderBy(timeline.MONTH)
             .fetch { record ->
+                val ownMoney = record.get("own_money", BigDecimal::class.java)!!.withoutZeroScale()
+                val reinvestedProfit = record.get("reinvested_profit", BigDecimal::class.java)!!.withoutZeroScale()
+
                 SeriesPointResponse(
                     month = record.get("month", String::class.java)!!,
-                    totalInvested = record.get("total_invested", BigDecimal::class.java)!!,
+                    ownMoney = ownMoney,
+                    reinvestedProfit = reinvestedProfit,
+                    totalInvested = ownMoney + reinvestedProfit,
                 )
             }
     }
@@ -97,8 +106,10 @@ class OverviewRepository(private val dsl: DSLContext) {
             .where(WALLETS.USER_ID.eq(userId))
             .fetchSingle()
             .value1()!!
-            .let { total -> if (total.signum() == 0) BigDecimal.ZERO else total }
+            .withoutZeroScale()
     }
+
+    private fun BigDecimal.withoutZeroScale(): BigDecimal = if (signum() == 0) BigDecimal.ZERO else this
 
     private fun displayCurrencyRate(displayCurrency: String) = DSL.coalesce(
         DSL.field(

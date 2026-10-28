@@ -115,7 +115,7 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
     @Order(1)
     fun `the series in the anchor currency accumulates every kind month by month`() {
         assertEquals(
-            """[{"month":"2025-01","totalInvested":1850.0000000000000000000000},{"month":"2025-02","totalInvested":2467.28000000000000000000000},{"month":"2025-03","totalInvested":5414.84000000000000000000000}]""",
+            """[{"month":"2025-01","ownMoney":1850.0000000000000000000000,"reinvestedProfit":0,"totalInvested":1850.0000000000000000000000},{"month":"2025-02","ownMoney":2467.28000000000000000000000,"reinvestedProfit":0,"totalInvested":2467.28000000000000000000000},{"month":"2025-03","ownMoney":5414.84000000000000000000000,"reinvestedProfit":0,"totalInvested":5414.84000000000000000000000}]""",
             seriesBody(),
         )
     }
@@ -131,7 +131,7 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
             .expectStatus().isOk()
 
         assertEquals(
-            """[{"month":"2025-01","totalInvested":264.2857142857142857130000},{"month":"2025-02","totalInvested":352.46857142857142856837920},{"month":"2025-03","totalInvested":773.54857142857142856837920}]""",
+            """[{"month":"2025-01","ownMoney":264.2857142857142857130000,"reinvestedProfit":0,"totalInvested":264.2857142857142857130000},{"month":"2025-02","ownMoney":352.46857142857142856837920,"reinvestedProfit":0,"totalInvested":352.46857142857142856837920},{"month":"2025-03","ownMoney":773.54857142857142856837920,"reinvestedProfit":0,"totalInvested":773.54857142857142856837920}]""",
             seriesBody(),
         )
     }

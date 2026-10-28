@@ -5,6 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import OverviewView from './OverviewView.vue'
 import AreaChart from '@/components/charts/AreaChart.vue'
 import DonutChart from '@/components/charts/DonutChart.vue'
+import AllocationCard from '@/components/overview/AllocationCard.vue'
 import { ModalKey } from '@/composables/useModals'
 import { useOverviewStore } from '@/stores/overview'
 import { useWalletsStore } from '@/stores/wallets'
@@ -208,7 +209,10 @@ describe('OverviewView', () => {
   it('shows each kind share of the invested total in the allocation legend', async () => {
     const { wrapper } = await mountView({ summary })
 
-    const legendRows = wrapper.findAll('.alloc-legend li').map((item) => item.text())
+    const legendRows = wrapper
+      .findComponent(AllocationCard)
+      .findAll('.alloc-legend li')
+      .map((item) => item.text())
 
     expect(legendRows).toEqual([
       expect.stringContaining('Ações'),
@@ -244,16 +248,21 @@ describe('OverviewView', () => {
     expect(segments).toHaveLength(1)
     expect(segments[0].value).toBe(1)
     expect(segments[0].label).toBe('—')
-    expect(wrapper.findAll('.legend-pct').map((cell) => cell.text())).toEqual(['0%', '0%', '0%'])
+    expect(
+      wrapper
+        .findComponent(AllocationCard)
+        .findAll('.legend-pct')
+        .map((cell) => cell.text()),
+    ).toEqual(['0%', '0%', '0%'])
   })
 
   it('feeds the area chart the invested series with month labels and shows the latest value', async () => {
     const { wrapper } = await mountView({
       summary,
       series: [
-        { month: '2026-01', totalInvested: 1000 },
-        { month: '2026-02', totalInvested: 4000 },
-        { month: '2026-03', totalInvested: 10000 },
+        { month: '2026-01', ownMoney: 1000, reinvestedProfit: 0, totalInvested: 1000 },
+        { month: '2026-02', ownMoney: 4000, reinvestedProfit: 0, totalInvested: 4000 },
+        { month: '2026-03', ownMoney: 10000, reinvestedProfit: 0, totalInvested: 10000 },
       ],
     })
 
@@ -268,7 +277,7 @@ describe('OverviewView', () => {
   it('pads a single-point series with a leading zero so the chart can draw a line', async () => {
     const { wrapper } = await mountView({
       summary,
-      series: [{ month: '2026-03', totalInvested: 2500 }],
+      series: [{ month: '2026-03', ownMoney: 2500, reinvestedProfit: 0, totalInvested: 2500 }],
     })
 
     const chart = wrapper.findComponent(AreaChart)
