@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import HoldingsTable from './HoldingsTable.vue'
 import type { HoldingRow } from '@/types'
 
-const HoldingDrawerStub = defineComponent({
+const HoldingDrawerStub = {
   name: 'HoldingDrawer',
   props: {
     row: { type: Object, required: true },
@@ -13,7 +13,7 @@ const HoldingDrawerStub = defineComponent({
   },
   emits: ['close', 'deleted', 'position-added', 'relocated'],
   template: '<div data-testid="drawer">{{ row.id }}</div>',
-})
+}
 
 const positionModalProps = {
   holdingId: { type: String, required: true },
@@ -22,19 +22,19 @@ const positionModalProps = {
   walletCurrency: { type: String, required: true },
 }
 
-const AddPositionModalStub = defineComponent({
+const AddPositionModalStub = {
   name: 'AddPositionModal',
   props: positionModalProps,
   emits: ['added', 'close'],
   template: '<div data-testid="add-position-modal">{{ holdingId }}</div>',
-})
+}
 
-const UpdatePriceModalStub = defineComponent({
+const UpdatePriceModalStub = {
   name: 'UpdatePriceModal',
   props: { ...positionModalProps, initialValue: { type: Number, default: null } },
   emits: ['updated', 'close'],
   template: '<div data-testid="update-price-modal">{{ holdingId }}:{{ initialValue }}</div>',
-})
+}
 
 const firstRow: HoldingRow = {
   id: 'holding-1',
