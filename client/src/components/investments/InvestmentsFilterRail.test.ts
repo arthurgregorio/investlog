@@ -129,8 +129,8 @@ describe('InvestmentsFilterRail', () => {
   })
 
   it.each([
-    ['all', 'Escolha Ações ou Fundos para filtrar por tipo.'],
-    ['CRYPTO', 'Cripto não tem tipos de ativo.'],
+    ['all', 'Escolha uma classe para filtrar por tipo.'],
+    ['CRYPTO', 'Nenhum tipo cadastrado para esta classe.'],
   ] as const)('explains the missing types under %s', (activeFilter, hint) => {
     const wrapper = mountRail({ activeFilter, typeOptions: [] })
 

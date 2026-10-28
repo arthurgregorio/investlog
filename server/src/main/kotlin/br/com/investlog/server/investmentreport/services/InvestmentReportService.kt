@@ -104,18 +104,13 @@ class InvestmentReportService(
             val currentValue = if (rows.all { row -> row.currentValue == null }) null else rows.sumOf { row -> row.currentValue ?: BigDecimal.ZERO }
             val result = currentValue?.subtract(costBasis)
 
-            val currentPrice = if (currentValue != null && quantity != null && quantity.signum() != 0) {
-                currentValue.divide(quantity, CALCULATION_SCALE, RoundingMode.HALF_UP)
-            } else {
-                null
-            }
-
             return InvestmentReportPosition(
                 ticker = rows.firstNotNullOfOrNull { row -> row.ticker }?.uppercase(),
                 name = rows.map { row -> row.name }.firstOrNull { name -> name.isNotBlank() } ?: rows.first().name,
                 segment = rows.firstNotNullOfOrNull { row -> row.segmentLabel },
                 quantity = quantity,
-                currentPrice = currentPrice,
+                averagePrice = unitPriceOf(costBasis, quantity),
+                currentPrice = currentValue?.let { unitPriceOf(it, quantity) },
                 costBasis = costBasis,
                 currentValue = currentValue,
                 result = result,
@@ -123,6 +118,9 @@ class InvestmentReportService(
                 frozen = rows.any { row -> row.frozen },
             )
         }
+
+        private fun unitPriceOf(amount: BigDecimal, quantity: BigDecimal?): BigDecimal? =
+            if (quantity != null && quantity.signum() != 0) amount.divide(quantity, CALCULATION_SCALE, RoundingMode.HALF_UP) else null
 
         private fun section(kind: WalletKind, mergedPositions: List<MergedPosition>, reportCurrentValue: BigDecimal): InvestmentReportSection {
             val collator = Collator.getInstance(Locale.forLanguageTag("pt-BR"))

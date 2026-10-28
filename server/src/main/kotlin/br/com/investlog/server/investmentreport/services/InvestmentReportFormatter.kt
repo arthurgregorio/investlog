@@ -18,7 +18,8 @@ class InvestmentReportFormatter(private val displayCurrency: String) {
     private val signedMoneyFormat = decimalFormat("+#,##0.00;${MINUS_SIGN}#,##0.00")
     private val shareFormat = decimalFormat("#,##0.0'%'")
     private val signedPercentageFormat = decimalFormat("+#,##0.0'%';${MINUS_SIGN}#,##0.0'%'")
-    private val quantityFormat = decimalFormat("#,##0.##########")
+    private val quantityFormat = decimalFormat("#,##0.##")
+    private val cryptoQuantityFormat = decimalFormat("#,##0.####")
     private val rateFormat = decimalFormat("#,##0.00")
 
     fun money(value: BigDecimal?): String = value?.let { moneyFormat.format(it) } ?: EMPTY_VALUE
@@ -29,7 +30,10 @@ class InvestmentReportFormatter(private val displayCurrency: String) {
 
     fun share(value: BigDecimal?): String = value?.let { shareFormat.format(it) } ?: EMPTY_VALUE
 
-    fun quantity(value: BigDecimal?): String = value?.let { quantityFormat.format(it) } ?: EMPTY_VALUE
+    fun quantity(value: BigDecimal?, kind: WalletKind): String {
+        val format = if (kind == WalletKind.CRYPTO) cryptoQuantityFormat else quantityFormat
+        return value?.let { format.format(it) } ?: EMPTY_VALUE
+    }
 
     fun tone(value: BigDecimal?): String = when {
         value == null -> ""

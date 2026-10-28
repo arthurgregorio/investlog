@@ -35,9 +35,9 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
         stockWalletId = createWallet("Report Test Stock Wallet", "STOCKS")
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Report Test Type"}""")
+            .body("""{"name":"Report Test Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -47,7 +47,7 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$stockWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"RPTST3",
+                """{"typeId":"$stockTypeId","ticker":"RPTST3",
                    "currentPrice":50.00,
                    "lot":{"lotDate":"2025-01-15","quantity":10,"price":45.00}}"""
             )
@@ -176,7 +176,7 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
     fun `GET holdings report carries the segment and keeps merging same-ticker holdings that disagree on it`() {
         val segmentWalletId = createWallet("Report Test Segment Wallet", "STOCKS")
         val segmentId = restTestClient.post()
-            .uri("/private/v1/stock-segments")
+            .uri("/private/v1/segments")
             .contentType(MediaType.APPLICATION_JSON)
             .body("""{"name":"Report Test Segment"}""")
             .exchange()
@@ -234,9 +234,9 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
     @Order(9)
     fun `GET holdings report honors two typeLabel values`() {
         val secondStockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Report Second Type"}""")
+            .body("""{"name":"Report Second Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -246,7 +246,7 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$stockWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$secondStockTypeId","ticker":"RPSEC3",
+                """{"typeId":"$secondStockTypeId","ticker":"RPSEC3",
                    "currentPrice":20.00,
                    "lot":{"lotDate":"2025-03-01","quantity":5,"price":18.00}}"""
             )
@@ -280,7 +280,7 @@ class HoldingsReportControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","stockSegmentId":$segmentJson,"ticker":"$ticker",
+                """{"typeId":"$stockTypeId","segmentId":$segmentJson,"ticker":"$ticker",
                    "currentPrice":50.00,
                    "lot":{"lotDate":"2025-01-15","quantity":10,"price":45.00}}"""
             )

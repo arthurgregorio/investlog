@@ -43,9 +43,9 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
 
-        val commaTypeId = createType("/private/v1/stock-types", commaTypeLabel)
-        val otherTypeId = createType("/private/v1/stock-types", otherTypeLabel)
-        val fundTypeId = createType("/private/v1/fund-types", "Pdf Renda Fixa")
+        val commaTypeId = createType(commaTypeLabel, "STOCKS")
+        val otherTypeId = createType(otherTypeLabel, "STOCKS")
+        val fundTypeId = createType("Pdf Renda Fixa", "FUNDS")
 
         stockWalletId = createWallet("Pdf Stocks", "STOCKS", "BRL")
         val brlCryptoWalletId = createWallet("Pdf Crypto BRL", "CRYPTO", "BRL")
@@ -70,17 +70,17 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$fundWalletId/fund-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"fundTypeId":"$fundTypeId","name":"Fundo Pdf Renda","currentValue":1100.00,
+                """{"typeId":"$fundTypeId","name":"Fundo Pdf Renda","currentValue":1100.00,
                    "contribution":{"contributionDate":"2025-01-10","amount":1000.00}}"""
             )
             .exchange()
             .expectStatus().isCreated()
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .expectStatus().isCreated()
         .returnResult<TypeResponse>()
@@ -101,7 +101,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$stockWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$typeId","ticker":"$ticker","name":"Empresa ${ticker.first()}","currentPrice":$currentPrice,
+                """{"typeId":"$typeId","ticker":"$ticker","name":"Empresa ${ticker.first()}","currentPrice":$currentPrice,
                    "lot":{"lotDate":"2025-01-15","quantity":$quantity,"price":$price}}"""
             )
             .exchange()
@@ -160,6 +160,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
             assertContains(text, "Custódia em Ações")
             assertContains(text, "Custódia em Cripto")
             assertContains(text, "Custódia em Fundos")
+            assertContains(text, "Quantidade Preço médio Preço atual")
             assertContains(text, "Total geral 5 ")
             assertFalse(text.contains("Pdf Stocks"))
             assertFalse(text.contains("Pdf Crypto USD"))
@@ -172,7 +173,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
         val text = pdfText("/private/v1/holdings/report/pdf")
 
         assertEquals(1, occurrences(text, "PDFBTC"))
-        assertContains(text, "PDFBTC 3 73,33 180,00 220,00 +40,00 +22,2%")
+        assertContains(text, "PDFBTC 3 60,00 73,33 180,00 220,00 +40,00 +22,2%")
         assertContains(text, "1 USD = R$ 5,00")
         assertContains(text, "Total Cripto · 1 posição 180,00 220,00 +40,00 +22,2%")
     }
@@ -184,7 +185,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
 
         assertContains(text, "$commaTypeLabel · 1 posição 450,00 500,00 +50,00 +11,1%")
         assertContains(text, "$otherTypeLabel · 2 posições 100,00 110,00 +10,00 +10,0%")
-        assertContains(text, "PDFA3 Empresa P — 10 50,00 450,00 500,00 +50,00 +11,1%")
+        assertContains(text, "PDFA3 Empresa P — 10 45,00 50,00 450,00 500,00 +50,00 +11,1%")
         assertContains(text, "Pdf Renda Fixa · 1 posição 1.000,00 1.100,00 +100,00 +10,0%")
     }
 
@@ -219,7 +220,7 @@ class InvestmentReportControllerTest : BaseIntegrationTest() {
     fun `GET report pdf honours the walletId filter`() {
         val text = pdfText("/private/v1/holdings/report/pdf?walletId={walletId}", usdCryptoWalletId)
 
-        assertContains(text, "PDFBTC 2 60,00 100,00 120,00 +20,00 +20,0%")
+        assertContains(text, "PDFBTC 2 50,00 60,00 100,00 120,00 +20,00 +20,0%")
         assertEquals(0, occurrences(text, "PDFA3"))
     }
 

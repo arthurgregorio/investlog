@@ -8,8 +8,12 @@ import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequ
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingUpdateRequest
+import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
+import br.com.investlog.server.typelists.services.HoldingTypeService
+import br.com.investlog.server.typelists.services.SegmentService
 import br.com.investlog.server.wallets.services.WalletService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -21,6 +25,8 @@ import java.util.UUID
 @Transactional(readOnly = true)
 class FundHoldingService(
     private val walletService: WalletService,
+    private val holdingTypeService: HoldingTypeService,
+    private val segmentService: SegmentService,
     private val holdingRepo: FundHoldingRepository,
     private val contributionRepo: FundContributionRepository,
 ) {
@@ -39,11 +45,10 @@ class FundHoldingService(
     @Transactional
     fun create(walletExternalId: UUID, request: FundHoldingCreateRequest): FundHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
-        val fundTypeId = holdingRepo.findFundTypeInternalId(request.fundTypeId)
-            ?: throw NotFoundException("Tipo de fundo não encontrado: ${request.fundTypeId}")
         return holdingRepo.create(
             walletInternalId = walletId,
-            fundTypeInternalId = fundTypeId,
+            typeInternalId = holdingTypeService.resolveId(request.typeId, WalletKind.FUNDS),
+            segmentInternalId = request.segmentId?.let(segmentService::resolveId),
             name = request.name,
             currentValue = request.currentValue,
             administrationFeeRate = request.administrationFeeRate,
@@ -55,18 +60,29 @@ class FundHoldingService(
     @Transactional
     fun update(walletExternalId: UUID, holdingExternalId: UUID, request: FundHoldingUpdateRequest): FundHoldingResponse {
         val walletId = walletService.resolveId(walletExternalId)
-        val fundTypeId = request.fundTypeId?.let {
-            holdingRepo.findFundTypeInternalId(it) ?: throw NotFoundException("Tipo de fundo não encontrado: $it")
-        }
         return holdingRepo.update(
             walletInternalId = walletId,
             externalId = holdingExternalId,
-            fundTypeInternalId = fundTypeId,
+            typeInternalId = request.typeId?.let { typeId -> holdingTypeService.resolveId(typeId, WalletKind.FUNDS) },
             name = request.name,
             currentValue = request.currentValue,
             administrationFeeRate = request.administrationFeeRate,
             performanceFeeRate = request.performanceFeeRate,
             frozen = request.frozen,
+        ) ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
+    }
+
+    @Transactional
+    fun updateSegment(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: HoldingSegmentRequest,
+    ): FundHoldingResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        return holdingRepo.updateSegment(
+            walletInternalId = walletId,
+            externalId = holdingExternalId,
+            segmentInternalId = request.segmentId?.let(segmentService::resolveId),
         ) ?: throw NotFoundException("Posição de fundo não encontrada: $holdingExternalId")
     }
 

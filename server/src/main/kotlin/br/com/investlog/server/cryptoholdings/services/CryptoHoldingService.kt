@@ -5,12 +5,16 @@ import br.com.investlog.server.cryptoholdings.repositories.CryptoLotRepository
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingCreateRequest
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingUpdateRequest
+import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
+import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
+import br.com.investlog.server.typelists.services.HoldingTypeService
+import br.com.investlog.server.typelists.services.SegmentService
 import br.com.investlog.server.wallets.services.WalletService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
@@ -22,6 +26,8 @@ import java.util.UUID
 @Transactional(readOnly = true)
 class CryptoHoldingService(
     private val walletService: WalletService,
+    private val holdingTypeService: HoldingTypeService,
+    private val segmentService: SegmentService,
     private val holdingRepo: CryptoHoldingRepository,
     private val lotRepo: CryptoLotRepository,
 ) {
@@ -42,6 +48,8 @@ class CryptoHoldingService(
         val walletId = walletService.resolveId(walletExternalId)
         return holdingRepo.create(
             walletInternalId = walletId,
+            typeInternalId = request.typeId?.let { typeId -> holdingTypeService.resolveId(typeId, WalletKind.CRYPTO) },
+            segmentInternalId = request.segmentId?.let(segmentService::resolveId),
             ticker = request.ticker,
             name = request.name ?: request.ticker.uppercase(),
             currentPrice = request.currentPrice,
@@ -59,10 +67,25 @@ class CryptoHoldingService(
         return holdingRepo.update(
             walletInternalId = walletId,
             externalId = holdingExternalId,
+            typeInternalId = request.typeId?.let { typeId -> holdingTypeService.resolveId(typeId, WalletKind.CRYPTO) },
             ticker = request.ticker,
             name = request.name,
             currentPrice = request.currentPrice,
             frozen = request.frozen,
+        ) ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
+    }
+
+    @Transactional
+    fun updateSegment(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: HoldingSegmentRequest,
+    ): CryptoHoldingResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        return holdingRepo.updateSegment(
+            walletInternalId = walletId,
+            externalId = holdingExternalId,
+            segmentInternalId = request.segmentId?.let(segmentService::resolveId),
         ) ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
     }
 

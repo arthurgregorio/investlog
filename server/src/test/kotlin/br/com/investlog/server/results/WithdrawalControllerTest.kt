@@ -41,18 +41,18 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
         fundsWalletId = createWallet("Funds Wallet", "funds")
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Ação ON"}""")
+            .body("""{"name":"Ação ON","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
             .id
 
         fundTypeId = restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Fundos Imobiliários"}""")
+            .body("""{"name":"Fundos Imobiliários","kinds":["FUNDS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -81,7 +81,7 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
         .body(
             """
             {
-              "stockTypeId":"$stockTypeId",
+              "typeId":"$stockTypeId",
               "ticker":"$ticker",
               "name":"Holding $ticker",
               "currentPrice":$currentPrice,
@@ -102,7 +102,7 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"$name",
                   "currentValue":$currentValue,
                   "contribution":{"contributionDate":"2024-01-10","amount":$contribution}
@@ -599,7 +599,7 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"LREN3",
                   "name":"Holding LREN3",
                   "currentPrice":20.00,
@@ -642,7 +642,7 @@ class WithdrawalControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"Fundo Listado",
                   "currentValue":2000.00,
                   "contribution":{"contributionDate":"2024-01-10","amount":1000.00}

@@ -38,9 +38,9 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
             .id
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Gain Test Type"}""")
+            .body("""{"name":"Gain Test Type","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -56,9 +56,9 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
             .id
 
         fundTypeId = restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Gain Test Fund Type"}""")
+            .body("""{"name":"Gain Test Fund Type","kinds":["FUNDS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -68,7 +68,7 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$fundsWalletId/fund-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"fundTypeId":"$fundTypeId","name":"GNFND",
+                """{"typeId":"$fundTypeId","name":"GNFND",
                    "currentValue":1100.00,
                    "contribution":{"contributionDate":"2025-01-15","amount":1000.00}}"""
             )
@@ -108,7 +108,7 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$fundsWalletId/fund-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"fundTypeId":"$fundTypeId","name":"$name",
+                """{"typeId":"$fundTypeId","name":"$name",
                    "currentValue":100.00,
                    "contribution":{"contributionDate":"2025-01-15","amount":100.00}}"""
             )
@@ -128,7 +128,7 @@ class HoldingsGainControllerTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$inWalletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"$ticker",$currentPriceField
+                """{"typeId":"$stockTypeId","ticker":"$ticker",$currentPriceField
                    "lot":{"lotDate":"2025-01-15","quantity":$quantity,"price":$price}}"""
             )
             .exchange()

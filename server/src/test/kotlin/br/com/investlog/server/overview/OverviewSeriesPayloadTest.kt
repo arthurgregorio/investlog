@@ -32,8 +32,8 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
 
-        stockTypeId = createType("/private/v1/stock-types", "Series Payload Stock Type")
-        fundTypeId = createType("/private/v1/fund-types", "Series Payload Fund Type")
+        stockTypeId = createHoldingType("Series Payload Stock Type", "STOCKS")
+        fundTypeId = createHoldingType("Series Payload Fund Type", "FUNDS")
 
         val brlStocksWalletId = createWallet("Series BRL Stocks", "STOCKS", "BRL")
         val usdStocksWalletId = createWallet("Series USD Stocks", "STOCKS", "USD")
@@ -47,11 +47,11 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
         createFundHolding(usdFundsWalletId, "Series Fund", contributionDate = "2025-03-25", amount = "321.09")
     }
 
-    private fun createType(path: String, name: String): UUID =
+    private fun createHoldingType(name: String, kind: String): UUID =
         restTestClient.post()
-            .uri(path)
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"$name"}""")
+            .body("""{"name":"$name","kinds":["$kind"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -72,7 +72,7 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/stock-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"stockTypeId":"$stockTypeId","ticker":"$ticker","currentPrice":50.00,
+                """{"typeId":"$stockTypeId","ticker":"$ticker","currentPrice":50.00,
                    "lot":{"lotDate":"$lotDate","quantity":$quantity,"price":$price}}"""
             )
             .exchange()
@@ -96,7 +96,7 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
             .uri("/private/v1/wallets/$walletId/fund-holdings")
             .contentType(MediaType.APPLICATION_JSON)
             .body(
-                """{"fundTypeId":"$fundTypeId","name":"$name","currentValue":$amount,
+                """{"typeId":"$fundTypeId","name":"$name","currentValue":$amount,
                    "contribution":{"contributionDate":"$contributionDate","amount":$amount}}"""
             )
             .exchange()

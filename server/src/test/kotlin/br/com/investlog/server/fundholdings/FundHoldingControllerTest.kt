@@ -3,6 +3,7 @@ package br.com.investlog.server.fundholdings
 import br.com.investlog.server.BaseIntegrationTest
 import br.com.investlog.server.fundholdings.rest.payloads.ContributionResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
+import br.com.investlog.server.typelists.rest.payloads.HoldingTypeResponse
 import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import org.junit.jupiter.api.BeforeAll
@@ -41,9 +42,9 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .id
 
         fundTypeId = restTestClient.post()
-            .uri("/private/v1/fund-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Fundos Imobiliários"}""")
+            .body("""{"name":"Fundos Imobiliários","kinds":["FUNDS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -56,7 +57,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .body("""
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"$name",
                   "currentValue":5500.00,
                   "contribution":{"contributionDate":"2024-01-10","amount":5000.00}
@@ -213,7 +214,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$unknownTypeId",
+                  "typeId":"$unknownTypeId",
                   "name":"Fundo Fantasma",
                   "currentValue":5500.00,
                   "contribution":{"contributionDate":"2024-01-10","amount":5000.00}
@@ -223,7 +224,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isNotFound()
             .expectBody()
-            .jsonPath("$.detail").isEqualTo("Tipo de fundo não encontrado: $unknownTypeId")
+            .jsonPath("$.detail").isEqualTo("Tipo não encontrado: $unknownTypeId")
     }
 
     @Test
@@ -235,11 +236,11 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
         restTestClient.patch()
             .uri("/private/v1/wallets/$walletId/fund-holdings/${holding.id}")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"fundTypeId":"$unknownTypeId"}""")
+            .body("""{"typeId":"$unknownTypeId"}""")
             .exchange()
             .expectStatus().isNotFound()
             .expectBody()
-            .jsonPath("$.detail").isEqualTo("Tipo de fundo não encontrado: $unknownTypeId")
+            .jsonPath("$.detail").isEqualTo("Tipo não encontrado: $unknownTypeId")
     }
 
     @Test
@@ -333,7 +334,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .body("""
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"Fundo Multimercado",
                   "currentValue":5500.00,
                   "administrationFeeRate":$administrationFeeRate,
@@ -384,7 +385,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .body("""
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"Fundo Taxa Unica",
                   "administrationFeeRate":0.75,
                   "contribution":{"contributionDate":"2024-01-10","amount":5000.00}
@@ -431,7 +432,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .jsonPath("$.administrationFeeRate").isEqualTo(2.25)
             .jsonPath("$.performanceFeeRate").isEqualTo(20)
             .jsonPath("$.name").isEqualTo("Fundo Multimercado")
-            .jsonPath("$.fundTypeId").isEqualTo(fundTypeId.toString())
+            .jsonPath("$.typeId").isEqualTo(fundTypeId.toString())
             .jsonPath("$.currentValue").isEqualTo(5500.00)
     }
 
@@ -492,7 +493,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .body("""
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"Fundo Invalido",
                   "administrationFeeRate":-0.5,
                   "contribution":{"contributionDate":"2024-01-10","amount":5000.00}
@@ -510,7 +511,7 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .contentType(MediaType.APPLICATION_JSON)
             .body("""
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"Fundo Invalido",
                   "performanceFeeRate":-1,
                   "contribution":{"contributionDate":"2024-01-10","amount":5000.00}
@@ -666,6 +667,134 @@ class FundHoldingControllerTest : BaseIntegrationTest() {
             .expectBody()
             .jsonPath("$.content[0].costBasis").isEqualTo(5000.0)
     }
+
+    @Test
+    @Order(36)
+    fun `exposes the type name and rejects a type that does not apply to funds with 400`() {
+        val holding = createHolding("Fundo Tipado")
+        assertEquals(fundTypeId, holding.typeId)
+        assertEquals("Fundos Imobiliários", holding.typeName)
+
+        val stockOnly = createHoldingType("Só Ações Fundo", "STOCKS")
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"${stockOnly.id}",
+                  "name":"Fundo Errado",
+                  "contribution":{"contributionDate":"2024-01-10","amount":100.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo não se aplica a este tipo de carteira")
+
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"typeId":"${stockOnly.id}"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+
+        assertEquals(fundTypeId, findHolding(holding.id).typeId)
+    }
+
+    @Test
+    @Order(37)
+    fun `creates a fund holding with a segment, then changes and clears it`() {
+        val realEstate = createSegment("Imobiliário")
+        val credit = createSegment("Crédito")
+
+        val holding = restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/fund-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"$fundTypeId",
+                  "segmentId":"${realEstate.id}",
+                  "name":"Fundo Segmentado",
+                  "contribution":{"contributionDate":"2024-01-10","amount":100.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<FundHoldingResponse>()
+            .responseBody!!
+
+        assertEquals(realEstate.id, holding.segmentId)
+        assertEquals("Imobiliário", holding.segmentName)
+
+        val withCredit = updateSegment(holding.id, "\"${credit.id}\"")
+            .expectStatus().isOk()
+            .returnResult<FundHoldingResponse>()
+            .responseBody!!
+        assertEquals(credit.id, withCredit.segmentId)
+        assertEquals("Crédito", withCredit.segmentName)
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$walletId&search=Segmentado")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].segmentLabel").isEqualTo("Crédito")
+
+        updateSegment(holding.id, "null").expectStatus().isOk()
+        val cleared = findHolding(holding.id)
+        assertNull(cleared.segmentId)
+        assertNull(cleared.segmentName)
+    }
+
+    @Test
+    @Order(38)
+    fun `returns 404 when setting an unknown segment or the segment of an unknown holding`() {
+        val holding = createHolding("Fundo Sem Segmento")
+        val unknownSegmentId = UUID.randomUUID()
+        val unknownHoldingId = UUID.randomUUID()
+
+        updateSegment(holding.id, "\"$unknownSegmentId\"")
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Segmento não encontrado: $unknownSegmentId")
+
+        updateSegment(unknownHoldingId, "null")
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de fundo não encontrada: $unknownHoldingId")
+    }
+
+    private fun createHoldingType(name: String, kind: String): HoldingTypeResponse =
+        restTestClient.post()
+            .uri("/private/v1/holding-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"$name","kinds":["$kind"]}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<HoldingTypeResponse>()
+            .responseBody!!
+
+    private fun createSegment(name: String): TypeResponse =
+        restTestClient.post()
+            .uri("/private/v1/segments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"$name"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+
+    private fun updateSegment(holdingId: UUID, segmentIdJson: String) =
+        restTestClient.put()
+            .uri("/private/v1/wallets/$walletId/fund-holdings/$holdingId/segment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"segmentId":$segmentIdJson}""")
+            .exchange()
 
     private fun patchContribution(holdingId: UUID, contributionId: UUID, body: String) =
         restTestClient.patch()

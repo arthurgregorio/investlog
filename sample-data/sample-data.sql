@@ -5,7 +5,7 @@ BEGIN
     END IF;
 END $$;
 
-INSERT INTO finances.stock_segments (name) VALUES
+INSERT INTO finances.segments (name) VALUES
     ('Tecnologia da Informação'),
     ('Serviços de Comunicação'),
     ('Consumo Discricionário'),
@@ -23,19 +23,28 @@ INSERT INTO finances.stock_segments (name) VALUES
     ('Imóveis Comerciais'),
     ('Índice Brasil'),
     ('Índice EUA'),
-    ('Índice Nasdaq-100');
-
-INSERT INTO finances.stock_types (name) VALUES
-    ('Ações'),
-    ('FII'),
-    ('REIT'),
-    ('ETF'),
-    ('BDR');
-
-INSERT INTO finances.fund_types (name) VALUES
-    ('Ações'),
+    ('Índice Nasdaq-100'),
+    ('Renda Variável'),
     ('Multimercado'),
-    ('Renda Fixa');
+    ('Renda Fixa Pós'),
+    ('Inflação'),
+    ('Reserva de Valor'),
+    ('Smart Contracts')
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO finances.holding_types (name, kinds) VALUES
+    ('Ações', '{STOCKS}'),
+    ('FII', '{STOCKS}'),
+    ('REIT', '{STOCKS}'),
+    ('ETF', '{STOCKS}'),
+    ('BDR', '{STOCKS}'),
+    ('Fundo de Ações', '{FUNDS}'),
+    ('Fundo Multimercado', '{FUNDS}'),
+    ('Fundo de Renda Fixa', '{FUNDS}'),
+    ('CDB', '{FUNDS}'),
+    ('Tesouro Direto', '{FUNDS}'),
+    ('Cripto', '{CRYPTO}')
+ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO finances.wallets (user_id, name, kind, currency)
 SELECT u.id, v.name, v.kind::finances.wallet_kind, v.currency
@@ -49,8 +58,8 @@ CROSS JOIN (VALUES
 ) AS v(name, kind, currency)
 WHERE u.email = 'admin@admin.com';
 
-INSERT INTO finances.stock_holdings (wallet_id, stock_type_id, stock_segment_id, ticker, name, current_price)
-SELECT w.id, st.id, sg.id, v.ticker, v.name, v.current_price
+INSERT INTO finances.stock_holdings (wallet_id, holding_type_id, segment_id, ticker, name, current_price)
+SELECT w.id, ht.id, sg.id, v.ticker, v.name, v.current_price
 FROM (VALUES
     ('Ações Brasil', 'Ações', 'Energia', 'PETR4', 'Petrobras PN', 49.12),
     ('Ações Brasil', 'Ações', 'Materiais', 'VALE3', 'Vale ON', 69.91),
@@ -84,8 +93,8 @@ FROM (VALUES
 ) AS v(wallet_name, type_name, segment_name, ticker, name, current_price)
 JOIN finances.wallets w ON w.name = v.wallet_name
     AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
-JOIN finances.stock_types st ON st.name = v.type_name
-JOIN finances.stock_segments sg ON sg.name = v.segment_name;
+JOIN finances.holding_types ht ON ht.name = v.type_name
+JOIN finances.segments sg ON sg.name = v.segment_name;
 
 INSERT INTO finances.stock_lots (stock_holding_id, lot_date, quantity, price)
 SELECT sh.id, v.lot_date, v.quantity, v.price
@@ -170,17 +179,19 @@ JOIN finances.stock_holdings sh ON sh.ticker = v.ticker
 JOIN finances.wallets w ON w.id = sh.wallet_id
     AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
 
-INSERT INTO finances.crypto_holdings (wallet_id, ticker, name, current_price)
-SELECT w.id, v.ticker, v.name, v.current_price
+INSERT INTO finances.crypto_holdings (wallet_id, holding_type_id, segment_id, ticker, name, current_price)
+SELECT w.id, ht.id, sg.id, v.ticker, v.name, v.current_price
 FROM (VALUES
-    ('Cripto (USD)', 'BTC', 'Bitcoin', 84550.00),
-    ('Cripto (USD)', 'ETH', 'Ethereum', 2705.00),
-    ('Cripto (BRL)', 'BTC', 'Bitcoin', 437970.00),
-    ('Cripto (BRL)', 'ETH', 'Ethereum', 14012.90),
-    ('Cripto (BRL)', 'SOL', 'Solana', 615.28)
-) AS v(wallet_name, ticker, name, current_price)
+    ('Cripto (USD)', 'Cripto', 'Reserva de Valor', 'BTC', 'Bitcoin', 84550.00),
+    ('Cripto (USD)', 'Cripto', 'Smart Contracts', 'ETH', 'Ethereum', 2705.00),
+    ('Cripto (BRL)', 'Cripto', 'Reserva de Valor', 'BTC', 'Bitcoin', 437970.00),
+    ('Cripto (BRL)', 'Cripto', 'Smart Contracts', 'ETH', 'Ethereum', 14012.90),
+    ('Cripto (BRL)', 'Cripto', 'Smart Contracts', 'SOL', 'Solana', 615.28)
+) AS v(wallet_name, type_name, segment_name, ticker, name, current_price)
 JOIN finances.wallets w ON w.name = v.wallet_name
-    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+JOIN finances.holding_types ht ON ht.name = v.type_name
+JOIN finances.segments sg ON sg.name = v.segment_name;
 
 INSERT INTO finances.crypto_lots (crypto_holding_id, lot_date, quantity, price)
 SELECT ch.id, v.lot_date, v.quantity, v.price
@@ -206,20 +217,21 @@ JOIN finances.wallets w ON w.name = v.wallet_name
     AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
 JOIN finances.crypto_holdings ch ON ch.wallet_id = w.id AND ch.ticker = v.ticker;
 
-INSERT INTO finances.fund_holdings (wallet_id, fund_type_id, name, current_value)
-SELECT w.id, ft.id, v.name, v.current_value
+INSERT INTO finances.fund_holdings (wallet_id, holding_type_id, segment_id, name, current_value)
+SELECT w.id, ht.id, sg.id, v.name, v.current_value
 FROM (VALUES
-    ('Ações', 'BTG Pactual Int Lo FIF Ações', 24100.00),
-    ('Ações', 'RR Palmeiras I FIF Ações', 12650.00),
-    ('Ações', 'Equitas HIGH Convictions FIF Ações RL', 16200.00),
-    ('Multimercado', 'Growth Numeric Unlimited FIM IE', 20300.00),
-    ('Multimercado', 'Hawker FIF Classe FIM CP RL', 20100.00),
-    ('Multimercado', 'Lagoa FIF Multimercado', 11050.00),
-    ('Renda Fixa', 'Oak FI RF CP', 37950.00),
-    ('Renda Fixa', 'V7 Incentivado Investimento Infraestrutura RF', 22900.00),
-    ('Renda Fixa', 'BB TOP RF Ativa LP FIF RL', 47300.00)
-) AS v(type_name, name, current_value)
-JOIN finances.fund_types ft ON ft.name = v.type_name
+    ('Fundo de Ações', 'Renda Variável', 'BTG Pactual Int Lo FIF Ações', 24100.00),
+    ('Fundo de Ações', 'Renda Variável', 'RR Palmeiras I FIF Ações', 12650.00),
+    ('Fundo de Ações', 'Renda Variável', 'Equitas HIGH Convictions FIF Ações RL', 16200.00),
+    ('Fundo Multimercado', 'Multimercado', 'Growth Numeric Unlimited FIM IE', 20300.00),
+    ('Fundo Multimercado', 'Multimercado', 'Hawker FIF Classe FIM CP RL', 20100.00),
+    ('Fundo Multimercado', 'Multimercado', 'Lagoa FIF Multimercado', 11050.00),
+    ('Fundo de Renda Fixa', 'Renda Fixa Pós', 'Oak FI RF CP', 37950.00),
+    ('Fundo de Renda Fixa', 'Inflação', 'V7 Incentivado Investimento Infraestrutura RF', 22900.00),
+    ('Fundo de Renda Fixa', 'Renda Fixa Pós', 'BB TOP RF Ativa LP FIF RL', 47300.00)
+) AS v(type_name, segment_name, name, current_value)
+JOIN finances.holding_types ht ON ht.name = v.type_name
+JOIN finances.segments sg ON sg.name = v.segment_name
 JOIN finances.wallets w ON w.name = 'Fundos'
     AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
 

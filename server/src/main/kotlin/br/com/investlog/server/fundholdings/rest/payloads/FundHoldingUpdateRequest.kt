@@ -5,7 +5,7 @@ import java.math.BigDecimal
 import java.util.UUID
 
 data class FundHoldingUpdateRequest(
-    val fundTypeId: UUID?,
+    val typeId: UUID?,
     val name: String?,
     @field:PositiveOrZero
     val currentValue: BigDecimal?,

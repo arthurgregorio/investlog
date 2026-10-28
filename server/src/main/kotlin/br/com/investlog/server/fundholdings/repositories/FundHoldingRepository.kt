@@ -5,8 +5,9 @@ import br.com.investlog.server.fundholdings.rest.payloads.ContributionResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.jooq.finances.tables.references.FUND_CONTRIBUTIONS
 import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
-import br.com.investlog.server.jooq.finances.tables.references.FUND_TYPES
+import br.com.investlog.server.jooq.finances.tables.references.HOLDING_TYPES
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
+import br.com.investlog.server.jooq.finances.tables.references.SEGMENTS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
@@ -26,7 +27,8 @@ class FundHoldingRepository(
 
     fun findAll(walletInternalId: Long, pageable: Pageable): PagedModel<FundHoldingResponse> {
         val wallets = WALLETS.`as`("wallets")
-        val fundTypes = FUND_TYPES.`as`("fund_types")
+        val holdingTypes = HOLDING_TYPES.`as`("holding_types")
+        val segments = SEGMENTS.`as`("segments")
         val fundHoldings = FUND_HOLDINGS.`as`("fund_holdings")
 
         val contributionsField = DSL.multiset(
@@ -67,7 +69,10 @@ class FundHoldingRepository(
         val content = dsl.select(
             fundHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
-            fundTypes.EXTERNAL_ID,
+            holdingTypes.EXTERNAL_ID,
+            holdingTypes.NAME,
+            segments.EXTERNAL_ID,
+            segments.NAME,
             fundHoldings.NAME,
             fundHoldings.CURRENT_VALUE,
             fundHoldings.ADMINISTRATION_FEE_RATE,
@@ -78,7 +83,8 @@ class FundHoldingRepository(
         )
             .from(fundHoldings)
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
-            .join(fundTypes).on(fundTypes.ID.eq(fundHoldings.FUND_TYPE_ID))
+            .join(holdingTypes).on(holdingTypes.ID.eq(fundHoldings.HOLDING_TYPE_ID))
+            .leftJoin(segments).on(segments.ID.eq(fundHoldings.SEGMENT_ID))
             .where(fundHoldings.WALLET_ID.eq(walletInternalId))
             .orderBy(fundHoldings.CREATED_AT.desc())
             .limit(pageable.pageSize)
@@ -87,7 +93,10 @@ class FundHoldingRepository(
                 FundHoldingResponse(
                     id = rec.get(fundHoldings.EXTERNAL_ID)!!,
                     walletId = rec.get(wallets.EXTERNAL_ID)!!,
-                    fundTypeId = rec.get(fundTypes.EXTERNAL_ID)!!,
+                    typeId = rec.get(holdingTypes.EXTERNAL_ID)!!,
+                    typeName = rec.get(holdingTypes.NAME)!!,
+                    segmentId = rec.get(segments.EXTERNAL_ID),
+                    segmentName = rec.get(segments.NAME),
                     name = rec.get(fundHoldings.NAME)!!,
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),
@@ -107,60 +116,45 @@ class FundHoldingRepository(
 
     fun create(
         walletInternalId: Long,
-        fundTypeInternalId: Long,
+        typeInternalId: Long,
+        segmentInternalId: Long?,
         name: String,
         currentValue: BigDecimal?,
         administrationFeeRate: BigDecimal?,
         performanceFeeRate: BigDecimal?,
         contribution: ContributionCreateRequest
     ): FundHoldingResponse {
-        val holding = dsl.insertInto(FUND_HOLDINGS)
+        val holdingId = dsl.insertInto(FUND_HOLDINGS)
             .set(FUND_HOLDINGS.WALLET_ID, walletInternalId)
-            .set(FUND_HOLDINGS.FUND_TYPE_ID, fundTypeInternalId)
+            .set(FUND_HOLDINGS.HOLDING_TYPE_ID, typeInternalId)
+            .set(FUND_HOLDINGS.SEGMENT_ID, segmentInternalId)
             .set(FUND_HOLDINGS.NAME, name)
             .set(FUND_HOLDINGS.CURRENT_VALUE, currentValue)
             .set(FUND_HOLDINGS.ADMINISTRATION_FEE_RATE, administrationFeeRate)
             .set(FUND_HOLDINGS.PERFORMANCE_FEE_RATE, performanceFeeRate)
-            .returning()
-            .fetchSingle()
+            .returning(FUND_HOLDINGS.ID)
+            .fetchSingle(FUND_HOLDINGS.ID)!!
 
-        val contribRec = dsl.insertInto(FUND_CONTRIBUTIONS)
-            .set(FUND_CONTRIBUTIONS.FUND_HOLDING_ID, holding.id)
+        dsl.insertInto(FUND_CONTRIBUTIONS)
+            .set(FUND_CONTRIBUTIONS.FUND_HOLDING_ID, holdingId)
             .set(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE, contribution.contributionDate)
             .set(FUND_CONTRIBUTIONS.AMOUNT, contribution.amount)
-            .returning()
-            .fetchSingle()
+            .execute()
 
-        val walletExternalId = dsl.select(WALLETS.EXTERNAL_ID).from(WALLETS)
-            .where(WALLETS.ID.eq(walletInternalId)).fetchSingle(WALLETS.EXTERNAL_ID)!!
-
-        val fundTypeExternalId = dsl.select(FUND_TYPES.EXTERNAL_ID).from(FUND_TYPES)
-            .where(FUND_TYPES.ID.eq(fundTypeInternalId)).fetchSingle(FUND_TYPES.EXTERNAL_ID)!!
-
-        return FundHoldingResponse(
-            id = holding.externalId!!,
-            walletId = walletExternalId,
-            fundTypeId = fundTypeExternalId,
-            name = holding.name!!,
-            currentValue = holding.currentValue,
-            administrationFeeRate = holding.administrationFeeRate,
-            performanceFeeRate = holding.performanceFeeRate,
-            frozen = holding.frozen!!,
-            contributions = listOf(
-                ContributionResponse(
-                    id = contribRec.externalId!!,
-                    contributionDate = contribRec.contributionDate!!,
-                    amount = contribRec.amount!!,
-                )
-            ),
-            withdrawals = emptyList(),
-        )
+        return findByInternalId(holdingId, walletInternalId)!!
     }
 
-    fun findFundTypeInternalId(externalId: UUID): Long? =
-        dsl.select(FUND_TYPES.ID).from(FUND_TYPES)
-            .where(FUND_TYPES.EXTERNAL_ID.eq(externalId))
-            .fetchOne(FUND_TYPES.ID)
+    fun updateSegment(walletInternalId: Long, externalId: UUID, segmentInternalId: Long?): FundHoldingResponse? {
+        val holdingId = dsl.update(FUND_HOLDINGS)
+            .set(FUND_HOLDINGS.SEGMENT_ID, segmentInternalId)
+            .set(FUND_HOLDINGS.UPDATED_AT, OffsetDateTime.now())
+            .where(FUND_HOLDINGS.WALLET_ID.eq(walletInternalId))
+            .and(FUND_HOLDINGS.EXTERNAL_ID.eq(externalId))
+            .returning(FUND_HOLDINGS.ID)
+            .fetchOne(FUND_HOLDINGS.ID) ?: return null
+
+        return findByInternalId(holdingId, walletInternalId)
+    }
 
     fun findByExternalId(walletInternalId: Long, externalId: UUID): FundHoldingResponse? {
         val internalId = findInternalId(walletInternalId, externalId) ?: return null
@@ -183,7 +177,7 @@ class FundHoldingRepository(
     fun update(
         walletInternalId: Long,
         externalId: UUID,
-        fundTypeInternalId: Long?,
+        typeInternalId: Long?,
         name: String?,
         currentValue: BigDecimal?,
         administrationFeeRate: BigDecimal?,
@@ -196,7 +190,7 @@ class FundHoldingRepository(
             .fetchOne() ?: return null
 
         dsl.update(FUND_HOLDINGS)
-            .set(FUND_HOLDINGS.FUND_TYPE_ID, fundTypeInternalId ?: existing.fundTypeId!!)
+            .set(FUND_HOLDINGS.HOLDING_TYPE_ID, typeInternalId ?: existing.holdingTypeId!!)
             .set(FUND_HOLDINGS.NAME, name ?: existing.name!!)
             .set(FUND_HOLDINGS.CURRENT_VALUE, currentValue ?: existing.currentValue)
             .set(FUND_HOLDINGS.ADMINISTRATION_FEE_RATE, administrationFeeRate ?: existing.administrationFeeRate)
@@ -217,7 +211,8 @@ class FundHoldingRepository(
 
     private fun findByInternalId(internalId: Long, walletInternalId: Long): FundHoldingResponse? {
         val wallets = WALLETS.`as`("wallets")
-        val fundTypes = FUND_TYPES.`as`("fund_types")
+        val holdingTypes = HOLDING_TYPES.`as`("holding_types")
+        val segments = SEGMENTS.`as`("segments")
         val fundHoldings = FUND_HOLDINGS.`as`("fund_holdings")
 
         val contributionsField = DSL.multiset(
@@ -258,7 +253,10 @@ class FundHoldingRepository(
         return dsl.select(
             fundHoldings.EXTERNAL_ID,
             wallets.EXTERNAL_ID,
-            fundTypes.EXTERNAL_ID,
+            holdingTypes.EXTERNAL_ID,
+            holdingTypes.NAME,
+            segments.EXTERNAL_ID,
+            segments.NAME,
             fundHoldings.NAME,
             fundHoldings.CURRENT_VALUE,
             fundHoldings.ADMINISTRATION_FEE_RATE,
@@ -269,14 +267,18 @@ class FundHoldingRepository(
         )
             .from(fundHoldings)
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
-            .join(fundTypes).on(fundTypes.ID.eq(fundHoldings.FUND_TYPE_ID))
+            .join(holdingTypes).on(holdingTypes.ID.eq(fundHoldings.HOLDING_TYPE_ID))
+            .leftJoin(segments).on(segments.ID.eq(fundHoldings.SEGMENT_ID))
             .where(fundHoldings.ID.eq(internalId))
             .and(fundHoldings.WALLET_ID.eq(walletInternalId))
             .fetchOne { rec ->
                 FundHoldingResponse(
                     id = rec.get(fundHoldings.EXTERNAL_ID)!!,
                     walletId = rec.get(wallets.EXTERNAL_ID)!!,
-                    fundTypeId = rec.get(fundTypes.EXTERNAL_ID)!!,
+                    typeId = rec.get(holdingTypes.EXTERNAL_ID)!!,
+                    typeName = rec.get(holdingTypes.NAME)!!,
+                    segmentId = rec.get(segments.EXTERNAL_ID),
+                    segmentName = rec.get(segments.NAME),
                     name = rec.get(fundHoldings.NAME)!!,
                     currentValue = rec.get(fundHoldings.CURRENT_VALUE),
                     administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),

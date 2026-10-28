@@ -3,6 +3,8 @@ package br.com.investlog.server.cryptoholdings
 import br.com.investlog.server.BaseIntegrationTest
 import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
+import br.com.investlog.server.typelists.rest.payloads.HoldingTypeResponse
+import br.com.investlog.server.typelists.rest.payloads.TypeResponse
 import br.com.investlog.server.wallets.rest.payloads.WalletResponse
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Order
@@ -16,6 +18,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CryptoHoldingControllerTest : BaseIntegrationTest() {
@@ -472,6 +475,184 @@ class CryptoHoldingControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isCreated()
     }
+
+    @Test
+    @Order(27)
+    fun `creates a crypto holding without a type or a segment`() {
+        val holding = createHolding("NOTYPE")
+
+        assertNull(holding.typeId)
+        assertNull(holding.typeName)
+        assertNull(holding.segmentId)
+        assertNull(holding.segmentName)
+    }
+
+    @Test
+    @Order(28)
+    fun `creates a crypto holding with a type and a segment and changes the type through the patch`() {
+        val cryptoType = seededCryptoTypeId()
+        val segment = createSegment("Camada 1")
+
+        val holding = restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"$cryptoType",
+                  "segmentId":"${segment.id}",
+                  "ticker":"LINK",
+                  "lot":{"lotDate":"2024-01-01","quantity":1,"price":2000.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<CryptoHoldingResponse>()
+            .responseBody!!
+
+        assertEquals(cryptoType, holding.typeId)
+        assertEquals("Cripto", holding.typeName)
+        assertEquals(segment.id, holding.segmentId)
+        assertEquals("Camada 1", holding.segmentName)
+
+        val stablecoin = createHoldingType("Stablecoin", "CRYPTO")
+        val patched = restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"typeId":"${stablecoin.id}"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<CryptoHoldingResponse>()
+            .responseBody!!
+
+        assertEquals(stablecoin.id, patched.typeId)
+        assertEquals("Stablecoin", patched.typeName)
+        assertEquals(segment.id, patched.segmentId)
+
+        restTestClient.get()
+            .uri("/private/v1/holdings?walletId=$walletId&search=LINK")
+            .exchange()
+            .expectStatus().isOk()
+            .expectBody()
+            .jsonPath("$.content[0].typeLabel").isEqualTo("Stablecoin")
+            .jsonPath("$.content[0].segmentLabel").isEqualTo("Camada 1")
+    }
+
+    @Test
+    @Order(29)
+    fun `rejects a type that does not apply to crypto with 400`() {
+        val stockOnly = createHoldingType("Só Ações", "STOCKS")
+
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "typeId":"${stockOnly.id}",
+                  "ticker":"WRONG",
+                  "lot":{"lotDate":"2024-01-01","quantity":1,"price":10.00}
+                }
+                """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Tipo não se aplica a este tipo de carteira")
+
+        val holding = createHolding("KEEP")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"typeId":"${stockOnly.id}"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+
+        assertNull(findHolding(holding.id).typeId)
+    }
+
+    @Test
+    @Order(30)
+    fun `sets, changes and clears the segment of a crypto holding`() {
+        val holding = createHolding("SOL")
+        val layerOne = createSegment("Contratos Inteligentes")
+        val payments = createSegment("Pagamentos")
+
+        val withLayerOne = updateSegment(holding.id, "\"${layerOne.id}\"")
+            .expectStatus().isOk()
+            .returnResult<CryptoHoldingResponse>()
+            .responseBody!!
+        assertEquals(layerOne.id, withLayerOne.segmentId)
+        assertEquals("Contratos Inteligentes", withLayerOne.segmentName)
+
+        val withPayments = updateSegment(holding.id, "\"${payments.id}\"")
+            .expectStatus().isOk()
+            .returnResult<CryptoHoldingResponse>()
+            .responseBody!!
+        assertEquals(payments.id, withPayments.segmentId)
+
+        updateSegment(holding.id, "null").expectStatus().isOk()
+        assertNull(findHolding(holding.id).segmentId)
+    }
+
+    @Test
+    @Order(31)
+    fun `returns 404 when setting an unknown segment or the segment of an unknown holding`() {
+        val holding = createHolding("ADA")
+        val unknownSegmentId = UUID.randomUUID()
+        val unknownHoldingId = UUID.randomUUID()
+
+        updateSegment(holding.id, "\"$unknownSegmentId\"")
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Segmento não encontrado: $unknownSegmentId")
+
+        updateSegment(unknownHoldingId, "null")
+            .expectStatus().isNotFound()
+            .expectBody()
+            .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
+    }
+
+    private fun seededCryptoTypeId(): UUID {
+        val listResponse = restTestClient.get()
+            .uri("/private/v1/holding-types?kind=CRYPTO")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+
+        @Suppress("UNCHECKED_CAST")
+        val content = listResponse?.get("content") as List<Map<String, Any?>>
+        return UUID.fromString(content.single { holdingType -> holdingType["name"] == "Cripto" }["id"] as String)
+    }
+
+    private fun createHoldingType(name: String, kind: String): HoldingTypeResponse =
+        restTestClient.post()
+            .uri("/private/v1/holding-types")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"$name","kinds":["$kind"]}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<HoldingTypeResponse>()
+            .responseBody!!
+
+    private fun createSegment(name: String): TypeResponse =
+        restTestClient.post()
+            .uri("/private/v1/segments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"$name"}""")
+            .exchange()
+            .expectStatus().isCreated()
+            .returnResult<TypeResponse>()
+            .responseBody!!
+
+    private fun updateSegment(holdingId: UUID, segmentIdJson: String) =
+        restTestClient.put()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/$holdingId/segment")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"segmentId":$segmentIdJson}""")
+            .exchange()
 
     private fun findHolding(holdingId: UUID): CryptoHoldingResponse =
         restTestClient.get()

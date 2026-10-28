@@ -10,9 +10,8 @@ export type InvestmentKind = WalletKind
 interface AddInvestmentFormState {
   kind: InvestmentKind
   walletId: string
-  stockTypeId: string
-  stockSegmentId: string
-  fundTypeId: string
+  typeId: string
+  segmentId: string
   ticker: string
   name: string
   date: Date | null
@@ -40,9 +39,8 @@ export function useAddInvestmentForm(
   const form: AddInvestmentFormState = reactive({
     kind: initialKind ?? 'STOCKS',
     walletId: '' as string,
-    stockTypeId: '' as string,
-    stockSegmentId: '' as string,
-    fundTypeId: '' as string,
+    typeId: '' as string,
+    segmentId: '' as string,
     ticker: '',
     name: '',
     date: new Date() as Date | null,
@@ -61,8 +59,9 @@ export function useAddInvestmentForm(
     valid: computed(() => {
       if (!form.walletId) return false
       if (form.kind === 'FUNDS') {
-        return !!form.fundTypeId && !!form.name.trim() && !!form.date && Number(form.amount) > 0
+        return !!form.typeId && !!form.name.trim() && !!form.date && Number(form.amount) > 0
       }
+      if (form.kind === 'STOCKS' && !form.typeId) return false
       return (
         !!form.ticker.trim() && !!form.date && Number(form.quantity) > 0 && Number(form.price) > 0
       )
@@ -74,8 +73,13 @@ export function useAddInvestmentForm(
   }
 
   form.walletId = (initialWalletIn(form.walletsOfKind) ?? form.walletsOfKind[0])?.id ?? ''
-  form.stockTypeId = typesListStore.stockTypes[0]?.id ?? ''
-  form.fundTypeId = typesListStore.fundTypes[0]?.id ?? ''
+  function defaultTypeId(kind: InvestmentKind) {
+    const types = typesListStore.typesForKind(kind)
+    if (kind === 'CRYPTO') return types.length === 1 ? types[0].id : ''
+    return types[0]?.id ?? ''
+  }
+
+  form.typeId = defaultTypeId(form.kind)
 
   watch(
     () => form.kind,
@@ -97,28 +101,19 @@ export function useAddInvestmentForm(
   )
 
   watch(
-    () => typesListStore.stockTypes,
+    () => typesListStore.typesForKind(form.kind),
     (types) => {
-      if (!form.stockTypeId || !types.some((type) => type.id === form.stockTypeId)) {
-        form.stockTypeId = types[0]?.id ?? ''
+      if (!types.some((type) => type.id === form.typeId)) {
+        form.typeId = defaultTypeId(form.kind)
       }
     },
   )
 
   watch(
-    () => typesListStore.stockSegments,
+    () => typesListStore.segments,
     (segments) => {
-      if (!segments.some((segment) => segment.id === form.stockSegmentId)) {
-        form.stockSegmentId = ''
-      }
-    },
-  )
-
-  watch(
-    () => typesListStore.fundTypes,
-    (types) => {
-      if (!form.fundTypeId || !types.some((type) => type.id === form.fundTypeId)) {
-        form.fundTypeId = types[0]?.id ?? ''
+      if (!segments.some((segment) => segment.id === form.segmentId)) {
+        form.segmentId = ''
       }
     },
   )
@@ -132,8 +127,8 @@ export function useAddInvestmentForm(
     try {
       if (form.kind === 'STOCKS') {
         await holdingsApi.createStockHolding(form.walletId, {
-          stockTypeId: form.stockTypeId,
-          stockSegmentId: form.stockSegmentId || undefined,
+          typeId: form.typeId,
+          segmentId: form.segmentId || undefined,
           ticker: form.ticker.trim().toUpperCase(),
           name: form.name.trim() || undefined,
           currentPrice: currentPriceNum,
@@ -141,6 +136,8 @@ export function useAddInvestmentForm(
         })
       } else if (form.kind === 'CRYPTO') {
         await holdingsApi.createCryptoHolding(form.walletId, {
+          typeId: form.typeId || undefined,
+          segmentId: form.segmentId || undefined,
           ticker: form.ticker.trim().toUpperCase(),
           name: form.name.trim() || undefined,
           currentPrice: currentPriceNum,
@@ -150,7 +147,8 @@ export function useAddInvestmentForm(
         const currentValueNum =
           Number(form.currentValue) > 0 ? Number(form.currentValue) : undefined
         await holdingsApi.createFundHolding(form.walletId, {
-          fundTypeId: form.fundTypeId,
+          typeId: form.typeId,
+          segmentId: form.segmentId || undefined,
           name: form.name.trim(),
           currentValue: currentValueNum,
           ...(form.administrationFeeRate !== '' && {

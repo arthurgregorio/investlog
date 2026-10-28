@@ -57,16 +57,16 @@ class ReinvestmentControllerTest : BaseIntegrationTest() {
         cryptoWalletId = createWallet("Crypto Wallet", "crypto")
         fundsWalletId = createWallet("Funds Wallet", "funds")
 
-        stockTypeId = createType("/private/v1/stock-types", "Ação Reinvestimento")
-        fundTypeId = createType("/private/v1/fund-types", "Fundo Reinvestimento")
+        stockTypeId = createHoldingType("Ação Reinvestimento", "STOCKS")
+        fundTypeId = createHoldingType("Fundo Reinvestimento", "FUNDS")
 
         treasuryFundId = createFundHolding("Tesouro Selic", "1000", "1000")
     }
 
-    private fun createType(uri: String, name: String): UUID = restTestClient.post()
-        .uri(uri)
+    private fun createHoldingType(name: String, kind: String): UUID = restTestClient.post()
+        .uri("/private/v1/holding-types")
         .contentType(MediaType.APPLICATION_JSON)
-        .body("""{"name":"$name"}""")
+        .body("""{"name":"$name","kinds":["$kind"]}""")
         .exchange()
         .returnResult<TypeResponse>()
         .responseBody!!
@@ -93,7 +93,7 @@ class ReinvestmentControllerTest : BaseIntegrationTest() {
         .body(
             """
             {
-              "stockTypeId":"$stockTypeId",
+              "typeId":"$stockTypeId",
               "ticker":"$ticker",
               "name":"Holding $ticker",
               "currentPrice":$currentPrice,
@@ -134,7 +134,7 @@ class ReinvestmentControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "fundTypeId":"$fundTypeId",
+                  "typeId":"$fundTypeId",
                   "name":"$name",
                   "currentValue":$currentValue,
                   "contribution":{"contributionDate":"2024-01-10","amount":$contribution}

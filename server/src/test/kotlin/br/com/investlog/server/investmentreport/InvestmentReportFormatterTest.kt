@@ -39,11 +39,20 @@ class InvestmentReportFormatterTest {
     }
 
     @Test
-    fun `formats quantities without trailing zeros`() {
-        assertEquals("0,173", formatter.quantity(BigDecimal("0.17300000")))
-        assertEquals("1.500", formatter.quantity(BigDecimal("1500.00000000")))
-        assertEquals("0,00012345", formatter.quantity(BigDecimal("0.00012345")))
-        assertEquals("—", formatter.quantity(null))
+    fun `formats quantities with at most two decimals and no trailing zeros`() {
+        assertEquals("0,17", formatter.quantity(BigDecimal("0.17300000"), WalletKind.STOCKS))
+        assertEquals("10,13", formatter.quantity(BigDecimal("10.125"), WalletKind.STOCKS))
+        assertEquals("1.500", formatter.quantity(BigDecimal("1500.00000000"), WalletKind.STOCKS))
+        assertEquals("—", formatter.quantity(null, WalletKind.STOCKS))
+    }
+
+    @Test
+    fun `formats crypto quantities with at most four decimals`() {
+        assertEquals("0,173", formatter.quantity(BigDecimal("0.17300000"), WalletKind.CRYPTO))
+        assertEquals("0,0001", formatter.quantity(BigDecimal("0.00012345"), WalletKind.CRYPTO))
+        assertEquals("0,0001", formatter.quantity(BigDecimal("0.00005"), WalletKind.CRYPTO))
+        assertEquals("2.500,1235", formatter.quantity(BigDecimal("2500.12345"), WalletKind.CRYPTO))
+        assertEquals("—", formatter.quantity(null, WalletKind.CRYPTO))
     }
 
     @Test

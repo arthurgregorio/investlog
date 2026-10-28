@@ -49,9 +49,9 @@ class StockPriceSyncControllerTest : BaseIntegrationTest() {
             .id
 
         stockTypeId = restTestClient.post()
-            .uri("/private/v1/stock-types")
+            .uri("/private/v1/holding-types")
             .contentType(MediaType.APPLICATION_JSON)
-            .body("""{"name":"Ação Force Sync"}""")
+            .body("""{"name":"Ação Force Sync","kinds":["STOCKS"]}""")
             .exchange()
             .returnResult<TypeResponse>()
             .responseBody!!
@@ -77,7 +77,7 @@ class StockPriceSyncControllerTest : BaseIntegrationTest() {
             .body(
                 """
                 {
-                  "stockTypeId":"$stockTypeId",
+                  "typeId":"$stockTypeId",
                   "ticker":"$ticker",
                   "name":"$ticker",
                   "currentPrice":$currentPrice,

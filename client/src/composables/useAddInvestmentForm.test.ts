@@ -5,7 +5,7 @@ import { useAddInvestmentForm } from './useAddInvestmentForm'
 import { useWalletsStore } from '@/stores/wallets'
 import { useTypesListStore } from '@/stores/typesList'
 import * as holdingsApiModule from '@/api/holdings'
-import type { AssetType, WalletResponse } from '@/types'
+import type { HoldingType, WalletResponse } from '@/types'
 
 vi.mock('@/api/holdings')
 vi.mock('buefy', () => ({
@@ -45,8 +45,24 @@ const mockFundWallet: WalletResponse = {
   createdAt: '2024-01-01T00:00:00Z',
 }
 
-const mockStockType: AssetType = { id: 'type-1', name: 'Ação Ordinária', usageCount: 0 }
-const mockFundType: AssetType = { id: 'type-fund-1', name: 'Renda Fixa', usageCount: 0 }
+const mockStockType: HoldingType = {
+  id: 'type-1',
+  name: 'Ação Ordinária',
+  kinds: ['STOCKS'],
+  usageCount: 0,
+}
+const mockFundType: HoldingType = {
+  id: 'type-fund-1',
+  name: 'Renda Fixa',
+  kinds: ['FUNDS'],
+  usageCount: 0,
+}
+const mockCryptoType: HoldingType = {
+  id: 'type-crypto-1',
+  name: 'Moeda',
+  kinds: ['CRYPTO'],
+  usageCount: 0,
+}
 
 describe('useAddInvestmentForm', () => {
   beforeEach(() => {
@@ -58,8 +74,7 @@ describe('useAddInvestmentForm', () => {
     walletsStore.loaded = true
 
     const typesListStore = useTypesListStore()
-    typesListStore.stockTypes = [mockStockType]
-    typesListStore.fundTypes = [mockFundType]
+    typesListStore.holdingTypes = [mockStockType, mockFundType]
     typesListStore.loaded = true
   })
 
@@ -164,7 +179,7 @@ describe('useAddInvestmentForm', () => {
   it('valid=true for funds when all required fields are filled', () => {
     const { form } = useAddInvestmentForm('FUNDS')
     form.walletId = 'wallet-funds-1'
-    form.fundTypeId = 'type-fund-1'
+    form.typeId = 'type-fund-1'
     form.name = 'Tesouro Direto'
     form.amount = 500
     form.date = new Date()
@@ -212,15 +227,12 @@ describe('useAddInvestmentForm', () => {
 
     await submit()
 
-    expect(holdingsApiModule.holdingsApi.createFundHolding).toHaveBeenCalledWith(
-      'wallet-funds-1',
-      {
-        fundTypeId: 'type-fund-1',
-        name: 'Tesouro Direto',
-        currentValue: 520,
-        contribution: { contributionDate: '2024-06-01', amount: 500 },
-      },
-    )
+    expect(holdingsApiModule.holdingsApi.createFundHolding).toHaveBeenCalledWith('wallet-funds-1', {
+      typeId: 'type-fund-1',
+      name: 'Tesouro Direto',
+      currentValue: 520,
+      contribution: { contributionDate: '2024-06-01', amount: 500 },
+    })
     expect(onDone).toHaveBeenCalledWith('FUNDS')
   })
 
@@ -277,7 +289,7 @@ describe('useAddInvestmentForm', () => {
       expect(holdingsApiModule.holdingsApi.createFundHolding).toHaveBeenCalledWith(
         'wallet-funds-1',
         {
-          fundTypeId: 'type-fund-1',
+          typeId: 'type-fund-1',
           name: 'Tesouro Direto',
           currentValue: undefined,
           administrationFeeRate: 1.5,
@@ -425,27 +437,146 @@ describe('useAddInvestmentForm', () => {
     expect(form.walletId).toBe('wallet-stocks-1')
   })
 
-  it('reselects a type when the selected stock or fund type is removed', async () => {
-    const typesListStore = useTypesListStore()
-    const { form } = useAddInvestmentForm('STOCKS')
-    expect(form.stockTypeId).toBe('type-1')
-    expect(form.fundTypeId).toBe('type-fund-1')
+  describe('type of the selected kind', () => {
+    it('preselects the first type that applies to the kind', () => {
+      expect(useAddInvestmentForm('STOCKS').form.typeId).toBe('type-1')
+      expect(useAddInvestmentForm('FUNDS').form.typeId).toBe('type-fund-1')
+    })
 
-    typesListStore.stockTypes = [{ id: 'type-2', name: 'FII', usageCount: 0 }]
-    typesListStore.fundTypes = []
-    await nextTick()
+    it('reselects a type when the selected one is removed from the list', async () => {
+      const typesListStore = useTypesListStore()
+      const { form } = useAddInvestmentForm('STOCKS')
+      expect(form.typeId).toBe('type-1')
 
-    expect(form.stockTypeId).toBe('type-2')
-    expect(form.fundTypeId).toBe('')
+      typesListStore.holdingTypes = [
+        { id: 'type-2', name: 'FII', kinds: ['STOCKS'], usageCount: 0 },
+        mockFundType,
+      ]
+      await nextTick()
+
+      expect(form.typeId).toBe('type-2')
+    })
+
+    it('clears the type when no type applies to the kind any more', async () => {
+      const typesListStore = useTypesListStore()
+      const { form } = useAddInvestmentForm('FUNDS')
+
+      typesListStore.holdingTypes = [mockStockType]
+      await nextTick()
+
+      expect(form.typeId).toBe('')
+    })
+
+    it('swaps to a type of the new kind when the kind changes', async () => {
+      const { form } = useAddInvestmentForm('STOCKS')
+
+      form.kind = 'FUNDS'
+      await nextTick()
+
+      expect(form.typeId).toBe('type-fund-1')
+    })
+
+    it('a type shared by two kinds stays selected across the switch', async () => {
+      const sharedType: HoldingType = {
+        id: 'type-shared',
+        name: 'Renda Variável',
+        kinds: ['STOCKS', 'FUNDS'],
+        usageCount: 0,
+      }
+      useTypesListStore().holdingTypes = [sharedType, mockStockType, mockFundType]
+      const { form } = useAddInvestmentForm('STOCKS')
+      expect(form.typeId).toBe('type-shared')
+
+      form.kind = 'FUNDS'
+      await nextTick()
+
+      expect(form.typeId).toBe('type-shared')
+    })
+
+    it('is required for stocks', () => {
+      useTypesListStore().holdingTypes = []
+      const { form } = useAddInvestmentForm('STOCKS')
+      form.ticker = 'PETR4'
+      form.quantity = 10
+      form.price = 50
+      form.date = new Date()
+
+      expect(form.valid).toBe(false)
+    })
+
+    describe('for crypto', () => {
+      beforeEach(() => {
+        useWalletsStore().wallets = [
+          mockWallet,
+          { ...mockWallet, id: 'wallet-crypto-1', kind: 'CRYPTO' },
+        ]
+      })
+
+      function fillCryptoPurchase(form: ReturnType<typeof useAddInvestmentForm>['form']) {
+        form.ticker = 'BTC'
+        form.quantity = 1
+        form.price = 300000
+        form.date = new Date('2024-06-01')
+      }
+
+      it('is optional: no type is selected and the form is still valid', () => {
+        const { form } = useAddInvestmentForm('CRYPTO')
+        fillCryptoPurchase(form)
+
+        expect(form.typeId).toBe('')
+        expect(form.valid).toBe(true)
+      })
+
+      it('is preselected when exactly one crypto type exists', () => {
+        useTypesListStore().holdingTypes = [mockStockType, mockCryptoType]
+
+        const { form } = useAddInvestmentForm('CRYPTO')
+
+        expect(form.typeId).toBe('type-crypto-1')
+      })
+
+      it('is left unselected when several crypto types exist', () => {
+        useTypesListStore().holdingTypes = [
+          mockCryptoType,
+          { ...mockCryptoType, id: 'type-crypto-2', name: 'Token' },
+        ]
+
+        const { form } = useAddInvestmentForm('CRYPTO')
+
+        expect(form.typeId).toBe('')
+      })
+
+      it('is sent with the segment when chosen and left out when not', async () => {
+        useTypesListStore().holdingTypes = [mockCryptoType]
+        useTypesListStore().segments = [{ id: 'segment-1', name: 'Energia', usageCount: 0 }]
+        const { form, submit } = useAddInvestmentForm('CRYPTO')
+        fillCryptoPurchase(form)
+
+        await submit()
+        expect(holdingsApiModule.holdingsApi.createCryptoHolding).toHaveBeenLastCalledWith(
+          'wallet-crypto-1',
+          expect.objectContaining({ typeId: 'type-crypto-1', segmentId: undefined }),
+        )
+
+        form.typeId = ''
+        form.segmentId = 'segment-1'
+        await submit()
+        expect(holdingsApiModule.holdingsApi.createCryptoHolding).toHaveBeenLastCalledWith(
+          'wallet-crypto-1',
+          expect.objectContaining({ typeId: undefined, segmentId: 'segment-1' }),
+        )
+      })
+    })
   })
 
   it('submit calls createStockHolding with correct payload', async () => {
     vi.mocked(holdingsApiModule.holdingsApi.createStockHolding).mockResolvedValue({
       id: 'new-holding-id',
       walletId: 'wallet-stocks-1',
-      stockTypeId: 'type-1',
-      stockSegmentId: null,
-      stockSegmentName: null,
+      typeId: 'type-1',
+      segmentId: null,
+      typeName: 'Ação Ordinária',
+      segmentName: null,
       ticker: 'PETR4',
       name: '',
       currentPrice: null,
@@ -459,7 +590,7 @@ describe('useAddInvestmentForm', () => {
     form.quantity = 10
     form.price = 36.5
     form.date = new Date('2024-06-01')
-    form.stockTypeId = 'type-1'
+    form.typeId = 'type-1'
 
     await submit()
 
@@ -467,7 +598,7 @@ describe('useAddInvestmentForm', () => {
       'wallet-stocks-1',
       expect.objectContaining({
         ticker: 'PETR4',
-        stockTypeId: 'type-1',
+        typeId: 'type-1',
         lot: expect.objectContaining({
           quantity: 10,
           price: 36.5,
@@ -482,10 +613,10 @@ describe('useAddInvestmentForm', () => {
       {} as Awaited<ReturnType<typeof holdingsApiModule.holdingsApi.createStockHolding>>,
     )
     const typesListStore = useTypesListStore()
-    typesListStore.stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 0 }]
+    typesListStore.segments = [{ id: 'segment-1', name: 'Energia', usageCount: 0 }]
 
     const { form, submit } = useAddInvestmentForm('STOCKS')
-    expect(form.stockSegmentId).toBe('')
+    expect(form.segmentId).toBe('')
     form.ticker = 'TAEE11'
     form.quantity = 1
     form.price = 30
@@ -494,26 +625,26 @@ describe('useAddInvestmentForm', () => {
     await submit()
     expect(holdingsApiModule.holdingsApi.createStockHolding).toHaveBeenLastCalledWith(
       'wallet-stocks-1',
-      expect.objectContaining({ stockSegmentId: undefined }),
+      expect.objectContaining({ segmentId: undefined }),
     )
 
-    form.stockSegmentId = 'segment-1'
+    form.segmentId = 'segment-1'
     await submit()
     expect(holdingsApiModule.holdingsApi.createStockHolding).toHaveBeenLastCalledWith(
       'wallet-stocks-1',
-      expect.objectContaining({ stockSegmentId: 'segment-1' }),
+      expect.objectContaining({ segmentId: 'segment-1' }),
     )
   })
 
   it('drops the chosen segment when it disappears from the list', async () => {
     const typesListStore = useTypesListStore()
-    typesListStore.stockSegments = [{ id: 'segment-1', name: 'Energia', usageCount: 0 }]
+    typesListStore.segments = [{ id: 'segment-1', name: 'Energia', usageCount: 0 }]
     const { form } = useAddInvestmentForm('STOCKS')
-    form.stockSegmentId = 'segment-1'
+    form.segmentId = 'segment-1'
 
-    typesListStore.stockSegments = [{ id: 'segment-2', name: 'Tecnologia', usageCount: 0 }]
+    typesListStore.segments = [{ id: 'segment-2', name: 'Tecnologia', usageCount: 0 }]
     await nextTick()
 
-    expect(form.stockSegmentId).toBe('')
+    expect(form.segmentId).toBe('')
   })
 })
