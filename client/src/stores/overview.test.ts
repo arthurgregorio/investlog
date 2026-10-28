@@ -25,8 +25,8 @@ const mockSummary: PortfolioSummary = {
 }
 
 const mockSeries: SeriesPoint[] = [
-  { month: '2024-01', totalInvested: 5000 },
-  { month: '2024-02', totalInvested: 10000 },
+  { month: '2024-01', ownMoney: 5000, reinvestedProfit: 0, totalInvested: 5000 },
+  { month: '2024-02', ownMoney: 10000, reinvestedProfit: 0, totalInvested: 10000 },
 ]
 
 describe('useOverviewStore', () => {

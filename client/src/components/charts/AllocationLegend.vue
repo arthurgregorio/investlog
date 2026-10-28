@@ -5,6 +5,7 @@ export interface AllocationLegendEntry {
   key: string
   label: string
   name?: string | null
+  hint?: string
   color: string
   share: string
   value: number
@@ -27,7 +28,10 @@ withDefaults(
     >
       <span class="legend-dot" :style="{ background: entry.color }" />
       <span class="legend-label">
-        <span>{{ entry.label }}</span>
+        <b-tooltip v-if="entry.hint" :label="entry.hint" position="is-right" multilined>
+          <span class="legend-hint" data-testid="allocation-legend-hint">{{ entry.label }}</span>
+        </b-tooltip>
+        <span v-else>{{ entry.label }}</span>
         <span v-if="entry.name" class="is-size-7 has-text-grey ml-2">{{ entry.name }}</span>
       </span>
       <progress
@@ -73,6 +77,10 @@ withDefaults(
 .legend-label {
   font-weight: 500;
   color: var(--text-2);
+}
+
+.legend-hint {
+  cursor: help;
 }
 
 .legend-pct {

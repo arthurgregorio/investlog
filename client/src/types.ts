@@ -66,6 +66,8 @@ export interface PortfolioSummary {
 
 export interface SeriesPoint {
   month: string // "YYYY-MM"
+  ownMoney: number
+  reinvestedProfit: number
   totalInvested: number
 }
 
