@@ -144,12 +144,13 @@ class WalletTotalsControllerTest : BaseIntegrationTest() {
 
     @Test
     @Order(5)
-    fun `a wallet whose holdings are all completed reports the shape of an empty wallet`() {
+    fun `a wallet whose holdings are all completed reports no positions and its exits as cash`() {
         val body = walletBody(completedWalletId)
 
         assertContains(body, """"holdingCount":0""")
         assertContains(body, """"totalInvested":0,""")
-        assertContains(body, """"currentValue":null""")
+        assertContains(body, """"currentValue":500.00""")
+        assertContains(body, """"cash":500.00""")
         assertContains(body, """"gain":null""")
     }
 

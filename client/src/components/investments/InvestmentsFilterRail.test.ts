@@ -15,6 +15,8 @@ function walletOf(id: string, name: string, kind: WalletResponse['kind'], holdin
     currentValue: 0,
     gain: 0,
     gainPct: 0,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2026-01-01T00:00:00Z',
   } satisfies WalletResponse
 }

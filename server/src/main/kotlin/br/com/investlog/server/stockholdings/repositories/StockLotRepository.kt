@@ -38,6 +38,12 @@ class StockLotRepository(
             put(STOCK_LOTS.LOT_DATE, request.lotDate)
             request.quantity?.let { put(STOCK_LOTS.QUANTITY, it) }
             request.price?.let { put(STOCK_LOTS.PRICE, it) }
+            val newQuantity = request.quantity?.let { DSL.`val`(it) } ?: STOCK_LOTS.QUANTITY
+            val newPrice = request.price?.let { DSL.`val`(it) } ?: STOCK_LOTS.PRICE
+            put(
+                STOCK_LOTS.PURCHASE_AMOUNT,
+                STOCK_LOTS.PURCHASE_AMOUNT.plus(newQuantity.mul(newPrice).minus(STOCK_LOTS.QUANTITY.mul(STOCK_LOTS.PRICE))),
+            )
         }
         val rec = dsl.update(STOCK_LOTS)
             .set(changes)

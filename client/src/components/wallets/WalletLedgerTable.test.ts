@@ -1,12 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import WalletLedgerTable from './WalletLedgerTable.vue'
 import GainChip from '@/components/ui/GainChip.vue'
 import TablePagination from '@/components/ui/TablePagination.vue'
+import { cashApi } from '@/api/cash'
+import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useWalletLedgerStore } from '@/stores/walletLedger'
+import { useWalletsStore } from '@/stores/wallets'
 import type { WalletLedgerEntry } from '@/types'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+function dialogButton(label: string) {
+  return Array.from(document.body.querySelectorAll<HTMLButtonElement>('.dialog button')).find(
+    (button) => button.textContent?.trim() === label,
+  )
+}
 
 function entryOf(overrides: Partial<WalletLedgerEntry>): WalletLedgerEntry {
   return {
@@ -21,6 +34,12 @@ function entryOf(overrides: Partial<WalletLedgerEntry>): WalletLedgerEntry {
     amount: 630,
     profit: null,
     counterpartName: null,
+    originalAmount: null,
+    originalCurrency: null,
+    rate: null,
+    cashUsed: null,
+    newMoney: null,
+    cashBalance: 0,
     ...overrides,
   }
 }
@@ -126,13 +145,13 @@ describe('WalletLedgerTable', () => {
     expect(contributionRow.get('[data-testid="ledger-amount"]').text()).toContain('1.000,00')
   })
 
-  it('adds the profit of a withdrawal and of a reinvestment, and names where a reinvestment went', () => {
+  it('adds the profit of a withdrawal and of a reinvestment, and names where each one went', () => {
     const { wrapper } = mountTable([withdrawal, reinvestment])
 
     const [withdrawalRow, reinvestmentRow] = rowsOf(wrapper)
     expect(withdrawalRow.get('[data-testid="ledger-amount"]').text()).toContain('200,00')
     expect(withdrawalRow.findComponent(GainChip).props()).toMatchObject({ value: 80, cur: 'BRL' })
-    expect(withdrawalRow.get('[data-testid="ledger-detail"]').text()).toBe('')
+    expect(withdrawalRow.get('[data-testid="ledger-detail"]').text()).toBe('→ caixa')
     expect(reinvestmentRow.findComponent(GainChip).props('value')).toBe(-12)
     expect(reinvestmentRow.get('[data-testid="ledger-detail"]').text()).toBe('→ CDB Liquidez')
   })
@@ -178,7 +197,138 @@ describe('WalletLedgerTable', () => {
     const empty = wrapper.get('[data-testid="wallet-ledger-empty"]')
     expect(empty.text()).toContain('Nenhuma movimentação')
     expect(empty.text()).toContain(
-      'Compras, aportes, resgates e movimentações desta carteira aparecem aqui.',
+      'Compras, aportes, resgates, transferências e saques desta carteira aparecem aqui.',
+    )
+  })
+
+  describe('cash', () => {
+    const transferIn = entryOf({
+      id: 'transfer-1',
+      type: 'TRANSFER_IN',
+      holdingId: null,
+      holdingName: null,
+      ticker: null,
+      quantity: null,
+      amount: 4256,
+      counterpartName: 'Ações EUA',
+      originalAmount: 800,
+      originalCurrency: 'USD',
+      rate: 5.32,
+      cashBalance: 4256,
+    })
+    const transferOut = entryOf({
+      id: 'transfer-2',
+      type: 'TRANSFER_OUT',
+      holdingId: null,
+      holdingName: null,
+      ticker: null,
+      quantity: null,
+      amount: 500,
+      counterpartName: 'Reserva',
+      cashBalance: 3756,
+    })
+    const bankWithdrawal = entryOf({
+      id: 'cash-withdrawal-1',
+      type: 'CASH_WITHDRAWAL',
+      holdingId: null,
+      holdingName: null,
+      ticker: null,
+      quantity: null,
+      amount: 1000,
+      counterpartName: 'Itaú',
+      cashBalance: 2756,
+    })
+
+    it('labels transfers and bank withdrawals as cash events with their counterpart', () => {
+      const { wrapper } = mountTable([transferIn, transferOut, bankWithdrawal])
+
+      const rows = rowsOf(wrapper)
+      expect(rows.map((row) => row.get('.wallet-ledger-event').text())).toEqual([
+        'Transferência recebida',
+        'Transferência enviada',
+        'Saque para o banco',
+      ])
+      expect(rows.map((row) => row.get('.t-ticker').text())).toEqual(['Caixa', 'Caixa', 'Caixa'])
+      expect(rows.map((row) => row.get('[data-testid="ledger-detail"]').text())).toEqual([
+        '← Ações EUA · US$ 800,00 a R$ 5,32',
+        '→ Reserva',
+        '→ Itaú',
+      ])
+    })
+
+    it('leaves the rate out of a transfer in the same currency and the bank out when none was given', () => {
+      const { wrapper } = mountTable([
+        { ...transferIn, originalCurrency: 'BRL' },
+        { ...transferIn, id: 'transfer-3', originalCurrency: null },
+        { ...bankWithdrawal, counterpartName: null },
+      ])
+
+      expect(rowsOf(wrapper).map((row) => row.get('[data-testid="ledger-detail"]').text())).toEqual(
+        ['← Ações EUA', '← Ações EUA', ''],
+      )
+    })
+
+    it('leaves out the destination of a reinvestment without one and the conversion of a transfer without a rate', () => {
+      const { wrapper } = mountTable([
+        { ...reinvestment, counterpartName: null },
+        { ...transferIn, originalAmount: null, rate: null },
+      ])
+
+      expect(rowsOf(wrapper).map((row) => row.get('[data-testid="ledger-detail"]').text())).toEqual(
+        ['', '← Ações EUA'],
+      )
+    })
+
+    it('says how a purchase was funded', () => {
+      const { wrapper } = mountTable([
+        { ...purchase, id: 'lot-1', cashUsed: 200, newMoney: 430 },
+        { ...purchase, id: 'lot-2', cashUsed: 630, newMoney: 0 },
+        { ...purchase, id: 'lot-3', cashUsed: 0, newMoney: 630 },
+      ])
+
+      expect(rowsOf(wrapper).map((row) => row.get('[data-testid="ledger-detail"]').text())).toEqual(
+        ['Do caixa R$ 200,00 · novo R$ 430,00', 'Do caixa R$ 630,00', 'Dinheiro novo'],
+      )
+    })
+
+    it('shows the cash balance after every event', () => {
+      const { wrapper } = mountTable([transferIn, bankWithdrawal])
+
+      expect(
+        rowsOf(wrapper).map((row) => row.get('[data-testid="ledger-cash-balance"]').text()),
+      ).toEqual(['R$ 4.256,00', 'R$ 2.756,00'])
+    })
+
+    it('offers a delete button on cash events only', () => {
+      const { wrapper } = mountTable([purchase, withdrawal, transferIn, bankWithdrawal])
+
+      expect(
+        rowsOf(wrapper).map((row) => row.find('[data-testid="ledger-delete-cash-event"]').exists()),
+      ).toEqual([false, false, true, true])
+    })
+
+    it.each([
+      ['a transfer', transferIn, 'deleteTransfer', 'transfer-1'],
+      ['a bank withdrawal', bankWithdrawal, 'deleteBankWithdrawal', 'cash-withdrawal-1'],
+    ] as const)(
+      'deletes %s after confirming and reloads the wallet',
+      async (_label, entry, method, entryId) => {
+        const deletion = vi.spyOn(cashApi, method).mockResolvedValue()
+        const { wrapper, walletLedgerStore } = mountTable([entry])
+
+        await wrapper.get('[data-testid="ledger-delete-cash-event"]').trigger('click')
+        await flushPromises()
+        expect(document.body.querySelector('.dialog .modal-card-title')?.textContent).toContain(
+          'Excluir movimentação',
+        )
+        dialogButton('Excluir')!.click()
+        await flushPromises()
+
+        expect(deletion).toHaveBeenCalledWith('wallet-1', entryId)
+        expect(walletLedgerStore.refresh).toHaveBeenCalled()
+        expect(useWalletDetailStore().refresh).toHaveBeenCalled()
+        expect(useWalletsStore().refresh).toHaveBeenCalled()
+      },
     )
   })
 

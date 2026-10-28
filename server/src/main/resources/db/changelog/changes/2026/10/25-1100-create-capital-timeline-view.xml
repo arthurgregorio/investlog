@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="25-1100-1" author="${claude}">
+        <comment>
+            The Overview series stops adding up every lot ever bought, which counted money twice once
+            it left one position for another (issue #509). Each row is one event in its wallet's own
+            currency, split into own money and reinvested profit, and across a user's wallets the two
+            add up to the cost basis plus the cash, so the series ends exactly at the Overview's Total
+            investido plus cash.
+
+            Own money is a purchase's new money from the cash replay, transfers in minus transfers out
+            and withdrawals to the bank, plus two corrections that keep the total exact. A reinvestment
+            adds its lot's purchase_amount and takes away its exit's net amount, which cancel. A move's
+            destination lot adds its purchase_amount, which is set only on lots written before
+            purchase_amount existed: since then the origin keeps the moved cost in its own
+            purchase_amount. Reinvested profit is every exit's profit, reinvestments included.
+        </comment>
+        <sql>
+            DROP VIEW finances.contributions_timeline;
+
+            CREATE VIEW finances.capital_timeline AS
+            SELECT
+                wallets.id AS wallet_id,
+                wallets.user_id,
+                date_trunc('month', replay.event_date::TIMESTAMP)::DATE AS month,
+                CASE replay.event_type
+                    WHEN 'TRANSFER_IN' THEN replay.amount
+                    WHEN 'TRANSFER_OUT' THEN -replay.amount
+                    WHEN 'CASH_WITHDRAWAL' THEN -replay.amount
+                    ELSE replay.new_money
+                END AS own_money_amount,
+                0::NUMERIC AS reinvested_profit_amount,
+                COALESCE(currency_rates.rate, 1) AS rate
+            FROM finances.wallets
+            CROSS JOIN LATERAL finances.wallet_cash_replay(wallets.id) AS replay
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+            WHERE replay.event_type &lt;&gt; 'WITHDRAWAL'
+
+            UNION ALL
+
+            SELECT
+                wallets.id,
+                wallets.user_id,
+                date_trunc('month', stock_lots.lot_date::TIMESTAMP)::DATE,
+                stock_lots.purchase_amount,
+                0::NUMERIC,
+                COALESCE(currency_rates.rate, 1)
+            FROM finances.stock_lots
+            JOIN finances.stock_holdings ON stock_holdings.id = stock_lots.stock_holding_id
+            JOIN finances.wallets ON wallets.id = stock_holdings.wallet_id
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+            WHERE stock_lots.origin IN ('MOVE', 'REINVESTMENT')
+              AND stock_lots.purchase_amount IS NOT NULL
+
+            UNION ALL
+
+            SELECT
+                wallets.id,
+                wallets.user_id,
+                date_trunc('month', crypto_lots.lot_date::TIMESTAMP)::DATE,
+                crypto_lots.purchase_amount,
+                0::NUMERIC,
+                COALESCE(currency_rates.rate, 1)
+            FROM finances.crypto_lots
+            JOIN finances.crypto_holdings ON crypto_holdings.id = crypto_lots.crypto_holding_id
+            JOIN finances.wallets ON wallets.id = crypto_holdings.wallet_id
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+            WHERE crypto_lots.origin IN ('MOVE', 'REINVESTMENT')
+              AND crypto_lots.purchase_amount IS NOT NULL
+
+            UNION ALL
+
+            SELECT
+                wallets.id,
+                wallets.user_id,
+                date_trunc('month', fund_contributions.contribution_date::TIMESTAMP)::DATE,
+                fund_contributions.purchase_amount,
+                0::NUMERIC,
+                COALESCE(currency_rates.rate, 1)
+            FROM finances.fund_contributions
+            JOIN finances.fund_holdings ON fund_holdings.id = fund_contributions.fund_holding_id
+            JOIN finances.wallets ON wallets.id = fund_holdings.wallet_id
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency
+            WHERE fund_contributions.origin IN ('MOVE', 'REINVESTMENT')
+              AND fund_contributions.purchase_amount IS NOT NULL
+
+            UNION ALL
+
+            SELECT
+                wallets.id,
+                wallets.user_id,
+                date_trunc('month', results.result_date::TIMESTAMP)::DATE,
+                CASE WHEN results.result_type = 'REINVESTMENT' THEN -results.net_amount ELSE 0 END,
+                results.profit,
+                COALESCE(currency_rates.rate, 1)
+            FROM finances.results
+            LEFT JOIN finances.stock_holdings ON stock_holdings.id = results.stock_holding_id
+            LEFT JOIN finances.crypto_holdings ON crypto_holdings.id = results.crypto_holding_id
+            LEFT JOIN finances.fund_holdings ON fund_holdings.id = results.fund_holding_id
+            JOIN finances.wallets ON wallets.id = COALESCE(
+                stock_holdings.wallet_id,
+                crypto_holdings.wallet_id,
+                fund_holdings.wallet_id
+            )
+            LEFT JOIN finances.currency_rates ON currency_rates.currency_code = wallets.currency;
+        </sql>
+        <rollback>
+            <sql>DROP VIEW finances.capital_timeline;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -22,6 +22,8 @@ const emit = defineEmits<{
   remove: []
   move: []
   reinvest: []
+  transfer: []
+  'withdraw-to-bank': []
   'view-holdings': []
 }>()
 
@@ -37,6 +39,8 @@ interface Highlight {
 const holdingsListStore = useHoldingsListStore()
 
 const walletType = computed(() => WALLET_TYPES[props.detail.kind])
+
+const hasCash = computed(() => props.detail.cash > 0)
 
 const resultDirection = computed(() => {
   const gain = props.detail.gain
@@ -135,6 +139,12 @@ const highlights = computed<Highlight[]>(() => [
               {{ fmt.money(detail.totalInvested, detail.currency) }}
             </div>
           </div>
+          <div v-if="hasCash" data-testid="wallet-cash">
+            <div class="kpi-label">Caixa</div>
+            <div class="wd-figure-value">
+              {{ fmt.money(detail.cash, detail.currency) }}
+            </div>
+          </div>
           <div>
             <div class="kpi-label">Valor atual</div>
             <div class="wd-figure-value">
@@ -171,6 +181,23 @@ const highlights = computed<Highlight[]>(() => [
             >
               <b-icon icon="autorenew" size="is-small" /> Reinvestir
             </b-dropdown-item>
+            <template v-if="hasCash">
+              <hr class="dropdown-divider" />
+              <b-dropdown-item
+                aria-role="listitem"
+                data-testid="wallet-transfer-cash"
+                @click="emit('transfer')"
+              >
+                <b-icon icon="bank-transfer" size="is-small" /> Transferir caixa
+              </b-dropdown-item>
+              <b-dropdown-item
+                aria-role="listitem"
+                data-testid="wallet-withdraw-cash"
+                @click="emit('withdraw-to-bank')"
+              >
+                <b-icon icon="bank-outline" size="is-small" /> Sacar para o banco
+              </b-dropdown-item>
+            </template>
             <template v-if="isAdmin">
               <hr class="dropdown-divider" />
               <b-dropdown-item

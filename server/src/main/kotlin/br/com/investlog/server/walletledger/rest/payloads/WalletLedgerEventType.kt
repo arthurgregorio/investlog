@@ -7,4 +7,7 @@ enum class WalletLedgerEventType {
     REINVESTMENT,
     MOVE_IN,
     MOVE_OUT,
+    TRANSFER_IN,
+    TRANSFER_OUT,
+    CASH_WITHDRAWAL,
 }

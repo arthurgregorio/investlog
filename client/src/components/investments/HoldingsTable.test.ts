@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import HoldingsTable from './HoldingsTable.vue'
 import type { HoldingRow } from '@/types'
 
-const HoldingDrawerStub = defineComponent({
+const HoldingDrawerStub = {
   name: 'HoldingDrawer',
   props: {
     row: { type: Object, required: true },
@@ -13,7 +13,7 @@ const HoldingDrawerStub = defineComponent({
   },
   emits: ['close', 'deleted', 'position-added', 'relocated'],
   template: '<div data-testid="drawer">{{ row.id }}</div>',
-})
+}
 
 const positionModalProps = {
   holdingId: { type: String, required: true },
@@ -22,19 +22,19 @@ const positionModalProps = {
   walletCurrency: { type: String, required: true },
 }
 
-const AddPositionModalStub = defineComponent({
+const AddPositionModalStub = {
   name: 'AddPositionModal',
   props: positionModalProps,
   emits: ['added', 'close'],
   template: '<div data-testid="add-position-modal">{{ holdingId }}</div>',
-})
+}
 
-const UpdatePriceModalStub = defineComponent({
+const UpdatePriceModalStub = {
   name: 'UpdatePriceModal',
   props: { ...positionModalProps, initialValue: { type: Number, default: null } },
   emits: ['updated', 'close'],
   template: '<div data-testid="update-price-modal">{{ holdingId }}:{{ initialValue }}</div>',
-})
+}
 
 const firstRow: HoldingRow = {
   id: 'holding-1',
@@ -79,6 +79,8 @@ interface TableProps {
   sortable: boolean
   sortKey: string | null
   sortDirection: 'asc' | 'desc'
+  cash: number
+  cashCurrency: string
 }
 
 let activeWrapper: VueWrapper | undefined
@@ -130,6 +132,21 @@ describe('HoldingsTable', () => {
   afterEach(() => {
     activeWrapper?.unmount()
     activeWrapper = undefined
+  })
+
+  it('pins a cash row above the holdings only while there is cash, and forwards its actions', async () => {
+    expect(mountTable().find('[data-testid="cash-row"]').exists()).toBe(false)
+    activeWrapper?.unmount()
+
+    const wrapper = mountTable({ cash: 250, cashCurrency: 'USD' })
+    const firstBodyRow = wrapper.get('tbody tr')
+    expect(firstBodyRow.attributes('data-testid')).toBe('cash-row')
+    expect(wrapper.get('[data-testid="cash-row-value"]').text()).toBe('US$ 250,00')
+    await wrapper.get('[data-testid="cash-row-transfer"]').trigger('click')
+    await wrapper.get('[data-testid="cash-row-withdraw"]').trigger('click')
+
+    expect(wrapper.emitted('transfer-cash')).toHaveLength(1)
+    expect(wrapper.emitted('withdraw-cash')).toHaveLength(1)
   })
 
   it('renders one row per holding and marks the frozen one', () => {

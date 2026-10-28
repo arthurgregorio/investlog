@@ -4,6 +4,7 @@ import OverviewView from '@/views/OverviewView.vue'
 import ResultsDashboardView from '@/views/ResultsDashboardView.vue'
 import WalletsView from '@/views/WalletsView.vue'
 import WalletDetailView from '@/views/WalletDetailView.vue'
+import CashReconciliationView from '@/views/CashReconciliationView.vue'
 import InvestmentsView from '@/views/InvestmentsView.vue'
 import PriceCurrenciesView from '@/views/PriceCurrenciesView.vue'
 import TypesView from '@/views/TypesView.vue'
@@ -22,6 +23,11 @@ export const router = createRouter({
     { path: '/overview', name: 'overview', component: OverviewView },
     { path: '/overview/resultados', name: 'overview-results', component: ResultsDashboardView },
     { path: '/wallets', name: 'wallets', component: WalletsView },
+    {
+      path: '/wallets/conciliar',
+      name: 'cash-reconciliation',
+      component: CashReconciliationView,
+    },
     { path: '/wallets/:id', name: 'wallet-detail', component: WalletDetailView },
     { path: '/investments', name: 'investments', component: InvestmentsView },
     { path: '/settings', redirect: { name: 'settings-price-currencies' } },

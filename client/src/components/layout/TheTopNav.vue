@@ -34,7 +34,7 @@ const nav = computed<NavItem[]>(() => {
     },
     {
       name: 'wallets',
-      activeFor: ['wallet-detail'],
+      activeFor: ['wallet-detail', 'cash-reconciliation'],
       label: 'Carteiras',
       icon: 'wallet-outline',
     },

@@ -4,6 +4,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import WalletDetailView from './WalletDetailView.vue'
 import HoldingsTable from '@/components/investments/HoldingsTable.vue'
+import TransferCashModal from '@/components/wallets/TransferCashModal.vue'
+import WithdrawCashModal from '@/components/wallets/WithdrawCashModal.vue'
 import { useWalletDetailStore } from '@/stores/walletDetail'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useAuthStore } from '@/stores/auth'
@@ -43,6 +45,7 @@ function detailOf(overrides: Partial<WalletDetail> = {}): WalletDetail {
     totalInvested: 4500,
     gain: 250,
     gainPct: 5.5556,
+    cash: 0,
     series: [],
     dayChange: null,
     weekChange: null,
@@ -220,6 +223,12 @@ describe('WalletDetailView', () => {
         amount: 150,
         profit: 20,
         counterpartName: null,
+        originalAmount: null,
+        originalCurrency: null,
+        rate: null,
+        cashUsed: null,
+        newMoney: null,
+        cashBalance: 0,
       },
       {
         id: 'move-out',
@@ -233,6 +242,12 @@ describe('WalletDetailView', () => {
         amount: null,
         profit: null,
         counterpartName: 'Outra carteira',
+        originalAmount: null,
+        originalCurrency: null,
+        rate: null,
+        cashUsed: null,
+        newMoney: null,
+        cashBalance: 0,
       },
     ])
 
@@ -272,6 +287,8 @@ describe('WalletDetailView', () => {
       currentValue: 4750,
       gain: 250,
       gainPct: 5.5556,
+      cash: 0,
+      cashReconciled: true,
       createdAt: '2026-01-01T00:00:00Z',
     }
     walletsStore.wallets = [wallet]
@@ -668,6 +685,52 @@ describe('WalletDetailView', () => {
     expect(wrapper.text()).not.toContain('Venda parte ou toda a posição e reinvista')
   })
 
+  it('opens the transfer from the header and reloads the wallet once it is recorded', async () => {
+    const { wrapper, walletDetailStore } = await mountView(detailOf({ cash: 300 }))
+    vi.mocked(walletDetailStore.load).mockClear()
+
+    await wrapper.get('[data-testid="wallet-transfer-cash"]').trigger('click')
+    await flushPromises()
+    const modal = wrapper.findComponent(TransferCashModal)
+    expect(modal.props()).toMatchObject({ walletId: 'wallet-1', currency: 'BRL', cash: 300 })
+
+    modal.vm.$emit('transferred')
+    modal.vm.$emit('close')
+    await flushPromises()
+
+    expect(walletDetailStore.load).toHaveBeenCalledWith('wallet-1')
+    expect(wrapper.findComponent(TransferCashModal).exists()).toBe(false)
+  })
+
+  it('pins the cash row in the investments table and opens both dialogs from it', async () => {
+    const { wrapper, walletDetailStore } = await mountView(detailOf({ cash: 300 }))
+    vi.mocked(walletDetailStore.load).mockClear()
+
+    expect(wrapper.get('[data-testid="cash-row-value"]').text()).toBe('R$ 300,00')
+    await wrapper.get('[data-testid="cash-row-transfer"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.findComponent(TransferCashModal).exists()).toBe(true)
+
+    await wrapper.get('[data-testid="cash-row-withdraw"]').trigger('click')
+    await flushPromises()
+    const modal = wrapper.findComponent(WithdrawCashModal)
+    modal.vm.$emit('withdrawn')
+    modal.vm.$emit('close')
+    await flushPromises()
+
+    expect(walletDetailStore.load).toHaveBeenCalledWith('wallet-1')
+    expect(wrapper.findComponent(WithdrawCashModal).exists()).toBe(false)
+  })
+
+  it('opens the bank withdrawal from the header', async () => {
+    const { wrapper } = await mountView(detailOf({ cash: 300 }))
+
+    await wrapper.get('[data-testid="wallet-withdraw-cash"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.findComponent(WithdrawCashModal).props('walletName')).toBe('Detail Wallet')
+  })
+
   it('renders best, worst and largest position as a three-cell strip inside the header card', async () => {
     const { wrapper } = await mountView(
       detailOf({
@@ -728,6 +791,12 @@ describe('WalletDetailView', () => {
       amount: null,
       profit: null,
       counterpartName: 'Outra carteira',
+      originalAmount: null,
+      originalCurrency: null,
+      rate: null,
+      cashUsed: null,
+      newMoney: null,
+      cashBalance: 0,
     }
 
     it('shows the page overlay only while the wallet detail is loading', async () => {
