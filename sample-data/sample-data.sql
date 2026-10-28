@@ -381,3 +381,88 @@ SELECT wallet_id, snapshot_date, current_value, total_invested,
        current_value - total_invested,
        ROUND((current_value - total_invested) / total_invested * 100, 4)
 FROM wallet_totals;
+
+INSERT INTO finances.strategies (user_id, name)
+SELECT u.id, v.name
+FROM system.users u
+CROSS JOIN (VALUES
+    ('Longo prazo'),
+    ('Aposentadoria')
+) AS v(name)
+WHERE u.email = 'admin@admin.com'
+ORDER BY v.name = 'Aposentadoria';
+
+INSERT INTO finances.strategy_classes (strategy_id, name, target_percentage, position)
+SELECT s.id, v.class_name, v.target_percentage, v.position
+FROM (VALUES
+    ('Longo prazo', 'Ações Brasil', 22, 0),
+    ('Longo prazo', 'Exterior', 55, 1),
+    ('Longo prazo', 'Renda fixa', 18, 2),
+    ('Longo prazo', 'Cripto', 5, 3),
+    ('Aposentadoria', 'Dividendos EUA', 55, 0),
+    ('Aposentadoria', 'Multimercado', 25, 1),
+    ('Aposentadoria', 'Fundos de ações', 20, 2)
+) AS v(strategy_name, class_name, target_percentage, position)
+JOIN finances.strategies s ON s.name = v.strategy_name
+    AND s.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
+
+UPDATE finances.stock_holdings sh
+SET strategy_class_id = sc.id, class_target_percentage = v.target_percentage::NUMERIC
+FROM (VALUES
+    ('Ações Brasil', 'PETR4', 'Longo prazo', 'Ações Brasil', 15),
+    ('Ações Brasil', 'VALE3', 'Longo prazo', 'Ações Brasil', 15),
+    ('Ações Brasil', 'ITUB4', 'Longo prazo', 'Ações Brasil', 15),
+    ('Ações Brasil', 'BBDC4', 'Longo prazo', 'Ações Brasil', NULL),
+    ('Ações Brasil', 'BBAS3', 'Longo prazo', 'Ações Brasil', NULL),
+    ('Ações Brasil', 'B3SA3', 'Longo prazo', 'Ações Brasil', NULL),
+    ('Ações Brasil', 'WEGE3', 'Longo prazo', 'Ações Brasil', NULL),
+    ('Ações Brasil', 'ABEV3', 'Longo prazo', 'Ações Brasil', NULL),
+    ('Ações Brasil', 'SUZB3', 'Longo prazo', 'Ações Brasil', NULL),
+    ('Ações Brasil', 'SBSP3', 'Longo prazo', 'Ações Brasil', NULL),
+    ('Ações EUA', 'AAPL', 'Longo prazo', 'Exterior', 25),
+    ('Ações EUA', 'MSFT', 'Longo prazo', 'Exterior', 25),
+    ('Ações EUA', 'NVDA', 'Longo prazo', 'Exterior', NULL),
+    ('Ações EUA', 'GOOGL', 'Longo prazo', 'Exterior', NULL),
+    ('Ações EUA', 'AMZN', 'Longo prazo', 'Exterior', NULL),
+    ('Ações EUA', 'META', 'Longo prazo', 'Exterior', NULL),
+    ('Ações EUA', 'JPM', 'Aposentadoria', 'Dividendos EUA', NULL),
+    ('Ações EUA', 'BRK.B', 'Aposentadoria', 'Dividendos EUA', NULL),
+    ('Ações EUA', 'AVGO', 'Aposentadoria', 'Dividendos EUA', NULL)
+) AS v(wallet_name, ticker, strategy_name, class_name, target_percentage)
+JOIN finances.wallets w ON w.name = v.wallet_name
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+JOIN finances.strategies s ON s.name = v.strategy_name AND s.user_id = w.user_id
+JOIN finances.strategy_classes sc ON sc.strategy_id = s.id AND sc.name = v.class_name
+WHERE sh.wallet_id = w.id AND sh.ticker = v.ticker;
+
+UPDATE finances.crypto_holdings ch
+SET strategy_class_id = sc.id, class_target_percentage = v.target_percentage::NUMERIC
+FROM (VALUES
+    ('Cripto (BRL)', 'BTC', 'Longo prazo', 'Cripto', 50),
+    ('Cripto (BRL)', 'ETH', 'Longo prazo', 'Cripto', NULL),
+    ('Cripto (BRL)', 'SOL', 'Longo prazo', 'Cripto', NULL)
+) AS v(wallet_name, ticker, strategy_name, class_name, target_percentage)
+JOIN finances.wallets w ON w.name = v.wallet_name
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+JOIN finances.strategies s ON s.name = v.strategy_name AND s.user_id = w.user_id
+JOIN finances.strategy_classes sc ON sc.strategy_id = s.id AND sc.name = v.class_name
+WHERE ch.wallet_id = w.id AND ch.ticker = v.ticker;
+
+UPDATE finances.fund_holdings fh
+SET strategy_class_id = sc.id, class_target_percentage = v.target_percentage::NUMERIC
+FROM (VALUES
+    ('BB TOP RF Ativa LP FIF RL', 'Longo prazo', 'Renda fixa', 50),
+    ('Oak FI RF CP', 'Longo prazo', 'Renda fixa', NULL),
+    ('V7 Incentivado Investimento Infraestrutura RF', 'Longo prazo', 'Renda fixa', NULL),
+    ('Hawker FIF Classe FIM CP RL', 'Aposentadoria', 'Multimercado', NULL),
+    ('Growth Numeric Unlimited FIM IE', 'Aposentadoria', 'Multimercado', NULL),
+    ('Lagoa FIF Multimercado', 'Aposentadoria', 'Multimercado', NULL),
+    ('BTG Pactual Int Lo FIF Ações', 'Aposentadoria', 'Fundos de ações', NULL),
+    ('Equitas HIGH Convictions FIF Ações RL', 'Aposentadoria', 'Fundos de ações', NULL),
+    ('RR Palmeiras I FIF Ações', 'Aposentadoria', 'Fundos de ações', NULL)
+) AS v(name, strategy_name, class_name, target_percentage)
+JOIN finances.wallets w ON w.name = 'Fundos'
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+JOIN finances.strategies s ON s.name = v.strategy_name AND s.user_id = w.user_id
+JOIN finances.strategy_classes sc ON sc.strategy_id = s.id AND sc.name = v.class_name
+WHERE fh.wallet_id = w.id AND fh.name = v.name;
