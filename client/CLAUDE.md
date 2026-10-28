@@ -71,8 +71,8 @@ a snapshot nobody reads passes while the feature is broken.
 Coverage is measured with `npm run test:coverage` (v8 provider, report in `client/coverage/`) and
 **enforced**: `coverage.thresholds` in `vite.config.ts` sets a floor for statements, lines,
 functions and branches, and CI's client `Test` step runs `npm run test:coverage`, so a PR that
-drops any of the four below its floor fails the build. The floor today is **98% statements, 98%
-lines, 97% functions and 97% branches** (the suite reaches 98.37 / 98.94 / 97.11 / 97.17), and every
+drops any of the four below its floor fails the build. The floor today is **98% statements, 99%
+lines, 97% functions and 97% branches** (the suite reaches 98.37 / 99.04 / 97.22 / 97.22), and every
 file under `src/views/` is above 80% statements.
 
 `src/api/**` is excluded from the measured set. Every file there is a one-line axios call with no
@@ -148,6 +148,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `walletDetail.ts` | `GET /wallets/{id}/detail` (the per-wallet dashboard payload) |
 | `walletMoves.ts` | `POST /wallets/{id}/moves` (relocate holdings) |
 | `walletLedger.ts` | `GET /wallets/{id}/ledger` (every event of a wallet, paginated) |
+| `cash.ts` | `POST`/`DELETE /wallets/{id}/cash-transfers`, `POST`/`DELETE /wallets/{id}/cash-withdrawals`, `GET /cash-reconciliation`, `POST /wallets/{id}/cash-reconciliation` |
 | `results.ts` | `GET /results` (paginated), `GET /results/summary` (realised totals), withdrawal `POST`/`DELETE` |
 | `reinvestments.ts` | `POST /reinvestments` (exit one holding into another), `GET /reinvestments` (history) |
 | `assetTypes.ts` | `GET/POST/PUT/DELETE /stock-types`, `/fund-types`, `/stock-segments` |
@@ -212,7 +213,7 @@ not a reload, so nothing else clears them). A new user-data store gets a `reset(
 | `charts/` | `AreaChart` and `DonutChart`, the two Chart.js wrappers (`AreaChart` draws an optional second series, `stackedData` in `stackedColor`, filled on top of the first with the y axis stacked only then); colors and options come from `useChartTheme`, never hard-coded. `AllocationDonut` wraps `DonutChart` for the wallet detail page's per-asset allocation, and `AllocationLegend` is the legend it shares with the overview's `AllocationCard` and `EvolutionCard` (a compact layout, and a `detailed` one with share bars; an entry's optional `hint` wraps its label in a tooltip) |
 | `overview/` | `OverviewView`'s cards — `EvolutionCard` (the `AreaChart` of own money with reinvested profit stacked on top, from `GET /overview/series`, and an `AllocationLegend` below it whose labels explain each layer in a tooltip), `AllocationCard` (the per-kind donut) and `TypeSummaryCard` (one per wallet kind, emitting `goto-type`), all fed by `walletKindRows` in `utils/` |
 | `users/` | `UserCard` — one `UsersView` card on `EntityCard` with its own "Ações" dropdown, store calls and `useConfirmDialog` confirmations; it emits `reset-password` so the view owns `PasswordResetModal` |
-| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`); `WalletDetailView`'s `WalletDetailHeader` (identity, figures and the **Ações** dropdown emitting `rename`, `remove`, `move`, `reinvest` and `view-holdings`, above a strip of three `WalletHighlightCard`s with an `up`, `down` or `largest` rail), `WalletPerformanceCard` (the Desempenho chart and delta chips), `WalletDetailTabs` (the tabbed card, investments in its slot) and `WalletLedgerTable` (the Movimentações tab, reading the `walletLedger` store) |
+| `wallets/` | `WalletsView`'s `WalletCard` (on `EntityCard`, emitting `open` and `show-investments`) and the dashed `WalletAddCard` tile (emitting `create`); `WalletDetailView`'s `WalletDetailHeader` (identity, figures and the **Ações** dropdown emitting `rename`, `remove`, `move`, `reinvest` and `view-holdings`, above a strip of three `WalletHighlightCard`s with an `up`, `down` or `largest` rail), `WalletPerformanceCard` (the Desempenho chart and delta chips), `WalletDetailTabs` (the tabbed card, investments in its slot), `WalletLedgerTable` (the Movimentações tab, reading the `walletLedger` store), `TransferCashModal` and `WithdrawCashModal` (the two cash dialogs); `CashReconciliationView`'s `CashReconciliationCard` |
 | `settings/` | The admin settings pieces — `SettingsSection` (the titled card frame with an optional `aside` slot and loading overlay), `CurrencyRateRow` (one rate with its own draft, emitting `commit` only for a rate above zero), `PriceSyncActions` (the manual price-sync buttons) and `TypesView`'s `AssetTypeTable` |
 | `layout/` | App shell — `TheTopNav` and `TheNavbar`, rendered once in `App.vue` |
 | `icons/` | Inline SVG icon components (`LogoMark`) |
@@ -234,7 +235,7 @@ it. Anything reusable and presentational goes in `ui/` rather than next to its f
 
 ### Routes and their views (`src/router/index.ts`)
 
-`/overview`, `/overview/resultados` (`ResultsDashboardView.vue`), `/wallets`, `/wallets/:id` (`WalletDetailView.vue`) and `/investments` are the main app; `/settings` redirects to `/settings/price-currencies` (`PriceCurrenciesView.vue`) and
+`/overview`, `/overview/resultados` (`ResultsDashboardView.vue`), `/wallets`, `/wallets/conciliar` (`CashReconciliationView.vue`, declared before `/wallets/:id` so it is not read as an id), `/wallets/:id` (`WalletDetailView.vue`) and `/investments` are the main app; `/settings` redirects to `/settings/price-currencies` (`PriceCurrenciesView.vue`) and
 covers `/settings/types` and `/settings/users` — the whole `/settings/*` subtree is admin-only.
 `/login` and `/pending-approval` are the two public routes.
 
@@ -253,6 +254,12 @@ Sections run header card (identity, figures, **Ações** dropdown and, below the
 The header's wallet actions live in one **Ações** dropdown: "Ver investimentos", "Mover", "Reinvestir" and, for admins, "Remover"; "Mover" and "Reinvestir" there open their modals with this wallet as the source and no holding preselected. Per-holding actions are in the holding drawer (see the investments table above).
 
 It also carries #211's `MoveHoldingsModal` with this wallet as a fixed origin. The **Movimentações** tab (#462) is `WalletLedgerTable`, the wallet's whole ledger from the `walletLedger` store, ten rows a page, newest first: purchases (Compra), contributions (Aporte), withdrawals (Resgate), reinvestments (Reinvestimento, with "→ destination") and moves in and out (Entrada / Saída, with the other wallet or "Carteira removida", and "Tudo" for a whole move), in the wallet's own currency, the withdrawals and reinvestments with their profit as a `GainChip`. It lists the events of completed holdings too, which have left the investments table and have no drawer, so a fully withdrawn position keeps its history here. It reloads through `loadAll` with everything else: the drawer's `position-added` (a purchase, an edit, a partial withdrawal or undoing one, since `useHoldingDetail.refresh()` calls `onChanged`), `deleted` (a full withdrawal) and `relocated` (a move or a reinvestment) all end there. Moves still realise no result, so the results dashboard never shows them.
+
+### Wallet cash (#510)
+
+The server replays each wallet's cash (`cash` on `WalletResponse` and `WalletDetail`, see `server/CLAUDE.md`); the client only shows it and records the two ways it leaves a wallet. While a wallet has cash, the detail header shows a **Caixa** figure and two more **Ações** items, "Transferir caixa" and "Sacar para o banco", and `HoldingsTable` pins a `CashTableRow` above the holdings (its `cash` prop, outside sorting, pagination and the drawer) with the same two actions. `TransferCashModal` sends cash to any other wallet and asks for the "Câmbio" only across currencies, prefilled by `utils/crossRate.ts` from the `rates` store as destination units per origin unit; `WithdrawCashModal` takes an optional bank name. Both show a grey summary box and reload through `onPositionsChanged`. In Movimentações, `TRANSFER_IN`, `TRANSFER_OUT` and `CASH_WITHDRAWAL` rows read "Caixa" as the investment, a withdrawal's detail is "→ caixa", a purchase or contribution says how much came from cash and how much was new money, every row carries the **Saldo em caixa** after it, and cash rows have a delete button that confirms, deletes through `api/cash.ts` and refreshes the ledger, detail and wallets stores. A wallet card with cash gets a "$$ disponível" tag and never the amount.
+
+Exits recorded before cash existed left cash nobody has placed. `WalletsView` shows a warning banner while any wallet has `cashReconciled === false` and cash above zero, leading to `/wallets/conciliar`. There one `CashReconciliationCard` per wallet lists the exits that formed the cash, offers the server's suggestion ("Usar sugestão" fills the first line), and splits the cash into lines of "Outra carteira", "Banco" or "Continua em caixa", dated by default on the first exit. "Registrar" records each transfer or bank withdrawal, then marks the wallet reconciled, whatever stays as genuine cash; the view reloads, advances its progress bar and ends in a success message listing what was registered.
 
 ### Results dashboard (`ResultsDashboardView.vue`)
 

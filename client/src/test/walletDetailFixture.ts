@@ -7,6 +7,7 @@ export function walletDetailOf(overrides: Partial<WalletDetail> = {}): WalletDet
     kind: 'STOCKS',
     currency: 'BRL',
     currentValue: 4750,
+    cash: 0,
     totalInvested: 4500,
     gain: 250,
     gainPct: 5.5556,

@@ -726,6 +726,12 @@ a {
   height: 36px;
 }
 
+.ticker-badge.cash-badge {
+  width: 36px;
+  height: 36px;
+  background: var(--text-muted);
+}
+
 .c-num {
   font-variant-numeric: tabular-nums;
 }
