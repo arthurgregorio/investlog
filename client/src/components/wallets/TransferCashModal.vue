@@ -98,28 +98,52 @@ async function submit() {
       {{ error }}
     </b-message>
 
-    <b-field label="Carteira de destino">
-      <b-select
-        v-model="destinationId"
-        placeholder="Selecione a carteira"
-        expanded
-        data-testid="transfer-destination"
-      >
-        <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
-          {{ wallet.name }} · {{ wallet.currency }}
-        </option>
-      </b-select>
-    </b-field>
-
-    <b-field label="Data">
-      <DateInput v-model="date" />
-    </b-field>
-
     <div class="fixed-grid has-2-cols mb-3">
-      <div class="grid">
+      <div class="grid is-gap-2">
+        <b-field label="Carteira de destino" class="cell is-col-span-2-mobile mb-0">
+          <b-select
+            v-model="destinationId"
+            placeholder="Selecione a carteira"
+            expanded
+            data-testid="transfer-destination"
+          >
+            <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
+              {{ wallet.name }} · {{ wallet.currency }}
+            </option>
+          </b-select>
+        </b-field>
+
+        <b-field class="cell is-col-span-2-mobile mb-0">
+          <template #label>
+            <span class="is-flex is-align-items-center is-gap-1">
+              Câmbio
+              <b-tooltip
+                label="Cotação atual de Preços e Moedas. Ajuste para o câmbio usado; ele fica gravado na transferência."
+                multilined
+                position="is-top"
+              >
+                <b-icon icon="information-outline" size="is-small" type="is-grey" />
+              </b-tooltip>
+            </span>
+          </template>
+          <NumberInput
+            :model-value="crossCurrency ? rate : 1"
+            :prefix="`1 ${currency} = ${fmt.sym(destination?.currency ?? currency)}`"
+            :disabled="!crossCurrency"
+            placeholder="0,00"
+            min="0"
+            data-testid="transfer-rate"
+            @update:model-value="rate = $event"
+          />
+        </b-field>
+
+        <b-field label="Data" class="cell is-col-span-2-mobile mb-0">
+          <DateInput v-model="date" />
+        </b-field>
+
         <b-field
           label="Valor enviado"
-          class="mb-0"
+          class="cell is-col-span-2-mobile mb-0"
           :type="exceedsCash ? 'is-danger' : ''"
           :message="
             exceedsCash ? `Maior que o caixa disponível (${fmt.money(cash, currency)})` : ''
@@ -140,28 +164,6 @@ async function submit() {
               <b-checkbox v-model="wholeCash" data-testid="transfer-whole-cash">Tudo</b-checkbox>
             </div>
           </div>
-        </b-field>
-
-        <b-field v-if="crossCurrency" class="mb-0">
-          <template #label>
-            <span class="is-flex is-align-items-center is-gap-1">
-              Câmbio
-              <b-tooltip
-                label="Cotação atual de Preços e Moedas. Ajuste para o câmbio usado; ele fica gravado na transferência."
-                multilined
-                position="is-top"
-              >
-                <b-icon icon="information-outline" size="is-small" type="is-grey" />
-              </b-tooltip>
-            </span>
-          </template>
-          <NumberInput
-            v-model="rate"
-            :prefix="`1 ${currency} = ${fmt.sym(destination?.currency)}`"
-            placeholder="0,00"
-            min="0"
-            data-testid="transfer-rate"
-          />
         </b-field>
       </div>
     </div>

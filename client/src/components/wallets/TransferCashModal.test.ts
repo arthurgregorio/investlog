@@ -81,14 +81,18 @@ describe('TransferCashModal', () => {
     ])
   })
 
-  it('asks for the exchange rate only across currencies, prefilled from the rates', async () => {
+  it('locks the exchange rate at one in the same currency and prefills it across currencies', async () => {
     const wrapper = mountModal()
 
     await chooseDestination(wrapper, 'wallet-reserve')
-    expect(wrapper.find('[data-testid="transfer-rate"]').exists()).toBe(false)
+    const sameCurrencyRate = inputByTestId(wrapper, 'transfer-rate')
+    expect((sameCurrencyRate.element as HTMLInputElement).value).toBe('1.00')
+    expect(sameCurrencyRate.attributes('disabled')).toBeDefined()
 
     await chooseDestination(wrapper, 'wallet-br')
-    expect((inputByTestId(wrapper, 'transfer-rate').element as HTMLInputElement).value).toBe('5.32')
+    const crossCurrencyRate = inputByTestId(wrapper, 'transfer-rate')
+    expect((crossCurrencyRate.element as HTMLInputElement).value).toBe('5.32')
+    expect(crossCurrencyRate.attributes('disabled')).toBeUndefined()
   })
 
   it('summarises what leaves and what arrives converted at the rate', async () => {

@@ -76,13 +76,13 @@ async function submit() {
   >
     <div class="fixed-grid has-2-cols">
       <div class="grid is-gap-2">
-        <b-field label="Data" class="cell is-col-span-2">
+        <b-field label="Data" class="cell is-col-span-2-mobile">
           <DateInput v-model="date" />
         </b-field>
 
         <b-field
           label="Valor sacado"
-          class="cell is-col-span-2"
+          class="cell is-col-span-2-mobile"
           :type="amountError ? 'is-danger' : ''"
           :message="amountError"
         >
