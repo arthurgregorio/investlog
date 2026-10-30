@@ -60,7 +60,7 @@ async function onRegistered(descriptions: string[]) {
 
     <PageHeader
       title="Conciliar caixa"
-      description="Diga para onde foi o dinheiro dos resgates registrados antes do caixa existir. Cada destino vira uma transferência ou um saque com a data informada."
+      description="Informe para onde foi o dinheiro dos resgates realizados"
     />
 
     <template v-if="loaded">

@@ -198,7 +198,9 @@ describe('CashReconciliationCard', () => {
     expect((inputOf(wrapper, 'reconciliation-rate').element as HTMLInputElement).value).toBe('5.40')
 
     await inputOf(wrapper, 'reconciliation-destination').setValue('wallet-reserve')
-    expect(wrapper.find('[data-testid="reconciliation-rate"]').exists()).toBe(false)
+    const sameCurrencyRate = inputOf(wrapper, 'reconciliation-rate')
+    expect((sameCurrencyRate.element as HTMLInputElement).value).toBe('1.00')
+    expect(sameCurrencyRate.attributes('disabled')).toBeDefined()
     await inputOf(wrapper, 'reconciliation-amount').setValue('1000')
     await submit(wrapper)
 
@@ -239,13 +241,14 @@ describe('CashReconciliationCard', () => {
     ])
   })
 
-  it('withdraws to an unnamed bank and keeps everything else on "Continua em caixa"', async () => {
+  it('withdraws to an unnamed bank with the exchange rate locked at one', async () => {
     vi.mocked(cashApi.withdrawToBank).mockResolvedValue()
     vi.mocked(cashApi.markReconciled).mockResolvedValue()
     const wrapper = mountCard()
 
     await chooseDestination(wrapper, 'Banco')
-    await wrapper.get('[data-testid="reconciliation-fill-remaining"]').trigger('click')
+    expect(inputOf(wrapper, 'reconciliation-rate').attributes('disabled')).toBeDefined()
+    await inputOf(wrapper, 'reconciliation-amount').setValue('1000')
     await submit(wrapper)
 
     expect(vi.mocked(cashApi.withdrawToBank).mock.calls[0]![1]).toEqual({
@@ -269,12 +272,16 @@ describe('CashReconciliationCard', () => {
     expect(cashApi.markReconciled).toHaveBeenCalledWith('wallet-us')
   })
 
-  it('blocks a split that exceeds the cash and removes an extra line', async () => {
+  it('numbers the destinations once there are several, blocks a split that exceeds the cash and removes an extra line', async () => {
     const wrapper = mountCard()
+    expect(wrapper.find('[data-testid="reconciliation-line-title"]').exists()).toBe(false)
 
     await chooseDestination(wrapper, 'Banco')
     await inputOf(wrapper, 'reconciliation-amount').setValue('800')
     await wrapper.get('[data-testid="reconciliation-add-line"]').trigger('click')
+    expect(
+      wrapper.findAll('[data-testid="reconciliation-line-title"]').map((title) => title.text()),
+    ).toEqual(['Destino 1', 'Destino 2'])
     await chooseDestination(wrapper, 'Banco', 1)
     await inputOf(wrapper, 'reconciliation-amount', 1).setValue('300')
 

@@ -76,6 +76,10 @@ function isCrossCurrency(line: ReconciliationLine): boolean {
   return !!destination && destination.currency !== props.reconciliation.currency
 }
 
+function targetCurrencyOf(line: ReconciliationLine): string {
+  return destinationWalletOf(line)?.currency ?? props.reconciliation.currency
+}
+
 function onDestinationWalletChange(line: ReconciliationLine) {
   const destination = destinationWalletOf(line)!
   line.rate = crossRate(ratesStore.rates, props.reconciliation.currency, destination.currency)
@@ -116,10 +120,6 @@ function addLine() {
 
 function removeLine(index: number) {
   lines.value.splice(index, 1)
-}
-
-function fillRemaining(line: ReconciliationLine) {
-  line.amount = Number((remaining.value + amountOf(line)).toFixed(2))
 }
 
 function isoDateOf(date: Date): string {
@@ -250,13 +250,27 @@ async function submit() {
       {{ error }}
     </b-message>
 
-    <div v-for="(line, index) in lines" :key="index" class="mt-3" data-testid="reconciliation-line">
-      <div class="is-flex is-align-items-center is-justify-content-space-between mb-2">
-        <SegmentedControl
-          v-model="line.destination"
-          :options="DESTINATIONS"
-          group-label="Para onde foi este caixa"
-        />
+    <div
+      v-for="(line, index) in lines"
+      :key="index"
+      class="reconciliation-line mt-3"
+      data-testid="reconciliation-line"
+    >
+      <div class="is-flex is-align-items-center is-justify-content-space-between is-gap-2 mb-3">
+        <div class="is-flex is-align-items-center is-gap-2">
+          <span
+            v-if="lines.length > 1"
+            class="sub-caption has-text-weight-semibold"
+            data-testid="reconciliation-line-title"
+          >
+            Destino {{ index + 1 }}
+          </span>
+          <SegmentedControl
+            v-model="line.destination"
+            :options="DESTINATIONS"
+            group-label="Para onde foi este caixa"
+          />
+        </div>
         <b-button
           v-if="index > 0"
           type="is-danger"
@@ -273,68 +287,59 @@ async function submit() {
         O valor continua no caixa desta carteira, disponível para compras.
       </p>
 
-      <div v-else class="fixed-grid has-2-cols">
-        <div class="grid is-gap-2">
-          <b-field v-if="line.destination === 'wallet'" label="Carteira de destino" class="cell">
-            <b-select
-              v-model="line.walletId"
-              placeholder="Selecione a carteira"
-              expanded
-              data-testid="reconciliation-destination"
-              @update:model-value="onDestinationWalletChange(line)"
-            >
-              <option v-for="wallet in destinationWallets" :key="wallet.id" :value="wallet.id">
-                {{ wallet.name }} · {{ wallet.currency }}
-              </option>
-            </b-select>
-          </b-field>
-          <b-field v-else label="Banco (opcional)" class="cell">
-            <b-input
-              v-model="line.bankName"
-              :maxlength="BANK_NAME_MAX_LENGTH"
-              :has-counter="false"
-              placeholder="Ex.: Itaú, Nubank"
-              data-testid="reconciliation-bank"
-            />
-          </b-field>
+      <div v-else class="columns is-variable is-2 is-multiline">
+        <b-field label="Data" class="column is-2-desktop is-6-tablet mb-0">
+          <DateInput v-model="line.date" />
+        </b-field>
 
-          <b-field label="Data" class="cell">
-            <DateInput v-model="line.date" />
-          </b-field>
+        <b-field
+          v-if="line.destination === 'wallet'"
+          label="Carteira de destino"
+          class="column is-4-desktop is-6-tablet mb-0"
+        >
+          <b-select
+            v-model="line.walletId"
+            placeholder="Selecione a carteira"
+            expanded
+            data-testid="reconciliation-destination"
+            @update:model-value="onDestinationWalletChange(line)"
+          >
+            <option v-for="wallet in destinationWallets" :key="wallet.id" :value="wallet.id">
+              {{ wallet.name }} · {{ wallet.currency }}
+            </option>
+          </b-select>
+        </b-field>
+        <b-field v-else label="Banco (opcional)" class="column is-4-desktop is-6-tablet mb-0">
+          <b-input
+            v-model="line.bankName"
+            :maxlength="BANK_NAME_MAX_LENGTH"
+            :has-counter="false"
+            placeholder="Ex.: Itaú, Nubank"
+            data-testid="reconciliation-bank"
+          />
+        </b-field>
 
-          <b-field label="Valor" class="cell">
-            <div class="field is-grouped">
-              <div class="control is-expanded">
-                <NumberInput
-                  v-model="line.amount"
-                  :prefix="fmt.sym(reconciliation.currency)"
-                  placeholder="0,00"
-                  min="0"
-                  data-testid="reconciliation-amount"
-                />
-              </div>
-              <div class="control">
-                <b-button
-                  type="is-ghost"
-                  data-testid="reconciliation-fill-remaining"
-                  @click="fillRemaining(line)"
-                >
-                  Restante
-                </b-button>
-              </div>
-            </div>
-          </b-field>
+        <b-field label="Valor" class="column is-3-desktop is-6-tablet mb-0">
+          <NumberInput
+            v-model="line.amount"
+            :prefix="fmt.sym(reconciliation.currency)"
+            placeholder="0,00"
+            min="0"
+            data-testid="reconciliation-amount"
+          />
+        </b-field>
 
-          <b-field v-if="isCrossCurrency(line)" label="Câmbio" class="cell">
-            <NumberInput
-              v-model="line.rate"
-              :prefix="`1 ${reconciliation.currency} = ${fmt.sym(destinationWalletOf(line)?.currency)}`"
-              placeholder="0,00"
-              min="0"
-              data-testid="reconciliation-rate"
-            />
-          </b-field>
-        </div>
+        <b-field label="Câmbio" class="column is-3-desktop is-6-tablet mb-0">
+          <NumberInput
+            :model-value="isCrossCurrency(line) ? line.rate : 1"
+            :prefix="`1 ${reconciliation.currency} = ${fmt.sym(targetCurrencyOf(line))}`"
+            :disabled="!isCrossCurrency(line)"
+            placeholder="0,00"
+            min="0"
+            data-testid="reconciliation-rate"
+            @update:model-value="line.rate = $event"
+          />
+        </b-field>
       </div>
     </div>
 
@@ -376,3 +381,11 @@ async function submit() {
     </div>
   </EntityCard>
 </template>
+
+<style scoped>
+.reconciliation-line {
+  padding: 14px 16px;
+  border: 1px solid var(--bulma-border-weak);
+  border-radius: var(--radius);
+}
+</style>
