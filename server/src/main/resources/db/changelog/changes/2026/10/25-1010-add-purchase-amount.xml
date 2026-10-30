@@ -81,7 +81,7 @@
                  relativeToChangelogFile="true"
                  splitStatements="false"/>
         <rollback>
-            <sqlFile path="25-1000-wallet-cash-replay.sql"
+            <sqlFile path="25-1010-wallet-cash-replay-rollback.sql"
                      relativeToChangelogFile="true"
                      splitStatements="false"/>
         </rollback>

@@ -22,12 +22,6 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class HoldingTaxonomyMigrationTest : BaseIntegrationTest() {
 
-    companion object {
-        private const val CHANGELOG = "db/changelog/db.changelog-master.xml"
-        private const val TAXONOMY_CHANGESETS = 5
-        private const val WALLET_PREFIX = "Migração"
-    }
-
     @Autowired
     lateinit var dataSource: DataSource
 
@@ -39,7 +33,7 @@ class HoldingTaxonomyMigrationTest : BaseIntegrationTest() {
     @Test
     @Order(1)
     fun `rolls back to the kind-specific type lists, then migrates them into one list without regrouping any holding`() {
-        runLiquibase { liquibase -> liquibase.rollback(TAXONOMY_CHANGESETS, "") }
+        runLiquibase { liquibase -> liquibase.rollback(changeSetsFromTaxonomyOn(liquibase), "") }
 
         val stockTypeExternalId = UUID.randomUUID()
         val fundTypeExternalId = UUID.randomUUID()
@@ -194,5 +188,17 @@ class HoldingTaxonomyMigrationTest : BaseIntegrationTest() {
             database.databaseChangeLogLockTableName = "database_changelog_lock"
             action(Liquibase(CHANGELOG, ClassLoaderResourceAccessor(), database))
         }
+    }
+
+    private fun changeSetsFromTaxonomyOn(liquibase: Liquibase): Int {
+        val changeSets = liquibase.databaseChangeLog.changeSets
+        val firstTaxonomyChangeSet = changeSets.indexOfFirst { changeSet -> changeSet.filePath.endsWith(TAXONOMY_CHANGELOG) }
+        return changeSets.size - firstTaxonomyChangeSet
+    }
+
+    companion object {
+        private const val CHANGELOG = "db/changelog/db.changelog-master.xml"
+        private const val TAXONOMY_CHANGELOG = "24-1000-unify-holding-types-and-segments.xml"
+        private const val WALLET_PREFIX = "Migração"
     }
 }

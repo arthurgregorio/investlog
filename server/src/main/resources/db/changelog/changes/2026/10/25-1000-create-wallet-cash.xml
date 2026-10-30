@@ -135,7 +135,11 @@
         <sqlFile path="25-1000-wallet-ledger-with-cash.sql"
                  relativeToChangelogFile="true"
                  splitStatements="true"/>
-        <rollback/>
+        <rollback>
+            <sqlFile path="25-1000-wallet-ledger-rollback.sql"
+                     relativeToChangelogFile="true"
+                     splitStatements="true"/>
+        </rollback>
     </changeSet>
 
 </databaseChangeLog>

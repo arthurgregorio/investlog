@@ -111,6 +111,8 @@
         </sql>
         <rollback>
             <sql>DROP VIEW finances.capital_timeline;</sql>
+            <sqlFile path="25-1100-contributions-timeline-rollback.sql"
+                     relativeToChangelogFile="true"/>
         </rollback>
     </changeSet>
 
