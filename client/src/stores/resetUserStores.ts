@@ -5,6 +5,7 @@ import { useOverviewStore } from '@/stores/overview'
 import { useRatesStore } from '@/stores/rates'
 import { useReinvestmentsStore } from '@/stores/reinvestments'
 import { useResultsStore } from '@/stores/results'
+import { useStrategiesStore } from '@/stores/strategies'
 import { useTrustedDevicesStore } from '@/stores/trustedDevices'
 import { useTypesListStore } from '@/stores/typesList'
 import { useUsersAdminStore } from '@/stores/usersAdmin'
@@ -19,6 +20,7 @@ export function resetUserStores() {
   useWalletDetailStore().reset()
   useWalletLedgerStore().reset()
   useResultsStore().reset()
+  useStrategiesStore().reset()
   useReinvestmentsStore().reset()
   useTypesListStore().reset()
   useRatesStore().reset()

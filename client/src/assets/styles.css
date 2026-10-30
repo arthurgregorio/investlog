@@ -743,6 +743,261 @@ a {
   border-bottom: none;
 }
 
+.inv-row {
+  transition: 0.1s;
+}
+
+.inv-row:hover {
+  background: var(--surface-hover);
+}
+
+.inv-row.is-current {
+  background: var(--primary-soft);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.inv-row.is-frozen {
+  --ice: var(--bulma-info-on-scheme);
+  --ice-tint: color-mix(in srgb, var(--ice) 5%, transparent);
+
+  background-image:
+    linear-gradient(var(--ice), var(--ice)), linear-gradient(var(--ice-tint), var(--ice-tint));
+  background-size:
+    3px 100%,
+    auto;
+  background-repeat: no-repeat;
+}
+
+.inv-row.is-frozen .ticker-badge {
+  border: 1.5px dashed;
+}
+
+.inv-row.is-frozen :is(.name-meta, .kind-meta, td.c-num) {
+  opacity: 0.65;
+}
+
+.name-meta {
+  min-width: 0;
+}
+
+.open-holding {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.open-holding:hover {
+  color: var(--primary-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.kind-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.wallet-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.wref-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.wd-tabs .tabs {
+  margin-bottom: 0;
+}
+
+.wd-tabs .tabs ul {
+  gap: 2px;
+  margin-inline-start: 0;
+  padding: 0 5px;
+}
+
+.wd-tabs .tabs a {
+  position: relative;
+  height: 48px;
+  padding: 0 15px;
+  border-bottom: none;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 500;
+  transition: 0.13s;
+}
+
+.wd-tabs .tabs a:hover {
+  color: var(--text);
+}
+
+.wd-tabs .tabs li.is-active a {
+  color: color-mix(in srgb, var(--primary) 65%, var(--text));
+  font-weight: 600;
+}
+
+.wd-tabs .tabs li.is-active a::after {
+  content: '';
+  position: absolute;
+  left: 13px;
+  right: 13px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 2px 2px 0 0;
+}
+
+.wd-tabs .tab-content {
+  padding: 0;
+}
+
+.move-hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.move-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 8px;
+}
+
+.move-list {
+  position: relative;
+  min-height: 60px;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.move-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-2);
+}
+
+.move-item:last-child {
+  border-bottom: 0;
+}
+
+.move-item.is-selected {
+  background: var(--surface-2);
+}
+
+.move-item .checkbox {
+  margin-right: 0;
+}
+
+.move-item-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.move-item-quantity {
+  width: 150px;
+}
+
+.filter-rail {
+  flex: 1 1 232px;
+  max-width: 256px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-top: 1px solid var(--border-2);
+}
+
+.rail-title {
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rail-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 8px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+
+.rail-option:hover {
+  background: var(--surface-hover);
+}
+
+.rail-option.is-selected {
+  background: var(--primary-soft);
+}
+
+.rail-option input {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+.rail-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+}
+
+.rail-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-side {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (width <= 900px) {
+  .filter-rail {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+
 .form-stack {
   display: flex;
   flex-direction: column;
@@ -1045,6 +1300,10 @@ a {
 .modal-background {
   background-color: color-mix(in srgb, var(--ink) 42%, transparent);
   backdrop-filter: blur(2px);
+}
+
+.modal-card.is-extra-wide {
+  --bulma-modal-content-width: 960px;
 }
 
 .modal-card.is-wide {
