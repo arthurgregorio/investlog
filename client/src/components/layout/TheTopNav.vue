@@ -39,7 +39,12 @@ const nav = computed<NavItem[]>(() => {
       icon: 'wallet-outline',
     },
     { name: 'investments', label: 'Investimentos', icon: 'layers-outline' },
-    { name: 'strategies', label: 'Estratégias', icon: 'bullseye-arrow' },
+    {
+      name: 'strategies',
+      activeFor: ['strategy-plan'],
+      label: 'Estratégias',
+      icon: 'bullseye-arrow',
+    },
   ]
   if (auth.isAdmin) {
     items.push({

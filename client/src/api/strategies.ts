@@ -1,5 +1,11 @@
 import { apiClient } from './client'
-import type { ClassHolding, Strategy, WalletKind } from '@/types'
+import type {
+  ClassHolding,
+  ContributionPlan,
+  Strategy,
+  StrategyAllocation,
+  WalletKind,
+} from '@/types'
 
 export interface StrategyClassPayload {
   id?: string
@@ -54,6 +60,16 @@ export const strategiesApi = {
   updateTargets(classId: string, targets: HoldingTargetPayload[]): Promise<ClassHolding[]> {
     return apiClient
       .put<ClassHolding[]>(`/strategy-classes/${classId}/targets`, { targets })
+      .then((r) => r.data)
+  },
+
+  findAllocation(id: string): Promise<StrategyAllocation> {
+    return apiClient.get<StrategyAllocation>(`/strategies/${id}/allocation`).then((r) => r.data)
+  },
+
+  planContribution(id: string, amount: number): Promise<ContributionPlan> {
+    return apiClient
+      .get<ContributionPlan>(`/strategies/${id}/contribution-plan`, { params: { amount } })
       .then((r) => r.data)
   },
 }

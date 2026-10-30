@@ -5,7 +5,12 @@ import TickerBadge from '@/components/ui/TickerBadge.vue'
 import { badgeColor, WALLET_TYPES } from '@/utils/walletTypes'
 import type { ClassHolding } from '@/types'
 
-const props = defineProps<{ holding: ClassHolding }>()
+const props = defineProps<{
+  holding: Pick<
+    ClassHolding,
+    'kind' | 'walletName' | 'ticker' | 'name' | 'typeLabel' | 'segmentLabel' | 'frozen'
+  >
+}>()
 
 const displayName = computed(() => props.holding.ticker ?? props.holding.name)
 const secondLine = computed(() =>

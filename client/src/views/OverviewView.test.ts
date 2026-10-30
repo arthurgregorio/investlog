@@ -4,13 +4,30 @@ import { createTestingPinia } from '@pinia/testing'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import OverviewView from './OverviewView.vue'
 import AreaChart from '@/components/charts/AreaChart.vue'
-import DonutChart from '@/components/charts/DonutChart.vue'
 import { ModalKey } from '@/composables/useModals'
 import { useOverviewStore } from '@/stores/overview'
 import { useWalletsStore } from '@/stores/wallets'
+import { overviewApi } from '@/api/overview'
 import type { PortfolioSummary, SeriesPoint, WalletKind, WalletResponse } from '@/types'
 
-vi.mock('@/api/overview', () => ({ overviewApi: {} }))
+vi.mock('@/api/overview', () => ({
+  overviewApi: {
+    getAllocation: vi.fn().mockResolvedValue({
+      groupBy: 'STRATEGY',
+      displayCurrency: 'BRL',
+      totalValue: 12000,
+      groups: [
+        {
+          id: 'strategy-long',
+          label: 'Longo prazo',
+          holdingCount: 3,
+          value: 12000,
+          percentage: 100,
+        },
+      ],
+    }),
+  },
+}))
 vi.mock('@/api/wallets', () => ({ walletsApi: {} }))
 
 const AreaChartStub = {
@@ -205,46 +222,15 @@ describe('OverviewView', () => {
     expect(funds.find('.gl-empty').text()).toBe('—')
   })
 
-  it('shows each kind share of the invested total in the allocation legend', async () => {
+  it('shows the allocation card on current value and the wallet-kind section', async () => {
     const { wrapper } = await mountView({ summary })
 
-    const legendRows = wrapper.findAll('.alloc-legend li').map((item) => item.text())
-
-    expect(legendRows).toEqual([
-      expect.stringContaining('Ações'),
-      expect.stringContaining('Cripto'),
-      expect.stringContaining('Fundos'),
-    ])
-    expect(legendRows[0]).toContain('60,00%')
-    expect(legendRows[1]).toContain('40,00%')
-    expect(legendRows[2]).toContain('0,00%')
-  })
-
-  it('feeds the donut only the kinds that have something invested', async () => {
-    const { wrapper } = await mountView({ summary })
-
-    const segments = wrapper.findComponent(DonutChart).props('segments')
-
-    expect(
-      segments.map((segment: { label: string; value: number }) => [segment.label, segment.value]),
-    ).toEqual([
-      ['Ações', 6000],
-      ['Cripto', 4000],
-    ])
-    expect(wrapper.find('.donut-center-value').text()).toBe('R$ 10,0k')
-  })
-
-  it('feeds the donut a single placeholder segment when nothing is invested', async () => {
-    const { wrapper } = await mountView({
-      summary: { ...summary, totalCostBasis: 0, kindSummaries: [] },
-    })
-
-    const segments = wrapper.findComponent(DonutChart).props('segments')
-
-    expect(segments).toHaveLength(1)
-    expect(segments[0].value).toBe(1)
-    expect(segments[0].label).toBe('—')
-    expect(wrapper.findAll('.legend-pct').map((cell) => cell.text())).toEqual(['0%', '0%', '0%'])
+    expect(overviewApi.getAllocation).toHaveBeenCalledWith('STRATEGY', undefined)
+    expect(wrapper.find('.alloc-card .chart-title').text()).toBe('Alocação')
+    expect(wrapper.find('.alloc-legend').text()).toContain('Longo prazo')
+    expect(wrapper.findAll('.section-label').map((label) => label.text())).toContain(
+      'Por tipo de carteira',
+    )
   })
 
   it('feeds the area chart the invested series with month labels and shows the latest value', async () => {
