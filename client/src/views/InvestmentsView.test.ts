@@ -134,6 +134,8 @@ function walletOf(id: string, name: string, kind: WalletResponse['kind']): Walle
     currentValue: 1100,
     gain: 100,
     gainPct: 10,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2026-01-01T00:00:00Z',
   }
 }
@@ -519,6 +521,7 @@ describe('InvestmentsView', () => {
         displayCurrency: 'BRL',
         totalCostBasis: 100000,
         totalCurrentValue: 123456.78,
+        totalCash: 0,
         totalGain: 23456.78,
         totalGainPct: 23.45,
         kindSummaries: [
@@ -566,6 +569,7 @@ describe('InvestmentsView', () => {
         displayCurrency: 'BRL',
         totalCostBasis: 0,
         totalCurrentValue: 0,
+        totalCash: 0,
         totalGain: 0,
         totalGainPct: null,
         kindSummaries: [kindSummaryOf('STOCKS', 9), kindSummaryOf('FUNDS', 4)],

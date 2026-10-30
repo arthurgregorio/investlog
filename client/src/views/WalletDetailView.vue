@@ -5,6 +5,8 @@ import AllocationDonut from '@/components/charts/AllocationDonut.vue'
 import HoldingsTable from '@/components/investments/HoldingsTable.vue'
 import MoveHoldingsModal from '@/components/investments/MoveHoldingsModal.vue'
 import ReinvestModal from '@/components/investments/ReinvestModal.vue'
+import TransferCashModal from '@/components/wallets/TransferCashModal.vue'
+import WithdrawCashModal from '@/components/wallets/WithdrawCashModal.vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -37,6 +39,8 @@ const detail = computed(() => walletDetailStore.detail)
 const holdingsTable = useTemplateRef('holdingsTable')
 const moveModalOpen = ref(false)
 const reinvestModalOpen = ref(false)
+const transferModalOpen = ref(false)
+const withdrawCashModalOpen = ref(false)
 const allocationRows = ref<HoldingRow[]>([])
 const sort = ref<InvestmentSort>({ ...DEFAULT_SORT })
 const { renameWallet, confirmRemoveWallet } = useWalletActions(detail)
@@ -103,6 +107,8 @@ function goToWallets() {
         @remove="confirmRemoveWallet"
         @move="moveModalOpen = true"
         @reinvest="reinvestModalOpen = true"
+        @transfer="transferModalOpen = true"
+        @withdraw-to-bank="withdrawCashModalOpen = true"
         @view-holdings="
           router.push({ name: 'investments', query: { filter: detail.kind, walletId: detail.id } })
         "
@@ -142,11 +148,15 @@ function goToWallets() {
           sortable
           :sort-key="sort.key"
           :sort-direction="sort.direction"
+          :cash="detail.cash"
+          :cash-currency="detail.currency"
           @sort="changeSort"
           @page-change="loadHoldingsPage"
           @holding-changed="loadAll"
           @position-added="loadAll"
           @relocated="onPositionsChanged"
+          @transfer-cash="transferModalOpen = true"
+          @withdraw-cash="withdrawCashModalOpen = true"
         />
       </WalletDetailTabs>
 
@@ -162,6 +172,26 @@ function goToWallets() {
         :wallet-id="detail.id"
         @reinvested="onPositionsChanged"
         @close="reinvestModalOpen = false"
+      />
+
+      <TransferCashModal
+        v-if="transferModalOpen"
+        :wallet-id="detail.id"
+        :wallet-name="detail.name"
+        :currency="detail.currency"
+        :cash="detail.cash"
+        @transferred="onPositionsChanged"
+        @close="transferModalOpen = false"
+      />
+
+      <WithdrawCashModal
+        v-if="withdrawCashModalOpen"
+        :wallet-id="detail.id"
+        :wallet-name="detail.name"
+        :currency="detail.currency"
+        :cash="detail.cash"
+        @withdrawn="onPositionsChanged"
+        @close="withdrawCashModalOpen = false"
       />
     </template>
   </div>

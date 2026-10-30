@@ -27,7 +27,7 @@ interface AreaChartConfig {
       tooltip: { callbacks: { label: (context: { parsed: { y: number } }) => string } }
     }
     scales: {
-      y: { display: boolean; min: number; max: number; ticks: TickOptions }
+      y: { display: boolean; stacked: boolean; min: number; max: number; ticks: TickOptions }
       x: { ticks: { color: string } }
     }
   }
@@ -37,6 +37,7 @@ interface AreaChartConfig {
 interface DatasetConfig {
   data: number[]
   borderColor: string
+  fill: boolean | string
   backgroundColor: (context: ChartContext) => CanvasGradient | undefined
   pointRadius: (context: { dataIndex: number }) => number
   pointBackgroundColor: () => string
@@ -478,6 +479,17 @@ describe('AreaChart', () => {
       expect(latestChart().config.data.labels).toEqual(['x', 'y', 'z'])
     })
 
+    it('rebuilds when the stacked series or its color change', async () => {
+      const wrapper = mountChart({ stackedData: [1, 1, 1] })
+
+      await wrapper.setProps({ stackedData: [2, 2, 2] })
+      await wrapper.setProps({ stackedColor: '#d63939' })
+
+      expect(fakeCharts).toHaveLength(3)
+      expect(latestChart().config.data.datasets[1].data).toEqual([2, 2, 2])
+      expect(latestChart().config.data.datasets[1].borderColor).toBe('#d63939')
+    })
+
     it('destroys the chart on unmount', () => {
       const wrapper = mountChart()
       const chart = latestChart()
@@ -486,6 +498,44 @@ describe('AreaChart', () => {
 
       expect(chart.destroy).toHaveBeenCalledTimes(1)
       expect(fakeCharts).toHaveLength(1)
+    })
+  })
+
+  describe('stacked series', () => {
+    it('draws one unstacked area filled to the origin when no stacked series is given', () => {
+      mountChart({ data: [1, 2, 3] })
+
+      const { datasets } = latestChart().config.data
+      expect(datasets).toHaveLength(1)
+      expect(datasets[0].fill).toBe(true)
+      expect(latestChart().config.options.scales.y.stacked).toBe(false)
+    })
+
+    it('stacks the second series on the first with its own color and fill', () => {
+      mountChart({ data: [10, 20, 30], stackedData: [0, 5, 10], stackedColor: '#d63939' })
+
+      const { datasets } = latestChart().config.data
+      expect(datasets.map((dataset) => dataset.data)).toEqual([
+        [10, 20, 30],
+        [0, 5, 10],
+      ])
+      expect(datasets.map((dataset) => dataset.fill)).toEqual(['origin', '-1'])
+      expect(datasets[1].borderColor).toBe('#d63939')
+      expect(datasets[1].pointBackgroundColor()).toBe('#d63939')
+      expect(datasets[1].pointRadius({ dataIndex: 2 })).toBe(4.5)
+      expect(latestChart().config.options.scales.y.stacked).toBe(true)
+    })
+
+    it('ranges the y axis over the stacked totals', () => {
+      mountChart({ data: [10, 20, 30], stackedData: [0, 5, 10] })
+
+      expect(yRange()).toEqual({ lo: 5.5, hi: 44.5 })
+    })
+
+    it('treats a missing stacked point as zero', () => {
+      mountChart({ data: [10, 20, 30], stackedData: [0, 5] })
+
+      expect(yRange().hi).toBe(33)
     })
   })
 })

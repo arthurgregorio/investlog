@@ -20,6 +20,12 @@ const purchase: WalletLedgerEntry = {
   amount: 380,
   profit: null,
   counterpartName: null,
+  originalAmount: null,
+  originalCurrency: null,
+  rate: null,
+  cashUsed: null,
+  newMoney: null,
+  cashBalance: 0,
 }
 
 function pageOf(rows: WalletLedgerEntry[], totalElements = rows.length) {

@@ -1,10 +1,12 @@
 package br.com.investlog.server.config
 
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
+import br.com.investlog.server.shared.exceptions.CashNotCoveredException
 import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountException
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.HoldingTypeKindInUseException
 import br.com.investlog.server.shared.exceptions.HoldingTypeKindMismatchException
+import br.com.investlog.server.shared.exceptions.InvalidCashOperationException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
@@ -139,6 +141,28 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         val message = ex.message ?: "Reinvestimento inválido"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidCashOperationException::class)
+    fun handleInvalidCashOperation(ex: InvalidCashOperationException): ProblemDetail {
+
+        val message = ex.message ?: "Operação de caixa inválida"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(CashNotCoveredException::class)
+    fun handleCashNotCovered(ex: CashNotCoveredException): ProblemDetail {
+
+        val message = ex.message ?: "O caixa não cobre as movimentações seguintes"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(CONFLICT, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail

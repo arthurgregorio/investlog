@@ -25,6 +25,8 @@ function walletOf(overrides: Partial<WalletResponse>): WalletResponse {
     currentValue: 1100,
     gain: 100,
     gainPct: 10,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2026-01-01T00:00:00Z',
     ...overrides,
   }

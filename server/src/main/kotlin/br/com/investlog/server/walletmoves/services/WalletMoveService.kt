@@ -1,5 +1,6 @@
 package br.com.investlog.server.walletmoves.services
 
+import br.com.investlog.server.cash.services.CashService
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.shared.exceptions.InvalidWalletMoveException
@@ -17,6 +18,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 @Service
@@ -24,11 +26,13 @@ import java.util.UUID
 class WalletMoveService(
     private val walletMoveRepository: WalletMoveRepository,
     private val movableHoldingRepository: MovableHoldingRepository,
+    private val cashService: CashService,
 ) {
 
     companion object {
         private const val SCALE = 20
         private val MOVE_ZONE: ZoneId = ZoneId.of("America/Sao_Paulo")
+        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     }
 
     @Transactional
@@ -60,6 +64,13 @@ class WalletMoveService(
         val movedAt = LocalDate.now(MOVE_ZONE)
 
         items.forEach { item -> moveHolding(origin, destination, item, movedAt) }
+
+        cashService.shortfallOf(origin.id)?.let { shortfall ->
+            throw InvalidWalletMoveException(
+                "O caixa dos resgates desse investimento já saiu da carteira de origem em " +
+                    "${shortfall.date.format(DATE_FORMAT)}. Exclua a transferência ou o saque antes de mover."
+            )
+        }
     }
 
     private fun moveHolding(origin: MoveWallet, destination: MoveWallet, item: WalletMoveItemRequest, movedAt: LocalDate) {

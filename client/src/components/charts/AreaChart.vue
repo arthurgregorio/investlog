@@ -3,7 +3,7 @@
    pixels (no SVG viewBox stretch), so axis-label glyphs are never non-uniformly scaled —
    that distortion is what made "US$" render as "JS$" in the previous SVG implementation. */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { ChartOptions, Plugin } from 'chart.js'
+import type { ChartOptions, Plugin, ScriptableContext } from 'chart.js'
 import {
   CategoryScale,
   Chart,
@@ -29,14 +29,18 @@ Chart.register(
 const props = withDefaults(
   defineProps<{
     data: number[]
+    stackedData?: number[]
     color?: string
+    stackedColor?: string
     height?: number
     showGrid?: boolean
     fmtY?: (v: number) => string
     xLabels?: string[]
   }>(),
   {
+    stackedData: undefined,
     color: 'var(--primary)',
+    stackedColor: 'var(--chart-6)',
     height: 240,
     showGrid: true,
     fmtY: (v: number) => String(v),
@@ -48,12 +52,14 @@ const canvasElement = ref<HTMLCanvasElement | null>(null)
 let chart: Chart<'line'> | null = null
 
 let lineColor = resolveColor(props.color)
+let stackedLineColor = resolveColor(props.stackedColor)
 let gridColor = resolveColor('var(--chart-grid)')
 let textMutedColor = resolveColor('var(--text-muted)')
 let surfaceColor = resolveColor('var(--surface)')
 
 function refreshResolvedColors() {
   lineColor = resolveColor(props.color)
+  stackedLineColor = resolveColor(props.stackedColor)
   gridColor = resolveColor('var(--chart-grid)')
   textMutedColor = resolveColor('var(--text-muted)')
   surfaceColor = resolveColor('var(--surface)')
@@ -98,7 +104,7 @@ const dashedYGridPlugin: Plugin<'line'> = {
   },
 }
 
-function buildOptions(lo: number, hi: number): ChartOptions<'line'> {
+function buildOptions(lo: number, hi: number, stacked: boolean): ChartOptions<'line'> {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -111,6 +117,7 @@ function buildOptions(lo: number, hi: number): ChartOptions<'line'> {
     scales: {
       y: {
         type: 'linear',
+        stacked,
         display: props.showGrid,
         min: lo,
         max: hi,
@@ -139,39 +146,49 @@ function buildOptions(lo: number, hi: number): ChartOptions<'line'> {
   }
 }
 
+function datasetOf(data: number[], color: () => string, fill: boolean | string) {
+  return {
+    data,
+    borderColor: color(),
+    borderWidth: 2.5,
+    borderCapStyle: 'round' as const,
+    borderJoinStyle: 'round' as const,
+    fill,
+    tension: 0.4,
+    backgroundColor: (context: ScriptableContext<'line'>) => {
+      const { ctx, chartArea } = context.chart
+      if (!chartArea) return undefined
+      const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
+      gradient.addColorStop(0, hexToRgba(color(), 0.22))
+      gradient.addColorStop(1, hexToRgba(color(), 0))
+      return gradient
+    },
+    pointRadius: (context: ScriptableContext<'line'>) =>
+      context.dataIndex === data.length - 1 ? 4.5 : 0,
+    pointBackgroundColor: () => color(),
+    pointBorderColor: () => surfaceColor,
+    pointBorderWidth: 2.5,
+  }
+}
+
 function createChart() {
   if (!canvasElement.value) return
-  const { lo, hi } = computeYRange(props.data)
+  const stackedData = props.stackedData
+  const totals = stackedData
+    ? props.data.map((value, index) => value + (stackedData[index] ?? 0))
+    : props.data
+  const { lo, hi } = computeYRange(stackedData ? [...props.data, ...totals] : props.data)
+  const datasets = stackedData
+    ? [
+        datasetOf(props.data, () => lineColor, 'origin'),
+        datasetOf(stackedData, () => stackedLineColor, '-1'),
+      ]
+    : [datasetOf(props.data, () => lineColor, true)]
 
   chart = new Chart(canvasElement.value, {
     type: 'line',
-    data: {
-      labels: props.xLabels ?? props.data.map(() => ''),
-      datasets: [
-        {
-          data: props.data,
-          borderColor: lineColor,
-          borderWidth: 2.5,
-          borderCapStyle: 'round',
-          borderJoinStyle: 'round',
-          fill: true,
-          tension: 0.4,
-          backgroundColor: (context) => {
-            const { ctx, chartArea } = context.chart
-            if (!chartArea) return undefined
-            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
-            gradient.addColorStop(0, hexToRgba(lineColor, 0.22))
-            gradient.addColorStop(1, hexToRgba(lineColor, 0))
-            return gradient
-          },
-          pointRadius: (context) => (context.dataIndex === props.data.length - 1 ? 4.5 : 0),
-          pointBackgroundColor: () => lineColor,
-          pointBorderColor: () => surfaceColor,
-          pointBorderWidth: 2.5,
-        },
-      ],
-    },
-    options: buildOptions(lo, hi),
+    data: { labels: props.xLabels ?? props.data.map(() => ''), datasets },
+    options: buildOptions(lo, hi, !!stackedData),
     plugins: [dashedYGridPlugin],
   })
 }
@@ -181,8 +198,10 @@ onMounted(createChart)
 watch(
   [
     () => props.data,
+    () => props.stackedData,
     () => props.xLabels,
     () => props.color,
+    () => props.stackedColor,
     () => props.fmtY,
     () => props.showGrid,
   ],

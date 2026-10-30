@@ -24,6 +24,8 @@ export interface WalletResponse {
   currentValue: number | null
   gain: number | null
   gainPct: number | null
+  cash: number
+  cashReconciled: boolean
   createdAt: string
 }
 
@@ -59,6 +61,7 @@ export interface PortfolioSummary {
   displayCurrency: string
   totalCostBasis: number
   totalCurrentValue: number
+  totalCash: number
   totalGain: number
   totalGainPct: number | null
   kindSummaries: KindSummary[]
@@ -66,6 +69,8 @@ export interface PortfolioSummary {
 
 export interface SeriesPoint {
   month: string // "YYYY-MM"
+  ownMoney: number
+  reinvestedProfit: number
   totalInvested: number
 }
 
@@ -251,6 +256,7 @@ export interface WalletDetail {
   kind: WalletKind
   currency: string
   currentValue: number
+  cash: number
   totalInvested: number
   gain: number
   gainPct: number | null
@@ -341,7 +347,15 @@ export interface ConfigurationResponse {
 }
 
 export type WalletLedgerEventType =
-  'PURCHASE' | 'CONTRIBUTION' | 'WITHDRAWAL' | 'REINVESTMENT' | 'MOVE_IN' | 'MOVE_OUT'
+  | 'PURCHASE'
+  | 'CONTRIBUTION'
+  | 'WITHDRAWAL'
+  | 'REINVESTMENT'
+  | 'MOVE_IN'
+  | 'MOVE_OUT'
+  | 'TRANSFER_IN'
+  | 'TRANSFER_OUT'
+  | 'CASH_WITHDRAWAL'
 
 /** One event that touched a wallet — a row of `GET /wallets/{id}/ledger`. */
 export interface WalletLedgerEntry {
@@ -350,10 +364,45 @@ export interface WalletLedgerEntry {
   type: WalletLedgerEventType
   kind: WalletKind
   holdingId: string | null
-  holdingName: string
+  holdingName: string | null
   ticker: string | null
   quantity: number | null
   amount: number | null
   profit: number | null
   counterpartName: string | null
+  originalAmount: number | null
+  originalCurrency: string | null
+  rate: number | null
+  cashUsed: number | null
+  newMoney: number | null
+  cashBalance: number
+}
+
+export interface CashSource {
+  resultId: string
+  date: string
+  holdingName: string
+  ticker: string | null
+  amount: number
+}
+
+export interface CashSuggestion {
+  walletId: string
+  walletName: string
+  walletCurrency: string
+  holdingName: string
+  ticker: string | null
+  purchaseDate: string
+  newMoney: number
+  rate: number
+}
+
+export interface CashReconciliation {
+  walletId: string
+  walletName: string
+  kind: WalletKind
+  currency: string
+  cash: number
+  sources: CashSource[]
+  suggestion: CashSuggestion | null
 }

@@ -726,6 +726,12 @@ a {
   height: 36px;
 }
 
+.ticker-badge.cash-badge {
+  width: 36px;
+  height: 36px;
+  background: var(--text-muted);
+}
+
 .c-num {
   font-variant-numeric: tabular-nums;
 }
@@ -930,6 +936,8 @@ a {
 
 .input,
 .textarea {
+  --bulma-input-disabled-border-color: var(--border);
+
   height: 40px;
   border: 1px solid var(--border);
   border-radius: 8px;

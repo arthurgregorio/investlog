@@ -1,9 +1,11 @@
 package br.com.investlog.server.overview.repositories
 
-import br.com.investlog.server.jooq.finances.tables.references.CONTRIBUTIONS_TIMELINE
+import br.com.investlog.server.jooq.finances.tables.references.CAPITAL_TIMELINE
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_VALUED
+import br.com.investlog.server.jooq.finances.tables.references.WALLETS
+import br.com.investlog.server.jooq.finances.tables.references.WALLET_CASH
 import br.com.investlog.server.overview.rest.payloads.KindSummaryResponse
 import br.com.investlog.server.overview.rest.payloads.PortfolioSummaryResponse
 import br.com.investlog.server.overview.rest.payloads.SeriesPointResponse
@@ -48,13 +50,15 @@ class OverviewRepository(private val dsl: DSLContext) {
             }
 
         val totalCostBasis = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCostBasis }
-        val totalCurrentValue = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCurrentValue }
-        val totalGain = totalCurrentValue - totalCostBasis
+        val positionsValue = kindSummaries.fold(BigDecimal.ZERO) { acc, kind -> acc + kind.totalCurrentValue }
+        val totalGain = positionsValue - totalCostBasis
+        val totalCash = findTotalCash(userId, displayCurrency)
 
         return PortfolioSummaryResponse(
             displayCurrency = displayCurrency,
             totalCostBasis = totalCostBasis,
-            totalCurrentValue = totalCurrentValue,
+            totalCurrentValue = if (totalCash.signum() == 0) positionsValue else positionsValue + totalCash,
+            totalCash = totalCash,
             totalGain = totalGain,
             totalGainPct = gainPct(totalGain, totalCostBasis),
             kindSummaries = kindSummaries,
@@ -62,26 +66,50 @@ class OverviewRepository(private val dsl: DSLContext) {
     }
 
     fun findSeries(userId: Long, displayCurrency: String): List<SeriesPointResponse> {
-        val timeline = CONTRIBUTIONS_TIMELINE.`as`("timeline")
+        val timeline = CAPITAL_TIMELINE.`as`("timeline")
+        val appliedRate = timeline.RATE.div(displayCurrencyRate(displayCurrency))
 
-        val monthlyAmount = DSL.sum(timeline.WALLET_AMOUNT.mul(timeline.RATE.div(displayCurrencyRate(displayCurrency))))
-        val cumulativeAmount = DSL.sum(monthlyAmount).over().orderBy(timeline.MONTH)
+        val cumulativeOwnMoney = DSL.sum(DSL.sum(timeline.OWN_MONEY_AMOUNT.mul(appliedRate)))
+            .over().orderBy(timeline.MONTH)
+        val cumulativeReinvestedProfit = DSL.sum(DSL.sum(timeline.REINVESTED_PROFIT_AMOUNT.mul(appliedRate)))
+            .over().orderBy(timeline.MONTH)
 
         return dsl.select(
             DSL.field("TO_CHAR({0}, 'YYYY-MM')", SQLDataType.VARCHAR, timeline.MONTH).`as`("month"),
-            cumulativeAmount.`as`("total_invested"),
+            cumulativeOwnMoney.`as`("own_money"),
+            cumulativeReinvestedProfit.`as`("reinvested_profit"),
         )
             .from(timeline)
             .where(timeline.USER_ID.eq(userId))
             .groupBy(timeline.MONTH)
             .orderBy(timeline.MONTH)
             .fetch { record ->
+                val ownMoney = record.get("own_money", BigDecimal::class.java)!!.withoutZeroScale()
+                val reinvestedProfit = record.get("reinvested_profit", BigDecimal::class.java)!!.withoutZeroScale()
+
                 SeriesPointResponse(
                     month = record.get("month", String::class.java)!!,
-                    totalInvested = record.get("total_invested", BigDecimal::class.java)!!,
+                    ownMoney = ownMoney,
+                    reinvestedProfit = reinvestedProfit,
+                    totalInvested = ownMoney + reinvestedProfit,
                 )
             }
     }
+
+    private fun findTotalCash(userId: Long, displayCurrency: String): BigDecimal {
+        val appliedRate = DSL.coalesce(CURRENCY_RATES.RATE, BigDecimal.ONE).div(displayCurrencyRate(displayCurrency))
+
+        return dsl.select(DSL.coalesce(DSL.sum(WALLET_CASH.CASH.mul(appliedRate)), BigDecimal.ZERO))
+            .from(WALLET_CASH)
+            .join(WALLETS).on(WALLETS.ID.eq(WALLET_CASH.WALLET_ID))
+            .leftJoin(CURRENCY_RATES).on(CURRENCY_RATES.CURRENCY_CODE.eq(WALLETS.CURRENCY))
+            .where(WALLETS.USER_ID.eq(userId))
+            .fetchSingle()
+            .value1()!!
+            .withoutZeroScale()
+    }
+
+    private fun BigDecimal.withoutZeroScale(): BigDecimal = if (signum() == 0) BigDecimal.ZERO else this
 
     private fun displayCurrencyRate(displayCurrency: String) = DSL.coalesce(
         DSL.field(
