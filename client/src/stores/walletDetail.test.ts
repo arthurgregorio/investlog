@@ -17,6 +17,7 @@ const mockDetail: WalletDetail = {
   totalInvested: 4500,
   gain: 250,
   gainPct: 5.5556,
+  cash: 0,
   series: [],
   dayChange: null,
   weekChange: null,

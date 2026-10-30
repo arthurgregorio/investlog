@@ -137,12 +137,14 @@ onMounted(async () => {
       </p>
       <div v-else class="alloc-body is-relative">
         <b-loading :is-full-page="false" :model-value="loading" />
-        <DonutChart :segments="segments" :size="156" :thickness="22">
-          <div class="donut-center-label">{{ centerLabel }}</div>
-          <div class="donut-center-value">
-            {{ fmt.money(allocation?.totalValue ?? 0, currency, { compact: true }) }}
-          </div>
-        </DonutChart>
+        <div class="alloc-donut">
+          <DonutChart :segments="segments" :size="200" :thickness="28">
+            <div class="donut-center-label">{{ centerLabel }}</div>
+            <div class="donut-center-value">
+              {{ fmt.money(allocation?.totalValue ?? 0, currency, { compact: true }) }}
+            </div>
+          </DonutChart>
+        </div>
         <AllocationLegend :entries="legendEntries" :currency="currency" />
       </div>
     </CardBody>
@@ -166,9 +168,14 @@ onMounted(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 18px;
+}
+
+.alloc-donut {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
 }
 
 .donut-center-label {

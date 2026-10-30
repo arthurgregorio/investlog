@@ -266,6 +266,80 @@ JOIN finances.fund_holdings fh ON fh.name = v.name
 JOIN finances.wallets w ON w.id = fh.wallet_id
     AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
 
+-- Wallet cash (#484). Ações Brasil ends with R$ 3.240,00: a US$ 800 transfer and two resgates pay for
+-- two purchases, then R$ 2.162,40 goes to the bank. Ações EUA keeps US$ 640 from two resgates whose money
+-- really bought BTC in Cripto (BRL), and Fundos keeps R$ 12.000 that went to the bank; both are left for
+-- the reconciliation page. The extra lots before each resgate keep today's positions unchanged.
+INSERT INTO finances.stock_lots (stock_holding_id, lot_date, quantity, price)
+SELECT sh.id, v.lot_date, v.quantity, v.price
+FROM (VALUES
+    ('Ações Brasil', 'PETR4', DATE '2026-09-02', 20, 46.00),
+    ('Ações Brasil', 'SUZB3', DATE '2026-09-10', 100, 48.00),
+    ('Ações Brasil', 'WEGE3', DATE '2026-09-25', 60, 49.46),
+    ('Ações Brasil', 'BBAS3', DATE '2026-10-03', 150, 23.07),
+    ('Ações EUA', 'AAPL', DATE '2026-08-20', 4, 250.00),
+    ('Ações EUA', 'NVDA', DATE '2026-09-01', 2, 190.00)
+) AS v(wallet_name, ticker, lot_date, quantity, price)
+JOIN finances.wallets w ON w.name = v.wallet_name
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+JOIN finances.stock_holdings sh ON sh.wallet_id = w.id AND sh.ticker = v.ticker;
+
+INSERT INTO finances.crypto_lots (crypto_holding_id, lot_date, quantity, price)
+SELECT ch.id, DATE '2026-10-08', 0.0075, 442200.00
+FROM finances.crypto_holdings ch
+JOIN finances.wallets w ON w.id = ch.wallet_id
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+WHERE w.name = 'Cripto (BRL)' AND ch.ticker = 'BTC';
+
+INSERT INTO finances.fund_contributions (fund_holding_id, contribution_date, amount)
+SELECT fh.id, DATE '2026-07-28', 12000.00
+FROM finances.fund_holdings fh
+JOIN finances.wallets w ON w.id = fh.wallet_id
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+WHERE fh.name = 'BB TOP RF Ativa LP FIF RL';
+
+INSERT INTO finances.results (stock_holding_id, result_type, result_date, quantity, gross_amount, cost_basis)
+SELECT sh.id, 'WITHDRAWAL', v.result_date, v.quantity, v.quantity * v.unit_price,
+       ROUND(v.quantity * (
+           SELECT SUM(sl.quantity * sl.price) / SUM(sl.quantity)
+           FROM finances.stock_lots sl
+           WHERE sl.stock_holding_id = sh.id
+       ), 10)
+FROM (VALUES
+    ('Ações Brasil', 'SUZB3', DATE '2026-10-14', 100, 44.20),
+    ('Ações Brasil', 'PETR4', DATE '2026-10-21', 20, 49.12),
+    ('Ações EUA', 'AAPL', DATE '2026-09-15', 4, 255.00),
+    ('Ações EUA', 'NVDA', DATE '2026-10-06', 2, 210.00)
+) AS v(wallet_name, ticker, result_date, quantity, unit_price)
+JOIN finances.wallets w ON w.name = v.wallet_name
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+JOIN finances.stock_holdings sh ON sh.wallet_id = w.id AND sh.ticker = v.ticker;
+
+INSERT INTO finances.results (fund_holding_id, result_type, result_date, gross_amount, cost_basis)
+SELECT fh.id, 'WITHDRAWAL', DATE '2026-08-10', 12000.00, 10927.49
+FROM finances.fund_holdings fh
+JOIN finances.wallets w ON w.id = fh.wallet_id
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+WHERE fh.name = 'BB TOP RF Ativa LP FIF RL';
+
+INSERT INTO finances.cash_transfers (origin_wallet_id, destination_wallet_id, transfer_date, amount, rate)
+SELECT origin.id, destination.id, DATE '2026-09-18', 800.00, 5.32
+FROM finances.wallets origin
+JOIN finances.wallets destination ON destination.user_id = origin.user_id AND destination.name = 'Ações Brasil'
+WHERE origin.name = 'Ações EUA'
+  AND origin.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
+
+INSERT INTO finances.cash_withdrawals (wallet_id, withdrawal_date, amount, bank_name)
+SELECT w.id, DATE '2026-10-22', 2162.40, 'Itaú'
+FROM finances.wallets w
+WHERE w.name = 'Ações Brasil'
+  AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
+
+UPDATE finances.wallets
+SET cash_reconciled = FALSE
+WHERE name IN ('Ações EUA', 'Fundos')
+  AND user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
+
 INSERT INTO finances.wallet_daily_snapshots (wallet_id, snapshot_date, current_value, total_invested, gain, gain_pct)
 WITH admin_wallets AS (
     SELECT w.id

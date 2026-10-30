@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import AddPositionModal from '@/components/investments/AddPositionModal.vue'
 import HoldingDrawer from '@/components/investments/HoldingDrawer.vue'
+import CashTableRow from '@/components/investments/CashTableRow.vue'
 import HoldingsTableRow from '@/components/investments/HoldingsTableRow.vue'
 import UpdatePriceModal from '@/components/investments/UpdatePriceModal.vue'
 import SortTh from '@/components/ui/SortTh.vue'
@@ -22,6 +23,8 @@ const props = withDefaults(
     sortable?: boolean
     sortKey?: string | null
     sortDirection?: 'asc' | 'desc'
+    cash?: number
+    cashCurrency?: string
   }>(),
   {
     showWalletColumn: false,
@@ -29,6 +32,8 @@ const props = withDefaults(
     sortable: false,
     sortKey: null,
     sortDirection: 'desc',
+    cash: 0,
+    cashCurrency: 'BRL',
   },
 )
 const emit = defineEmits<{
@@ -37,6 +42,8 @@ const emit = defineEmits<{
   'holding-changed': []
   'position-added': []
   relocated: []
+  'transfer-cash': []
+  'withdraw-cash': []
 }>()
 
 const numericColumns = [
@@ -138,6 +145,13 @@ defineExpose({ closeDrawer })
           </tr>
         </thead>
         <tbody>
+          <CashTableRow
+            v-if="cash > 0"
+            :cash="cash"
+            :currency="cashCurrency"
+            @transfer="emit('transfer-cash')"
+            @withdraw-to-bank="emit('withdraw-cash')"
+          />
           <HoldingsTableRow
             v-for="row in rows"
             :key="row.id"

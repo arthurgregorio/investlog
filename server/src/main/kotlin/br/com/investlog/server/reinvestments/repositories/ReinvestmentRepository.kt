@@ -1,5 +1,6 @@
 package br.com.investlog.server.reinvestments.repositories
 
+import br.com.investlog.server.jooq.finances.enums.LotOrigin
 import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
@@ -85,6 +86,7 @@ class ReinvestmentRepository(private val dsl: DSLContext) {
                 .set(STOCK_LOTS.LOT_DATE, lotDate)
                 .set(STOCK_LOTS.QUANTITY, quantity)
                 .set(STOCK_LOTS.PRICE, price)
+                .set(STOCK_LOTS.ORIGIN, LotOrigin.REINVESTMENT)
                 .execute()
 
             WalletKind.CRYPTO -> dsl.insertInto(CRYPTO_LOTS)
@@ -92,6 +94,7 @@ class ReinvestmentRepository(private val dsl: DSLContext) {
                 .set(CRYPTO_LOTS.LOT_DATE, lotDate)
                 .set(CRYPTO_LOTS.QUANTITY, quantity)
                 .set(CRYPTO_LOTS.PRICE, price)
+                .set(CRYPTO_LOTS.ORIGIN, LotOrigin.REINVESTMENT)
                 .execute()
 
             WalletKind.FUNDS -> throw IllegalArgumentException("Fund holdings receive contributions, not lots")
@@ -103,6 +106,7 @@ class ReinvestmentRepository(private val dsl: DSLContext) {
             .set(FUND_CONTRIBUTIONS.FUND_HOLDING_ID, holdingId)
             .set(FUND_CONTRIBUTIONS.CONTRIBUTION_DATE, contributionDate)
             .set(FUND_CONTRIBUTIONS.AMOUNT, amount)
+            .set(FUND_CONTRIBUTIONS.ORIGIN, LotOrigin.REINVESTMENT)
             .execute()
 
         dsl.update(FUND_HOLDINGS)

@@ -18,6 +18,8 @@ function wallet(overrides: Partial<WalletResponse> = {}): WalletResponse {
     currentValue: null,
     gain: null,
     gainPct: null,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2024-01-01',
     ...overrides,
   }

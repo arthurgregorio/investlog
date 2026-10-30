@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="25-1000-1" author="${claude}">
+        <comment>
+            Where the money of a lot or contribution came from (issue #508). Only a PURCHASE is paid
+            from the wallet's cash or with new money; a REINVESTMENT lot is paid by the exit it pairs
+            with, and a MOVE lot carries cost already invested in another wallet.
+        </comment>
+        <sql>
+            CREATE TYPE finances.lot_origin AS ENUM ('PURCHASE', 'REINVESTMENT', 'MOVE');
+            ALTER TABLE finances.stock_lots
+                ADD COLUMN origin finances.lot_origin NOT NULL DEFAULT 'PURCHASE';
+            ALTER TABLE finances.crypto_lots
+                ADD COLUMN origin finances.lot_origin NOT NULL DEFAULT 'PURCHASE';
+            ALTER TABLE finances.fund_contributions
+                ADD COLUMN origin finances.lot_origin NOT NULL DEFAULT 'PURCHASE';
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.fund_contributions DROP COLUMN origin;
+                ALTER TABLE finances.crypto_lots DROP COLUMN origin;
+                ALTER TABLE finances.stock_lots DROP COLUMN origin;
+                DROP TYPE finances.lot_origin;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="25-1000-2" author="${claude}">
+        <comment>
+            Tags the lots and contributions written before the column existed. A reinvestment and the
+            lot it lands, and a partial move and the lot it writes on the destination, are inserted in
+            one transaction, so their created_at, the transaction's now(), is identical. A merge keeps
+            the original lots, whose created_at never matches, so they stay purchases of the wallet
+            that owns them today.
+        </comment>
+        <sqlFile path="25-1000-tag-lot-origins.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="true"/>
+        <rollback/>
+    </changeSet>
+
+    <changeSet id="25-1000-3" author="${claude}">
+        <sql>
+            CREATE TABLE finances.cash_transfers (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                origin_wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                destination_wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                transfer_date DATE NOT NULL,
+                amount NUMERIC NOT NULL CHECK (amount > 0),
+                rate NUMERIC NOT NULL DEFAULT 1 CHECK (rate > 0),
+                destination_amount NUMERIC GENERATED ALWAYS AS (amount * rate) STORED,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                CONSTRAINT cash_transfers_distinct_wallets CHECK (origin_wallet_id &lt;&gt; destination_wallet_id)
+            );
+            CREATE INDEX idx_cash_transfers_origin_wallet_id ON finances.cash_transfers (origin_wallet_id);
+            CREATE INDEX idx_cash_transfers_destination_wallet_id ON finances.cash_transfers (destination_wallet_id);
+
+            CREATE TABLE finances.cash_withdrawals (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                withdrawal_date DATE NOT NULL,
+                amount NUMERIC NOT NULL CHECK (amount > 0),
+                bank_name TEXT NULL CHECK (char_length(bank_name) &lt;= 60),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+            );
+            CREATE INDEX idx_cash_withdrawals_wallet_id ON finances.cash_withdrawals (wallet_id);
+
+            ALTER TABLE finances.wallets ADD COLUMN cash_reconciled BOOLEAN NOT NULL DEFAULT TRUE;
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.wallets DROP COLUMN cash_reconciled;
+                DROP TABLE finances.cash_withdrawals;
+                DROP TABLE finances.cash_transfers;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="25-1000-4" author="${claude}">
+        <comment>
+            A wallet's cash is replayed from its events rather than stored, so a backdated entry
+            reshapes every later balance and funding split. A purchase takes what the balance holds up
+            to its own amount and the rest is new money; transfers out and bank withdrawals take their
+            whole amount, so a replay that ends below zero is what the service refuses.
+        </comment>
+        <sqlFile path="25-1000-wallet-cash-replay.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+        <rollback>
+            <sql>DROP FUNCTION finances.wallet_cash_replay(BIGINT);</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="25-1000-5" author="${claude}">
+        <sql>
+            CREATE VIEW finances.wallet_cash AS
+            SELECT
+                wallets.id AS wallet_id,
+                COALESCE((
+                    SELECT replay.balance
+                    FROM finances.wallet_cash_replay(wallets.id) AS replay
+                    ORDER BY replay.sequence DESC
+                    LIMIT 1
+                ), 0) AS cash
+            FROM finances.wallets;
+        </sql>
+        <rollback>
+            <sql>DROP VIEW finances.wallet_cash;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="25-1000-6" author="${claude}">
+        <comment>
+            Cash a wallet holds the moment the feature ships came from exits recorded before anyone
+            could say where their money went, so it is flagged for the reconciliation page.
+        </comment>
+        <sql>
+            UPDATE finances.wallets
+            SET cash_reconciled = FALSE
+            FROM finances.wallet_cash
+            WHERE wallet_cash.wallet_id = wallets.id
+              AND wallet_cash.cash &gt; 0;
+        </sql>
+        <rollback/>
+    </changeSet>
+
+    <changeSet id="25-1000-7" author="${claude}">
+        <sqlFile path="25-1000-wallet-ledger-with-cash.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="true"/>
+        <rollback>
+            <sqlFile path="25-1000-wallet-ledger-rollback.sql"
+                     relativeToChangelogFile="true"
+                     splitStatements="true"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

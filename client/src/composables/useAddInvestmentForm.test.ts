@@ -27,6 +27,8 @@ const mockWallet: WalletResponse = {
   currentValue: null,
   gain: null,
   gainPct: null,
+  cash: 0,
+  cashReconciled: true,
   createdAt: '2024-01-01T00:00:00Z',
 }
 
@@ -40,6 +42,8 @@ const mockFundWallet: WalletResponse = {
   currentValue: null,
   gain: null,
   gainPct: null,
+  cash: 0,
+  cashReconciled: true,
   createdAt: '2024-01-01T00:00:00Z',
 }
 

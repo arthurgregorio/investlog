@@ -9,6 +9,7 @@ data class WalletDetailResponse(
     val kind: String,
     val currency: String,
     val currentValue: BigDecimal,
+    val cash: BigDecimal,
     val totalInvested: BigDecimal,
     val gain: BigDecimal,
     val gainPct: BigDecimal?,

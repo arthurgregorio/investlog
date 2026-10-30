@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="25-1010-1" author="${claude}">
+        <comment>
+            What a purchase or contribution cost when it was made, kept apart from quantity × price
+            (issue #508). A partial wallet move rescales the origin's lots down by the cost it
+            carries away; replaying cash on the rescaled amounts would hand back cash the purchase
+            really spent. The cash replay and the capital series read this column instead. Rows that
+            exist today keep their current amount, and a lot a move writes on the destination has
+            none, because the origin still accounts for that money.
+        </comment>
+        <sql>
+            ALTER TABLE finances.stock_lots ADD COLUMN purchase_amount NUMERIC NULL;
+            ALTER TABLE finances.crypto_lots ADD COLUMN purchase_amount NUMERIC NULL;
+            ALTER TABLE finances.fund_contributions ADD COLUMN purchase_amount NUMERIC NULL;
+
+            UPDATE finances.stock_lots SET purchase_amount = quantity * price;
+            UPDATE finances.crypto_lots SET purchase_amount = quantity * price;
+            UPDATE finances.fund_contributions SET purchase_amount = amount;
+        </sql>
+        <rollback>
+            <sql>
+                ALTER TABLE finances.fund_contributions DROP COLUMN purchase_amount;
+                ALTER TABLE finances.crypto_lots DROP COLUMN purchase_amount;
+                ALTER TABLE finances.stock_lots DROP COLUMN purchase_amount;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="25-1010-2" author="${claude}">
+        <comment>
+            Every insert path (new holding, new lot, reinvestment) gets the amount without each
+            repository remembering to write it; only a move's lot is left without one.
+        </comment>
+        <sql splitStatements="false">
+            CREATE FUNCTION finances.record_lot_purchase_amount() RETURNS TRIGGER
+            LANGUAGE plpgsql AS $$
+            BEGIN
+                IF NEW.purchase_amount IS NULL AND NEW.origin &lt;&gt; 'MOVE' THEN
+                    NEW.purchase_amount := NEW.quantity * NEW.price;
+                END IF;
+                RETURN NEW;
+            END;
+            $$;
+
+            CREATE FUNCTION finances.record_contribution_purchase_amount() RETURNS TRIGGER
+            LANGUAGE plpgsql AS $$
+            BEGIN
+                IF NEW.purchase_amount IS NULL AND NEW.origin &lt;&gt; 'MOVE' THEN
+                    NEW.purchase_amount := NEW.amount;
+                END IF;
+                RETURN NEW;
+            END;
+            $$;
+
+            CREATE TRIGGER stock_lots_purchase_amount BEFORE INSERT ON finances.stock_lots
+                FOR EACH ROW EXECUTE FUNCTION finances.record_lot_purchase_amount();
+            CREATE TRIGGER crypto_lots_purchase_amount BEFORE INSERT ON finances.crypto_lots
+                FOR EACH ROW EXECUTE FUNCTION finances.record_lot_purchase_amount();
+            CREATE TRIGGER fund_contributions_purchase_amount BEFORE INSERT ON finances.fund_contributions
+                FOR EACH ROW EXECUTE FUNCTION finances.record_contribution_purchase_amount();
+        </sql>
+        <rollback>
+            <sql splitStatements="false">
+                DROP TRIGGER fund_contributions_purchase_amount ON finances.fund_contributions;
+                DROP TRIGGER crypto_lots_purchase_amount ON finances.crypto_lots;
+                DROP TRIGGER stock_lots_purchase_amount ON finances.stock_lots;
+                DROP FUNCTION finances.record_contribution_purchase_amount();
+                DROP FUNCTION finances.record_lot_purchase_amount();
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="25-1010-3" author="${claude}">
+        <sqlFile path="25-1010-wallet-cash-replay-purchase-amount.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+        <rollback>
+            <sqlFile path="25-1010-wallet-cash-replay-rollback.sql"
+                     relativeToChangelogFile="true"
+                     splitStatements="false"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

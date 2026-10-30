@@ -42,10 +42,10 @@ class WalletDetailService(
         val transactions = walletDetailRepository.findTransactions(walletId)
 
         val totalInvested = holdings.fold(BigDecimal.ZERO) { total, holding -> total + holding.costBasis }
-        val currentValue = holdings.fold(BigDecimal.ZERO) { total, holding ->
+        val positionsValue = holdings.fold(BigDecimal.ZERO) { total, holding ->
             total + (holding.currentValue ?: BigDecimal.ZERO)
         }
-        val gain = currentValue - totalInvested
+        val gain = positionsValue - totalInvested
 
         val performers = holdings
             .filter { holding -> holding.currentValue != null && holding.costBasis.signum() != 0 }
@@ -58,7 +58,8 @@ class WalletDetailService(
             name = wallet.name,
             kind = wallet.kind.text,
             currency = wallet.currency,
-            currentValue = currentValue,
+            currentValue = positionsValue + wallet.cash,
+            cash = wallet.cash,
             totalInvested = totalInvested,
             gain = gain,
             gainPct = percentageOf(gain, totalInvested),
@@ -70,7 +71,7 @@ class WalletDetailService(
             worstPerformer = performers.firstOrNull()?.let(::toPerformer),
             largestHoldingName = largestHolding?.name,
             largestHoldingShare = largestHolding?.let { holding ->
-                percentageOf(holding.currentValue ?: BigDecimal.ZERO, currentValue)
+                percentageOf(holding.currentValue ?: BigDecimal.ZERO, positionsValue)
             },
             activity = activityOf(transactions, holdings.size),
         )

@@ -1,5 +1,6 @@
 package br.com.investlog.server.results.services
 
+import br.com.investlog.server.cash.services.CashService
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.enums.ResultType
 import br.com.investlog.server.jooq.finances.enums.WalletKind
@@ -20,6 +21,7 @@ import java.util.UUID
 class WithdrawalService(
     private val resultRepository: ResultRepository,
     private val positionExitService: PositionExitService,
+    private val cashService: CashService,
 ) {
 
     @Transactional
@@ -116,6 +118,8 @@ class WithdrawalService(
         if (position.kind == WalletKind.FUNDS) {
             resultRepository.increaseFundCurrentValue(position.holdingId, result.grossAmount)
         }
+
+        cashService.requireCoveredAfterUndo(userId, walletId)
     }
 
     private fun activePosition(

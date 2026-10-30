@@ -43,6 +43,7 @@ const summary: PortfolioSummary = {
   displayCurrency: 'BRL',
   totalCostBasis: 10000,
   totalCurrentValue: 12000,
+  totalCash: 0,
   totalGain: 2000,
   totalGainPct: 20,
   kindSummaries: [
@@ -76,6 +77,8 @@ function walletOf(id: string, kind: WalletKind): WalletResponse {
     currentValue: 1100,
     gain: 100,
     gainPct: 10,
+    cash: 0,
+    cashReconciled: true,
     createdAt: '2026-01-01T00:00:00Z',
   }
 }
@@ -227,7 +230,7 @@ describe('OverviewView', () => {
 
     expect(overviewApi.getAllocation).toHaveBeenCalledWith('STRATEGY', undefined)
     expect(wrapper.find('.alloc-card .chart-title').text()).toBe('Alocação')
-    expect(wrapper.find('.alloc-legend').text()).toContain('Longo prazo')
+    expect(wrapper.find('.alloc-card .alloc-legend').text()).toContain('Longo prazo')
     expect(wrapper.findAll('.section-label').map((label) => label.text())).toContain(
       'Por tipo de carteira',
     )
@@ -237,9 +240,9 @@ describe('OverviewView', () => {
     const { wrapper } = await mountView({
       summary,
       series: [
-        { month: '2026-01', totalInvested: 1000 },
-        { month: '2026-02', totalInvested: 4000 },
-        { month: '2026-03', totalInvested: 10000 },
+        { month: '2026-01', ownMoney: 1000, reinvestedProfit: 0, totalInvested: 1000 },
+        { month: '2026-02', ownMoney: 4000, reinvestedProfit: 0, totalInvested: 4000 },
+        { month: '2026-03', ownMoney: 10000, reinvestedProfit: 0, totalInvested: 10000 },
       ],
     })
 
@@ -254,7 +257,7 @@ describe('OverviewView', () => {
   it('pads a single-point series with a leading zero so the chart can draw a line', async () => {
     const { wrapper } = await mountView({
       summary,
-      series: [{ month: '2026-03', totalInvested: 2500 }],
+      series: [{ month: '2026-03', ownMoney: 2500, reinvestedProfit: 0, totalInvested: 2500 }],
     })
 
     const chart = wrapper.findComponent(AreaChart)
