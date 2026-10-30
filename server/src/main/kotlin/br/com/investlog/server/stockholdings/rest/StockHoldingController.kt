@@ -7,6 +7,7 @@ import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingUpdateRequest
+import br.com.investlog.server.strategies.rest.payloads.HoldingClassRequest
 import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
@@ -58,6 +59,14 @@ class StockHoldingController(private val service: StockHoldingService) {
         @RequestBody request: HoldingSegmentRequest,
     ): ResponseEntity<StockHoldingResponse> =
         ResponseEntity.ok(service.updateSegment(walletId, holdingId, request))
+
+    @PutMapping("/{holdingId}/class")
+    fun updateClass(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @Valid @RequestBody request: HoldingClassRequest,
+    ): ResponseEntity<StockHoldingResponse> =
+        ResponseEntity.ok(service.updateClass(walletId, holdingId, request))
 
     @DeleteMapping("/{holdingId}")
     fun delete(@PathVariable walletId: UUID, @PathVariable holdingId: UUID): ResponseEntity<Void> {

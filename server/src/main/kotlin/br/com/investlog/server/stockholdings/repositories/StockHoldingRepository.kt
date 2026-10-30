@@ -3,6 +3,8 @@ package br.com.investlog.server.stockholdings.repositories
 import br.com.investlog.server.jooq.finances.tables.references.HOLDING_TYPES
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.jooq.finances.tables.references.SEGMENTS
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGIES
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGY_CLASSES
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.STOCK_LOTS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
@@ -30,6 +32,8 @@ class StockHoldingRepository(
         val holdingTypes = HOLDING_TYPES.`as`("holding_types")
         val segments = SEGMENTS.`as`("segments")
         val stockHoldings = STOCK_HOLDINGS.`as`("stock_holdings")
+        val strategyClasses = STRATEGY_CLASSES.`as`("strategy_classes")
+        val strategies = STRATEGIES.`as`("strategies")
 
         val lotsField = DSL.multiset(
             DSL.selectFrom(STOCK_LOTS)
@@ -78,6 +82,10 @@ class StockHoldingRepository(
             stockHoldings.NAME,
             stockHoldings.CURRENT_PRICE,
             stockHoldings.FROZEN,
+            strategies.EXTERNAL_ID,
+            strategies.NAME,
+            strategyClasses.EXTERNAL_ID,
+            strategyClasses.NAME,
             lotsField,
             withdrawalsField
         )
@@ -85,6 +93,8 @@ class StockHoldingRepository(
             .join(wallets).on(wallets.ID.eq(stockHoldings.WALLET_ID))
             .join(holdingTypes).on(holdingTypes.ID.eq(stockHoldings.HOLDING_TYPE_ID))
             .leftJoin(segments).on(segments.ID.eq(stockHoldings.SEGMENT_ID))
+            .join(strategyClasses).on(strategyClasses.ID.eq(stockHoldings.STRATEGY_CLASS_ID))
+            .join(strategies).on(strategies.ID.eq(strategyClasses.STRATEGY_ID))
             .where(stockHoldings.WALLET_ID.eq(walletInternalId))
             .orderBy(stockHoldings.CREATED_AT.desc())
             .limit(pageable.pageSize)
@@ -101,6 +111,10 @@ class StockHoldingRepository(
                     name = rec.get(stockHoldings.NAME)!!,
                     currentPrice = rec.get(stockHoldings.CURRENT_PRICE),
                     frozen = rec.get(stockHoldings.FROZEN)!!,
+                    strategyId = rec.get(strategies.EXTERNAL_ID)!!,
+                    strategyName = rec.get(strategies.NAME)!!,
+                    strategyClassId = rec.get(strategyClasses.EXTERNAL_ID)!!,
+                    strategyClassName = rec.get(strategyClasses.NAME)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
@@ -117,6 +131,7 @@ class StockHoldingRepository(
         walletInternalId: Long,
         typeInternalId: Long,
         segmentInternalId: Long?,
+        strategyClassInternalId: Long?,
         ticker: String,
         name: String,
         currentPrice: BigDecimal?,
@@ -126,6 +141,7 @@ class StockHoldingRepository(
             .set(STOCK_HOLDINGS.WALLET_ID, walletInternalId)
             .set(STOCK_HOLDINGS.HOLDING_TYPE_ID, typeInternalId)
             .set(STOCK_HOLDINGS.SEGMENT_ID, segmentInternalId)
+            .set(STOCK_HOLDINGS.STRATEGY_CLASS_ID, strategyClassInternalId)
             .set(STOCK_HOLDINGS.TICKER, ticker.uppercase())
             .set(STOCK_HOLDINGS.NAME, name)
             .set(STOCK_HOLDINGS.CURRENT_PRICE, currentPrice)
@@ -210,6 +226,8 @@ class StockHoldingRepository(
         val holdingTypes = HOLDING_TYPES.`as`("holding_types")
         val segments = SEGMENTS.`as`("segments")
         val stockHoldings = STOCK_HOLDINGS.`as`("stock_holdings")
+        val strategyClasses = STRATEGY_CLASSES.`as`("strategy_classes")
+        val strategies = STRATEGIES.`as`("strategies")
 
         val lotsField = DSL.multiset(
             DSL.selectFrom(STOCK_LOTS)
@@ -258,6 +276,10 @@ class StockHoldingRepository(
             stockHoldings.NAME,
             stockHoldings.CURRENT_PRICE,
             stockHoldings.FROZEN,
+            strategies.EXTERNAL_ID,
+            strategies.NAME,
+            strategyClasses.EXTERNAL_ID,
+            strategyClasses.NAME,
             lotsField,
             withdrawalsField
         )
@@ -265,6 +287,8 @@ class StockHoldingRepository(
             .join(wallets).on(wallets.ID.eq(stockHoldings.WALLET_ID))
             .join(holdingTypes).on(holdingTypes.ID.eq(stockHoldings.HOLDING_TYPE_ID))
             .leftJoin(segments).on(segments.ID.eq(stockHoldings.SEGMENT_ID))
+            .join(strategyClasses).on(strategyClasses.ID.eq(stockHoldings.STRATEGY_CLASS_ID))
+            .join(strategies).on(strategies.ID.eq(strategyClasses.STRATEGY_ID))
             .where(stockHoldings.ID.eq(internalId))
             .and(stockHoldings.WALLET_ID.eq(walletInternalId))
             .fetchOne { rec ->
@@ -279,6 +303,10 @@ class StockHoldingRepository(
                     name = rec.get(stockHoldings.NAME)!!,
                     currentPrice = rec.get(stockHoldings.CURRENT_PRICE),
                     frozen = rec.get(stockHoldings.FROZEN)!!,
+                    strategyId = rec.get(strategies.EXTERNAL_ID)!!,
+                    strategyName = rec.get(strategies.NAME)!!,
+                    strategyClassId = rec.get(strategyClasses.EXTERNAL_ID)!!,
+                    strategyClassName = rec.get(strategyClasses.NAME)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )

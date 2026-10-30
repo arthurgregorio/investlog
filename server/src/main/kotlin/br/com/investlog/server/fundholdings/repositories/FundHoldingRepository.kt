@@ -8,6 +8,8 @@ import br.com.investlog.server.jooq.finances.tables.references.FUND_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.HOLDING_TYPES
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.jooq.finances.tables.references.SEGMENTS
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGIES
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGY_CLASSES
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
@@ -30,6 +32,8 @@ class FundHoldingRepository(
         val holdingTypes = HOLDING_TYPES.`as`("holding_types")
         val segments = SEGMENTS.`as`("segments")
         val fundHoldings = FUND_HOLDINGS.`as`("fund_holdings")
+        val strategyClasses = STRATEGY_CLASSES.`as`("strategy_classes")
+        val strategies = STRATEGIES.`as`("strategies")
 
         val contributionsField = DSL.multiset(
             DSL.selectFrom(FUND_CONTRIBUTIONS)
@@ -78,6 +82,10 @@ class FundHoldingRepository(
             fundHoldings.ADMINISTRATION_FEE_RATE,
             fundHoldings.PERFORMANCE_FEE_RATE,
             fundHoldings.FROZEN,
+            strategies.EXTERNAL_ID,
+            strategies.NAME,
+            strategyClasses.EXTERNAL_ID,
+            strategyClasses.NAME,
             contributionsField,
             withdrawalsField
         )
@@ -85,6 +93,8 @@ class FundHoldingRepository(
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
             .join(holdingTypes).on(holdingTypes.ID.eq(fundHoldings.HOLDING_TYPE_ID))
             .leftJoin(segments).on(segments.ID.eq(fundHoldings.SEGMENT_ID))
+            .join(strategyClasses).on(strategyClasses.ID.eq(fundHoldings.STRATEGY_CLASS_ID))
+            .join(strategies).on(strategies.ID.eq(strategyClasses.STRATEGY_ID))
             .where(fundHoldings.WALLET_ID.eq(walletInternalId))
             .orderBy(fundHoldings.CREATED_AT.desc())
             .limit(pageable.pageSize)
@@ -102,6 +112,10 @@ class FundHoldingRepository(
                     administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),
                     performanceFeeRate = rec.get(fundHoldings.PERFORMANCE_FEE_RATE),
                     frozen = rec.get(fundHoldings.FROZEN)!!,
+                    strategyId = rec.get(strategies.EXTERNAL_ID)!!,
+                    strategyName = rec.get(strategies.NAME)!!,
+                    strategyClassId = rec.get(strategyClasses.EXTERNAL_ID)!!,
+                    strategyClassName = rec.get(strategyClasses.NAME)!!,
                     contributions = rec.get(contributionsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
@@ -118,6 +132,7 @@ class FundHoldingRepository(
         walletInternalId: Long,
         typeInternalId: Long,
         segmentInternalId: Long?,
+        strategyClassInternalId: Long?,
         name: String,
         currentValue: BigDecimal?,
         administrationFeeRate: BigDecimal?,
@@ -128,6 +143,7 @@ class FundHoldingRepository(
             .set(FUND_HOLDINGS.WALLET_ID, walletInternalId)
             .set(FUND_HOLDINGS.HOLDING_TYPE_ID, typeInternalId)
             .set(FUND_HOLDINGS.SEGMENT_ID, segmentInternalId)
+            .set(FUND_HOLDINGS.STRATEGY_CLASS_ID, strategyClassInternalId)
             .set(FUND_HOLDINGS.NAME, name)
             .set(FUND_HOLDINGS.CURRENT_VALUE, currentValue)
             .set(FUND_HOLDINGS.ADMINISTRATION_FEE_RATE, administrationFeeRate)
@@ -214,6 +230,8 @@ class FundHoldingRepository(
         val holdingTypes = HOLDING_TYPES.`as`("holding_types")
         val segments = SEGMENTS.`as`("segments")
         val fundHoldings = FUND_HOLDINGS.`as`("fund_holdings")
+        val strategyClasses = STRATEGY_CLASSES.`as`("strategy_classes")
+        val strategies = STRATEGIES.`as`("strategies")
 
         val contributionsField = DSL.multiset(
             DSL.selectFrom(FUND_CONTRIBUTIONS)
@@ -262,6 +280,10 @@ class FundHoldingRepository(
             fundHoldings.ADMINISTRATION_FEE_RATE,
             fundHoldings.PERFORMANCE_FEE_RATE,
             fundHoldings.FROZEN,
+            strategies.EXTERNAL_ID,
+            strategies.NAME,
+            strategyClasses.EXTERNAL_ID,
+            strategyClasses.NAME,
             contributionsField,
             withdrawalsField
         )
@@ -269,6 +291,8 @@ class FundHoldingRepository(
             .join(wallets).on(wallets.ID.eq(fundHoldings.WALLET_ID))
             .join(holdingTypes).on(holdingTypes.ID.eq(fundHoldings.HOLDING_TYPE_ID))
             .leftJoin(segments).on(segments.ID.eq(fundHoldings.SEGMENT_ID))
+            .join(strategyClasses).on(strategyClasses.ID.eq(fundHoldings.STRATEGY_CLASS_ID))
+            .join(strategies).on(strategies.ID.eq(strategyClasses.STRATEGY_ID))
             .where(fundHoldings.ID.eq(internalId))
             .and(fundHoldings.WALLET_ID.eq(walletInternalId))
             .fetchOne { rec ->
@@ -284,6 +308,10 @@ class FundHoldingRepository(
                     administrationFeeRate = rec.get(fundHoldings.ADMINISTRATION_FEE_RATE),
                     performanceFeeRate = rec.get(fundHoldings.PERFORMANCE_FEE_RATE),
                     frozen = rec.get(fundHoldings.FROZEN)!!,
+                    strategyId = rec.get(strategies.EXTERNAL_ID)!!,
+                    strategyName = rec.get(strategies.NAME)!!,
+                    strategyClassId = rec.get(strategyClasses.EXTERNAL_ID)!!,
+                    strategyClassName = rec.get(strategyClasses.NAME)!!,
                     contributions = rec.get(contributionsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
