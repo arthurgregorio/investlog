@@ -4,6 +4,9 @@ import br.com.investlog.server.holdingsoverview.rest.payloads.HoldingRowResponse
 import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_REPORT_ROWS
+import br.com.investlog.server.jooq.finances.tables.references.HOLDING_STRATEGY_CLASSES
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGIES
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGY_CLASSES
 import br.com.investlog.server.shared.utils.pagedModelOf
 import org.jooq.DSLContext
 import org.jooq.Field
@@ -29,6 +32,9 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
         pageable: Pageable,
     ): PagedModel<HoldingRowResponse> {
         val overview = HOLDINGS_OVERVIEW.`as`("overview")
+        val holdingClasses = HOLDING_STRATEGY_CLASSES.`as`("holding_classes")
+        val strategyClasses = STRATEGY_CLASSES.`as`("strategy_classes")
+        val strategies = STRATEGIES.`as`("strategies")
 
         val baseCondition = overview.USER_ID.eq(userId).and(overview.STATUS.eq(HoldingStatus.ACTIVE))
         val kindCondition = if (kind != null) overview.KIND.eq(kind) else DSL.noCondition()
@@ -72,8 +78,15 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
             overview.GAIN,
             overview.GAIN_PCT,
             overview.SEGMENT_LABEL,
+            strategies.EXTERNAL_ID,
+            strategies.NAME,
+            strategyClasses.EXTERNAL_ID,
+            strategyClasses.NAME,
         )
             .from(overview)
+            .join(holdingClasses).on(holdingClasses.KIND.eq(overview.KIND)).and(holdingClasses.HOLDING_ID.eq(overview.HOLDING_ID))
+            .join(strategyClasses).on(strategyClasses.ID.eq(holdingClasses.STRATEGY_CLASS_ID))
+            .join(strategies).on(strategies.ID.eq(strategyClasses.STRATEGY_ID))
             .where(baseCondition).and(kindCondition).and(typeLabelCondition).and(walletIdCondition).and(frozenCondition).and(searchCondition)
             .orderBy(sortFields)
             .limit(pageable.pageSize)
@@ -96,6 +109,10 @@ class HoldingsOverviewRepository(private val dsl: DSLContext) {
                     currentValue = record.get(overview.CURRENT_VALUE),
                     gain = record.get(overview.GAIN),
                     gainPct = record.get(overview.GAIN_PCT),
+                    strategyId = record.get(strategies.EXTERNAL_ID),
+                    strategyName = record.get(strategies.NAME),
+                    strategyClassId = record.get(strategyClasses.EXTERNAL_ID),
+                    strategyClassName = record.get(strategyClasses.NAME),
                 )
             }
 

@@ -10,6 +10,7 @@ import br.com.investlog.server.shared.exceptions.InvalidCashOperationException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
 import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
+import br.com.investlog.server.shared.exceptions.InvalidStrategyException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.InvalidWalletMoveException
@@ -128,6 +129,17 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     fun handleInvalidWalletMove(ex: InvalidWalletMoveException): ProblemDetail {
 
         val message = ex.message ?: "Movimentação inválida"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidStrategyException::class)
+    fun handleInvalidStrategy(ex: InvalidStrategyException): ProblemDetail {
+
+        val message = ex.message ?: "Estratégia inválida"
 
         val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
         problemDetail.setProperty("timestamp", Instant.now())

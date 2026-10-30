@@ -46,6 +46,10 @@ export interface HoldingRow {
   gain: number | null
   gainPct: number | null
   frozen: boolean
+  strategyId?: string | null
+  strategyName?: string | null
+  strategyClassId?: string | null
+  strategyClassName?: string | null
 }
 
 export interface KindSummary {
@@ -117,7 +121,7 @@ export interface WithdrawalDetail {
   profit: number
 }
 
-export interface StockHoldingDetail {
+export interface StockHoldingDetail extends Partial<HoldingStrategyTags> {
   id: string
   walletId: string
   typeId: string
@@ -132,7 +136,7 @@ export interface StockHoldingDetail {
   withdrawals: WithdrawalDetail[]
 }
 
-export interface CryptoHoldingDetail {
+export interface CryptoHoldingDetail extends Partial<HoldingStrategyTags> {
   id: string
   walletId: string
   typeId: string | null
@@ -147,7 +151,7 @@ export interface CryptoHoldingDetail {
   withdrawals: WithdrawalDetail[]
 }
 
-export interface FundHoldingDetail {
+export interface FundHoldingDetail extends Partial<HoldingStrategyTags> {
   id: string
   walletId: string
   typeId: string
@@ -405,4 +409,152 @@ export interface CashReconciliation {
   cash: number
   sources: CashSource[]
   suggestion: CashSuggestion | null
+}
+
+export interface HoldingStrategyTags {
+  strategyId: string
+  strategyName: string
+  strategyClassId: string
+  strategyClassName: string
+}
+
+export interface StrategyClass {
+  id: string
+  name: string
+  targetPercentage: number | null
+  position: number
+  default: boolean
+  holdingCount: number
+  typedCount: number
+  typedPercentageSum: number
+  blankSharePercentage: number | null
+}
+
+export interface Strategy {
+  id: string
+  name: string
+  default: boolean
+  holdingCount: number
+  classes: StrategyClass[]
+}
+
+export interface ClassHolding {
+  kind: WalletKind
+  id: string
+  walletId: string
+  walletName: string
+  ticker: string | null
+  name: string
+  typeLabel: string | null
+  segmentLabel: string | null
+  frozen: boolean
+  targetPercentage: number | null
+  effectiveTargetPercentage: number
+}
+
+export interface HoldingAllocation {
+  kind: WalletKind
+  id: string
+  walletId: string
+  walletName: string
+  ticker: string | null
+  name: string
+  typeLabel: string | null
+  segmentLabel: string | null
+  frozen: boolean
+  targetPercentage: number
+  typed: boolean
+  actualPercentage: number
+  driftPercentagePoints: number
+  driftValue: number
+  value: number
+}
+
+export interface SegmentAllocation {
+  label: string
+  value: number
+  classPercentage: number
+  strategyPercentage: number
+}
+
+export interface ClassAllocation {
+  id: string
+  name: string
+  targetPercentage: number
+  actualPercentage: number
+  driftPercentagePoints: number
+  driftValue: number
+  value: number
+  holdings: HoldingAllocation[]
+  segments: SegmentAllocation[]
+}
+
+export interface StrategyAllocation {
+  strategyId: string
+  strategyName: string
+  displayCurrency: string
+  totalValue: number
+  classes: ClassAllocation[]
+  unassignedHoldingCount: number
+  unassignedValue: number
+}
+
+export type LeftOutReason = 'FROZEN' | 'ABOVE_TARGET_IN_CLASS' | 'CLASS_ABOVE_TARGET'
+
+export interface HoldingContribution {
+  kind: WalletKind
+  id: string
+  walletId: string
+  walletName: string
+  ticker: string | null
+  name: string
+  amount: number
+}
+
+export interface ClassContribution {
+  id: string
+  name: string
+  targetPercentage: number
+  percentageBefore: number
+  percentageAfter: number
+  amount: number
+  holdings: HoldingContribution[]
+}
+
+export interface LeftOutHolding {
+  kind: WalletKind
+  id: string
+  walletId: string
+  walletName: string
+  ticker: string | null
+  name: string
+  className: string
+  reason: LeftOutReason
+}
+
+export interface ContributionPlan {
+  strategyId: string
+  displayCurrency: string
+  amount: number
+  totalValueBefore: number
+  totalValueAfter: number
+  classes: ClassContribution[]
+  leftOut: LeftOutHolding[]
+}
+
+export type AllocationGroupBy = 'STRATEGY' | 'CLASS' | 'TYPE'
+
+export interface AllocationGroup {
+  id: string | null
+  label: string
+  holdingCount: number
+  value: number
+  percentage: number
+}
+
+export interface OverviewAllocation {
+  groupBy: AllocationGroupBy
+  displayCurrency: string
+  totalValue: number
+  groups: AllocationGroup[]
 }

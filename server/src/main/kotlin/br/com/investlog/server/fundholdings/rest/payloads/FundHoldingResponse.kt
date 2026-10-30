@@ -17,5 +17,9 @@ data class FundHoldingResponse(
     val administrationFeeRate: BigDecimal?,
     val performanceFeeRate: BigDecimal?,
     val frozen: Boolean,
+    val strategyId: UUID,
+    val strategyName: String,
+    val strategyClassId: UUID,
+    val strategyClassName: String,
     val withdrawals: List<WithdrawalResponse>,
 )

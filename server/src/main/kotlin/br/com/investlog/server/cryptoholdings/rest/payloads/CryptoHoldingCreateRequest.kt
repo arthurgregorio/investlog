@@ -12,6 +12,7 @@ import java.util.UUID
 data class CryptoHoldingCreateRequest(
     val typeId: UUID? = null,
     val segmentId: UUID? = null,
+    val strategyClassId: UUID? = null,
     @field:Valid
     @field:NotNull
     val lot: LotCreateRequest,
