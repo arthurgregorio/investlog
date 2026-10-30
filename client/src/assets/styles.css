@@ -936,6 +936,8 @@ a {
 
 .input,
 .textarea {
+  --bulma-input-disabled-border-color: var(--border);
+
   height: 40px;
   border: 1px solid var(--border);
   border-radius: 8px;
