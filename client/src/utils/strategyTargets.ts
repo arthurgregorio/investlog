@@ -39,7 +39,7 @@ export function classTargetSummary(strategyClass: StrategyClass): string {
 
 export function sumGapLabel(sum: number): string {
   if (isHundred(sum)) return `Soma das metas: ${fmt.pct(sum)}`
-  const gap = fmt.pct(Math.abs(HUNDRED - sum)).replace('%', ' pp')
+  const gap = `${fmt.decimal(HUNDRED - sum)} pp`
   return sum < HUNDRED
     ? `Soma das metas: ${fmt.pct(sum)} · faltam ${gap}`
     : `Soma das metas: ${fmt.pct(sum)} · passa ${gap}`

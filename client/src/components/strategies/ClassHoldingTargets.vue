@@ -156,7 +156,7 @@ async function save() {
                     min="0"
                     max="100"
                     custom-class="has-text-right"
-                    :placeholder="fmt.pct(share ?? 0).replace('%', '')"
+                    :placeholder="fmt.decimal(share ?? 0)"
                     :aria-label="`Meta de ${holding.ticker ?? holding.name}`"
                     data-testid="holding-target"
                   />
