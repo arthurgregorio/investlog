@@ -6,6 +6,7 @@ import WalletsView from '@/views/WalletsView.vue'
 import WalletDetailView from '@/views/WalletDetailView.vue'
 import InvestmentsView from '@/views/InvestmentsView.vue'
 import StrategiesView from '@/views/StrategiesView.vue'
+import ContributionPlannerView from '@/views/ContributionPlannerView.vue'
 import PriceCurrenciesView from '@/views/PriceCurrenciesView.vue'
 import TypesView from '@/views/TypesView.vue'
 import UsersView from '@/views/UsersView.vue'
@@ -26,6 +27,12 @@ export const router = createRouter({
     { path: '/wallets/:id', name: 'wallet-detail', component: WalletDetailView },
     { path: '/investments', name: 'investments', component: InvestmentsView },
     { path: '/strategies', name: 'strategies', component: StrategiesView },
+    {
+      path: '/strategies/:id/plan',
+      name: 'strategy-plan',
+      component: ContributionPlannerView,
+      props: true,
+    },
     { path: '/settings', redirect: { name: 'settings-price-currencies' } },
     {
       path: '/settings/price-currencies',

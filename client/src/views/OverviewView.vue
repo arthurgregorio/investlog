@@ -94,16 +94,12 @@ function gotoType(kind: WalletKind) {
             <EvolutionCard :series="overviewStore.series" :currency="baseCurrency" />
           </div>
           <div class="cell">
-            <AllocationCard
-              :rows="kindRows"
-              :total-invested="summary.totalCostBasis"
-              :currency="baseCurrency"
-            />
+            <AllocationCard :currency="baseCurrency" />
           </div>
         </div>
       </div>
 
-      <div class="section-label">Distribuição por tipo</div>
+      <div class="section-label">Por tipo de carteira</div>
       <div class="fixed-grid has-3-cols has-1-cols-mobile">
         <div class="grid">
           <div v-for="row in kindRows" :key="row.key" class="cell">
