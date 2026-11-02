@@ -127,7 +127,7 @@ describe('MoveHoldingsModal', () => {
       .map((option) => option.text())
       .filter((text) => text.length > 0)
 
-    expect(options).toEqual(['Mesma moeda · BRL'])
+    expect(options).toEqual(['Mesma moeda · Ações · BRL'])
   })
 
   it('submits every holding in one call with "Mover tudo"', async () => {

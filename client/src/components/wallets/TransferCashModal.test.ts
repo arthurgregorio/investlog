@@ -76,8 +76,8 @@ describe('TransferCashModal', () => {
     expect(useWalletsStore().load).toHaveBeenCalled()
     expect(useRatesStore().load).toHaveBeenCalled()
     expect(wrapper.findAll('option[value]').map((option) => option.text())).toEqual([
-      'Ações Brasil · BRL',
-      'Reserva · USD',
+      'Ações Brasil · Ações · BRL',
+      'Reserva · Ações · USD',
     ])
   })
 
