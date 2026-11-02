@@ -60,7 +60,7 @@ describe('DistributeHoldingsModal', () => {
     )
     expect(optionTexts(wrapper, 'origin-class')).toEqual([
       'Longo prazo · Ações Brasil (3 investimentos)',
-      'Longo prazo · Exterior (1 investimentos)',
+      'Longo prazo · Exterior (1 investimento)',
       'Sem estratégia · Não definida (2 investimentos)',
     ])
     expect(optionTexts(wrapper, 'destination-strategy')).toEqual(['Longo prazo'])

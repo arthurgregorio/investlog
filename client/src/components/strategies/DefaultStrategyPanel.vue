@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import ClassHoldingIdentity from '@/components/strategies/ClassHoldingIdentity.vue'
 import { strategiesApi } from '@/api/strategies'
+import { holdingCountLabel } from '@/utils/allocationLabels'
 import type { ClassHolding, Strategy } from '@/types'
 
 const props = defineProps<{ strategy: Strategy }>()
@@ -40,7 +41,9 @@ watch(() => props.strategy, load, { immediate: true })
         <span class="wref-dot has-background-grey-light" />
         <div>
           <div class="chart-title">{{ undefinedClass.name }}</div>
-          <div class="sub-caption">Sem meta · {{ undefinedClass.holdingCount }} investimentos</div>
+          <div class="sub-caption">
+            Sem meta · {{ holdingCountLabel(undefinedClass.holdingCount) }}
+          </div>
         </div>
       </div>
       <b-button

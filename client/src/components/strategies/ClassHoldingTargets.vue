@@ -155,7 +155,7 @@ async function save() {
             >
               <ClassHoldingIdentity :holding="holding" />
               <td class="c-num has-text-right">
-                <b-field class="target-field mb-0" addons>
+                <b-field class="target-field ml-auto mb-0" addons>
                   <NumberInput
                     v-model="targets[holding.id]"
                     size="is-small"

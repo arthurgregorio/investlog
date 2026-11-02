@@ -217,6 +217,16 @@ describe('StrategiesView', () => {
     expect(wrapper.find('.page-desc').text()).toBe('Sem estratégia · 2 investimentos')
   })
 
+  it('names a single holding in the singular', async () => {
+    const wrapper = await mountView([strategy({ holdingCount: 1 }), defaultStrategy()])
+
+    expect(wrapper.find('.page-desc').text()).toBe('Longo prazo · 1 investimento')
+    await openClassesTab(wrapper)
+    await wrapper.find('[data-testid="delete-strategy"]').trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('1 investimento dela volta para Sem estratégia')
+  })
+
   it('shows nothing to select before any strategy loads', async () => {
     const wrapper = await mountView([])
 

@@ -184,7 +184,7 @@ async function save() {
                 </div>
               </td>
               <td class="c-num has-text-right">
-                <b-field class="target-field mb-0" addons>
+                <b-field class="target-field ml-auto mb-0" addons>
                   <NumberInput
                     v-model="strategyClass.targetPercentage"
                     size="is-small"

@@ -179,8 +179,8 @@ function goBack() {
         <div class="is-flex is-justify-content-space-between is-align-items-center px-4 py-3">
           <h2 class="is-flex is-align-items-center is-gap-1 has-text-weight-bold">Aporte</h2>
         </div>
-        <div class="px-4 pb-4 is-flex is-flex-direction-column is-gap-3">
-          <b-field label="Estratégia">
+        <div class="px-4 pb-4 is-flex is-flex-direction-column is-gap-1.5">
+          <b-field label="Estratégia" class="mb-0">
             <b-select
               :model-value="id"
               expanded
@@ -192,7 +192,7 @@ function goBack() {
               </option>
             </b-select>
           </b-field>
-          <b-field label="Valor do aporte">
+          <b-field label="Valor do aporte" class="mb-0">
             <NumberInput
               v-model="amount"
               :prefix="fmt.sym(currency)"
@@ -226,7 +226,7 @@ function goBack() {
         </div>
       </aside>
 
-      <div class="investments-main is-flex is-flex-direction-column is-gap-4">
+      <div class="investments-main is-flex is-flex-direction-column is-gap-2.5">
         <b-message
           v-if="planError"
           type="is-warning"

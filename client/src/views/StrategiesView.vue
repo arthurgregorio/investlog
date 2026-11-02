@@ -16,6 +16,7 @@ import ClassAllocationDetail from '@/components/strategies/ClassAllocationDetail
 import { strategiesApi } from '@/api/strategies'
 import { safeHtml, useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useStrategiesStore } from '@/stores/strategies'
+import { holdingCountLabel } from '@/utils/allocationLabels'
 import type { Strategy, StrategyAllocation } from '@/types'
 
 const ALLOCATION_TAB = 0
@@ -51,7 +52,9 @@ const showAllocation = computed(
   () => !!selected.value && !selected.value.default && activeTab.value === ALLOCATION_TAB,
 )
 const headline = computed(() =>
-  selected.value ? `${selected.value.name} · ${selected.value.holdingCount} investimentos` : '',
+  selected.value
+    ? `${selected.value.name} · ${holdingCountLabel(selected.value.holdingCount)}`
+    : '',
 )
 
 function pickInitial() {
@@ -96,7 +99,7 @@ function onCreated(strategy: Strategy) {
 function confirmDelete(strategy: Strategy) {
   confirm({
     title: 'Excluir estratégia',
-    message: safeHtml`<b>${strategy.name}</b> será excluída. Os ${strategy.holdingCount} investimentos dela voltam para <b>Sem estratégia · Não definida</b>, sem metas.`,
+    message: safeHtml`<b>${strategy.name}</b> será excluída. ${holdingCountLabel(strategy.holdingCount)} dela ${strategy.holdingCount === 1 ? 'volta' : 'voltam'} para <b>Sem estratégia · Não definida</b>, sem metas.`,
     confirmText: 'Excluir estratégia',
     onConfirm: async () => {
       await strategiesStore.remove(strategy.id)
@@ -142,7 +145,7 @@ function openPlanner() {
         @select="(strategyId) => (selectedId = strategyId)"
       />
 
-      <div v-if="selected" class="investments-main is-flex is-flex-direction-column is-gap-4">
+      <div v-if="selected" class="investments-main is-flex is-flex-direction-column is-gap-2.5">
         <b-message
           v-if="selected.default"
           type="is-info"

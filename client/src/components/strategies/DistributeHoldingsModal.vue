@@ -7,6 +7,7 @@ import TickerBadge from '@/components/ui/TickerBadge.vue'
 import { strategiesApi } from '@/api/strategies'
 import { useStrategiesStore } from '@/stores/strategies'
 import { badgeColor } from '@/utils/walletTypes'
+import { holdingCountLabel } from '@/utils/allocationLabels'
 import type { ClassHolding } from '@/types'
 
 const props = defineProps<{ initialClassId?: string }>()
@@ -28,7 +29,7 @@ const originOptions = computed(() =>
   strategiesStore.strategies.flatMap((strategy) =>
     strategy.classes.map((strategyClass) => ({
       id: strategyClass.id,
-      label: `${strategy.name} · ${strategyClass.name} (${strategyClass.holdingCount} investimentos)`,
+      label: `${strategy.name} · ${strategyClass.name} (${holdingCountLabel(strategyClass.holdingCount)})`,
     })),
   ),
 )
