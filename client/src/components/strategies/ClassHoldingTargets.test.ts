@@ -137,11 +137,17 @@ describe('ClassHoldingTargets', () => {
     expect(saveButton(wrapper).attributes('disabled')).toBeDefined()
   })
 
-  it('says so when the class has no holdings and reloads for another class', async () => {
+  it('shows a compact card with no checks or buttons for an empty class, and reloads for another class', async () => {
     vi.mocked(strategiesApi.findClassHoldings).mockResolvedValue([])
     const wrapper = await mountTargets()
 
     expect(wrapper.find('[data-testid="class-holdings-empty"]').exists()).toBe(true)
+    expect(wrapper.find('.sub-caption').text()).toBe('Meta da classe: 60,00% da estratégia')
+    expect(wrapper.find('[data-testid="holding-targets-sum"]').exists()).toBe(false)
+    expect(wrapper.find('progress').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="holding-targets-error"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="save-targets"]').exists()).toBe(false)
+    expect(wrapper.find('.inv-table').exists()).toBe(false)
 
     await wrapper.setProps({
       strategyClass: strategyClass({ id: 'class-abroad', targetPercentage: null }),

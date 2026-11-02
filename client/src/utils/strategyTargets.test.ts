@@ -23,7 +23,7 @@ describe('strategyTargets', () => {
     expect(holdingTargetsValid([60, 50, ''])).toBe(false)
     expect(holdingTargetsValid([60, 40])).toBe(true)
     expect(holdingTargetsValid([60, 30])).toBe(false)
-    expect(holdingTargetsValid([])).toBe(false)
+    expect(holdingTargetsValid([])).toBe(true)
     expect(isHundred(99.999)).toBe(true)
   })
 

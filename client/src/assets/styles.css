@@ -745,6 +745,11 @@ a {
   width: 90px;
 }
 
+.target-field {
+  width: 120px;
+  margin-inline-start: auto;
+}
+
 .inv-table > tbody > tr:last-child > td {
   border-bottom: none;
 }

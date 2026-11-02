@@ -34,7 +34,7 @@ watch(() => props.strategy, load, { immediate: true })
     </div>
     <div
       v-if="undefinedClass"
-      class="card-body is-flex is-flex-wrap-wrap is-align-items-center is-justify-content-space-between is-gap-3"
+      class="card-body pt-0 is-flex is-flex-wrap-wrap is-align-items-center is-justify-content-space-between is-gap-3"
     >
       <div class="is-flex is-align-items-center is-gap-2">
         <span class="wref-dot has-background-grey-light" />

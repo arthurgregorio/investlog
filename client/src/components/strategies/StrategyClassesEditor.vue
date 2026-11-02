@@ -126,7 +126,7 @@ async function save() {
       </b-button>
     </div>
 
-    <div class="card-body is-flex is-flex-direction-column is-gap-2">
+    <div class="card-body pt-0 is-flex is-flex-direction-column is-gap-2">
       <div
         class="is-flex is-flex-wrap-wrap is-align-items-center is-justify-content-space-between is-gap-3"
       >
@@ -175,6 +175,7 @@ async function save() {
                   <span class="wref-dot" :style="{ background: chartColor(index) }" />
                   <b-input
                     v-model="strategyClass.name"
+                    class="is-flex-grow-1"
                     size="is-small"
                     placeholder="Nome da classe"
                     aria-label="Nome da classe"
@@ -183,10 +184,11 @@ async function save() {
                 </div>
               </td>
               <td class="c-num has-text-right">
-                <b-field class="is-justify-content-flex-end mb-0" addons>
+                <b-field class="target-field mb-0" addons>
                   <NumberInput
                     v-model="strategyClass.targetPercentage"
                     size="is-small"
+                    expanded
                     min="0"
                     max="100"
                     custom-class="has-text-right"
