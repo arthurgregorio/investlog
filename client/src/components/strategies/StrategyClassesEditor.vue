@@ -32,14 +32,25 @@ const classes = ref<ClassDraft[]>([])
 const saving = ref(false)
 let newClassCount = 0
 
+function blankClass(): ClassDraft {
+  newClassCount += 1
+  return { key: `new-${newClassCount}`, name: '', targetPercentage: '' }
+}
+
+function isBlank(draft: ClassDraft): boolean {
+  return !draft.id && !draft.name.trim() && draft.targetPercentage === ''
+}
+
 function resetDraft() {
   name.value = props.strategy.name
-  classes.value = props.strategy.classes.map((strategyClass) => ({
-    key: strategyClass.id,
-    id: strategyClass.id,
-    name: strategyClass.name,
-    targetPercentage: strategyClass.targetPercentage ?? '',
-  }))
+  classes.value = props.strategy.classes.length
+    ? props.strategy.classes.map((strategyClass) => ({
+        key: strategyClass.id,
+        id: strategyClass.id,
+        name: strategyClass.name,
+        targetPercentage: strategyClass.targetPercentage ?? '',
+      }))
+    : [blankClass()]
 }
 
 watch(() => props.strategy, resetDraft, { immediate: true })
@@ -58,6 +69,7 @@ const namesFilled = computed(
 
 const dirty = computed(() => {
   if (name.value.trim() !== props.strategy.name) return true
+  if (props.strategy.classes.length === 0) return !classes.value.every(isBlank)
   if (classes.value.length !== props.strategy.classes.length) return true
   return classes.value.some((draft, index) => {
     const saved = props.strategy.classes[index]
@@ -72,11 +84,7 @@ const dirty = computed(() => {
 const canSave = computed(() => dirty.value && sumReached.value && namesFilled.value)
 
 function addClass() {
-  newClassCount += 1
-  classes.value = [
-    ...classes.value,
-    { key: `new-${newClassCount}`, name: '', targetPercentage: '' },
-  ]
+  classes.value = [...classes.value, blankClass()]
 }
 
 function removeClass(key: string) {
@@ -111,18 +119,25 @@ async function save() {
 
 <template>
   <div>
-    <div class="card-body is-flex is-flex-wrap-wrap is-align-items-flex-end is-gap-3">
-      <b-field label="Nome da estratégia" class="mb-0">
-        <b-input v-model="name" data-testid="strategy-name" />
-      </b-field>
-      <b-button
-        type="is-danger"
-        outlined
-        icon-left="trash-can-outline"
-        data-testid="delete-strategy"
-        @click="emit('delete')"
-      >
-        Excluir estratégia
+    <div
+      class="card-body is-flex is-flex-wrap-wrap is-align-items-flex-end is-justify-content-space-between is-gap-3"
+    >
+      <div class="is-flex is-flex-wrap-wrap is-align-items-flex-end is-gap-3">
+        <b-field label="Nome da estratégia" class="mb-0">
+          <b-input v-model="name" data-testid="strategy-name" />
+        </b-field>
+        <b-button
+          type="is-danger"
+          outlined
+          icon-left="trash-can-outline"
+          data-testid="delete-strategy"
+          @click="emit('delete')"
+        >
+          Excluir estratégia
+        </b-button>
+      </div>
+      <b-button icon-left="plus" data-testid="add-class" @click="addClass">
+        Adicionar classe
       </b-button>
     </div>
 
@@ -235,38 +250,35 @@ async function save() {
       </div>
     </div>
 
-    <div class="card-body is-flex is-flex-direction-column is-gap-3">
-      <b-message v-if="!sumReached" type="is-danger" class="mb-0" data-testid="classes-sum-error">
-        As metas das classes precisam somar 100% para salvar.
-      </b-message>
-      <div
-        class="is-flex is-flex-wrap-wrap is-align-items-center is-justify-content-space-between is-gap-3"
+    <div
+      class="card-body is-flex is-flex-wrap-wrap is-align-items-center is-justify-content-flex-end is-gap-2"
+    >
+      <p
+        v-if="!sumReached"
+        class="is-size-7 has-text-danger-on-scheme mb-0 mr-2"
+        data-testid="classes-sum-error"
       >
-        <b-button type="is-ghost" icon-left="plus" data-testid="add-class" @click="addClass">
-          Adicionar classe
-        </b-button>
-        <div class="is-flex is-gap-2">
-          <b-button
-            type="is-danger"
-            outlined
-            :disabled="!dirty || saving"
-            data-testid="discard-classes"
-            @click="resetDraft"
-          >
-            Descartar alterações
-          </b-button>
-          <b-button
-            type="is-success"
-            icon-left="check"
-            :disabled="!canSave"
-            :loading="saving"
-            data-testid="save-classes"
-            @click="save"
-          >
-            Salvar
-          </b-button>
-        </div>
-      </div>
+        As metas das classes precisam somar 100% para salvar.
+      </p>
+      <b-button
+        type="is-danger"
+        outlined
+        :disabled="!dirty || saving"
+        data-testid="discard-classes"
+        @click="resetDraft"
+      >
+        Descartar alterações
+      </b-button>
+      <b-button
+        type="is-success"
+        icon-left="check"
+        :disabled="!canSave"
+        :loading="saving"
+        data-testid="save-classes"
+        @click="save"
+      >
+        Salvar
+      </b-button>
     </div>
   </div>
 </template>

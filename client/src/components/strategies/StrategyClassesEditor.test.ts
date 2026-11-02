@@ -129,9 +129,30 @@ describe('StrategyClassesEditor', () => {
       strategy: strategy({ id: 'strategy-other', name: 'Outra', classes: [] }),
     })
 
-    expect(wrapper.findAll('[data-testid="class-row"]')).toHaveLength(0)
     expect(
       (wrapper.find('input[data-testid="strategy-name"]').element as HTMLInputElement).value,
     ).toBe('Outra')
+  })
+
+  it('starts a strategy without classes with one empty row to fill in', async () => {
+    const wrapper = mountEditor(strategy({ classes: [] }))
+    const store = useStrategiesStore()
+
+    expect(wrapper.findAll('[data-testid="class-row"]')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="discard-classes"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="classes-sum-error"]').text()).toBe(
+      'As metas das classes precisam somar 100% para salvar.',
+    )
+
+    await wrapper.find('input[data-testid="class-name"]').setValue('Renda fixa')
+    await targetInputs(wrapper)[0].setValue('100')
+    expect(wrapper.find('[data-testid="discard-classes"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="classes-sum-error"]').exists()).toBe(false)
+
+    await saveButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(store.saveClasses).toHaveBeenCalledWith('strategy-long', [
+      { id: undefined, name: 'Renda fixa', targetPercentage: 100 },
+    ])
   })
 })
