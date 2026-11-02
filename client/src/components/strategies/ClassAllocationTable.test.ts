@@ -43,6 +43,17 @@ describe('ClassAllocationTable', () => {
 
     await wrapper.findAll('[data-testid="expand-allocation-class"]')[1].trigger('click')
     expect(wrapper.emitted('update:expandedClassId')?.[1]).toEqual([null])
+    expect(wrapper.emitted('update:expandedClassId')).toHaveLength(2)
+  })
+
+  it('expands a class from anywhere on its row', async () => {
+    const wrapper = mountTable()
+
+    await wrapper.findAll('[data-testid="allocation-class-row"] td')[3].trigger('click')
+    expect(wrapper.emitted('update:expandedClassId')).toEqual([['class-brazil']])
+
+    await wrapper.find('[data-testid="allocation-total-row"]').trigger('click')
+    expect(wrapper.emitted('update:expandedClassId')).toHaveLength(1)
   })
 
   it('points to the classes tab when the strategy has no class', () => {

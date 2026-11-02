@@ -51,9 +51,10 @@ function classCaption(strategyClass: ClassAllocation): string {
           <tr
             v-for="(strategyClass, index) in allocation.classes"
             :key="strategyClass.id"
-            class="inv-row"
+            class="inv-row is-clickable"
             :class="{ 'is-current': expandedClassId === strategyClass.id }"
             data-testid="allocation-class-row"
+            @click="toggle(strategyClass.id)"
           >
             <td>
               <div class="is-flex is-align-items-center is-gap-1.5">
@@ -62,7 +63,7 @@ function classCaption(strategyClass: ClassAllocation): string {
                   <button
                     type="button"
                     class="t-ticker open-holding"
-                    @click="toggle(strategyClass.id)"
+                    @click.stop="toggle(strategyClass.id)"
                   >
                     {{ strategyClass.name }}
                   </button>
@@ -92,7 +93,7 @@ function classCaption(strategyClass: ClassAllocation): string {
                   :icon-left="expandedClassId === strategyClass.id ? 'chevron-up' : 'chevron-down'"
                   :aria-label="`Investimentos de ${strategyClass.name}`"
                   data-testid="expand-allocation-class"
-                  @click="toggle(strategyClass.id)"
+                  @click.stop="toggle(strategyClass.id)"
                 />
               </div>
             </td>
