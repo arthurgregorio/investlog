@@ -21,6 +21,7 @@ export function isHundred(value: number): boolean {
 }
 
 export function holdingTargetsValid(targets: PercentageDraft[]): boolean {
+  if (targets.length === 0) return true
   const sum = typedSum(targets)
   if (sum > HUNDRED + TOLERANCE) return false
   return targets.some((target) => target === '') || isHundred(sum)

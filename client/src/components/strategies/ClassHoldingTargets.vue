@@ -48,6 +48,7 @@ const typed = computed(() => typedSum(drafts.value))
 const share = computed(() => blankShare(drafts.value))
 const blankCount = computed(() => drafts.value.filter((target) => target === '').length)
 const valid = computed(() => holdingTargetsValid(drafts.value))
+const hasHoldings = computed(() => holdings.value.length > 0)
 const dirty = computed(() =>
   holdings.value.some(
     (holding) => (targets.value[holding.id] ?? '') !== (holding.targetPercentage ?? ''),
@@ -99,11 +100,14 @@ async function save() {
         <div>
           <div class="chart-title">Metas dos investimentos · {{ strategyClass.name }}</div>
           <div class="sub-caption">
-            Meta da classe: {{ fmt.pct(classTarget) }} da estratégia ·
-            {{ holdings.length - blankCount }} de {{ holdings.length }} com meta digitada
+            Meta da classe: {{ fmt.pct(classTarget) }} da estratégia<template v-if="hasHoldings">
+              · {{ holdings.length - blankCount }} de {{ holdings.length }} com meta
+              digitada</template
+            >
           </div>
         </div>
         <b-tag
+          v-if="hasHoldings"
           :type="valid ? 'is-success is-light' : 'is-danger is-light'"
           :icon="valid ? 'check' : 'alert-circle-outline'"
           data-testid="holding-targets-sum"
@@ -112,23 +116,25 @@ async function save() {
         </b-tag>
       </div>
       <progress
+        v-if="hasHoldings"
         class="progress is-small mb-0"
         :class="valid ? 'is-success' : 'is-danger'"
         max="100"
         :value="Math.min(typed, 100)"
       />
-    </div>
-
-    <div class="table-wrap is-relative">
-      <b-loading :is-full-page="false" :model-value="loading" />
       <p
-        v-if="!loading && holdings.length === 0"
-        class="card-body has-text-grey"
+        v-else-if="!loading"
+        class="is-size-7 has-text-grey mb-0"
         data-testid="class-holdings-empty"
       >
-        Nenhum investimento nesta classe ainda.
+        Nenhum investimento nesta classe ainda. Distribua investimentos de Sem estratégia para
+        definir as metas deles aqui.
       </p>
-      <div v-else class="table-scroll">
+    </div>
+
+    <div v-if="loading || hasHoldings" class="table-wrap is-relative">
+      <b-loading :is-full-page="false" :model-value="loading" />
+      <div class="table-scroll">
         <table class="inv-table">
           <thead>
             <tr>
@@ -149,10 +155,11 @@ async function save() {
             >
               <ClassHoldingIdentity :holding="holding" />
               <td class="c-num has-text-right">
-                <b-field class="is-justify-content-flex-end mb-0" addons>
+                <b-field class="target-field mb-0" addons>
                   <NumberInput
                     v-model="targets[holding.id]"
                     size="is-small"
+                    expanded
                     min="0"
                     max="100"
                     custom-class="has-text-right"
@@ -179,7 +186,7 @@ async function save() {
       </div>
     </div>
 
-    <div class="card-body is-flex is-flex-direction-column is-gap-3">
+    <div v-if="hasHoldings" class="card-body is-flex is-flex-direction-column is-gap-3">
       <b-message v-if="!valid" type="is-danger" class="mb-0" data-testid="holding-targets-error">
         {{
           typed > 100
