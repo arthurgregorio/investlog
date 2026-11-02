@@ -4,6 +4,7 @@ import AppModal from '@/components/ui/AppModal.vue'
 import MoveHoldingList from '@/components/investments/MoveHoldingList.vue'
 import { useMoveHoldingsForm } from '@/composables/useMoveHoldingsForm'
 import { useWalletsStore } from '@/stores/wallets'
+import { walletOptionLabel } from '@/utils/walletTypes'
 
 const props = defineProps<{
   originWalletId?: string
@@ -61,7 +62,7 @@ onMounted(load)
             data-testid="move-origin"
           >
             <option v-for="wallet in walletsStore.wallets" :key="wallet.id" :value="wallet.id">
-              {{ wallet.name }} · {{ wallet.currency }}
+              {{ walletOptionLabel(wallet) }}
             </option>
           </b-select>
         </b-field>
@@ -75,7 +76,7 @@ onMounted(load)
             data-testid="move-destination"
           >
             <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
-              {{ wallet.name }} · {{ wallet.currency }}
+              {{ walletOptionLabel(wallet) }}
             </option>
           </b-select>
         </b-field>

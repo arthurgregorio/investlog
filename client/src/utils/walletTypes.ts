@@ -1,9 +1,13 @@
-import type { WalletKind, WalletTypeMeta } from '@/types'
+import type { WalletKind, WalletResponse, WalletTypeMeta } from '@/types'
 
 export const WALLET_TYPES: Record<WalletKind, WalletTypeMeta> = {
   STOCKS: { label: 'Ações', accent: 'var(--wt-stocks)', icon: 'trending-up' },
   CRYPTO: { label: 'Cripto', accent: 'var(--wt-crypto)', icon: 'bitcoin' },
   FUNDS: { label: 'Fundos', accent: 'var(--wt-funds)', icon: 'office-building-outline' },
+}
+
+export function walletOptionLabel(wallet: WalletResponse): string {
+  return `${wallet.name} · ${WALLET_TYPES[wallet.kind].label} · ${wallet.currency}`
 }
 
 export function badgeColor(ticker: string | null | undefined, kind: WalletKind): string {

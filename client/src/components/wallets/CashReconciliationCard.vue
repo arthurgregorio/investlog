@@ -10,7 +10,7 @@ import { useRatesStore } from '@/stores/rates'
 import { useWalletsStore } from '@/stores/wallets'
 import { problemDetailMessage } from '@/utils/apiErrors'
 import { crossRate } from '@/utils/crossRate'
-import { WALLET_TYPES } from '@/utils/walletTypes'
+import { WALLET_TYPES, walletOptionLabel } from '@/utils/walletTypes'
 import type { CashReconciliation, CashSuggestion } from '@/types'
 
 type Destination = 'wallet' | 'bank' | 'keep'
@@ -305,7 +305,7 @@ async function submit() {
             @update:model-value="onDestinationWalletChange(line)"
           >
             <option v-for="wallet in destinationWallets" :key="wallet.id" :value="wallet.id">
-              {{ wallet.name }} · {{ wallet.currency }}
+              {{ walletOptionLabel(wallet) }}
             </option>
           </b-select>
         </b-field>

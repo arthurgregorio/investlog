@@ -183,6 +183,16 @@ describe('CashReconciliationCard', () => {
     )
   })
 
+  it('names each destination wallet with its kind and currency', () => {
+    const wrapper = mountCard()
+
+    expect(
+      byTestId(wrapper, 'reconciliation-destination')
+        .findAll('option[value]')
+        .map((option) => option.text()),
+    ).toEqual(['Ações Brasil · Ações · BRL', 'Reserva · Ações · USD'])
+  })
+
   it('shows no suggestion when the server found none', () => {
     const wrapper = mountCard(reconciliationOf({ suggestion: null }))
 
