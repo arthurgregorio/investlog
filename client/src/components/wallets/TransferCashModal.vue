@@ -10,6 +10,7 @@ import { useRatesStore } from '@/stores/rates'
 import { useWalletsStore } from '@/stores/wallets'
 import { problemDetailMessage } from '@/utils/apiErrors'
 import { crossRate } from '@/utils/crossRate'
+import { walletOptionLabel } from '@/utils/walletTypes'
 
 const props = defineProps<{
   walletId: string
@@ -108,7 +109,7 @@ async function submit() {
             data-testid="transfer-destination"
           >
             <option v-for="wallet in destinations" :key="wallet.id" :value="wallet.id">
-              {{ wallet.name }} · {{ wallet.currency }}
+              {{ walletOptionLabel(wallet) }}
             </option>
           </b-select>
         </b-field>

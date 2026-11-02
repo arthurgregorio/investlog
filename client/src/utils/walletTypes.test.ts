@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { badgeColor, WALLET_TYPES } from './walletTypes'
-import type { WalletKind } from '@/types'
+import { badgeColor, WALLET_TYPES, walletOptionLabel } from './walletTypes'
+import type { WalletKind, WalletResponse } from '@/types'
 
 const KINDS: WalletKind[] = ['STOCKS', 'CRYPTO', 'FUNDS']
 
@@ -11,6 +11,35 @@ describe('WALLET_TYPES', () => {
     expect(meta.label).not.toBe('')
     expect(meta.accent).toMatch(/^var\(--wt-/)
     expect(meta.icon).not.toBe('')
+  })
+})
+
+describe('walletOptionLabel', () => {
+  function walletOf(kind: WalletKind): WalletResponse {
+    return {
+      id: `wallet-${kind}`,
+      name: 'Nubank',
+      kind,
+      currency: 'BRL',
+      holdingCount: 0,
+      totalInvested: 0,
+      currentValue: null,
+      gain: null,
+      gainPct: null,
+      cash: 0,
+      cashReconciled: true,
+      createdAt: '2026-01-01T00:00:00Z',
+    }
+  }
+
+  it('names the wallet, its kind and its currency', () => {
+    expect(walletOptionLabel(walletOf('STOCKS'))).toBe('Nubank · Ações · BRL')
+  })
+
+  it('tells apart wallets that share a name and currency but differ in kind', () => {
+    const labels = new Set(KINDS.map((kind) => walletOptionLabel(walletOf(kind))))
+
+    expect(labels.size).toBe(3)
   })
 })
 
