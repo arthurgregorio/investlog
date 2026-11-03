@@ -144,6 +144,11 @@ class StrategyControllerTest : BaseIntegrationTest() {
             .expectStatus().isNotFound()
 
         putClasses(longTermId, "[]").expectStatus().isBadRequest()
+
+        putClasses(longTermId, """[{"name":" ","targetPercentage":100}]""")
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.title").isEqualTo("Erro de validação")
     }
 
     @Test
@@ -310,6 +315,8 @@ class StrategyControllerTest : BaseIntegrationTest() {
 
         putTargets(brazilClassId, """[{"kind":"STOCKS","holdingId":"${petr4.id}","targetPercentage":101}]""")
             .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.title").isEqualTo("Erro de validação")
     }
 
     @Test

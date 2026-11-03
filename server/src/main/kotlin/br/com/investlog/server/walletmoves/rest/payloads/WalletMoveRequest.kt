@@ -11,6 +11,5 @@ data class WalletMoveRequest(
     val destinationWalletId: UUID?,
 
     @field:NotEmpty(message = "Selecione ao menos um investimento para mover")
-    @field:Valid
-    val items: List<WalletMoveItemRequest>?,
+    val items: List<@Valid WalletMoveItemRequest>?,
 )
