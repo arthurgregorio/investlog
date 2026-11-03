@@ -5,6 +5,7 @@ import AddInvestmentForm from '@/components/forms/AddInvestmentForm.vue'
 import { useAddInvestmentForm } from '@/composables/useAddInvestmentForm'
 import { useWalletsStore } from '@/stores/wallets'
 import { useTypesListStore } from '@/stores/typesList'
+import { useStrategiesStore } from '@/stores/strategies'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import type { WalletKind } from '@/types'
 
@@ -13,10 +14,11 @@ const emit = defineEmits<{ close: []; 'create-wallet': [WalletKind] }>()
 
 const walletsStore = useWalletsStore()
 const typesListStore = useTypesListStore()
+const strategiesStore = useStrategiesStore()
 const holdingsListStore = useHoldingsListStore()
 
 onMounted(() => {
-  Promise.all([walletsStore.load(), typesListStore.load()])
+  Promise.all([walletsStore.load(), typesListStore.load(), strategiesStore.load()])
 })
 
 const { form, submit } = useAddInvestmentForm(
@@ -33,7 +35,7 @@ const { form, submit } = useAddInvestmentForm(
   <AppModal
     title="Adicionar investimento"
     subtitle="Registre uma aquisição no seu logbook."
-    wide
+    extra-wide
     @close="emit('close')"
   >
     <AddInvestmentForm :form="form" @create-wallet="(kind) => emit('create-wallet', kind)" />

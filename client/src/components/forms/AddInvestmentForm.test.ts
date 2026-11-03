@@ -5,6 +5,7 @@ import { reactive } from 'vue'
 import AddInvestmentForm from './AddInvestmentForm.vue'
 import type { AddInvestmentForm as AddInvestmentFormState } from '@/composables/useAddInvestmentForm'
 import type { WalletKind, WalletResponse } from '@/types'
+import { defaultStrategy, strategy } from '@/test/strategyFixtures'
 
 function wallet(overrides: Partial<WalletResponse> = {}): WalletResponse {
   return {
@@ -30,6 +31,8 @@ function buildForm(overrides: Partial<AddInvestmentFormState> = {}): AddInvestme
     walletId: 'wallet-1',
     typeId: '',
     segmentId: '',
+    strategyId: 'strategy-long',
+    strategyClassId: 'class-brazil',
     ticker: '',
     name: '',
     date: new Date(),
@@ -60,13 +63,21 @@ function mountForm(form: AddInvestmentFormState) {
 }
 
 function labelsOf(wrapper: VueWrapper) {
-  return wrapper.findAll('label.label').map((label) => label.text())
+  return wrapper.findAll('label.label').map((label) => {
+    const tooltip = label.find('.tooltip-content')
+    return tooltip.exists() ? label.text().replace(tooltip.text(), '').trim() : label.text()
+  })
+}
+
+function tooltipsOf(wrapper: VueWrapper) {
+  return wrapper.findAll('label.label .tooltip-content').map((tooltip) => tooltip.text())
 }
 
 describe('AddInvestmentForm', () => {
   beforeEach(() => {
     pinia = createTestingPinia({
       initialState: {
+        strategies: { strategies: [strategy(), defaultStrategy()] },
         typesList: {
           holdingTypes: [
             { id: 'stock-type-1', name: 'Ação', kinds: ['STOCKS'], usageCount: 0 },
@@ -116,6 +127,8 @@ describe('AddInvestmentForm', () => {
         'Quantidade',
         'Preço na aquisição',
         'Preço atual (opcional)',
+        'Estratégia',
+        'Classe',
       ])
       const optionLabels = wrapper.findAll('option').map((option) => option.text())
       expect(optionLabels).toContain('Ação')
@@ -234,6 +247,8 @@ describe('AddInvestmentForm', () => {
         'Quantidade',
         'Preço na aquisição',
         'Preço atual (opcional)',
+        'Estratégia',
+        'Classe',
       ])
       const typeSelect = wrapper.find('select[data-testid="type-select"]')
       expect(typeSelect.findAll('option').map((option) => option.text())).toEqual([
@@ -271,6 +286,8 @@ describe('AddInvestmentForm', () => {
         'Data do aporte',
         'Valor aportado',
         'Valor atual (opcional)',
+        'Estratégia',
+        'Classe',
       ])
       const typeSelect = wrapper.find('select[data-testid="type-select"]')
       expect(typeSelect.findAll('option').map((option) => option.text())).toEqual([
@@ -383,5 +400,49 @@ describe('AddInvestmentForm', () => {
         expect(wrapper.emitted('create-wallet')).toEqual([[kind]])
       },
     )
+  })
+
+  describe('layout and strategy', () => {
+    it.each<WalletKind>(['STOCKS', 'CRYPTO', 'FUNDS'])(
+      'lays the %s fields out three to a row with the help texts as tooltips',
+      (kind) => {
+        const wrapper = mountForm(buildForm({ kind }))
+
+        expect(wrapper.findAll('.grid > .cell.is-col-span-2')).toHaveLength(9)
+        expect(wrapper.findAll('.grid > .cell.is-col-span-3')).toHaveLength(2)
+        expect(wrapper.find('.help').exists()).toBe(false)
+        expect(tooltipsOf(wrapper)).toEqual([
+          kind === 'FUNDS'
+            ? 'Saldo atual do fundo, para calcular o rendimento.'
+            : 'Preencha para acompanhar lucro/prejuízo.',
+          'Sem escolha, o investimento entra em Sem estratégia · Não definida.',
+        ])
+      },
+    )
+
+    it('offers every strategy and only the classes of the chosen one', async () => {
+      const form = buildForm()
+      const wrapper = mountForm(form)
+
+      const strategySelect = wrapper.find('select[data-testid="strategy-select"]')
+      const classOptions = () =>
+        wrapper
+          .find('select[data-testid="strategy-class-select"]')
+          .findAll('option')
+          .map((option) => option.text())
+
+      expect(strategySelect.findAll('option').map((option) => option.text())).toEqual([
+        'Longo prazo',
+        'Sem estratégia',
+      ])
+      expect(classOptions()).toEqual(['Ações Brasil', 'Exterior'])
+
+      await strategySelect.setValue('strategy-default')
+      expect(form.strategyId).toBe('strategy-default')
+      expect(classOptions()).toEqual(['Não definida'])
+
+      await wrapper.find('select[data-testid="strategy-class-select"]').setValue('class-undefined')
+      expect(form.strategyClassId).toBe('class-undefined')
+    })
   })
 })

@@ -68,7 +68,7 @@ describe('InvestmentsFilterRail', () => {
       mountRail()
         .findAll('legend')
         .map((legend) => legend.text()),
-    ).toEqual(['Classe', 'Carteiras', 'Tipo de ativo', 'Situação'])
+    ).toEqual(['Tipo de carteira', 'Carteiras', 'Tipo de ativo', 'Situação'])
   })
 
   it('marks the active class and emits the chosen one', async () => {
@@ -126,8 +126,8 @@ describe('InvestmentsFilterRail', () => {
   })
 
   it.each([
-    ['all', 'Escolha uma classe para filtrar por tipo.'],
-    ['CRYPTO', 'Nenhum investimento com tipo nesta classe.'],
+    ['all', 'Escolha um tipo de carteira para filtrar por tipo de ativo.'],
+    ['CRYPTO', 'Nenhum investimento com tipo de ativo neste tipo de carteira.'],
   ] as const)('explains the missing types under %s', (activeFilter, hint) => {
     const wrapper = mountRail({ activeFilter, typeOptions: [] })
 

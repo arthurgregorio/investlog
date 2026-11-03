@@ -20,7 +20,8 @@ export const fmt = {
   },
   moneySigned: (v: number, cur = 'BRL', opts: { compact?: boolean } = {}) =>
     (v >= 0 ? '+' : '−') + fmt.money(Math.abs(v), cur, opts),
-  pct: (v: number) => twoDecimalFormatter.format(Math.abs(v)) + '%',
+  decimal: (v: number) => twoDecimalFormatter.format(Math.abs(v)),
+  pct: (v: number) => fmt.decimal(v) + '%',
   pctSigned: (v: number) => (v >= 0 ? '+' : '−') + twoDecimalFormatter.format(Math.abs(v)) + '%',
   qty: (v: number) => (Number.isInteger(v) ? String(v) : quantityFormatter.format(v)),
   date: (iso: string) => {

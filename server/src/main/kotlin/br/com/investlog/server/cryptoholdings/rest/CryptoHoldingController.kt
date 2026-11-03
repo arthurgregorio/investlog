@@ -7,6 +7,7 @@ import br.com.investlog.server.cryptoholdings.services.CryptoHoldingService
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
+import br.com.investlog.server.strategies.rest.payloads.HoldingClassRequest
 import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
@@ -60,6 +61,14 @@ class CryptoHoldingController(
         @RequestBody request: HoldingSegmentRequest,
     ): ResponseEntity<CryptoHoldingResponse> =
         ResponseEntity.ok(service.updateSegment(walletId, holdingId, request))
+
+    @PutMapping("/{holdingId}/class")
+    fun updateClass(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @Valid @RequestBody request: HoldingClassRequest,
+    ): ResponseEntity<CryptoHoldingResponse> =
+        ResponseEntity.ok(service.updateClass(walletId, holdingId, request))
 
     @DeleteMapping("/{holdingId}")
     fun delete(@PathVariable walletId: UUID, @PathVariable holdingId: UUID): ResponseEntity<Void> {

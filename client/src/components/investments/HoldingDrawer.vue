@@ -350,6 +350,7 @@ onMounted(() => {
     :kind="row.kind"
     :initial-type-id="detail.typeId"
     :initial-segment-id="detail.segmentId"
+    :initial-strategy-class-id="detail.strategyClassId ?? null"
     @updated="refresh"
     @close="closeModal"
   />

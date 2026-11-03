@@ -4,6 +4,8 @@ import { createTestingPinia } from '@pinia/testing'
 import EditHoldingTagsModal from './EditHoldingTagsModal.vue'
 import { holdingsApi } from '@/api/holdings'
 import { useTypesListStore } from '@/stores/typesList'
+import { useStrategiesStore } from '@/stores/strategies'
+import { defaultStrategy, strategy } from '@/test/strategyFixtures'
 import type {
   CryptoHoldingDetail,
   FundHoldingDetail,
@@ -17,6 +19,7 @@ vi.mock('@/api/holdings', () => ({
     updateFundHolding: vi.fn(),
     updateCryptoHolding: vi.fn(),
     updateHoldingSegment: vi.fn(),
+    updateHoldingClass: vi.fn(),
   },
 }))
 
@@ -26,14 +29,17 @@ interface ModalOptions {
   kind?: WalletKind
   initialTypeId?: string | null
   initialSegmentId?: string | null
+  initialStrategyClassId?: string | null
 }
 
 function mountModal({
   kind = 'STOCKS',
   initialTypeId = 'stock-type-1',
   initialSegmentId = null,
+  initialStrategyClassId = 'class-undefined',
 }: ModalOptions = {}) {
   const pinia = createTestingPinia()
+  useStrategiesStore(pinia).strategies = [strategy(), defaultStrategy()]
   const typesListStore = useTypesListStore(pinia)
   typesListStore.holdingTypes = [
     { id: 'stock-type-1', name: 'Ordinária', kinds: ['STOCKS'], usageCount: 1 },
@@ -48,7 +54,14 @@ function mountModal({
     { id: 'segment-2', name: 'Tecnologia', usageCount: 0 },
   ]
   activeWrapper = mount(EditHoldingTagsModal, {
-    props: { holdingId: 'holding-1', walletId: 'wallet-1', kind, initialTypeId, initialSegmentId },
+    props: {
+      holdingId: 'holding-1',
+      walletId: 'wallet-1',
+      kind,
+      initialTypeId,
+      initialSegmentId,
+      initialStrategyClassId,
+    },
     global: { plugins: [pinia], config: { errorHandler: () => undefined } },
     attachTo: document.body,
   })
@@ -245,5 +258,57 @@ describe('EditHoldingTagsModal', () => {
 
     expect(holdingsApi.updateStockHolding).not.toHaveBeenCalled()
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  describe('strategy and class', () => {
+    function strategySelect(wrapper: VueWrapper) {
+      return wrapper.find('select[data-testid="edit-tags-strategy"]')
+    }
+
+    function classSelect(wrapper: VueWrapper) {
+      return wrapper.find('select[data-testid="edit-tags-class"]')
+    }
+
+    it('preselects the strategy and class the holding is in', async () => {
+      const wrapper = mountModal({ initialStrategyClassId: 'class-abroad' })
+      await flushPromises()
+
+      expect((strategySelect(wrapper).element as HTMLSelectElement).value).toBe('strategy-long')
+      expect(optionTexts(classSelect(wrapper))).toEqual(['Ações Brasil', 'Exterior'])
+      expect((classSelect(wrapper).element as HTMLSelectElement).value).toBe('class-abroad')
+      expect(submitButton(wrapper).attributes('disabled')).toBeDefined()
+    })
+
+    it('saves a new class through the class endpoint and reloads the strategies', async () => {
+      vi.mocked(holdingsApi.updateHoldingClass).mockResolvedValue({} as StockHoldingDetail)
+      const wrapper = mountModal()
+      await flushPromises()
+
+      await strategySelect(wrapper).setValue('strategy-long')
+      expect((classSelect(wrapper).element as HTMLSelectElement).value).toBe('class-brazil')
+      await classSelect(wrapper).setValue('class-abroad')
+      await save(wrapper)
+
+      expect(holdingsApi.updateHoldingClass).toHaveBeenCalledWith(
+        'STOCKS',
+        'wallet-1',
+        'holding-1',
+        'class-abroad',
+      )
+      expect(holdingsApi.updateStockHolding).not.toHaveBeenCalled()
+      expect(holdingsApi.updateHoldingSegment).not.toHaveBeenCalled()
+      expect(useStrategiesStore().refresh).toHaveBeenCalled()
+      expect(wrapper.emitted('updated')).toHaveLength(1)
+      expect(wrapper.emitted('close')).toHaveLength(1)
+    })
+
+    it('falls back to the default strategy when the holding has no class yet', async () => {
+      const wrapper = mountModal({ initialStrategyClassId: null })
+      await flushPromises()
+
+      expect((strategySelect(wrapper).element as HTMLSelectElement).value).toBe('strategy-default')
+      expect((classSelect(wrapper).element as HTMLSelectElement).value).toBe('class-undefined')
+      expect(submitButton(wrapper).attributes('disabled')).toBeDefined()
+    })
   })
 })

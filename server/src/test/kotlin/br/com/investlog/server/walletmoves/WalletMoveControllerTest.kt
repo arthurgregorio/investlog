@@ -712,6 +712,19 @@ class WalletMoveControllerTest : BaseIntegrationTest() {
         assertAmount("1500", twins[1].costBasis)
     }
 
+    @Test
+    @Order(24)
+    fun `an item without a holding fails validation`() {
+        val origin = createWallet("Origem Validação", "stocks")
+        val destination = createWallet("Destino Validação", "stocks")
+
+        move(origin, """{"destinationWalletId":"$destination","items":[{"quantity":1}]}""")
+            .expectStatus().isBadRequest()
+            .expectBody()
+            .jsonPath("$.title").isEqualTo("Erro de validação")
+            .jsonPath("$.errors[0]").isEqualTo("O investimento é obrigatório")
+    }
+
     private data class Classification(val typeLabel: String?, val segmentLabel: String?)
 
     private fun activeClassifications(walletId: UUID): List<Classification> {

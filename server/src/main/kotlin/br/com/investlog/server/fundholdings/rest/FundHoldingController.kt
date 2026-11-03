@@ -7,6 +7,7 @@ import br.com.investlog.server.fundholdings.rest.payloads.ContributionUpdateRequ
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingCreateRequest
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingResponse
 import br.com.investlog.server.fundholdings.rest.payloads.FundHoldingUpdateRequest
+import br.com.investlog.server.strategies.rest.payloads.HoldingClassRequest
 import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
@@ -60,6 +61,14 @@ class FundHoldingController(
         @RequestBody request: HoldingSegmentRequest,
     ): ResponseEntity<FundHoldingResponse> =
         ResponseEntity.ok(service.updateSegment(walletId, holdingId, request))
+
+    @PutMapping("/{holdingId}/class")
+    fun updateClass(
+        @PathVariable walletId: UUID,
+        @PathVariable holdingId: UUID,
+        @Valid @RequestBody request: HoldingClassRequest,
+    ): ResponseEntity<FundHoldingResponse> =
+        ResponseEntity.ok(service.updateClass(walletId, holdingId, request))
 
     @DeleteMapping("/{holdingId}")
     fun delete(@PathVariable walletId: UUID, @PathVariable holdingId: UUID): ResponseEntity<Void> {

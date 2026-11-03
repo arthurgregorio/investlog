@@ -12,6 +12,8 @@ import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.LotResponse
 import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
+import br.com.investlog.server.strategies.rest.payloads.HoldingClassRequest
+import br.com.investlog.server.strategies.services.StrategyClassService
 import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import br.com.investlog.server.typelists.services.HoldingTypeService
 import br.com.investlog.server.typelists.services.SegmentService
@@ -28,6 +30,7 @@ class CryptoHoldingService(
     private val walletService: WalletService,
     private val holdingTypeService: HoldingTypeService,
     private val segmentService: SegmentService,
+    private val strategyClassService: StrategyClassService,
     private val holdingRepo: CryptoHoldingRepository,
     private val lotRepo: CryptoLotRepository,
 ) {
@@ -50,6 +53,7 @@ class CryptoHoldingService(
             walletInternalId = walletId,
             typeInternalId = request.typeId?.let { typeId -> holdingTypeService.resolveId(typeId, WalletKind.CRYPTO) },
             segmentInternalId = request.segmentId?.let(segmentService::resolveId),
+            strategyClassInternalId = strategyClassService.resolveId(request.strategyClassId),
             ticker = request.ticker,
             name = request.name ?: request.ticker.uppercase(),
             currentPrice = request.currentPrice,
@@ -87,6 +91,19 @@ class CryptoHoldingService(
             externalId = holdingExternalId,
             segmentInternalId = request.segmentId?.let(segmentService::resolveId),
         ) ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
+    }
+
+    @Transactional
+    fun updateClass(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: HoldingClassRequest,
+    ): CryptoHoldingResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
+            ?: throw NotFoundException("Posição de criptomoeda não encontrada: $holdingExternalId")
+        strategyClassService.assignHolding(WalletKind.CRYPTO, holdingId, request.strategyClassId)
+        return findById(walletExternalId, holdingExternalId)
     }
 
     @Transactional

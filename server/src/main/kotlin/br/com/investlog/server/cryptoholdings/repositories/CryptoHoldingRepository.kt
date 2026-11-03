@@ -6,6 +6,8 @@ import br.com.investlog.server.jooq.finances.tables.references.CRYPTO_LOTS
 import br.com.investlog.server.jooq.finances.tables.references.HOLDING_TYPES
 import br.com.investlog.server.jooq.finances.tables.references.RESULTS
 import br.com.investlog.server.jooq.finances.tables.references.SEGMENTS
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGIES
+import br.com.investlog.server.jooq.finances.tables.references.STRATEGY_CLASSES
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.results.rest.payloads.WithdrawalResponse
 import br.com.investlog.server.shared.utils.pagedModelOf
@@ -30,6 +32,8 @@ class CryptoHoldingRepository(
         val holdingTypes = HOLDING_TYPES.`as`("holding_types")
         val segments = SEGMENTS.`as`("segments")
         val cryptoHoldings = CRYPTO_HOLDINGS.`as`("crypto_holdings")
+        val strategyClasses = STRATEGY_CLASSES.`as`("strategy_classes")
+        val strategies = STRATEGIES.`as`("strategies")
 
         val lotsField = DSL.multiset(
             DSL.selectFrom(CRYPTO_LOTS)
@@ -78,6 +82,10 @@ class CryptoHoldingRepository(
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
             cryptoHoldings.FROZEN,
+            strategies.EXTERNAL_ID,
+            strategies.NAME,
+            strategyClasses.EXTERNAL_ID,
+            strategyClasses.NAME,
             lotsField,
             withdrawalsField
         )
@@ -85,6 +93,8 @@ class CryptoHoldingRepository(
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
             .leftJoin(holdingTypes).on(holdingTypes.ID.eq(cryptoHoldings.HOLDING_TYPE_ID))
             .leftJoin(segments).on(segments.ID.eq(cryptoHoldings.SEGMENT_ID))
+            .join(strategyClasses).on(strategyClasses.ID.eq(cryptoHoldings.STRATEGY_CLASS_ID))
+            .join(strategies).on(strategies.ID.eq(strategyClasses.STRATEGY_ID))
             .where(cryptoHoldings.WALLET_ID.eq(walletInternalId))
             .orderBy(cryptoHoldings.CREATED_AT.desc())
             .limit(pageable.pageSize)
@@ -101,6 +111,10 @@ class CryptoHoldingRepository(
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),
                     frozen = rec.get(cryptoHoldings.FROZEN)!!,
+                    strategyId = rec.get(strategies.EXTERNAL_ID)!!,
+                    strategyName = rec.get(strategies.NAME)!!,
+                    strategyClassId = rec.get(strategyClasses.EXTERNAL_ID)!!,
+                    strategyClassName = rec.get(strategyClasses.NAME)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )
@@ -117,6 +131,7 @@ class CryptoHoldingRepository(
         walletInternalId: Long,
         typeInternalId: Long?,
         segmentInternalId: Long?,
+        strategyClassInternalId: Long?,
         ticker: String,
         name: String,
         currentPrice: BigDecimal?,
@@ -126,6 +141,7 @@ class CryptoHoldingRepository(
             .set(CRYPTO_HOLDINGS.WALLET_ID, walletInternalId)
             .set(CRYPTO_HOLDINGS.HOLDING_TYPE_ID, typeInternalId)
             .set(CRYPTO_HOLDINGS.SEGMENT_ID, segmentInternalId)
+            .set(CRYPTO_HOLDINGS.STRATEGY_CLASS_ID, strategyClassInternalId)
             .set(CRYPTO_HOLDINGS.TICKER, ticker.uppercase())
             .set(CRYPTO_HOLDINGS.NAME, name)
             .set(CRYPTO_HOLDINGS.CURRENT_PRICE, currentPrice)
@@ -210,6 +226,8 @@ class CryptoHoldingRepository(
         val holdingTypes = HOLDING_TYPES.`as`("holding_types")
         val segments = SEGMENTS.`as`("segments")
         val cryptoHoldings = CRYPTO_HOLDINGS.`as`("crypto_holdings")
+        val strategyClasses = STRATEGY_CLASSES.`as`("strategy_classes")
+        val strategies = STRATEGIES.`as`("strategies")
 
         val lotsField = DSL.multiset(
             DSL.selectFrom(CRYPTO_LOTS)
@@ -258,6 +276,10 @@ class CryptoHoldingRepository(
             cryptoHoldings.NAME,
             cryptoHoldings.CURRENT_PRICE,
             cryptoHoldings.FROZEN,
+            strategies.EXTERNAL_ID,
+            strategies.NAME,
+            strategyClasses.EXTERNAL_ID,
+            strategyClasses.NAME,
             lotsField,
             withdrawalsField
         )
@@ -265,6 +287,8 @@ class CryptoHoldingRepository(
             .join(wallets).on(wallets.ID.eq(cryptoHoldings.WALLET_ID))
             .leftJoin(holdingTypes).on(holdingTypes.ID.eq(cryptoHoldings.HOLDING_TYPE_ID))
             .leftJoin(segments).on(segments.ID.eq(cryptoHoldings.SEGMENT_ID))
+            .join(strategyClasses).on(strategyClasses.ID.eq(cryptoHoldings.STRATEGY_CLASS_ID))
+            .join(strategies).on(strategies.ID.eq(strategyClasses.STRATEGY_ID))
             .where(cryptoHoldings.ID.eq(internalId))
             .and(cryptoHoldings.WALLET_ID.eq(walletInternalId))
             .fetchOne { rec ->
@@ -279,6 +303,10 @@ class CryptoHoldingRepository(
                     name = rec.get(cryptoHoldings.NAME)!!,
                     currentPrice = rec.get(cryptoHoldings.CURRENT_PRICE),
                     frozen = rec.get(cryptoHoldings.FROZEN)!!,
+                    strategyId = rec.get(strategies.EXTERNAL_ID)!!,
+                    strategyName = rec.get(strategies.NAME)!!,
+                    strategyClassId = rec.get(strategyClasses.EXTERNAL_ID)!!,
+                    strategyClassName = rec.get(strategyClasses.NAME)!!,
                     lots = rec.get(lotsField),
                     withdrawals = rec.get(withdrawalsField),
                 )

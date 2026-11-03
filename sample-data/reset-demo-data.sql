@@ -21,6 +21,11 @@ BEGIN;
 DELETE FROM finances.wallet_moves;
 DELETE FROM finances.wallets;
 
+-- 1b. Every strategy but each user's default "Sem estratégia" (its classes cascade). This has to
+--     follow the wallet wipe: holdings point at their class ON DELETE RESTRICT, so a class can only
+--     go once no holding references it. sample-data.sql recreates admin's strategies.
+DELETE FROM finances.strategies WHERE NOT is_default;
+
 -- 2. Global holding types (every kind) and segments — finances.holding_types/segments carry no
 --    user_id, and deleting them is safe now that no holding references them. The migration's own
 --    "Cripto" type goes too and sample-data.sql recreates it.

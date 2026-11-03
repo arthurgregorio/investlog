@@ -573,10 +573,10 @@ describe('InvestmentsView', () => {
   })
 
   describe('class', () => {
-    it('lists the four classes with Todas as classes selected by default', async () => {
+    it('lists the four classes with Todos os tipos selected by default', async () => {
       const { wrapper } = await mountView()
 
-      expect(classLabels(wrapper)).toEqual(['Todas as classes', 'Ações', 'Cripto', 'Fundos'])
+      expect(classLabels(wrapper)).toEqual(['Todos os tipos', 'Ações', 'Cripto', 'Fundos'])
       expect(activeClass(wrapper)).toBe('all')
     })
 
@@ -670,7 +670,7 @@ describe('InvestmentsView', () => {
   })
 
   describe('wallets and types', () => {
-    it('lists every wallet without a kind prefix under Todas as classes, with its holding count', async () => {
+    it('lists every wallet without a kind prefix under Todos os tipos, with its holding count', async () => {
       const { wrapper } = await mountView()
 
       expect(walletLabels(wrapper)).toEqual(['Carteira B3', 'Carteira Cripto', 'Carteira Fundos'])
@@ -717,12 +717,12 @@ describe('InvestmentsView', () => {
       expect(walletCheckbox(wrapper, 'wallet-3').element.checked).toBe(true)
     })
 
-    it('offers no asset type under Todas as classes and says why', async () => {
+    it('offers no asset type under Todos os tipos and says why', async () => {
       const { wrapper } = await mountView()
 
       expect(typeLabels(wrapper)).toEqual([])
       expect(wrapper.get('[data-testid="type-hint"]').text()).toBe(
-        'Escolha uma classe para filtrar por tipo.',
+        'Escolha um tipo de carteira para filtrar por tipo de ativo.',
       )
       expect(holdingsApi.findAllForReport).not.toHaveBeenCalled()
     })
@@ -747,13 +747,13 @@ describe('InvestmentsView', () => {
       expect(typeLabels(wrapper)).toEqual([])
     })
 
-    it('says no investment carries a type when the class has none', async () => {
+    it('says no investment carries a type when the wallet kind has none', async () => {
       vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([unpricedRow])
       const { wrapper } = await mountView({ query: '?filter=STOCKS' })
 
       expect(typeLabels(wrapper)).toEqual([])
       expect(wrapper.get('[data-testid="type-hint"]').text()).toBe(
-        'Nenhum investimento com tipo nesta classe.',
+        'Nenhum investimento com tipo de ativo neste tipo de carteira.',
       )
     })
 

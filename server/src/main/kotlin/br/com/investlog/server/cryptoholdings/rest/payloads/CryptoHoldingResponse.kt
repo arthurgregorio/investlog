@@ -16,6 +16,10 @@ data class CryptoHoldingResponse(
     val name: String,
     val currentPrice: BigDecimal?,
     val frozen: Boolean,
+    val strategyId: UUID,
+    val strategyName: String,
+    val strategyClassId: UUID,
+    val strategyClassName: String,
     val lots: List<LotResponse>,
     val withdrawals: List<WithdrawalResponse>,
 )

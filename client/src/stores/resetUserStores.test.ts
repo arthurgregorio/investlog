@@ -9,6 +9,7 @@ import { useOverviewStore } from './overview'
 import { useRatesStore } from './rates'
 import { useReinvestmentsStore } from './reinvestments'
 import { useResultsStore } from './results'
+import { useStrategiesStore } from './strategies'
 import { useTrustedDevicesStore } from './trustedDevices'
 import { useTypesListStore } from './typesList'
 import { useUsersAdminStore } from './usersAdmin'
@@ -88,6 +89,12 @@ const storeCases: StoreCase[] = [
       loading: false,
       loaded: false,
     },
+  },
+  {
+    name: 'strategies',
+    useStore: useStrategiesStore,
+    seed: { strategies: [{ id: 'strategy-1' }], loaded: true, loading: true },
+    initial: { strategies: [], loaded: false, loading: false },
   },
   {
     name: 'results',

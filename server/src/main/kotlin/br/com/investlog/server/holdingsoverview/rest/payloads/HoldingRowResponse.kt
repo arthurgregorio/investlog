@@ -20,4 +20,8 @@ data class HoldingRowResponse(
     val frozen: Boolean,
     val gain: BigDecimal?,
     val gainPct: BigDecimal?,
+    val strategyId: UUID? = null,
+    val strategyName: String? = null,
+    val strategyClassId: UUID? = null,
+    val strategyClassName: String? = null,
 )

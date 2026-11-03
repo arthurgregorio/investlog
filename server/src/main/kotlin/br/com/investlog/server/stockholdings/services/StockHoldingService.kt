@@ -12,6 +12,8 @@ import br.com.investlog.server.stockholdings.rest.payloads.LotUpdateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingCreateRequest
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingUpdateRequest
+import br.com.investlog.server.strategies.rest.payloads.HoldingClassRequest
+import br.com.investlog.server.strategies.services.StrategyClassService
 import br.com.investlog.server.typelists.rest.payloads.HoldingSegmentRequest
 import br.com.investlog.server.typelists.services.HoldingTypeService
 import br.com.investlog.server.typelists.services.SegmentService
@@ -28,6 +30,7 @@ class StockHoldingService(
     private val walletService: WalletService,
     private val holdingTypeService: HoldingTypeService,
     private val segmentService: SegmentService,
+    private val strategyClassService: StrategyClassService,
     private val holdingRepo: StockHoldingRepository,
     private val lotRepo: StockLotRepository,
 ) {
@@ -50,6 +53,7 @@ class StockHoldingService(
             walletInternalId = walletId,
             typeInternalId = holdingTypeService.resolveId(request.typeId, WalletKind.STOCKS),
             segmentInternalId = request.segmentId?.let(segmentService::resolveId),
+            strategyClassInternalId = strategyClassService.resolveId(request.strategyClassId),
             ticker = request.ticker,
             name = request.name ?: request.ticker.uppercase(),
             currentPrice = request.currentPrice,
@@ -87,6 +91,19 @@ class StockHoldingService(
             externalId = holdingExternalId,
             segmentInternalId = request.segmentId?.let(segmentService::resolveId),
         ) ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
+    }
+
+    @Transactional
+    fun updateClass(
+        walletExternalId: UUID,
+        holdingExternalId: UUID,
+        request: HoldingClassRequest,
+    ): StockHoldingResponse {
+        val walletId = walletService.resolveId(walletExternalId)
+        val holdingId = holdingRepo.findInternalId(walletId, holdingExternalId)
+            ?: throw NotFoundException("Posição de ação não encontrada: $holdingExternalId")
+        strategyClassService.assignHolding(WalletKind.STOCKS, holdingId, request.strategyClassId)
+        return findById(walletExternalId, holdingExternalId)
     }
 
     @Transactional

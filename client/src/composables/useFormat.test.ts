@@ -47,6 +47,7 @@ describe('fmt.pct and fmt.pctSigned', () => {
     expect(fmt.pct(12.345)).toBe('12,35%')
     expect(fmt.pct(-12.3)).toBe('12,30%')
     expect(fmt.pct(0)).toBe('0,00%')
+    expect(fmt.decimal(-7.857)).toBe('7,86')
   })
 
   it('signs positive, negative and zero values', () => {
