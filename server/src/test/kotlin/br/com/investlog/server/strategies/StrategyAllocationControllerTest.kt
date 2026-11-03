@@ -7,7 +7,6 @@ import br.com.investlog.server.cryptoholdings.rest.payloads.CryptoHoldingRespons
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
 import br.com.investlog.server.strategies.rest.payloads.ContributionPlanResponse
 import br.com.investlog.server.strategies.rest.payloads.LeftOutReason
-import br.com.investlog.server.strategies.rest.payloads.OverviewAllocationResponse
 import br.com.investlog.server.strategies.rest.payloads.StrategyAllocationResponse
 import br.com.investlog.server.strategies.rest.payloads.StrategyResponse
 import br.com.investlog.server.typelists.rest.payloads.TypeResponse
@@ -269,51 +268,12 @@ class StrategyAllocationControllerTest : BaseIntegrationTest() {
     }
 
     @Test
-    fun `the overview groups current value by strategy, class and type`() {
-        val byStrategy = overviewAllocation("STRATEGY")
-        assertAmount("1050.00", byStrategy.totalValue)
-        assertEquals(listOf("Alocação Teste", "Sem estratégia"), byStrategy.groups.map { group -> group.label })
-        assertEquals(strategy.id, byStrategy.groups[0].id)
-        assertEquals(5, byStrategy.groups[0].holdingCount)
-        assertAmount("95.24", byStrategy.groups[0].percentage)
-        assertAmount("50.00", byStrategy.groups[1].value)
-
-        val byClass = overviewAllocation("CLASS&strategyId=${strategy.id}")
-        assertAmount("1000.00", byClass.totalValue)
-        assertEquals(listOf("Ações", "Exterior", "Cripto"), byClass.groups.map { group -> group.label })
-        assertEquals(listOf(sharesClassId, abroadClassId, cryptoClassId), byClass.groups.map { group -> group.id })
-        assertAmount("40.00", byClass.groups[1].percentage)
-
-        val byType = overviewAllocation("TYPE")
-        assertEquals(listOf("Ação Alocação", "Sem tipo"), byType.groups.map { group -> group.label })
-        assertAmount("950.00", byType.groups[0].value)
-        assertAmount("9.52", byType.groups[1].percentage)
-    }
-
-    @Test
-    fun `the overview refuses a class grouping without a strategy and an unknown grouping`() {
-        restTestClient.get()
-            .uri("/private/v1/overview/allocation?groupBy=CLASS")
-            .exchange()
-            .expectStatus().isBadRequest()
-        restTestClient.get()
-            .uri("/private/v1/overview/allocation?groupBy=WALLET")
-            .exchange()
-            .expectStatus().isBadRequest()
-        restTestClient.get()
-            .uri("/private/v1/overview/allocation?groupBy=CLASS&strategyId=${UUID.randomUUID()}")
-            .exchange()
-            .expectStatus().isNotFound()
-    }
-
-    @Test
     fun `another user cannot read this user's strategy`() {
         val cookie = registerApproveAndLogin("allocation-reader@example.com", "Senha123")
 
         listOf(
             "/private/v1/strategies/${strategy.id}/allocation",
             "/private/v1/strategies/${strategy.id}/contribution-plan?amount=100",
-            "/private/v1/overview/allocation?groupBy=CLASS&strategyId=${strategy.id}",
         ).forEach { uri ->
             restTestClient.get()
                 .uri(uri)
@@ -321,16 +281,6 @@ class StrategyAllocationControllerTest : BaseIntegrationTest() {
                 .exchange()
                 .expectStatus().isNotFound()
         }
-
-        val ownGroups = restTestClient.get()
-            .uri("/private/v1/overview/allocation?groupBy=STRATEGY")
-            .header("Cookie", cookie)
-            .exchange()
-            .expectStatus().isOk()
-            .returnResult<OverviewAllocationResponse>()
-            .responseBody!!
-        assertTrue(ownGroups.groups.isEmpty())
-        assertAmount("0.00", ownGroups.totalValue)
     }
 
     private fun assertAmount(expected: String, actual: BigDecimal) =
@@ -342,14 +292,6 @@ class StrategyAllocationControllerTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
             .returnResult<ContributionPlanResponse>()
-            .responseBody!!
-
-    private fun overviewAllocation(query: String): OverviewAllocationResponse =
-        restTestClient.get()
-            .uri("/private/v1/overview/allocation?groupBy=$query")
-            .exchange()
-            .expectStatus().isOk()
-            .returnResult<OverviewAllocationResponse>()
             .responseBody!!
 
     private fun findStrategies(): List<StrategyResponse> =

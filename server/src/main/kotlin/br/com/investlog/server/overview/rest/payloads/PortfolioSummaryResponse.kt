@@ -9,5 +9,12 @@ data class PortfolioSummaryResponse(
     val totalCash: BigDecimal,
     val totalGain: BigDecimal,
     val totalGainPct: BigDecimal?,
+    val positionsValue: BigDecimal,
+    val ownMoney: BigDecimal,
+    val realizedProfit: BigDecimal,
+    val lifetimeResult: BigDecimal,
+    val lifetimeResultPct: BigDecimal?,
+    val unpricedHoldingCount: Int,
+    val cashWalletCount: Int,
     val kindSummaries: List<KindSummaryResponse>,
 )

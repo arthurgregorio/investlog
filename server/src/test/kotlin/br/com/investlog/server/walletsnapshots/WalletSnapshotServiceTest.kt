@@ -1,6 +1,9 @@
 package br.com.investlog.server.walletsnapshots
 
 import br.com.investlog.server.BaseIntegrationTest
+import br.com.investlog.server.jooq.finances.enums.WalletKind
+import br.com.investlog.server.jooq.finances.tables.references.HOLDING_DAILY_SNAPSHOTS
+import br.com.investlog.server.jooq.finances.tables.references.STOCK_HOLDINGS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
 import br.com.investlog.server.jooq.finances.tables.references.WALLET_DAILY_SNAPSHOTS
 import br.com.investlog.server.stockholdings.rest.payloads.StockHoldingResponse
@@ -174,5 +177,21 @@ class WalletSnapshotServiceTest : BaseIntegrationTest() {
         assertEquals(2, countSnapshots(investedWalletId))
         assertNotNull(findSnapshot(investedWalletId, snapshotDate))
         assertNotNull(findSnapshot(investedWalletId, snapshotDate.plusDays(1)))
+    }
+
+    @Test
+    @Order(6)
+    fun `every run also records each active holding's price once per date`() {
+
+        val holdingSnapshots = dsl.selectFrom(HOLDING_DAILY_SNAPSHOTS)
+            .where(HOLDING_DAILY_SNAPSHOTS.KIND.eq(WalletKind.STOCKS))
+            .and(HOLDING_DAILY_SNAPSHOTS.HOLDING_ID.eq(dsl.select(STOCK_HOLDINGS.ID).from(STOCK_HOLDINGS).where(STOCK_HOLDINGS.EXTERNAL_ID.eq(stockHoldingId))))
+            .orderBy(HOLDING_DAILY_SNAPSHOTS.SNAPSHOT_DATE)
+            .fetch()
+
+        assertEquals(listOf(snapshotDate, snapshotDate.plusDays(1)), holdingSnapshots.map { snapshot -> snapshot.snapshotDate })
+        assertEquals(0, BigDecimal("40.00").compareTo(holdingSnapshots[0].currentPrice))
+        assertEquals(0, BigDecimal("4000.00").compareTo(holdingSnapshots[0].currentValue))
+        assertEquals(0, BigDecimal("3500.00").compareTo(holdingSnapshots[0].costBasis))
     }
 }

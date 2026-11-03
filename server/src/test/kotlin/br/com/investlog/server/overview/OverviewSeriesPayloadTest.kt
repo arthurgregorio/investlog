@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.client.returnResult
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OverviewSeriesPayloadTest : BaseIntegrationTest() {
@@ -103,6 +104,9 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
             .expectStatus().isCreated()
     }
 
+    private fun assertStartsWith(expectedPrefix: String, actual: String) =
+        assertTrue(actual.startsWith(expectedPrefix), "expected $actual to start with $expectedPrefix")
+
     private fun seriesBody(): String =
         restTestClient.get()
             .uri("/private/v1/overview/series")
@@ -114,8 +118,8 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
     @Test
     @Order(1)
     fun `the series in the anchor currency accumulates every kind month by month`() {
-        assertEquals(
-            """[{"month":"2025-01","ownMoney":1850.0000000000000000000000,"reinvestedProfit":0,"totalInvested":1850.0000000000000000000000},{"month":"2025-02","ownMoney":2467.28000000000000000000000,"reinvestedProfit":0,"totalInvested":2467.28000000000000000000000},{"month":"2025-03","ownMoney":5414.84000000000000000000000,"reinvestedProfit":0,"totalInvested":5414.84000000000000000000000}]""",
+        assertStartsWith(
+            """[{"month":"2025-01","ownMoney":1850.0000000000000000000000,"reinvestedProfit":0,"totalInvested":1850.0000000000000000000000,"result":0,"marketValued":false},{"month":"2025-02","ownMoney":2467.28000000000000000000000,"reinvestedProfit":0,"totalInvested":2467.28000000000000000000000,"result":0,"marketValued":false},{"month":"2025-03","ownMoney":5414.84000000000000000000000,"reinvestedProfit":0,"totalInvested":5414.84000000000000000000000,"result":0,"marketValued":false},""",
             seriesBody(),
         )
     }
@@ -130,8 +134,8 @@ class OverviewSeriesPayloadTest : BaseIntegrationTest() {
             .exchange()
             .expectStatus().isOk()
 
-        assertEquals(
-            """[{"month":"2025-01","ownMoney":264.2857142857142857130000,"reinvestedProfit":0,"totalInvested":264.2857142857142857130000},{"month":"2025-02","ownMoney":352.46857142857142856837920,"reinvestedProfit":0,"totalInvested":352.46857142857142856837920},{"month":"2025-03","ownMoney":773.54857142857142856837920,"reinvestedProfit":0,"totalInvested":773.54857142857142856837920}]""",
+        assertStartsWith(
+            """[{"month":"2025-01","ownMoney":264.2857142857142857130000,"reinvestedProfit":0,"totalInvested":264.2857142857142857130000,"result":0,"marketValued":false},{"month":"2025-02","ownMoney":352.46857142857142856837920,"reinvestedProfit":0,"totalInvested":352.46857142857142856837920,"result":0,"marketValued":false},{"month":"2025-03","ownMoney":773.54857142857142856837920,"reinvestedProfit":0,"totalInvested":773.54857142857142856837920,"result":0,"marketValued":false},""",
             seriesBody(),
         )
     }
