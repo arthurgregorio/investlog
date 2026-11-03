@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import HoldingsTable from '@/components/investments/HoldingsTable.vue'
 import InvestmentsFilterRail from '@/components/investments/InvestmentsFilterRail.vue'
 import ExportReportModal from '@/components/investments/ExportReportModal.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import type { HoldingsFilterParams } from '@/api/holdings'
+import { holdingsApi, type HoldingsFilterParams } from '@/api/holdings'
 import { useHoldingsListStore } from '@/stores/holdingsList'
 import { useOverviewStore } from '@/stores/overview'
-import { useTypesListStore } from '@/stores/typesList'
 import { useWalletsStore } from '@/stores/wallets'
 import { useCurrencyStore } from '@/stores/currency'
 import { useRatesStore } from '@/stores/rates'
@@ -17,6 +16,7 @@ import { useModals } from '@/composables/useModals'
 import { fmt } from '@/composables/useFormat'
 import { useInvestmentFilters, type InvestmentKindFilter } from '@/composables/useInvestmentFilters'
 import { WALLET_TYPES } from '@/utils/walletTypes'
+import { compareDisplayNames } from '@/utils/sortHoldingsByDisplayName'
 
 interface FilterChip {
   key: string
@@ -26,7 +26,6 @@ interface FilterChip {
 
 const holdingsListStore = useHoldingsListStore()
 const overviewStore = useOverviewStore()
-const typesListStore = useTypesListStore()
 const walletsStore = useWalletsStore()
 const currencyStore = useCurrencyStore()
 const ratesStore = useRatesStore()
@@ -34,7 +33,6 @@ const modals = useModals()
 const holdingsTable = useTemplateRef('holdingsTable')
 
 onMounted(() => {
-  typesListStore.load()
   walletsStore.load()
   currencyStore.load()
   ratesStore.load()
@@ -76,10 +74,28 @@ const classCounts = computed(() => {
   return counts
 })
 
-const typeOptions = computed(() => {
-  if (activeFilter.value === 'all') return []
-  return typesListStore.typesForKind(activeFilter.value)
-})
+const typeOptions = ref<string[]>([])
+let typeOptionsRequest = 0
+
+async function loadTypeOptions() {
+  const request = ++typeOptionsRequest
+  const kind = activeFilter.value
+  if (kind === 'all') {
+    typeOptions.value = []
+    return
+  }
+  const rows = await holdingsApi.findAllForReport({
+    kind,
+    hideFrozen: hideFrozenFilter.value || undefined,
+  })
+  if (request !== typeOptionsRequest) return
+  const heldTypeLabels = rows
+    .map((row) => row.typeLabel)
+    .filter((typeLabel): typeLabel is string => typeLabel !== null)
+  typeOptions.value = [...new Set(heldTypeLabels)].sort(compareDisplayNames)
+}
+
+watch([activeFilter, hideFrozenFilter], loadTypeOptions, { immediate: true })
 
 function walletsOfClass(filter: InvestmentKindFilter) {
   if (filter === 'all') return walletsStore.wallets
@@ -155,6 +171,7 @@ function openReport() {
 function onHoldingsChanged() {
   holdingsListStore.refresh()
   overviewStore.refresh()
+  loadTypeOptions()
 }
 </script>
 
