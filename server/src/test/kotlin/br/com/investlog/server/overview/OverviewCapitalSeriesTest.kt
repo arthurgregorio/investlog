@@ -15,9 +15,12 @@ import org.springframework.test.web.servlet.client.RestTestClient
 import org.springframework.test.web.servlet.client.returnResult
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.YearMonth
+import java.time.ZoneId
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OverviewCapitalSeriesTest : BaseIntegrationTest() {
@@ -131,7 +134,6 @@ class OverviewCapitalSeriesTest : BaseIntegrationTest() {
     fun `own money counts new money and transfers less bank withdrawals, and every exit adds its profit`() {
         val points = series()
 
-        assertEquals(3, points.size)
         assertMonth(points[0], "2025-01", "900.00", "0.00")
         assertMonth(points[1], "2025-02", "920.00", "330.00")
         assertMonth(points[2], "2025-03", "870.00", "380.00")
@@ -139,6 +141,39 @@ class OverviewCapitalSeriesTest : BaseIntegrationTest() {
 
     @Test
     @Order(2)
+    fun `the series has one point per calendar month up to the current month, repeating the totals of quiet months`() {
+        val points = series()
+        val currentMonth = YearMonth.now(ZoneId.of("America/Sao_Paulo"))
+
+        assertEquals(
+            generateSequence(YearMonth.of(2025, 1)) { month -> month.plusMonths(1) }
+                .takeWhile { month -> !month.isAfter(currentMonth) }
+                .map { month -> month.toString() }
+                .toList(),
+            points.map { point -> point.month },
+        )
+        assertMonth(points[3], "2025-04", "870.00", "380.00")
+        assertEquals(cents(points[3].reinvestedProfit), cents(points[3].result))
+        assertFalse(points[3].marketValued)
+    }
+
+    @Test
+    @Order(3)
+    fun `the lifetime result is realized profit plus the current result, and the series ends on it`() {
+        val summary = summary()
+
+        assertEquals(BigDecimal("870.00"), cents(summary.ownMoney))
+        assertEquals(BigDecimal("380.00"), cents(summary.realizedProfit))
+        assertEquals(cents(summary.totalCurrentValue - summary.ownMoney), cents(summary.lifetimeResult))
+        assertEquals(cents(summary.realizedProfit + summary.totalGain), cents(summary.lifetimeResult))
+        assertEquals(cents(summary.totalCurrentValue - summary.totalCash), cents(summary.positionsValue))
+        assertEquals(1, summary.cashWalletCount)
+        assertEquals(0, summary.unpricedHoldingCount)
+        assertEquals(summary.lifetimeResult, series().last().result)
+    }
+
+    @Test
+    @Order(4)
     fun `the series ends at the invested cost basis plus the cash, also after a partial move`() {
         val before = series().last()
         val summaryBefore = summary()

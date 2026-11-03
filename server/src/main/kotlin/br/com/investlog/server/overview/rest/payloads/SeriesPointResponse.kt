@@ -7,4 +7,6 @@ data class SeriesPointResponse(
     val ownMoney: BigDecimal,
     val reinvestedProfit: BigDecimal,
     val totalInvested: BigDecimal,
+    val result: BigDecimal,
+    val marketValued: Boolean,
 )
