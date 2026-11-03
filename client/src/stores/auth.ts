@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { authApi } from '@/api/auth'
 import { router } from '@/router'
+import { forgetPostLoginRedirect, rememberPostLoginRedirect } from '@/router/postLoginRedirect'
 import { resetUserStores } from '@/stores/resetUserStores'
 import type { SessionResponse, TotpEnrollResponse } from '@/types'
 
@@ -33,6 +34,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function endSession(reason?: SessionEndReason) {
+    if (reason) {
+      rememberPostLoginRedirect(router.currentRoute.value.fullPath)
+    } else {
+      forgetPostLoginRedirect()
+    }
     endingSession.value = true
     try {
       await router.replace(reason ? { name: 'login', query: { reason } } : { name: 'login' })

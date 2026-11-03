@@ -15,6 +15,7 @@ import LoginView from '@/views/LoginView.vue'
 import PendingApprovalView from '@/views/PendingApprovalView.vue'
 import { useAuthStore } from '@/stores/auth'
 import { isPublicRoute } from '@/router/publicRoutes'
+import { consumePostLoginRedirect, rememberPostLoginRedirect } from '@/router/postLoginRedirect'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -63,6 +64,7 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
 
   if (!isPublicRoute(to.name) && !auth.session) {
+    rememberPostLoginRedirect(to.fullPath)
     return { name: 'login' }
   }
 
@@ -80,6 +82,13 @@ router.beforeEach((to) => {
 
   if (to.name === 'pending-approval' && auth.session?.status === 'APPROVED') {
     return { name: 'overview' }
+  }
+
+  if (auth.session?.status === 'APPROVED') {
+    const redirect = consumePostLoginRedirect()
+    if (redirect && redirect !== to.fullPath) {
+      return redirect
+    }
   }
 
   if (
