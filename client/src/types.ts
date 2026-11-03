@@ -55,6 +55,7 @@ export interface HoldingRow {
 export interface KindSummary {
   kind: string
   holdingCount: number
+  walletCount: number
   totalCostBasis: number
   totalCurrentValue: number
   totalGain: number
@@ -68,6 +69,13 @@ export interface PortfolioSummary {
   totalCash: number
   totalGain: number
   totalGainPct: number | null
+  positionsValue: number
+  ownMoney: number
+  realizedProfit: number
+  lifetimeResult: number
+  lifetimeResultPct: number | null
+  unpricedHoldingCount: number
+  cashWalletCount: number
   kindSummaries: KindSummary[]
 }
 
@@ -76,6 +84,24 @@ export interface SeriesPoint {
   ownMoney: number
   reinvestedProfit: number
   totalInvested: number
+  result: number
+  marketValued: boolean
+}
+
+export interface MonthMover {
+  kind: WalletKind
+  ticker: string | null
+  name: string | null
+  changePct: number
+}
+
+export interface MonthSummary {
+  month: string // "YYYY-MM"
+  contributions: number
+  realizedProfit: number
+  currentResultChange: number | null
+  bestMover: MonthMover | null
+  worstMover: MonthMover | null
 }
 
 export interface AssetType {
@@ -540,21 +566,4 @@ export interface ContributionPlan {
   totalValueAfter: number
   classes: ClassContribution[]
   leftOut: LeftOutHolding[]
-}
-
-export type AllocationGroupBy = 'STRATEGY' | 'CLASS' | 'TYPE'
-
-export interface AllocationGroup {
-  id: string | null
-  label: string
-  holdingCount: number
-  value: number
-  percentage: number
-}
-
-export interface OverviewAllocation {
-  groupBy: AllocationGroupBy
-  displayCurrency: string
-  totalValue: number
-  groups: AllocationGroup[]
 }
