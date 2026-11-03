@@ -340,6 +340,91 @@ SET cash_reconciled = FALSE
 WHERE name IN ('Ações EUA', 'Fundos')
   AND user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com');
 
+-- Two reinvestments (#556): ABEV3 into ITUB4 and MSFT into GOOGL, each written the way
+-- ReinvestmentService does it (a REINVESTMENT result, a REINVESTMENT lot on the destination and the
+-- finances.reinvestments row joining them). Like the resgates above, an extra lot before each one keeps
+-- the source position unchanged.
+INSERT INTO finances.stock_lots (stock_holding_id, lot_date, quantity, price)
+SELECT sh.id, v.lot_date, v.quantity, v.price
+FROM (VALUES
+    ('Ações Brasil', 'ABEV3', DATE '2026-08-12', 100, 14.80),
+    ('Ações EUA', 'MSFT', DATE '2026-09-08', 2, 495.00)
+) AS v(wallet_name, ticker, lot_date, quantity, price)
+JOIN finances.wallets w ON w.name = v.wallet_name
+    AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+JOIN finances.stock_holdings sh ON sh.wallet_id = w.id AND sh.ticker = v.ticker;
+
+WITH reinvested AS (
+    SELECT v.reinvestment_date, v.quantity, v.unit_price, v.destination_quantity, v.destination_price,
+           source.id AS source_id, destination.id AS destination_id
+    FROM (VALUES
+        ('Ações Brasil', 'ABEV3', 'ITUB4', DATE '2026-08-26', 100, 15.099, 35, 43.14),
+        ('Ações EUA', 'MSFT', 'GOOGL', DATE '2026-09-29', 2, 510.00, 4, 255.00)
+    ) AS v(wallet_name, source_ticker, destination_ticker, reinvestment_date, quantity, unit_price,
+           destination_quantity, destination_price)
+    JOIN finances.wallets w ON w.name = v.wallet_name
+        AND w.user_id = (SELECT id FROM system.users WHERE email = 'admin@admin.com')
+    JOIN finances.stock_holdings source ON source.wallet_id = w.id AND source.ticker = v.source_ticker
+    JOIN finances.stock_holdings destination ON destination.wallet_id = w.id AND destination.ticker = v.destination_ticker
+),
+new_results AS (
+    INSERT INTO finances.results (stock_holding_id, result_type, result_date, quantity, gross_amount, cost_basis)
+    SELECT r.source_id, 'REINVESTMENT', r.reinvestment_date, r.quantity, r.quantity * r.unit_price,
+           ROUND(r.quantity * (
+               SELECT SUM(sl.quantity * sl.price) / SUM(sl.quantity)
+               FROM finances.stock_lots sl
+               WHERE sl.stock_holding_id = r.source_id
+           ), 10)
+    FROM reinvested r
+    RETURNING id, stock_holding_id, result_date, gross_amount
+),
+new_lots AS (
+    INSERT INTO finances.stock_lots (stock_holding_id, lot_date, quantity, price, origin)
+    SELECT r.destination_id, r.reinvestment_date, r.destination_quantity, r.destination_price, 'REINVESTMENT'
+    FROM reinvested r
+    RETURNING id
+)
+INSERT INTO finances.reinvestments (result_id, destination_stock_holding_id, amount, reinvestment_date)
+SELECT nr.id, r.destination_id, nr.gross_amount, nr.result_date
+FROM new_results nr
+JOIN reinvested r ON r.source_id = nr.stock_holding_id;
+
+-- Daily price and value of every active holding for the 45 days before today (#556), the history the
+-- Overview's "Neste mês" movers compare against. Prices wobble by about 1% around today's, except
+-- ITUB4, which starts the current month 8% lower, and BTC in Cripto (BRL), which starts it 15% higher,
+-- so the month always has a clear gainer and a clear loser. Funds keep a null price.
+INSERT INTO finances.holding_daily_snapshots (kind, holding_id, wallet_id, snapshot_date, current_price, current_value, cost_basis)
+WITH admin_holdings AS (
+    SELECT ho.kind, ho.holding_id, ho.wallet_id, ho.ticker, ho.current_price, ho.current_value, ho.cost_basis,
+           w.name AS wallet_name
+    FROM finances.holdings_overview ho
+    JOIN finances.wallets w ON w.id = ho.wallet_id
+    JOIN system.users u ON u.id = w.user_id
+    WHERE u.email = 'admin@admin.com' AND ho.status = 'ACTIVE'
+),
+month_start AS (
+    SELECT date_trunc('month', CURRENT_DATE)::date AS first_day
+),
+shaped AS (
+    SELECT h.kind, h.holding_id, h.wallet_id, h.current_price, h.current_value, h.cost_basis, d::date AS snapshot_date,
+           CASE
+               WHEN h.wallet_name = 'Ações Brasil' AND h.ticker = 'ITUB4' THEN -0.08
+               WHEN h.wallet_name = 'Cripto (BRL)' AND h.ticker = 'BTC' THEN 0.15
+               ELSE 0
+           END
+           * (1 - COALESCE(LEAST(1, GREATEST(0,
+                 (d::date - m.first_day)::numeric / NULLIF(CURRENT_DATE - m.first_day, 0))), 0))
+           + 0.012 * sin(((d::date - DATE '2025-01-01') * 0.9 + h.holding_id)::float8)::numeric AS drift
+    FROM admin_holdings h
+    CROSS JOIN month_start m
+    CROSS JOIN generate_series(CURRENT_DATE - 45, CURRENT_DATE - 1, INTERVAL '1 day') AS d
+)
+SELECT kind, holding_id, wallet_id, snapshot_date,
+       ROUND(current_price * (1 + drift), 4),
+       ROUND(current_value * (1 + drift), 2),
+       cost_basis
+FROM shaped;
+
 INSERT INTO finances.wallet_daily_snapshots (wallet_id, snapshot_date, current_value, total_invested, gain, gain_pct)
 WITH admin_wallets AS (
     SELECT w.id
