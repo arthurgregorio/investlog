@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ToastProgrammatic } from 'buefy'
 import { router } from '@/router'
+import { rememberPostLoginRedirect } from '@/router/postLoginRedirect'
 import { recordServerActivity } from '@/api/serverActivity'
 import { useAuthStore } from '@/stores/auth'
 
@@ -25,6 +26,10 @@ const AUTH_FORM_ENDPOINTS = [
 
 function isAuthFormRequest(url: string | undefined): boolean {
   return url !== undefined && AUTH_FORM_ENDPOINTS.some((endpoint) => url.startsWith(endpoint))
+}
+
+function isSessionProbe(url: string | undefined): boolean {
+  return url === '/auth/session'
 }
 
 // These endpoints' callers read `response.data.errors` themselves and show the specific
@@ -61,7 +66,8 @@ apiClient.interceptors.response.use(
       const auth = useAuthStore()
       if (auth.session) {
         void auth.expireSession('expired')
-      } else if (router.currentRoute.value.name !== 'login') {
+      } else if (!isSessionProbe(error.config?.url) && router.currentRoute.value.name !== 'login') {
+        rememberPostLoginRedirect(router.currentRoute.value.fullPath)
         router.push({ name: 'login' })
       }
       return Promise.reject(error)

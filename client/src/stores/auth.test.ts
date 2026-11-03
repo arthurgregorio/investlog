@@ -4,6 +4,7 @@ import { useAuthStore } from './auth'
 import { authApi } from '@/api/auth'
 import { router } from '@/router'
 import { resetUserStores } from '@/stores/resetUserStores'
+import { forgetPostLoginRedirect, rememberPostLoginRedirect } from '@/router/postLoginRedirect'
 
 vi.mock('@/api/auth', () => ({
   authApi: {
@@ -18,7 +19,12 @@ vi.mock('@/api/auth', () => ({
 }))
 
 vi.mock('@/router', () => ({
-  router: { replace: vi.fn() },
+  router: { replace: vi.fn(), currentRoute: { value: { fullPath: '/wallets/42?tab=ledger' } } },
+}))
+
+vi.mock('@/router/postLoginRedirect', () => ({
+  rememberPostLoginRedirect: vi.fn(),
+  forgetPostLoginRedirect: vi.fn(),
 }))
 
 vi.mock('@/stores/resetUserStores', () => ({
@@ -105,6 +111,16 @@ describe('auth store', () => {
     expect(resetUserStores).toHaveBeenCalledOnce()
   })
 
+  it('forgets any remembered path on an explicit logout', async () => {
+    vi.mocked(authApi.logout).mockResolvedValue(undefined)
+    const store = useAuthStore()
+
+    await store.logout()
+
+    expect(forgetPostLoginRedirect).toHaveBeenCalledOnce()
+    expect(rememberPostLoginRedirect).not.toHaveBeenCalled()
+  })
+
   it('still clears the session and the user stores when the logout navigation fails', async () => {
     vi.mocked(authApi.logout).mockResolvedValue(undefined)
     vi.mocked(router.replace).mockRejectedValueOnce(new Error('navigation aborted'))
@@ -158,6 +174,19 @@ describe('auth store', () => {
       expect(store.session).toBeNull()
       expect(resetUserStores).toHaveBeenCalledOnce()
     })
+
+    it.each(['expired', 'inactivity'] as const)(
+      'remembers the current path when the session ends as %s',
+      async (reason) => {
+        vi.mocked(authApi.logout).mockResolvedValue(undefined)
+        const store = signedInStore()
+
+        await store.expireSession(reason)
+
+        expect(rememberPostLoginRedirect).toHaveBeenCalledWith('/wallets/42?tab=ledger')
+        expect(forgetPostLoginRedirect).not.toHaveBeenCalled()
+      },
+    )
 
     it('ignores a failing server logout, since the server session is already gone', async () => {
       vi.mocked(authApi.logout).mockRejectedValue({ response: { status: 401 } })

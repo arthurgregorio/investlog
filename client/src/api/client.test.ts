@@ -7,6 +7,7 @@ const auth = vi.hoisted(() => ({
   expireSession: vi.fn(),
 }))
 const routerPush = vi.hoisted(() => vi.fn())
+const rememberPostLoginRedirect = vi.hoisted(() => vi.fn())
 
 vi.mock('buefy', async (importOriginal) => ({
   ...(await importOriginal<typeof import('buefy')>()),
@@ -15,8 +16,12 @@ vi.mock('buefy', async (importOriginal) => ({
   },
 }))
 vi.mock('@/router', () => ({
-  router: { currentRoute: { value: { name: 'investments' } }, push: routerPush },
+  router: {
+    currentRoute: { value: { name: 'investments', fullPath: '/investments?type=STOCK' } },
+    push: routerPush,
+  },
 }))
+vi.mock('@/router/postLoginRedirect', () => ({ rememberPostLoginRedirect }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => auth }))
 
 import { apiClient } from './client'
@@ -90,6 +95,7 @@ describe('apiClient session handling', () => {
     vi.useFakeTimers({ now: new Date('2026-10-12T10:00:00Z') })
     toastOpen.mockClear()
     routerPush.mockClear()
+    rememberPostLoginRedirect.mockClear()
     auth.expireSession.mockClear()
     auth.session = null
   })
@@ -145,7 +151,19 @@ describe('apiClient session handling', () => {
     await expect(apiClient.get('/wallets')).rejects.toBeInstanceOf(AxiosError)
 
     expect(auth.expireSession).not.toHaveBeenCalled()
+    expect(rememberPostLoginRedirect).toHaveBeenCalledWith('/investments?type=STOCK')
     expect(routerPush).toHaveBeenCalledWith({ name: 'login' })
+  })
+
+  it('leaves a 401 from the boot-time session probe to the router guard', async () => {
+    apiClient.defaults.adapter = rejectWith(401, {})
+
+    await expect(apiClient.get('/auth/session')).rejects.toBeInstanceOf(AxiosError)
+
+    expect(auth.expireSession).not.toHaveBeenCalled()
+    expect(rememberPostLoginRedirect).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+    expect(toastOpen).not.toHaveBeenCalled()
   })
 })
 
