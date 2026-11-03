@@ -23,6 +23,7 @@ import type {
 vi.mock('@/api/holdings', () => ({
   holdingsApi: {
     findAll: vi.fn(),
+    findAllForReport: vi.fn(),
     downloadReportPdf: vi.fn(),
     getStockHolding: vi.fn(),
     getCryptoHolding: vi.fn(),
@@ -152,7 +153,21 @@ const holdingTypes: HoldingType[] = [
   { id: 'type-3', name: 'Renda Fixa', kinds: ['FUNDS'], usageCount: 1 },
   { id: 'type-4', name: 'Moeda', kinds: ['CRYPTO'], usageCount: 1 },
   { id: 'type-5', name: 'Token', kinds: ['CRYPTO'], usageCount: 0 },
+  { id: 'type-6', name: 'VGBL', kinds: ['FUNDS'], usageCount: 1 },
 ]
+
+const heldRows: HoldingRow[] = [
+  { ...stockRow, id: 'holding-5', ticker: 'HGLG11', typeLabel: 'FII' },
+  stockRow,
+  { ...stockRow, id: 'holding-6', ticker: 'MXRF11', typeLabel: 'FII' },
+  unpricedRow,
+  { ...cryptoRow, typeLabel: 'Moeda' },
+  fundRow,
+]
+
+function heldRowsOf(kind: string | undefined) {
+  return heldRows.filter((row) => row.kind === kind)
+}
 
 interface MountOptions {
   query?: string
@@ -311,6 +326,9 @@ describe('InvestmentsView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(holdingsApi.downloadReportPdf).mockReturnValue(new Promise(() => {}))
+    vi.mocked(holdingsApi.findAllForReport).mockImplementation(async (params) =>
+      heldRowsOf(params.kind),
+    )
   })
 
   afterEach(() => {
@@ -324,7 +342,6 @@ describe('InvestmentsView', () => {
     it('loads the lookup stores and the first unfiltered page when it mounts', async () => {
       const { initialLoad } = await mountView()
 
-      expect(useTypesListStore().load).toHaveBeenCalledTimes(1)
       expect(useWalletsStore().load).toHaveBeenCalledTimes(1)
       expect(useCurrencyStore().load).toHaveBeenCalledTimes(1)
       expect(useRatesStore().load).toHaveBeenCalledTimes(1)
@@ -707,21 +724,69 @@ describe('InvestmentsView', () => {
       expect(wrapper.get('[data-testid="type-hint"]').text()).toBe(
         'Escolha um tipo de carteira para filtrar por tipo de ativo.',
       )
+      expect(holdingsApi.findAllForReport).not.toHaveBeenCalled()
     })
 
-    it('offers the crypto types under Cripto and the fund types under Fundos', async () => {
+    it('offers only the types the user holds in the class, leaving out registered but unheld ones', async () => {
       const { wrapper } = await mountView()
 
       await classRadio(wrapper, 'CRYPTO').trigger('change')
       await flushPromises()
-      expect(typeLabels(wrapper)).toEqual(['Moeda', 'Token'])
+      expect(holdingsApi.findAllForReport).toHaveBeenLastCalledWith({
+        kind: 'CRYPTO',
+        hideFrozen: undefined,
+      })
+      expect(typeLabels(wrapper)).toEqual(['Moeda'])
 
       await classRadio(wrapper, 'FUNDS').trigger('change')
       await flushPromises()
       expect(typeLabels(wrapper)).toEqual(['Renda Fixa'])
+
+      await classRadio(wrapper, 'all').trigger('change')
+      await flushPromises()
+      expect(typeLabels(wrapper)).toEqual([])
     })
 
-    it('offers the stock types under Ações and filters by several of them', async () => {
+    it('says no investment carries a type when the wallet kind has none', async () => {
+      vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([unpricedRow])
+      const { wrapper } = await mountView({ query: '?filter=STOCKS' })
+
+      expect(typeLabels(wrapper)).toEqual([])
+      expect(wrapper.get('[data-testid="type-hint"]').text()).toBe(
+        'Nenhum investimento com tipo de ativo neste tipo de carteira.',
+      )
+    })
+
+    it('keeps the type list of the class selected last when an older request answers late', async () => {
+      let answerStocks: (rows: HoldingRow[]) => void = () => {}
+      vi.mocked(holdingsApi.findAllForReport).mockImplementation((params) =>
+        params.kind === 'STOCKS'
+          ? new Promise((resolve) => (answerStocks = resolve))
+          : Promise.resolve(heldRowsOf(params.kind)),
+      )
+      const { wrapper } = await mountView({ query: '?filter=STOCKS' })
+
+      await classRadio(wrapper, 'FUNDS').trigger('change')
+      await flushPromises()
+      answerStocks(heldRowsOf('STOCKS'))
+      await flushPromises()
+
+      expect(typeLabels(wrapper)).toEqual(['Renda Fixa'])
+    })
+
+    it('reloads the held types without frozen holdings once the box is checked', async () => {
+      const { wrapper } = await mountView({ query: '?filter=STOCKS' })
+
+      await hideFrozenCheckbox(wrapper).setValue(true)
+      await flushPromises()
+
+      expect(holdingsApi.findAllForReport).toHaveBeenLastCalledWith({
+        kind: 'STOCKS',
+        hideFrozen: true,
+      })
+    })
+
+    it('offers each held stock type once, A→Z, and filters by several of them', async () => {
       const { wrapper, router, holdingsListStore } = await mountView({ query: '?filter=STOCKS' })
 
       expect(typeLabels(wrapper)).toEqual(['Ação PN', 'FII'])
@@ -742,10 +807,11 @@ describe('InvestmentsView', () => {
       })
     })
 
-    it('offers the fund types under Fundos', async () => {
+    it('does not offer a fund type that only another account holds', async () => {
       const { wrapper } = await mountView({ query: '?filter=FUNDS' })
 
       expect(typeLabels(wrapper)).toEqual(['Renda Fixa'])
+      expect(wrapper.find('[data-testid="type-VGBL"]').exists()).toBe(false)
     })
   })
 
@@ -1354,6 +1420,25 @@ describe('InvestmentsView', () => {
       expect(holdingsApi.deleteStockLot).toHaveBeenCalledWith('wallet-1', 'holding-1', 'lot-1')
       expect(holdingsListStore.refresh).toHaveBeenCalledTimes(1)
       expect(drawerOpen()).toBe(true)
+    })
+
+    it('reloads the held types after a position changes', async () => {
+      vi.mocked(holdingsApi.getStockHolding).mockResolvedValue(stockDetail)
+      vi.mocked(holdingsApi.deleteStockLot).mockResolvedValue(undefined)
+      const { wrapper } = await mountView({ query: '?filter=STOCKS', rows: [stockRow] })
+      await bodyRows(wrapper)[0].trigger('click')
+      await flushPromises()
+      expect(typeLabels(wrapper)).toEqual(['Ação PN', 'FII'])
+      vi.mocked(holdingsApi.findAllForReport).mockResolvedValue([stockRow])
+
+      document.body
+        .querySelector<HTMLElement>('[data-testid="ledger-delete"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await flushPromises()
+      dialogButton('Remover').click()
+      await flushPromises()
+
+      expect(typeLabels(wrapper)).toEqual(['Ação PN'])
     })
 
     it('opens the purchase modal from the row without opening the drawer', async () => {

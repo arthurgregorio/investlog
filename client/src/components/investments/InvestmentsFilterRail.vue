@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { InvestmentKindFilter } from '@/composables/useInvestmentFilters'
 import { WALLET_TYPES } from '@/utils/walletTypes'
-import type { AssetType, WalletResponse } from '@/types'
+import type { WalletResponse } from '@/types'
 
 const props = defineProps<{
   activeFilter: InvestmentKindFilter
@@ -12,7 +12,7 @@ const props = defineProps<{
   activeFilterCount: number
   classCounts: Partial<Record<InvestmentKindFilter, number>>
   walletOptions: WalletResponse[]
-  typeOptions: AssetType[]
+  typeOptions: readonly string[]
 }>()
 
 const emit = defineEmits<{
@@ -33,7 +33,7 @@ const CLASSES: { value: InvestmentKindFilter; label: string }[] = [
 const typeHint = computed(() =>
   props.activeFilter === 'all'
     ? 'Escolha um tipo de carteira para filtrar por tipo de ativo.'
-    : 'Nenhum tipo de ativo cadastrado para este tipo de carteira.',
+    : 'Nenhum investimento com tipo de ativo neste tipo de carteira.',
 )
 
 function classDot(filter: InvestmentKindFilter) {
@@ -98,14 +98,14 @@ function classDot(filter: InvestmentKindFilter) {
       <legend class="is-sr-only">Tipo de ativo</legend>
       <p class="rail-title" aria-hidden="true">Tipo de ativo</p>
       <template v-if="typeOptions.length > 0">
-        <label v-for="assetType in typeOptions" :key="assetType.id" class="rail-option">
+        <label v-for="typeLabel in typeOptions" :key="typeLabel" class="rail-option">
           <input
             type="checkbox"
-            :checked="typeLabels.includes(assetType.name)"
-            :data-testid="`type-${assetType.name}`"
-            @change="emit('toggle-type', assetType.name)"
+            :checked="typeLabels.includes(typeLabel)"
+            :data-testid="`type-${typeLabel}`"
+            @change="emit('toggle-type', typeLabel)"
           />
-          <span class="rail-label">{{ assetType.name }}</span>
+          <span class="rail-label">{{ typeLabel }}</span>
         </label>
       </template>
       <p v-else class="rail-hint" data-testid="type-hint">{{ typeHint }}</p>

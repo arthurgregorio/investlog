@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import InvestmentsFilterRail from './InvestmentsFilterRail.vue'
 import type { InvestmentKindFilter } from '@/composables/useInvestmentFilters'
-import type { AssetType, WalletResponse } from '@/types'
+import type { WalletResponse } from '@/types'
 
 function walletOf(id: string, name: string, kind: WalletResponse['kind'], holdingCount: number) {
   return {
@@ -21,10 +21,7 @@ function walletOf(id: string, name: string, kind: WalletResponse['kind'], holdin
   } satisfies WalletResponse
 }
 
-const stockTypes: AssetType[] = [
-  { id: 'type-1', name: 'FII', usageCount: 1 },
-  { id: 'type-2', name: 'ETF', usageCount: 1 },
-]
+const stockTypes = ['FII', 'ETF']
 
 interface RailProps {
   activeFilter: InvestmentKindFilter
@@ -34,7 +31,7 @@ interface RailProps {
   activeFilterCount: number
   classCounts: Partial<Record<InvestmentKindFilter, number>>
   walletOptions: WalletResponse[]
-  typeOptions: AssetType[]
+  typeOptions: string[]
 }
 
 function mountRail(props: Partial<RailProps> = {}) {
@@ -130,7 +127,7 @@ describe('InvestmentsFilterRail', () => {
 
   it.each([
     ['all', 'Escolha um tipo de carteira para filtrar por tipo de ativo.'],
-    ['CRYPTO', 'Nenhum tipo de ativo cadastrado para este tipo de carteira.'],
+    ['CRYPTO', 'Nenhum investimento com tipo de ativo neste tipo de carteira.'],
   ] as const)('explains the missing types under %s', (activeFilter, hint) => {
     const wrapper = mountRail({ activeFilter, typeOptions: [] })
 
