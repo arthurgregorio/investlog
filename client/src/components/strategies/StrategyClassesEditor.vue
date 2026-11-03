@@ -95,6 +95,11 @@ function toggle(classId: string) {
   expandedClassId.value = expandedClassId.value === classId ? null : classId
 }
 
+function toggleFromRow(event: MouseEvent, classId?: string) {
+  if (!classId || (event.target as Element).closest('input, button, .control')) return
+  toggle(classId)
+}
+
 async function save() {
   if (!canSave.value) return
   saving.value = true
@@ -182,8 +187,12 @@ async function save() {
               v-for="(strategyClass, index) in classes"
               :key="strategyClass.key"
               class="inv-row"
-              :class="{ 'is-current': !!strategyClass.id && expandedClassId === strategyClass.id }"
+              :class="{
+                'is-clickable': !!strategyClass.id,
+                'is-current': !!strategyClass.id && expandedClassId === strategyClass.id,
+              }"
               data-testid="class-row"
+              @click="toggleFromRow($event, strategyClass.id)"
             >
               <td>
                 <div class="is-flex is-align-items-center is-gap-2">

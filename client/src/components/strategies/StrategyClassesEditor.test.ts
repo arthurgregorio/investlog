@@ -122,6 +122,24 @@ describe('StrategyClassesEditor', () => {
     expect(wrapper.emitted('delete')).toHaveLength(1)
   })
 
+  it('expands a saved class from anywhere on its row except its fields', async () => {
+    const wrapper = mountEditor()
+
+    await wrapper.findAll('[data-testid="class-row"] td')[2].trigger('click')
+    expect(wrapper.emitted('update:expandedClassId')).toEqual([['class-brazil']])
+
+    await wrapper.findAll('input[data-testid="class-name"]')[1].trigger('click')
+    await targetInputs(wrapper)[1].trigger('click')
+    await wrapper.findAll('[data-testid="remove-class"]')[1].trigger('click')
+    expect(wrapper.emitted('update:expandedClassId')).toHaveLength(1)
+
+    await wrapper.find('[data-testid="add-class"]').trigger('click')
+    const newRow = wrapper.findAll('[data-testid="class-row"]')[1]
+    expect(newRow.classes()).not.toContain('is-clickable')
+    await newRow.findAll('td')[2].trigger('click')
+    expect(wrapper.emitted('update:expandedClassId')).toHaveLength(1)
+  })
+
   it('reloads the draft when the strategy changes', async () => {
     const wrapper = mountEditor()
 
