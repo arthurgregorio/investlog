@@ -125,7 +125,7 @@ kotlin {
     compilerOptions {
         jvmTarget.set(JVM_25)
         languageVersion.set(KOTLIN_2_4)
-        freeCompilerArgs.addAll("-Xjsr305=strict")
+        freeCompilerArgs.addAll("-Xjsr305=strict", "-Xemit-jvm-type-annotations")
     }
 }
 

@@ -4,5 +4,5 @@ import jakarta.validation.Valid
 import jakarta.validation.constraints.NotEmpty
 
 data class ClassAssignmentRequest(
-    @field:NotEmpty @field:Valid val holdings: List<HoldingReferenceRequest>,
+    @field:NotEmpty val holdings: List<@Valid HoldingReferenceRequest>,
 )
