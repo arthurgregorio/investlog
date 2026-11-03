@@ -5,6 +5,7 @@ import type { KindSummary } from '@/types'
 const stocksSummary: KindSummary = {
   kind: 'STOCKS',
   holdingCount: 3,
+  walletCount: 2,
   totalCostBasis: 6000,
   totalCurrentValue: 7500,
   totalGain: 1500,

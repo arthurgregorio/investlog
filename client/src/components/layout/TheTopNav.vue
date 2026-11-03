@@ -106,11 +106,11 @@ function isActive(item: NavItem): boolean {
         </template>
       </div>
       <div class="topnav-total">
-        <span class="tn-label">Total investido</span>
+        <span class="tn-label">Patrimônio</span>
         <span class="tn-value">
           {{
             fmt.money(
-              overviewStore.summary?.totalCostBasis ?? 0,
+              overviewStore.summary?.totalCurrentValue ?? 0,
               overviewStore.summary?.displayCurrency,
               { compact: true },
             )

@@ -1,91 +1,105 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import EvolutionCard from './EvolutionCard.vue'
-import AreaChart from '@/components/charts/AreaChart.vue'
+import PatrimonyChart from '@/components/charts/PatrimonyChart.vue'
 import type { SeriesPoint } from '@/types'
 
-const AreaChartStub = {
-  props: ['data', 'stackedData', 'xLabels', 'fmtY', 'color', 'stackedColor', 'height'],
-  template: '<div class="area-chart-stub" />',
+const PatrimonyChartStub = {
+  props: ['ownMoney', 'result', 'labels', 'markerIndex', 'markerLabel', 'fmtY'],
+  template: '<div class="patrimony-chart-stub" />',
 }
 
-function pointOf(month: string, ownMoney: number, reinvestedProfit: number): SeriesPoint {
-  return { month, ownMoney, reinvestedProfit, totalInvested: ownMoney + reinvestedProfit }
+function pointOf(
+  month: string,
+  ownMoney: number,
+  result: number,
+  marketValued = false,
+): SeriesPoint {
+  return {
+    month,
+    ownMoney,
+    reinvestedProfit: 0,
+    totalInvested: ownMoney,
+    result,
+    marketValued,
+  }
 }
 
 function mountCard(series: SeriesPoint[], currency = 'BRL') {
   return mount(EvolutionCard, {
     props: { series, currency },
-    global: { stubs: { AreaChart: AreaChartStub } },
+    global: { stubs: { PatrimonyChart: PatrimonyChartStub } },
     attachTo: document.body,
   })
 }
 
 describe('EvolutionCard', () => {
-  it('stacks reinvested profit on own money with month labels and shows the latest total', () => {
-    const wrapper = mountCard([pointOf('2026-01', 1000, 0), pointOf('2026-02', 3000, 1000)])
-
-    const chart = wrapper.findComponent(AreaChart)
-
-    expect(chart.props('data')).toEqual([1000, 3000])
-    expect(chart.props('stackedData')).toEqual([0, 1000])
-    expect(chart.props('color')).toBe('var(--primary)')
-    expect(chart.props('stackedColor')).toBe('var(--chart-6)')
-    expect(chart.props('xLabels')).toEqual(['jan/26', 'fev/26'])
-    expect(wrapper.get('.chart-big').text()).toBe('R$ 4,0k')
-    expect(wrapper.get('.chart-title').text()).toBe('Evolução dos aportes')
-    expect(wrapper.get('.sub-caption').text()).toBe('Capital próprio + lucro reinvestido · BRL')
-  })
-
-  it('lists both layers below the chart with their share and latest value', () => {
-    const wrapper = mountCard([pointOf('2026-02', 3000, 1000)])
-
-    const rows = wrapper.findAll('[data-testid="allocation-legend-entry"]')
-    expect(rows.map((row) => row.get('[data-testid="allocation-legend-hint"]').text())).toEqual([
-      'Capital próprio',
-      'Lucro reinvestido',
+  it('draws own money and the result per month and marks where the daily records start', () => {
+    const wrapper = mountCard([
+      pointOf('2026-08', 1000, 50),
+      pointOf('2026-09', 3000, 200, true),
+      pointOf('2026-10', 3000, 400, true),
     ])
-    expect(rows.map((row) => row.get('.legend-pct').text())).toEqual(['75,00%', '25,00%'])
-    expect(rows.map((row) => row.get('.legend-value').text())).toEqual(['R$ 3,0k', 'R$ 1,0k'])
+
+    const chart = wrapper.findComponent(PatrimonyChart)
+
+    expect(chart.props('ownMoney')).toEqual([1000, 3000, 3000])
+    expect(chart.props('result')).toEqual([50, 200, 400])
+    expect(chart.props('labels')).toEqual(['ago/26', 'set/26', 'out/26'])
+    expect(chart.props('markerIndex')).toBe(1)
+    expect(chart.props('markerLabel')).toBe('início dos registros diários')
+    expect(wrapper.get('.chart-title').text()).toBe('Patrimônio mês a mês')
+    expect(wrapper.get('.sub-caption').text()).toBe('Capital próprio + resultado total · BRL')
+    expect(wrapper.get('.chart-big').text()).toBe('R$ 3,4k')
   })
 
-  it('explains each layer in a tooltip on its label', () => {
-    const wrapper = mountCard([pointOf('2026-02', 3000, 1000)])
+  it('has no marker while no month is market valued', () => {
+    const wrapper = mountCard([pointOf('2026-08', 1000, 0), pointOf('2026-09', 2000, 0)])
 
-    const tooltips = wrapper.findAll('.b-tooltip')
-    expect(tooltips).toHaveLength(2)
-    expect(tooltips[0]!.text()).toContain(
-      'Dinheiro novo que você colocou nas carteiras, menos o que sacou para o banco.',
-    )
-    expect(tooltips[1]!.text()).toContain(
-      'Lucro de resgates que voltou para compras em vez de sair do InvestLog.',
-    )
+    expect(wrapper.findComponent(PatrimonyChart).props('markerIndex')).toBeNull()
   })
 
-  it('pads a single point with a leading zero in both layers', () => {
-    const chart = mountCard([pointOf('2026-03', 2000, 500)]).findComponent(AreaChart)
+  it('pads a single point with a leading zero and shifts the marker with it', () => {
+    const wrapper = mountCard([pointOf('2026-11', 2500, 100, true)])
 
-    expect(chart.props('data')).toEqual([0, 2000])
-    expect(chart.props('stackedData')).toEqual([0, 500])
-    expect(chart.props('xLabels')).toEqual(['', 'mar/26'])
+    const chart = wrapper.findComponent(PatrimonyChart)
+    expect(chart.props('ownMoney')).toEqual([0, 2500])
+    expect(chart.props('result')).toEqual([0, 100])
+    expect(chart.props('labels')).toEqual(['', 'nov/26'])
+    expect(chart.props('markerIndex')).toBe(1)
   })
 
-  it('draws flat zero layers and zero shares when there is no history', () => {
+  it('draws a flat zero line when there is no history', () => {
     const wrapper = mountCard([])
 
-    expect(wrapper.findComponent(AreaChart).props('data')).toEqual([0, 0])
-    expect(wrapper.findComponent(AreaChart).props('stackedData')).toEqual([0, 0])
+    const chart = wrapper.findComponent(PatrimonyChart)
+    expect(chart.props('ownMoney')).toEqual([0, 0])
+    expect(chart.props('labels')).toEqual(['', ''])
     expect(wrapper.get('.chart-big').text()).toBe('R$ 0,00')
-    expect(wrapper.findAll('.legend-pct').map((cell) => cell.text())).toEqual(['0%', '0%'])
+    expect(wrapper.findAll('.legend-pct').map((share) => share.text())).toEqual(['0%', '0%'])
   })
 
-  it('labels the axis in the given currency, in thousands above one thousand', () => {
-    const wrapper = mountCard([], 'USD')
+  it('names the result layer by its sign in the legend', () => {
+    const gain = mountCard([pointOf('2026-11', 3000, 1000)])
+    const gainRows = gain.findAll('[data-testid="allocation-legend-entry"]')
+    expect(gainRows.map((row) => row.get('[data-testid="allocation-legend-hint"]').text())).toEqual(
+      ['Capital próprio', 'Resultado total'],
+    )
+    expect(gainRows.map((row) => row.get('.legend-pct').text())).toEqual(['75,00%', '25,00%'])
 
-    const formatAxis = wrapper.findComponent(AreaChart).props('fmtY') as (value: number) => string
+    const loss = mountCard([pointOf('2026-11', 3000, -500)])
+    expect(loss.findAll('[data-testid="allocation-legend-hint"]')[1]!.text()).toBe('Perda total')
+  })
+
+  it('formats the axis ticks in thousands above one thousand, also below zero', () => {
+    const wrapper = mountCard([pointOf('2026-11', 3000, 0)], 'USD')
+
+    const formatAxis = wrapper.findComponent(PatrimonyChart).props('fmtY') as (
+      value: number,
+    ) => string
 
     expect(formatAxis(500)).toBe('US$ 500')
     expect(formatAxis(12000)).toBe('US$ 12k')
-    expect(wrapper.get('.sub-caption').text()).toContain('USD')
+    expect(formatAxis(-2000)).toBe('US$ -2k')
   })
 })

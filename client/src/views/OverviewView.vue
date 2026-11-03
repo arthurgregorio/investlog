@@ -2,21 +2,22 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import KpiCard from '@/components/ui/KpiCard.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import OverviewHealthCard from '@/components/overview/OverviewHealthCard.vue'
 import EvolutionCard from '@/components/overview/EvolutionCard.vue'
-import AllocationCard from '@/components/overview/AllocationCard.vue'
+import ThisMonthCard from '@/components/overview/ThisMonthCard.vue'
 import TypeSummaryCard from '@/components/overview/TypeSummaryCard.vue'
+import CashSummaryCard from '@/components/overview/CashSummaryCard.vue'
 import { useOverviewStore } from '@/stores/overview'
 import { useWalletsStore } from '@/stores/wallets'
 import { useModals } from '@/composables/useModals'
-import { fmt } from '@/composables/useFormat'
 import { walletKindRows } from '@/utils/walletKindRows'
 import type { WalletKind } from '@/types'
 
 const overviewStore = useOverviewStore()
 const walletsStore = useWalletsStore()
 const router = useRouter()
-useModals()
+const { openCreateWallet } = useModals()
 
 onMounted(() => {
   Promise.all([overviewStore.refresh(), walletsStore.load()])
@@ -27,8 +28,13 @@ const baseCurrency = computed(() => summary.value?.displayCurrency ?? 'BRL')
 const kindRows = computed(() =>
   walletKindRows(summary.value?.kindSummaries ?? [], walletsStore.wallets),
 )
-const totalHoldings = computed(() => kindRows.value.reduce((sum, row) => sum + row.holdings, 0))
-const resultClass = computed(() => ((summary.value?.totalGain ?? 0) >= 0 ? 'gl-up' : 'gl-down'))
+const hasNothing = computed(
+  () =>
+    !!summary.value &&
+    summary.value.kindSummaries.length === 0 &&
+    summary.value.totalCash === 0 &&
+    overviewStore.series.length === 0,
+)
 
 function gotoType(kind: WalletKind) {
   router.push({ name: 'investments', query: { filter: kind } })
@@ -39,74 +45,71 @@ function gotoType(kind: WalletKind) {
   <div class="page">
     <b-loading :is-full-page="false" :model-value="overviewStore.loading" />
 
-    <PageHeader title="Visão geral" description="Uma visão consolidada dos seus investimentos">
-      <b-button type="is-primary" icon-left="wallet" @click="router.push({ name: 'wallets' })"
-        >Carteiras</b-button
-      >
-    </PageHeader>
+    <PageHeader
+      title="Visão geral"
+      description="Quanto você colocou, quanto rendeu e onde está o seu dinheiro"
+    />
 
     <template v-if="summary">
-      <div class="fixed-grid has-3-cols has-1-cols-mobile">
-        <div class="grid">
-          <div class="cell">
-            <KpiCard
-              data-testid="kpi"
-              label="Total investido"
-              :value="fmt.money(summary.totalCostBasis, baseCurrency, { compact: true })"
-            >
-              <template #foot>
-                <span class="kpi-sub">
-                  {{ walletsStore.wallets.length }} carteiras · {{ totalHoldings }} investimentos
-                </span>
-              </template>
-            </KpiCard>
-          </div>
-          <div class="cell">
-            <KpiCard
-              data-testid="kpi"
-              label="Valor atual estimado"
-              :value="fmt.money(summary.totalCurrentValue, baseCurrency, { compact: true })"
-            >
-              <template #foot><span class="kpi-sub">posições com valor atual</span></template>
-            </KpiCard>
-          </div>
-          <div class="cell">
-            <KpiCard
-              data-testid="kpi"
-              label="Resultado"
-              :value="fmt.moneySigned(summary.totalGain, baseCurrency, { compact: true })"
-              :value-class="resultClass"
-            >
-              <template #foot>
-                <span class="is-size-7" :class="resultClass">
-                  {{ fmt.pctSigned(summary.totalGainPct ?? 0) }}
-                </span>
-                <span class="kpi-sub">sobre posições avaliadas</span>
-              </template>
-            </KpiCard>
-          </div>
-        </div>
-      </div>
+      <EmptyState
+        v-if="hasNothing"
+        icon="chart-areaspline"
+        title="Nada para resumir ainda"
+        text="Assim que você criar uma carteira e registrar um investimento, esta página mostra quanto você colocou, quanto rendeu e onde está o dinheiro."
+      >
+        <template #action>
+          <b-button type="is-primary" icon-left="plus" class="mt-4" @click="openCreateWallet()"
+            >Criar carteira</b-button
+          >
+        </template>
+      </EmptyState>
 
-      <div class="fixed-grid has-3-cols has-1-cols-mobile">
-        <div class="grid">
-          <div class="cell is-col-span-2">
-            <EvolutionCard :series="overviewStore.series" :currency="baseCurrency" />
-          </div>
-          <div class="cell">
-            <AllocationCard :currency="baseCurrency" />
-          </div>
-        </div>
-      </div>
+      <template v-else>
+        <OverviewHealthCard
+          :summary="summary"
+          :currency="baseCurrency"
+          @view-results="router.push({ name: 'overview-results' })"
+          @view-investments="router.push({ name: 'investments' })"
+        />
 
-      <div class="section-label">Por tipo de carteira</div>
-      <div class="fixed-grid has-3-cols has-1-cols-mobile">
-        <div class="grid">
-          <div v-for="row in kindRows" :key="row.key" class="cell">
-            <TypeSummaryCard :row="row" :currency="baseCurrency" @goto-type="gotoType" />
+        <div class="fixed-grid has-3-cols has-1-cols-mobile">
+          <div class="grid">
+            <div class="cell is-col-span-2">
+              <EvolutionCard :series="overviewStore.series" :currency="baseCurrency" />
+            </div>
+            <div v-if="overviewStore.month" class="cell">
+              <ThisMonthCard
+                :month="overviewStore.month"
+                :unpriced-count="summary.unpricedHoldingCount"
+                :currency="baseCurrency"
+                @view-investments="router.push({ name: 'investments' })"
+              />
+            </div>
           </div>
         </div>
-      </div>
+
+        <div class="section-label">Onde está o dinheiro</div>
+        <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
+          <div class="grid">
+            <div v-for="row in kindRows" :key="row.key" class="cell">
+              <TypeSummaryCard
+                :row="row"
+                :currency="baseCurrency"
+                @goto-type="gotoType"
+                @create-wallet="openCreateWallet"
+              />
+            </div>
+            <div class="cell">
+              <CashSummaryCard
+                :cash="summary.totalCash"
+                :wallet-count="summary.cashWalletCount"
+                :currency="baseCurrency"
+                @view="router.push({ name: 'wallets' })"
+              />
+            </div>
+          </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>

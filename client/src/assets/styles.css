@@ -459,6 +459,33 @@ a {
   border-radius: 9px;
 }
 
+.type-name {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.type-value {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-card {
+  height: 100%;
+}
+
+.summary-card > .card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.button.overview-link {
+  height: auto;
+  padding-inline: 0;
+}
+
 .result-row {
   display: flex;
   align-items: center;

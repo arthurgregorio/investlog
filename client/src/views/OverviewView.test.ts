@@ -3,67 +3,78 @@ import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import OverviewView from './OverviewView.vue'
-import AreaChart from '@/components/charts/AreaChart.vue'
 import { ModalKey } from '@/composables/useModals'
 import { useOverviewStore } from '@/stores/overview'
 import { useWalletsStore } from '@/stores/wallets'
-import { overviewApi } from '@/api/overview'
-import type { PortfolioSummary, SeriesPoint, WalletKind, WalletResponse } from '@/types'
+import type {
+  MonthSummary,
+  PortfolioSummary,
+  SeriesPoint,
+  WalletKind,
+  WalletResponse,
+} from '@/types'
 
-vi.mock('@/api/overview', () => ({
-  overviewApi: {
-    getAllocation: vi.fn().mockResolvedValue({
-      groupBy: 'STRATEGY',
-      displayCurrency: 'BRL',
-      totalValue: 12000,
-      groups: [
-        {
-          id: 'strategy-long',
-          label: 'Longo prazo',
-          holdingCount: 3,
-          value: 12000,
-          percentage: 100,
-        },
-      ],
-    }),
-  },
-}))
+vi.mock('@/api/overview', () => ({ overviewApi: {} }))
 vi.mock('@/api/wallets', () => ({ walletsApi: {} }))
 
-const AreaChartStub = {
-  props: ['data', 'xLabels', 'fmtY'],
-  template: '<div class="area-chart-stub" />',
-}
-const DonutChartStub = {
-  props: ['segments'],
-  template: '<div class="donut-chart-stub"><slot /></div>',
+const PatrimonyChartStub = {
+  props: ['ownMoney', 'result', 'labels', 'markerIndex', 'markerLabel', 'fmtY'],
+  template: '<div class="patrimony-chart-stub" />',
 }
 
 const summary: PortfolioSummary = {
   displayCurrency: 'BRL',
   totalCostBasis: 10000,
-  totalCurrentValue: 12000,
-  totalCash: 0,
+  totalCurrentValue: 12500,
+  totalCash: 500,
   totalGain: 2000,
   totalGainPct: 20,
+  positionsValue: 12000,
+  ownMoney: 9000,
+  realizedProfit: 1500,
+  lifetimeResult: 3500,
+  lifetimeResultPct: 38.89,
+  unpricedHoldingCount: 0,
+  cashWalletCount: 1,
   kindSummaries: [
     {
       kind: 'STOCKS',
       holdingCount: 3,
+      walletCount: 2,
       totalCostBasis: 6000,
       totalCurrentValue: 7500,
       totalGain: 1500,
       totalGainPct: 25,
     },
-    {
-      kind: 'CRYPTO',
-      holdingCount: 1,
-      totalCostBasis: 4000,
-      totalCurrentValue: 4500,
-      totalGain: 500,
-      totalGainPct: 12.5,
-    },
   ],
+}
+
+const series: SeriesPoint[] = [
+  {
+    month: '2026-10',
+    ownMoney: 8000,
+    reinvestedProfit: 1000,
+    totalInvested: 9000,
+    result: 1000,
+    marketValued: false,
+  },
+  {
+    month: '2026-11',
+    ownMoney: 9000,
+    reinvestedProfit: 1500,
+    totalInvested: 10500,
+    result: 3500,
+    marketValued: true,
+  },
+]
+
+const month: MonthSummary = {
+  month: '2026-11',
+  contributions: 1000,
+  realizedProfit: 500,
+  currentResultChange: 300,
+  bestMover: null,
+  worstMover: null,
 }
 
 function walletOf(id: string, kind: WalletKind): WalletResponse {
@@ -90,12 +101,18 @@ function flushPromises() {
 async function mountView(options: {
   summary: PortfolioSummary | null
   series?: SeriesPoint[]
+  month?: MonthSummary | null
   wallets?: WalletResponse[]
 }) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/overview', name: 'overview', component: OverviewView },
+      {
+        path: '/overview/resultados',
+        name: 'overview-results',
+        component: { template: '<div />' },
+      },
       { path: '/wallets', name: 'wallets', component: { template: '<div />' } },
       { path: '/investments', name: 'investments', component: { template: '<div />' } },
     ],
@@ -103,34 +120,31 @@ async function mountView(options: {
   router.push('/overview')
   await router.isReady()
 
+  const modals = {
+    openAddInvestment: vi.fn(),
+    openCreateWallet: vi.fn(),
+    openPasswordChange: vi.fn(),
+    openTrustedDevices: vi.fn(),
+  }
   const wrapper = mount(OverviewView, {
     global: {
       plugins: [createTestingPinia(), router],
-      stubs: { AreaChart: AreaChartStub, DonutChart: DonutChartStub },
-      provide: {
-        [ModalKey as symbol]: {
-          openAddInvestment: vi.fn(),
-          openCreateWallet: vi.fn(),
-          openPasswordChange: vi.fn(),
-          openTrustedDevices: vi.fn(),
-        },
-      },
+      stubs: { PatrimonyChart: PatrimonyChartStub },
+      provide: { [ModalKey as symbol]: modals },
     },
   })
   const overviewStore = useOverviewStore()
   overviewStore.summary = options.summary
   overviewStore.series = options.series ?? []
+  overviewStore.month = options.month === undefined ? month : options.month
   useWalletsStore().wallets = options.wallets ?? []
   await flushPromises()
-  return { wrapper, router, overviewStore }
+  return { wrapper, router, overviewStore, modals }
 }
 
-function kpiCards(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('[data-testid="kpi"]')
-}
-
-function typeCard(wrapper: ReturnType<typeof mount>, label: string) {
-  return wrapper.findAll('.type-card').find((card) => card.find('.type-name').text() === label)!
+async function clickTestId(wrapper: ReturnType<typeof mount>, testId: string) {
+  await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+  await flushPromises()
 }
 
 describe('OverviewView', () => {
@@ -145,171 +159,104 @@ describe('OverviewView', () => {
     expect(useWalletsStore().load).toHaveBeenCalledTimes(1)
   })
 
-  it('renders only the heading while there is no summary', async () => {
+  it('renders only the heading, with no header button, while there is no summary', async () => {
     const { wrapper } = await mountView({ summary: null })
 
     expect(wrapper.find('.page-title').text()).toBe('Visão geral')
-    expect(wrapper.find('[data-testid="kpi"]').exists()).toBe(false)
-    expect(wrapper.find('.type-card').exists()).toBe(false)
-    expect(wrapper.find('.area-chart-stub').exists()).toBe(false)
+    expect(wrapper.find('.head-actions').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="overview-health-card"]').exists()).toBe(false)
   })
 
-  it('renders the three summary figures from the store', async () => {
-    const { wrapper } = await mountView({
-      summary,
-      wallets: [walletOf('1', 'STOCKS'), walletOf('2', 'CRYPTO')],
+  it('shows an empty state with a create-wallet action when there is nothing to summarise', async () => {
+    const { wrapper, modals } = await mountView({
+      summary: { ...summary, kindSummaries: [], totalCash: 0 },
+      series: [],
     })
 
-    const cards = kpiCards(wrapper)
-
-    expect(cards).toHaveLength(3)
-    expect(cards[0].text()).toContain('Total investido')
-    expect(cards[0].find('.kpi-value').text()).toBe('R$ 10,0k')
-    expect(cards[0].text()).toContain('2 carteiras · 4 investimentos')
-    expect(cards[1].text()).toContain('Valor atual estimado')
-    expect(cards[1].find('.kpi-value').text()).toBe('R$ 12,0k')
-    expect(cards[2].text()).toContain('Resultado')
-    expect(cards[2].find('.kpi-value').text()).toBe('+R$ 2,0k')
-    expect(cards[2].text()).toContain('+20,00%')
-  })
-
-  it('colours a positive result as a gain and a negative one as a loss', async () => {
-    const gainView = await mountView({ summary })
-    expect(kpiCards(gainView.wrapper)[2].find('.kpi-value').classes()).toContain('gl-up')
-
-    const lossView = await mountView({
-      summary: { ...summary, totalGain: -500, totalGainPct: -5 },
-    })
-    const lossCard = kpiCards(lossView.wrapper)[2]
-
-    expect(lossCard.find('.kpi-value').classes()).toContain('gl-down')
-    expect(lossCard.find('.kpi-value').text()).toBe('−R$ 500,00')
-    expect(lossCard.text()).toContain('−5,00%')
-  })
-
-  it('treats a missing gain percentage as zero', async () => {
-    const { wrapper } = await mountView({ summary: { ...summary, totalGainPct: null } })
-
-    expect(kpiCards(wrapper)[2].text()).toContain('+0,00%')
-  })
-
-  it('lists one type card per kind, including kinds absent from the summary', async () => {
-    const { wrapper } = await mountView({
-      summary,
-      wallets: [walletOf('1', 'STOCKS'), walletOf('2', 'STOCKS'), walletOf('3', 'CRYPTO')],
-    })
-
-    expect(wrapper.findAll('.type-card').map((card) => card.find('.type-name').text())).toEqual([
-      'Ações',
-      'Cripto',
-      'Fundos',
-    ])
-
-    const stocks = typeCard(wrapper, 'Ações')
-    expect(stocks.find('.type-meta').text()).toContain('2 carteiras')
-    expect(stocks.find('.type-meta').text()).toContain('3 ativos')
-    expect(stocks.find('.type-value').text()).toBe('R$ 6,0k')
-    expect(stocks.find('.result-value').text()).toBe('R$ 7,5k')
-    expect(stocks.find('.gl').text()).toContain('+R$ 1,5k')
-    expect(stocks.find('.gl').text()).toContain('+25,00%')
-
-    const crypto = typeCard(wrapper, 'Cripto')
-    expect(crypto.find('.type-meta').text()).toContain('1 carteira')
-    expect(crypto.find('.type-meta').text()).not.toContain('1 carteiras')
-    expect(crypto.find('.type-meta').text()).toContain('1 ativo')
-
-    const funds = typeCard(wrapper, 'Fundos')
-    expect(funds.find('.type-meta').text()).toContain('0 carteiras')
-    expect(funds.find('.type-meta').text()).toContain('0 ativos')
-    expect(funds.find('.type-value').text()).toBe('R$ 0,00')
-    expect(funds.find('.gl-empty').text()).toBe('—')
-  })
-
-  it('shows the allocation card on current value and the wallet-kind section', async () => {
-    const { wrapper } = await mountView({ summary })
-
-    expect(overviewApi.getAllocation).toHaveBeenCalledWith('STRATEGY', undefined)
-    expect(wrapper.find('.alloc-card .chart-title').text()).toBe('Alocação')
-    expect(wrapper.find('.alloc-card .alloc-legend').text()).toContain('Longo prazo')
-    expect(wrapper.findAll('.section-label').map((label) => label.text())).toContain(
-      'Por tipo de carteira',
-    )
-  })
-
-  it('feeds the area chart the invested series with month labels and shows the latest value', async () => {
-    const { wrapper } = await mountView({
-      summary,
-      series: [
-        { month: '2026-01', ownMoney: 1000, reinvestedProfit: 0, totalInvested: 1000 },
-        { month: '2026-02', ownMoney: 4000, reinvestedProfit: 0, totalInvested: 4000 },
-        { month: '2026-03', ownMoney: 10000, reinvestedProfit: 0, totalInvested: 10000 },
-      ],
-    })
-
-    const chart = wrapper.findComponent(AreaChart)
-
-    expect(chart.props('data')).toEqual([1000, 4000, 10000])
-    expect(chart.props('xLabels')).toEqual(['jan/26', 'fev/26', 'mar/26'])
-    expect(wrapper.find('.chart-big').text()).toBe('R$ 10,0k')
-    expect(wrapper.find('.sub-caption').text()).toContain('BRL')
-  })
-
-  it('pads a single-point series with a leading zero so the chart can draw a line', async () => {
-    const { wrapper } = await mountView({
-      summary,
-      series: [{ month: '2026-03', ownMoney: 2500, reinvestedProfit: 0, totalInvested: 2500 }],
-    })
-
-    const chart = wrapper.findComponent(AreaChart)
-
-    expect(chart.props('data')).toEqual([0, 2500])
-    expect(chart.props('xLabels')).toEqual(['', 'mar/26'])
-  })
-
-  it('feeds the area chart a flat zero series when there is no history', async () => {
-    const { wrapper } = await mountView({ summary, series: [] })
-
-    const chart = wrapper.findComponent(AreaChart)
-
-    expect(chart.props('data')).toEqual([0, 0])
-    expect(chart.props('xLabels')).toEqual(['', ''])
-    expect(wrapper.find('.chart-big').text()).toBe('R$ 0,00')
-  })
-
-  it('formats the area chart axis ticks in thousands above one thousand', async () => {
-    const { wrapper } = await mountView({ summary })
-
-    const formatAxis = wrapper.findComponent(AreaChart).props('fmtY') as (value: number) => string
-
-    expect(formatAxis(500)).toBe('R$ 500')
-    expect(formatAxis(12000)).toBe('R$ 12k')
-  })
-
-  it('uses the summary display currency for every figure', async () => {
-    const { wrapper } = await mountView({ summary: { ...summary, displayCurrency: 'USD' } })
-
-    expect(kpiCards(wrapper)[0].find('.kpi-value').text()).toBe('US$ 10,0k')
-    expect(wrapper.find('.sub-caption').text()).toContain('USD')
-  })
-
-  it('opens the investments list filtered by kind when a type card is clicked', async () => {
-    const { wrapper, router } = await mountView({ summary })
-
-    await typeCard(wrapper, 'Cripto').trigger('click')
-    await flushPromises()
-
-    expect(router.currentRoute.value.name).toBe('investments')
-    expect(router.currentRoute.value.query.filter).toBe('CRYPTO')
-  })
-
-  it('navigates to the wallets page from the Carteiras button', async () => {
-    const { wrapper, router } = await mountView({ summary: null })
+    expect(wrapper.find('.empty-title').text()).toBe('Nada para resumir ainda')
+    expect(wrapper.find('[data-testid="overview-health-card"]').exists()).toBe(false)
 
     await wrapper
       .findAll('button')
-      .find((button) => button.text() === 'Carteiras')!
+      .find((button) => button.text() === 'Criar carteira')!
       .trigger('click')
-    await flushPromises()
+
+    expect(modals.openCreateWallet).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders the health card, the chart, the month and the four money cards', async () => {
+    const { wrapper } = await mountView({
+      summary,
+      series,
+      wallets: [walletOf('1', 'STOCKS'), walletOf('2', 'STOCKS')],
+    })
+
+    expect(wrapper.get('[data-testid="lifetime-value"]').text()).toBe('+R$ 3,5k')
+    expect(wrapper.get('[data-testid="current-value"]').text()).toBe('+R$ 2,0k')
+    expect(wrapper.find('.patrimony-chart-stub').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="this-month-card"]').exists()).toBe(true)
+    expect(wrapper.get('.section-label').text()).toBe('Onde está o dinheiro')
+    expect(
+      wrapper
+        .findAll('[data-testid="type-summary-card"]')
+        .map((card) => card.get('.type-name').text()),
+    ).toEqual(['Ações', 'Cripto', 'Fundos'])
+    expect(wrapper.get('[data-testid="cash-summary-card"] .type-value').text()).toBe('R$ 500,00')
+  })
+
+  it('hides the month card until the month summary arrives', async () => {
+    const { wrapper } = await mountView({ summary, month: null })
+
+    expect(wrapper.find('[data-testid="this-month-card"]').exists()).toBe(false)
+  })
+
+  it('leads from the health card to the results dashboard and the investments list', async () => {
+    const { wrapper, router } = await mountView({ summary })
+
+    await clickTestId(wrapper, 'view-results')
+    expect(router.currentRoute.value.name).toBe('overview-results')
+
+    await clickTestId(wrapper, 'view-investments')
+    expect(router.currentRoute.value.name).toBe('investments')
+  })
+
+  it('opens the investments list from the price-status strip', async () => {
+    const { wrapper, router } = await mountView({
+      summary: { ...summary, unpricedHoldingCount: 2 },
+    })
+
+    await clickTestId(wrapper, 'price-status-update')
+
+    expect(router.currentRoute.value.name).toBe('investments')
+  })
+
+  it('opens the investments list filtered by kind from a kind card', async () => {
+    const { wrapper, router } = await mountView({
+      summary,
+      wallets: [walletOf('1', 'STOCKS')],
+    })
+
+    await clickTestId(wrapper, 'type-view')
+
+    expect(router.currentRoute.value.name).toBe('investments')
+    expect(router.currentRoute.value.query.filter).toBe('STOCKS')
+  })
+
+  it('offers to create a wallet of a kind the user has none of', async () => {
+    const { wrapper, modals } = await mountView({
+      summary,
+      wallets: [walletOf('1', 'STOCKS')],
+    })
+
+    await wrapper.findAll('[data-testid="type-create"]')[0]!.trigger('click')
+
+    expect(modals.openCreateWallet).toHaveBeenCalledWith('CRYPTO')
+  })
+
+  it('opens the wallets page from the cash card', async () => {
+    const { wrapper, router } = await mountView({ summary })
+
+    await clickTestId(wrapper, 'cash-view')
 
     expect(router.currentRoute.value.name).toBe('wallets')
   })

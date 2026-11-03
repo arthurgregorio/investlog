@@ -238,6 +238,7 @@ function kindSummaryOf(kind: string, holdingCount: number): KindSummary {
   return {
     kind,
     holdingCount,
+    walletCount: 1,
     totalCostBasis: 0,
     totalCurrentValue: 0,
     totalGain: 0,
@@ -541,6 +542,13 @@ describe('InvestmentsView', () => {
         totalCash: 0,
         totalGain: 23456.78,
         totalGainPct: 23.45,
+        positionsValue: 123456.78,
+        ownMoney: 100000,
+        realizedProfit: 0,
+        lifetimeResult: 23456.78,
+        lifetimeResultPct: 23.45,
+        unpricedHoldingCount: 0,
+        cashWalletCount: 0,
         kindSummaries: [
           kindSummaryOf('STOCKS', 9),
           kindSummaryOf('CRYPTO', 3),
@@ -589,6 +597,13 @@ describe('InvestmentsView', () => {
         totalCash: 0,
         totalGain: 0,
         totalGainPct: null,
+        positionsValue: 0,
+        ownMoney: 0,
+        realizedProfit: 0,
+        lifetimeResult: 0,
+        lifetimeResultPct: null,
+        unpricedHoldingCount: 0,
+        cashWalletCount: 0,
         kindSummaries: [kindSummaryOf('STOCKS', 9), kindSummaryOf('FUNDS', 4)],
       }
       await flushPromises()
