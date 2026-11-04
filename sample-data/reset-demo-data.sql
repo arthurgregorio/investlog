@@ -32,8 +32,8 @@ DELETE FROM finances.strategies WHERE NOT is_default;
 DELETE FROM finances.segments;
 DELETE FROM finances.holding_types;
 
--- 3. Global currency rates. BRL is the base; USD is pinned to the rate the seeded USD wallets and
---    crypto lots were priced against, instead of Liquibase's default (24-1200-make-settings-global.xml,
+-- 3. Global currency rates. BRL is the base; USD is pinned to the rate the seeded USD wallet was
+--    priced against, instead of Liquibase's default (24-1200-make-settings-global.xml,
 --    changeset 24-1200-9).
 DELETE FROM finances.currency_rates;
 INSERT INTO finances.currency_rates (currency_code, rate, is_base)
