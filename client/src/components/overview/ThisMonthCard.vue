@@ -22,7 +22,31 @@ const isEmpty = computed(
 )
 
 const change = computed(() => props.month.currentResultChange)
-const changeIsUp = computed(() => (change.value ?? 0) >= 0)
+const changeIconClass = computed(() => {
+  if (change.value == null) return 'has-background-grey'
+  return change.value >= 0 ? 'has-background-success' : 'has-background-danger'
+})
+
+const moverTiles = computed(() => [
+  {
+    key: 'best',
+    label: 'Maior alta',
+    icon: 'trending-up',
+    tone: 'is-up',
+    labelClass: 'gl-up',
+    mover: props.month.bestMover,
+    missingText: props.month.worstMover ? 'Nenhuma alta' : 'Sem histórico',
+  },
+  {
+    key: 'worst',
+    label: 'Maior queda',
+    icon: 'trending-down',
+    tone: 'is-down',
+    labelClass: 'gl-down',
+    mover: props.month.worstMover,
+    missingText: props.month.bestMover ? 'Nenhuma queda' : 'Sem histórico',
+  },
+])
 
 function moverName(mover: MonthMover): string {
   return mover.ticker ?? mover.name ?? '—'
@@ -56,10 +80,18 @@ function signClass(value: number): string {
               <div class="is-size-7 has-text-grey">capital próprio novo</div>
             </div>
             <div
+              v-if="month.contributions !== 0"
               class="type-value month-value month-figure ml-auto"
               data-testid="month-contributions"
             >
               {{ fmt.money(month.contributions, currency, { compact: true }) }}
+            </div>
+            <div
+              v-else
+              class="month-figure ml-auto has-text-grey has-text-weight-semibold"
+              data-testid="month-contributions"
+            >
+              Nenhum aporte
             </div>
           </div>
           <div class="month-row is-flex is-align-items-center is-gap-1.5">
@@ -85,11 +117,7 @@ function signClass(value: number): string {
             </div>
           </div>
           <div class="month-row is-flex is-align-items-center is-gap-1.5">
-            <span
-              class="type-ic"
-              :class="changeIsUp ? 'has-background-success' : 'has-background-danger'"
-              data-testid="month-change-icon"
-            >
+            <span class="type-ic" :class="changeIconClass" data-testid="month-change-icon">
               <b-icon icon="chart-line" />
             </span>
             <div>
@@ -97,50 +125,53 @@ function signClass(value: number): string {
               <div class="is-size-7 has-text-grey">desde o início do mês</div>
             </div>
             <div
+              v-if="change != null"
               class="type-value month-value month-figure ml-auto"
-              :class="change == null ? 'has-text-grey' : signClass(change)"
+              :class="signClass(change)"
               data-testid="month-change"
             >
-              {{ change == null ? '—' : fmt.moneySigned(change, currency, { compact: true }) }}
+              {{ fmt.moneySigned(change, currency, { compact: true }) }}
+            </div>
+            <div
+              v-else
+              class="month-figure ml-auto has-text-grey has-text-weight-semibold"
+              data-testid="month-change"
+            >
+              Sem histórico
             </div>
           </div>
-          <div
-            v-if="month.bestMover || month.worstMover"
-            class="month-row fixed-grid has-2-cols mb-0"
-          >
+          <div class="month-row fixed-grid has-2-cols mb-0">
             <div class="grid is-gap-1.5">
-              <div v-if="month.bestMover" class="cell month-tile is-up" data-testid="best-mover">
-                <div
-                  class="is-flex is-align-items-center is-gap-0.5 is-size-7 has-text-weight-semibold gl-up"
-                >
-                  <b-icon icon="trending-up" size="is-small" /><span>Maior alta</span>
-                </div>
-                <div class="type-name mt-1">{{ moverName(month.bestMover) }}</div>
-                <div class="type-value month-value" :class="signClass(month.bestMover.changePct)">
-                  {{ fmt.pctSigned(month.bestMover.changePct) }}
-                </div>
-              </div>
               <div
-                v-if="month.worstMover"
-                class="cell month-tile is-down"
-                data-testid="worst-mover"
+                v-for="tile in moverTiles"
+                :key="tile.key"
+                class="cell month-tile"
+                :class="tile.mover ? tile.tone : 'is-missing'"
+                :data-testid="`${tile.key}-mover`"
               >
                 <div
-                  class="is-flex is-align-items-center is-gap-0.5 is-size-7 has-text-weight-semibold gl-down"
+                  class="is-flex is-align-items-center is-gap-0.5 is-size-7 has-text-weight-semibold"
+                  :class="tile.mover ? tile.labelClass : 'has-text-grey'"
                 >
-                  <b-icon icon="trending-down" size="is-small" /><span>Maior queda</span>
+                  <b-icon :icon="tile.icon" size="is-small" /><span>{{ tile.label }}</span>
                 </div>
-                <div class="type-name mt-1">{{ moverName(month.worstMover) }}</div>
-                <div class="type-value month-value" :class="signClass(month.worstMover.changePct)">
-                  {{ fmt.pctSigned(month.worstMover.changePct) }}
-                </div>
+                <template v-if="tile.mover">
+                  <div class="type-name mt-1">{{ moverName(tile.mover) }}</div>
+                  <div class="type-value month-value" :class="signClass(tile.mover.changePct)">
+                    {{ fmt.pctSigned(tile.mover.changePct) }}
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="type-name mt-1 has-text-grey">{{ tile.missingText }}</div>
+                  <div class="type-value month-value has-text-grey">—</div>
+                </template>
               </div>
             </div>
           </div>
         </template>
         <div
           v-if="unpricedCount > 0"
-          class="month-strip is-warning is-flex is-align-items-center is-gap-1"
+          class="month-strip is-warning is-flex is-align-items-center is-gap-1 mt-auto"
           data-testid="price-status"
         >
           <b-icon icon="alert-outline" class="month-strip-icon" />
@@ -160,7 +191,7 @@ function signClass(value: number): string {
         </div>
         <div
           v-else
-          class="month-strip is-ok is-flex is-align-items-center is-gap-1"
+          class="month-strip is-ok is-flex is-align-items-center is-gap-1 mt-auto"
           data-testid="price-status"
         >
           <b-icon icon="check-circle-outline" class="gl-up" />
@@ -207,6 +238,10 @@ function signClass(value: number): string {
 
 .month-tile.is-down {
   background: var(--down-soft);
+}
+
+.month-tile.is-missing {
+  background: var(--surface-2);
 }
 
 .month-strip {

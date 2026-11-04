@@ -50,11 +50,21 @@ describe('ThisMonthCard', () => {
     )
   })
 
-  it('shows a dash when the change cannot be measured yet', () => {
+  it('shows "Sem histórico" with a grey icon when the change cannot be measured yet', () => {
     const wrapper = mountCard({ currentResultChange: null, contributions: 100 })
 
-    expect(wrapper.get('[data-testid="month-change"]').text()).toBe('—')
+    expect(wrapper.get('[data-testid="month-change"]').text()).toBe('Sem histórico')
     expect(wrapper.get('[data-testid="month-change"]').classes()).toContain('has-text-grey')
+    expect(wrapper.get('[data-testid="month-change-icon"]').classes()).toContain(
+      'has-background-grey',
+    )
+  })
+
+  it('shows "Nenhum aporte" when nothing was contributed this month', () => {
+    const wrapper = mountCard({ contributions: 0 })
+
+    expect(wrapper.get('[data-testid="month-contributions"]').text()).toBe('Nenhum aporte')
+    expect(wrapper.get('[data-testid="month-contributions"]').classes()).toContain('has-text-grey')
   })
 
   it('shows the best and worst movers of the month, falling back to the name', () => {
@@ -66,20 +76,26 @@ describe('ThisMonthCard', () => {
     expect(wrapper.get('[data-testid="best-mover"]').text()).toContain('Maior alta')
     expect(wrapper.get('[data-testid="best-mover"]').text()).toContain('Fundo X')
     expect(wrapper.get('[data-testid="best-mover"]').text()).toContain('+3,00%')
-    expect(wrapper.find('[data-testid="worst-mover"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="worst-mover"]').classes()).toContain('is-missing')
+    expect(wrapper.get('[data-testid="worst-mover"] .type-name').text()).toBe('Nenhuma queda')
 
     const unnamed = mountCard({
       bestMover: null,
       worstMover: { kind: 'STOCKS', ticker: null, name: null, changePct: -1 },
     })
     expect(unnamed.get('[data-testid="worst-mover"] .type-name').text()).toBe('—')
+    expect(unnamed.get('[data-testid="best-mover"] .type-name').text()).toBe('Nenhuma alta')
   })
 
-  it('hides the movers row when there is no mover', () => {
+  it('keeps both mover tiles without data when there is no price history', () => {
     const wrapper = mountCard({ bestMover: null, worstMover: null, contributions: 100 })
 
-    expect(wrapper.find('[data-testid="best-mover"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="worst-mover"]').exists()).toBe(false)
+    for (const testId of ['best-mover', 'worst-mover']) {
+      const tile = wrapper.get(`[data-testid="${testId}"]`)
+      expect(tile.classes()).toContain('is-missing')
+      expect(tile.get('.type-name').text()).toBe('Sem histórico')
+      expect(tile.get('.type-value').text()).toBe('—')
+    }
   })
 
   it('shows the empty state when nothing happened this month, keeping the price status', () => {
