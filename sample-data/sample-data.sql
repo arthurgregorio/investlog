@@ -5,7 +5,10 @@ BEGIN
     END IF;
 END $$;
 
--- Every date is an offset from the load day, so the daily demo reset always ends on a full history.
+-- Every date is an offset from the load day, so the daily demo reset always ends on a full history. The app's "today"
+-- is São Paulo's, so CURRENT_DATE has to be too, or a late-evening load dates everything tomorrow.
+SET TIME ZONE 'America/Sao_Paulo';
+
 CREATE FUNCTION pg_temp.seed_date(month_offset INTEGER, day_of_month INTEGER) RETURNS DATE
     LANGUAGE sql STABLE
     AS $$
