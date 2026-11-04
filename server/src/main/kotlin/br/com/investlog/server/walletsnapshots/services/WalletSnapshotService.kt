@@ -31,7 +31,9 @@ class WalletSnapshotService(private val walletSnapshotRepository: WalletSnapshot
             )
         }
 
-        logger.info { "Wallet snapshot capture completed: date=$snapshotDate wallets=${totalsPerWallet.size}" }
+        val holdingCount = walletSnapshotRepository.upsertHoldingSnapshots(snapshotDate)
+
+        logger.info { "Wallet snapshot capture completed: date=$snapshotDate wallets=${totalsPerWallet.size} holdings=$holdingCount" }
     }
 
     private fun gainPercentageOf(gain: BigDecimal, totalInvested: BigDecimal): BigDecimal =

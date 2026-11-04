@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="03-1200-1" author="${claude}">
+        <comment>
+            Create finances.holding_daily_snapshots, the end-of-day price and value of every active
+            holding (issue #554). The Overview compares today's price with the one at the start of
+            the month to find the month's best and worst holding. Figures are stored in the
+            wallet's own currency, like finances.wallet_daily_snapshots.
+        </comment>
+        <sql>
+            CREATE TABLE finances.holding_daily_snapshots (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                external_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+                kind finances.wallet_kind NOT NULL,
+                holding_id BIGINT NOT NULL,
+                wallet_id BIGINT NOT NULL REFERENCES finances.wallets(id) ON DELETE CASCADE,
+                snapshot_date DATE NOT NULL,
+                current_price NUMERIC,
+                current_value NUMERIC,
+                cost_basis NUMERIC NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                UNIQUE (kind, holding_id, snapshot_date)
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.holding_daily_snapshots;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

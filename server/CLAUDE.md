@@ -118,7 +118,7 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `cash` | Each wallet's cash, transfers between wallets, withdrawals to the bank and the reconciliation list — see **Wallet cash** |
 | `investmentreport` | `GET /holdings/report/pdf`, the consolidated investment report as a PDF — see **Investment report PDF** |
 | `strategies` | Investment strategies, their classes and targets, and each holding's class — see **Strategies** |
-| `overview` | Portfolio summary and the monthly invested series |
+| `overview` | Portfolio summary, the month-filled capital and result series, and the current month's summary |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
 | `typelists`, `currencyrates`, `configurations` | Reference data and runtime feature toggles |
 
@@ -192,6 +192,21 @@ In detail:
   subselect in the same query. It multiplies `cost_basis * (rate / displayRate)` rather than
   dividing the anchor columns: the two orders agree mathematically but not digit for digit, and
   the summary payload exposes every digit.
+
+  The summary also carries the lifetime result (issue #554): `ownMoney` and `realizedProfit` are
+  the two `capital_timeline` sums, `lifetimeResult` is `totalCurrentValue − ownMoney`, and it equals
+  `realizedProfit + totalGain` because own money plus realized profit is the cost basis plus the
+  cash. `OverviewService` earns its `@Service`: it fills the series to one point per calendar month
+  up to the current month, repeating the running totals of quiet months, and adds `result`, the
+  running realized profit plus the month-end unrealized gain (the sum, per wallet, of the gain of its
+  last `wallet_daily_snapshots` row in that month, converted at today's rates). The current month's
+  `result` is the live `lifetimeResult`, and `marketValued` marks the points whose result includes a
+  snapshot gain. `GET /overview/month` is the current month's contributions and realized profit (the
+  last two series points apart), the live `totalGain` against each wallet's last snapshot before the
+  month (else its first in the month), and the best and worst stock or crypto holding by price change
+  since the same baseline in `finances.holding_daily_snapshots`, which `WalletSnapshotService` fills
+  for every active holding alongside the wallet rows. "Today" is the `Clock` bean in
+  `America/Sao_Paulo`, the snapshot scheduler's zone.
 - `configurations` — `GET /private/v1/configurations`, `PATCH /private/v1/configurations/{key}`.
   Runtime feature toggles keyed by `ConfigurationKey`; this is what gates the price-sync jobs.
 - `wallets` — `GET`/`POST /private/v1/wallets`, `GET`/`PATCH`/`DELETE /private/v1/wallets/{id}`. The holding count, invested total, current value, `gain` and `gain_pct` come from the `finances.wallet_totals` view, LEFT JOINed once by `WalletRepository.selectWallets()`, which every read goes through. A wallet with no active holding has no row there, so the count and the invested total are coalesced to zero while the current value, gain and gain percentage stay null; `current_value` deliberately keeps a bare `SUM` so an all-unpriced wallet reads null rather than zero.
@@ -293,7 +308,7 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 
 **The holding-target rule lives once, in `ClassTargets`.** Typed targets of a class add up to at most 100; when every holding is typed they add up to exactly 100; blanks split `100 − typed` equally. `finances.holding_strategy_classes` is the cross-kind relation (kind, holding, owner, class, typed target) that the strategy reads and `GET /holdings` join through, and only `ACTIVE` holdings count toward a class.
 
-**Allocation and the contribution planner read, never write** (issue #520). `GET /strategies/{id}/allocation` reports each class and holding against its target (actual %, `driftPercentagePoints` and `driftValue`, both positive when above target), a per-class segment breakdown, and the count and value still in "Não definida". `GET /strategies/{id}/contribution-plan?amount=` splits an amount: classes below target once the amount is in receive in proportion to their gap, and inside each one the unfrozen holdings below target receive in proportion to theirs. A below-target class with no holding able to receive is dropped and the amount re-split among the rest, so lines always add up to `amount` (rounded down to cents, the remainder on the last line); every other holding is listed with a `LeftOutReason`, `FROZEN` first. Both reject the default strategy (400), and the planner rejects an amount that rounds to zero or a strategy where nothing can receive. `GET /overview/allocation?groupBy=STRATEGY|CLASS|TYPE&strategyId=` groups positions (no wallet cash) for the Overview card; `CLASS` needs `strategyId`. All three read `StrategyAllocationRepository`, one query on `holdings_valued` joined to `holding_strategy_classes`, with values in the user's `preferredCurrency` through `CurrencyRateRepository.findRateOrAnchor`.
+**Allocation and the contribution planner read, never write** (issue #520). `GET /strategies/{id}/allocation` reports each class and holding against its target (actual %, `driftPercentagePoints` and `driftValue`, both positive when above target), a per-class segment breakdown, and the count and value still in "Não definida". `GET /strategies/{id}/contribution-plan?amount=` splits an amount: classes below target once the amount is in receive in proportion to their gap, and inside each one the unfrozen holdings below target receive in proportion to theirs. A below-target class with no holding able to receive is dropped and the amount re-split among the rest, so lines always add up to `amount` (rounded down to cents, the remainder on the last line); every other holding is listed with a `LeftOutReason`, `FROZEN` first. Both reject the default strategy (400), and the planner rejects an amount that rounds to zero or a strategy where nothing can receive. Both read `StrategyAllocationRepository`, one query on `holdings_valued` joined to `holding_strategy_classes`, with values in the user's `preferredCurrency` through `CurrencyRateRepository.findRateOrAnchor`.
 
 ### Price sync
 

@@ -3,34 +3,39 @@ import { computed } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import CardBody from '@/components/ui/CardBody.vue'
 import AllocationLegend from '@/components/charts/AllocationLegend.vue'
-import AreaChart from '@/components/charts/AreaChart.vue'
+import PatrimonyChart from '@/components/charts/PatrimonyChart.vue'
 import { fmt } from '@/composables/useFormat'
 import type { SeriesPoint } from '@/types'
-
-const OWN_MONEY_COLOR = 'var(--primary)'
-const REINVESTED_PROFIT_COLOR = 'var(--chart-6)'
 
 const props = defineProps<{ series: SeriesPoint[]; currency: string }>()
 
 const chartSeries = computed(() => {
-  if (!props.series.length) return { ownMoney: [0, 0], reinvestedProfit: [0, 0], labels: ['', ''] }
-  const ownMoney = props.series.map((point) => point.ownMoney)
-  const reinvestedProfit = props.series.map((point) => point.reinvestedProfit)
-  const labels = props.series.map((point) => fmt.dateShort(point.month + '-01'))
+  const points = props.series.length
+    ? props.series
+    : [{ month: '', ownMoney: 0, result: 0, marketValued: false }]
+  const ownMoney = points.map((point) => point.ownMoney)
+  const result = points.map((point) => point.result)
+  const labels = points.map((point) => (point.month ? fmt.dateShort(point.month + '-01') : ''))
+  const firstMarketValued = points.findIndex((point) => point.marketValued)
   if (ownMoney.length < 2) {
     ownMoney.unshift(0)
-    reinvestedProfit.unshift(0)
+    result.unshift(0)
     labels.unshift('')
   }
-  return { ownMoney, reinvestedProfit, labels }
+  const offset = ownMoney.length - points.length
+  return {
+    ownMoney,
+    result,
+    labels,
+    markerIndex: firstMarketValued < 0 ? null : firstMarketValued + offset,
+  }
 })
 
 const latestIndex = computed(() => chartSeries.value.ownMoney.length - 1)
-const latestOwnMoney = computed(() => chartSeries.value.ownMoney[latestIndex.value]!)
-const latestReinvestedProfit = computed(
-  () => chartSeries.value.reinvestedProfit[latestIndex.value]!,
-)
-const latestTotal = computed(() => latestOwnMoney.value + latestReinvestedProfit.value)
+const latestOwnMoney = computed(() => chartSeries.value.ownMoney[latestIndex.value] ?? 0)
+const latestResult = computed(() => chartSeries.value.result[latestIndex.value] ?? 0)
+const latestTotal = computed(() => latestOwnMoney.value + latestResult.value)
+const resultIsPositive = computed(() => latestResult.value >= 0)
 
 function shareOf(value: number): string {
   return latestTotal.value ? fmt.pct((value / latestTotal.value) * 100) : '0%'
@@ -41,17 +46,17 @@ const legendEntries = computed(() => [
     key: 'own-money',
     label: 'Capital próprio',
     hint: 'Dinheiro novo que você colocou nas carteiras, menos o que sacou para o banco.',
-    color: OWN_MONEY_COLOR,
+    color: 'var(--primary)',
     share: shareOf(latestOwnMoney.value),
     value: latestOwnMoney.value,
   },
   {
-    key: 'reinvested-profit',
-    label: 'Lucro reinvestido',
-    hint: 'Lucro de resgates que voltou para compras em vez de sair do InvestLog.',
-    color: REINVESTED_PROFIT_COLOR,
-    share: shareOf(latestReinvestedProfit.value),
-    value: latestReinvestedProfit.value,
+    key: 'result',
+    label: resultIsPositive.value ? 'Resultado total' : 'Perda total',
+    hint: 'Lucro já realizado mais a variação do que você tem hoje. Antes dos registros diários, só o lucro realizado.',
+    color: resultIsPositive.value ? 'var(--up)' : 'var(--down)',
+    share: shareOf(latestResult.value),
+    value: latestResult.value,
   },
 ])
 
@@ -59,7 +64,7 @@ function formatAxis(value: number) {
   return (
     fmt.sym(props.currency) +
     ' ' +
-    (value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value.toFixed(0))
+    (Math.abs(value) >= 1000 ? (value / 1000).toFixed(0) + 'k' : value.toFixed(0))
   )
 }
 </script>
@@ -71,21 +76,20 @@ function formatAxis(value: number) {
         class="is-flex is-align-items-flex-start is-justify-content-space-between is-gap-1.5 mb-3"
       >
         <div>
-          <div class="chart-title">Evolução dos aportes</div>
-          <div class="sub-caption">Capital próprio + lucro reinvestido · {{ currency }}</div>
+          <div class="chart-title">Patrimônio mês a mês</div>
+          <div class="sub-caption">Capital próprio + resultado total · {{ currency }}</div>
         </div>
         <div class="chart-big">
           {{ fmt.money(latestTotal, currency, { compact: true }) }}
         </div>
       </div>
-      <div class="chart-wrap">
-        <AreaChart
-          :data="chartSeries.ownMoney"
-          :stacked-data="chartSeries.reinvestedProfit"
-          :x-labels="chartSeries.labels"
-          :color="OWN_MONEY_COLOR"
-          :stacked-color="REINVESTED_PROFIT_COLOR"
-          :height="252"
+      <div class="chart-wrap is-flex is-flex-direction-column is-flex-grow-1">
+        <PatrimonyChart
+          :own-money="chartSeries.ownMoney"
+          :result="chartSeries.result"
+          :labels="chartSeries.labels"
+          :marker-index="chartSeries.markerIndex"
+          marker-label="início dos registros diários"
           :fmt-y="formatAxis"
         />
       </div>

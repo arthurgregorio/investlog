@@ -10,11 +10,8 @@ import br.com.investlog.server.strategies.repositories.StrategyClassRepository
 import br.com.investlog.server.strategies.repositories.StrategyRepository
 import br.com.investlog.server.strategies.repositories.StrategyRow
 import br.com.investlog.server.strategies.repositories.ValuedHoldingRow
-import br.com.investlog.server.strategies.rest.payloads.AllocationGroupBy
-import br.com.investlog.server.strategies.rest.payloads.AllocationGroupResponse
 import br.com.investlog.server.strategies.rest.payloads.ClassAllocationResponse
 import br.com.investlog.server.strategies.rest.payloads.HoldingAllocationResponse
-import br.com.investlog.server.strategies.rest.payloads.OverviewAllocationResponse
 import br.com.investlog.server.strategies.rest.payloads.SegmentAllocationResponse
 import br.com.investlog.server.strategies.rest.payloads.StrategyAllocationResponse
 import org.springframework.stereotype.Service
@@ -31,8 +28,6 @@ class StrategyAllocationService(
     private val strategyClassRepository: StrategyClassRepository,
     private val strategyAllocationRepository: StrategyAllocationRepository,
 ) {
-
-    private data class HoldingGroup(val id: UUID?, val label: String, val holdings: List<ValuedHoldingRow>)
 
     fun findAllocation(strategyExternalId: UUID): StrategyAllocationResponse {
         val portfolio = portfolio(strategyExternalId)
@@ -58,58 +53,6 @@ class StrategyAllocationService(
         }
         val unassigned = holdingsByClass[strategyClassRepository.findDefaultClassId(user.id)].orEmpty()
         return StrategyPortfolio(strategy, user.preferredCurrency, classes, unassigned)
-    }
-
-    fun findOverviewAllocation(groupBy: AllocationGroupBy, strategyExternalId: UUID?): OverviewAllocationResponse {
-        val user = currentUserProvider.getCurrentUser()
-        val holdings = activeHoldings(user)
-        val groups = when (groupBy) {
-            AllocationGroupBy.STRATEGY -> groupByStrategy(user.id, holdings)
-            AllocationGroupBy.CLASS -> groupByClass(user.id, holdings, strategyExternalId)
-            AllocationGroupBy.TYPE -> holdings.groupBy { holding -> holding.typeLabel ?: "Sem tipo" }
-                .map { (label, members) -> HoldingGroup(null, label, members) }
-        }
-        val totalValue = groups.fold(BigDecimal.ZERO) { total, group -> total + group.holdings.totalValue() }
-
-        return OverviewAllocationResponse(
-            groupBy = groupBy,
-            displayCurrency = user.preferredCurrency,
-            totalValue = Shares.money(totalValue),
-            groups = groups
-                .map { group ->
-                    val value = group.holdings.totalValue()
-                    AllocationGroupResponse(
-                        id = group.id,
-                        label = group.label,
-                        holdingCount = group.holdings.size,
-                        value = Shares.money(value),
-                        percentage = Shares.percentage(value, totalValue),
-                    )
-                }
-                .sortedWith(compareByDescending<AllocationGroupResponse> { group -> group.value }.thenBy { group -> group.label }),
-        )
-    }
-
-    private fun groupByStrategy(userId: Long, holdings: List<ValuedHoldingRow>): List<HoldingGroup> {
-        val strategies = strategyRepository.findAll(userId).associateBy { strategy -> strategy.id }
-        val strategyIdByClass = strategyClassRepository.findByStrategies(strategies.keys)
-            .associate { strategyClass -> strategyClass.id to strategyClass.strategyId }
-        return holdings.groupBy { holding -> strategyIdByClass.getValue(holding.strategyClassId) }
-            .map { (strategyId, members) ->
-                val strategy = strategies.getValue(strategyId)
-                HoldingGroup(strategy.externalId, strategy.name, members)
-            }
-    }
-
-    private fun groupByClass(userId: Long, holdings: List<ValuedHoldingRow>, strategyExternalId: UUID?): List<HoldingGroup> {
-        val strategy = findStrategy(userId, strategyExternalId ?: throw InvalidStrategyException("Informe a estratégia para agrupar por classe"))
-        val classes = strategyClassRepository.findByStrategies(listOf(strategy.id)).associateBy { strategyClass -> strategyClass.id }
-        return holdings.filter { holding -> holding.strategyClassId in classes }
-            .groupBy { holding -> holding.strategyClassId }
-            .map { (classId, members) ->
-                val strategyClass = classes.getValue(classId)
-                HoldingGroup(strategyClass.externalId, strategyClass.name, members)
-            }
     }
 
     private fun toClassAllocation(strategyClass: ClassPortfolio, strategyValue: BigDecimal): ClassAllocationResponse {

@@ -16,46 +16,53 @@ const stocks: WalletKindRow = {
   holdings: 3,
 }
 
-function mountCard(row: WalletKindRow) {
-  return mount(TypeSummaryCard, { props: { row, currency: 'BRL' } })
+function mountCard(row: WalletKindRow, currency = 'BRL') {
+  return mount(TypeSummaryCard, { props: { row, currency } })
 }
 
 describe('TypeSummaryCard', () => {
-  it('renders the kind, its counts and its figures', () => {
+  it('shows the current value, the counts and the result of a kind with wallets', () => {
     const wrapper = mountCard(stocks)
 
     expect(wrapper.get('.type-name').text()).toBe('Ações')
-    expect(wrapper.get('.type-meta').text()).toContain('2 carteiras')
-    expect(wrapper.get('.type-meta').text()).toContain('3 ativos')
-    expect(wrapper.get('.type-value').text()).toBe('R$ 6,0k')
-    expect(wrapper.get('.result-value').text()).toBe('R$ 7,5k')
+    expect(wrapper.get('[data-testid="type-meta"]').text()).toBe('2 carteiras · 3 ativos')
+    expect(wrapper.get('.type-value').text()).toBe('R$ 7,5k')
+    expect(wrapper.get('.result-label').text()).toBe('Resultado')
     expect(wrapper.get('.gl').text()).toContain('+R$ 1,5k')
-    expect((wrapper.get('.type-ic').element as HTMLElement).style.background).toBe(
-      'var(--wt-stocks)',
-    )
+    expect(wrapper.get('.gl').text()).toContain('+25,00%')
   })
 
   it('uses the singular for one wallet and one holding', () => {
-    const meta = mountCard({ ...stocks, walletCount: 1, holdings: 1 })
-      .get('.type-meta')
-      .text()
+    const wrapper = mountCard({ ...stocks, walletCount: 1, holdings: 1 })
 
-    expect(meta).toContain('1 carteira')
-    expect(meta).not.toContain('carteiras')
-    expect(meta).not.toContain('ativos')
+    expect(wrapper.get('[data-testid="type-meta"]').text()).toBe('1 carteira · 1 ativo')
   })
 
-  it('shows an empty result for a kind with no positions', () => {
-    const wrapper = mountCard({ ...stocks, gain: null, gainPct: null })
-
-    expect(wrapper.get('.gl-empty').text()).toBe('—')
-  })
-
-  it('emits goto-type with its kind when clicked', async () => {
+  it('emits goto-type with its kind from Ver', async () => {
     const wrapper = mountCard(stocks)
 
-    await wrapper.trigger('click')
+    await wrapper.get('[data-testid="type-view"]').trigger('click')
 
     expect(wrapper.emitted('goto-type')).toEqual([['STOCKS']])
+  })
+
+  it('keeps its slot for a kind without wallets and offers to create one', async () => {
+    const wrapper = mountCard({
+      ...stocks,
+      key: 'FUNDS',
+      label: 'Fundos',
+      walletCount: 0,
+      holdings: 0,
+      gain: null,
+      gainPct: null,
+    })
+
+    expect(wrapper.get('.type-value').text()).toBe('—')
+    expect(wrapper.text()).toContain('Nenhuma carteira de fundos')
+    expect(wrapper.find('[data-testid="type-view"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="type-create"]').trigger('click')
+
+    expect(wrapper.emitted('create-wallet')).toEqual([['FUNDS']])
   })
 })
