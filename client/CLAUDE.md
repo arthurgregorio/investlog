@@ -158,6 +158,7 @@ All HTTP calls go through axios — `src/api/client.ts` creates the instance wit
 | `usersAdmin.ts` | `GET /users`, `PATCH /users/{id}/approve`\|`block`\|`unblock`\|`role`\|`totp-reset`, `DELETE /users/{id}` (admin-only) |
 | `profile.ts` | `GET`/`PATCH /profile`, `PATCH /profile/password`, `GET`/`PUT /profile/notifications` (the notification preferences, plus whether email is configured) |
 | `configurations.ts` | `GET /configurations`, `PATCH /configurations/{key}` (runtime feature toggles) |
+| `mailSettings.ts` | `GET`/`PUT /mail-settings` (the SMTP settings; the password is write-only and the response only says `passwordSet`), `PATCH /mail-settings/enabled`, `POST /mail-settings/test` (admin-only) |
 | `stockPriceSync.ts` / `cryptoPriceSync.ts` | `POST /stock-price-sync`, `POST /crypto-price-sync` (admin-only manual triggers) |
 
 ### Domain types (`src/types.ts`)
@@ -195,6 +196,7 @@ Split domain stores — each loads lazily (call `.load()` in `onMounted`, no dou
 | `auth` | `GET/POST /auth/*` | `session`, `isAdmin`, `login/register/enrollTotp/verifyTotp/logout/restoreSession` |
 | `usersAdmin` | `GET/PATCH/DELETE /users/*` | `users[]`, `approve/block/unblock/changeRole/resetTotp/remove` |
 | `configurations` | `GET/PATCH /configurations` | runtime feature toggles (price-sync switches) |
+| `mailSettings` | `GET/PUT /mail-settings`, `PATCH /mail-settings/enabled` | `settings`, `loading`, `load()`, `save(request)`, `setEnabled(enabled)` |
 | `currency` | `GET /currency-rates` | the display-currency selector's state |
 | `trustedDevices` | `GET/DELETE /auth/trusted-devices` | `devices[]`, `load()`, `revoke(id)` |
 | `notificationPreferences` | `GET/PUT /profile/notifications` | `preferences` (null until loaded), `loading`, `load()` (refetches every time), `save(request)` (the whole preferences, kept from the response) |
@@ -240,7 +242,7 @@ it. Anything reusable and presentational goes in `ui/` rather than next to its f
 ### Routes and their views (`src/router/index.ts`)
 
 `/overview`, `/overview/resultados` (`ResultsDashboardView.vue`), `/wallets`, `/wallets/conciliar` (`CashReconciliationView.vue`, declared before `/wallets/:id` so it is not read as an id), `/wallets/:id` (`WalletDetailView.vue`), `/investments`, `/strategies` (`StrategiesView.vue`, #519, which opens on the strategy in `?strategy=`) and `/strategies/:id/plan` (`ContributionPlannerView.vue`, #521: the contribution planner, recomputed 300 ms after the amount changes and never recorded) are the main app; `/notifications` (`NotificationsView.vue`, #543) is reached from the avatar menu's "Notificações" item, shown for every auth provider, highlights no top-nav item, and saves each change at once with the whole preferences object, pessimistically (a failed switch is remounted so it shows the saved value again, and the "Ganho mínimo" field saves on blur or Enter and shows a 400 inline); `/settings` redirects to `/settings/price-currencies` (`PriceCurrenciesView.vue`) and
-covers `/settings/types` and `/settings/users` — the whole `/settings/*` subtree is admin-only.
+covers `/settings/types`, `/settings/users` and `/settings/email` (`EmailSettingsView.vue`, #537: the "Enviar e-mails" switch saves on its own and stays disabled until the SMTP settings are `configured`; the SMTP form saves with Salvar and shows a 400 below the grid; the test send shows its 422 SMTP message under the recipient row; the api client does not toast those two errors) — the whole `/settings/*` subtree is admin-only.
 `/login` and `/pending-approval` are the two public routes.
 
 ### Wallet detail page (`WalletDetailView.vue`)

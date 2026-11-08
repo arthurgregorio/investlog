@@ -50,6 +50,23 @@ function isWithdrawalRequest(url: string | undefined): boolean {
   return url !== undefined && WITHDRAWAL_ENDPOINT.test(url)
 }
 
+const MAIL_SETTINGS_INLINE_ERRORS = [
+  { method: 'put', url: /^\/mail-settings$/, status: 400 },
+  { method: 'post', url: /^\/mail-settings\/test$/, status: 422 },
+]
+
+function isMailSettingsInlineError(error: {
+  config?: { method?: string; url?: string }
+  response?: { status?: number }
+}): boolean {
+  return MAIL_SETTINGS_INLINE_ERRORS.some(
+    (inlineError) =>
+      error.config?.method === inlineError.method &&
+      error.response?.status === inlineError.status &&
+      inlineError.url.test(error.config?.url ?? ''),
+  )
+}
+
 apiClient.interceptors.response.use(
   (response) => {
     recordServerActivity()
@@ -83,6 +100,9 @@ apiClient.interceptors.response.use(
       return Promise.reject(error)
     }
     if (error.response?.status === 400 && isWithdrawalRequest(error.config?.url)) {
+      return Promise.reject(error)
+    }
+    if (isMailSettingsInlineError(error)) {
       return Promise.reject(error)
     }
     const message: string =

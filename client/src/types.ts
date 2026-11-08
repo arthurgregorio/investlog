@@ -324,6 +324,33 @@ export interface SessionResponse {
   demoModeEnabled: boolean
 }
 
+export type MailSecurity = 'NONE' | 'STARTTLS' | 'SSL_TLS'
+
+export interface MailSettingsResponse {
+  enabled: boolean
+  configured: boolean
+  host: string | null
+  port: number | null
+  security: MailSecurity
+  username: string | null
+  passwordSet: boolean
+  fromAddress: string | null
+  fromName: string | null
+  publicUrl: string | null
+  updatedAt: string
+}
+
+export interface MailSettingsRequest {
+  host: string
+  port: number | null
+  security: MailSecurity
+  username: string | null
+  password: string | null
+  fromAddress: string
+  fromName: string
+  publicUrl: string
+}
+
 export interface AuthConfigResponse {
   googleAuthEnabled: boolean
   demoModeEnabled: boolean

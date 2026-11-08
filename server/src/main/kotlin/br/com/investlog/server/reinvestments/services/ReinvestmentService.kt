@@ -24,10 +24,6 @@ class ReinvestmentService(
     private val positionExitService: PositionExitService,
 ) {
 
-    companion object {
-        private const val QUANTITY_SCALE = 20
-    }
-
     @Transactional
     fun reinvest(userId: Long, request: ReinvestmentRequest) {
         val sourceKind = request.sourceKind!!
@@ -170,5 +166,9 @@ class ReinvestmentService(
 
     private fun BigDecimal.normalized(): BigDecimal = stripTrailingZeros().let { value ->
         if (value.scale() < 0) value.setScale(0) else value
+    }
+
+    companion object {
+        private const val QUANTITY_SCALE = 20
     }
 }

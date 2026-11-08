@@ -78,6 +78,11 @@ when this happens.
 **`KotlinLogging` instances are named `logger`, not `log`**: `private val logger =
 KotlinLogging.logger {}`.
 
+**Class layout follows the official Kotlin conventions, with the companion object last.** Members
+go in this order: properties and `init` blocks, then secondary constructors, then methods, then the
+`companion object`. A nested type sits next to the code that uses it. No linter enforces this, so
+it is checked in review.
+
 See the root `CLAUDE.md` for the repo-wide comment convention and branch-naming rule — both
 apply here too.
 
@@ -141,7 +146,12 @@ In detail:
   `ROLE_ADMIN` in `SecurityConfiguration`. `block`/`changeRole`/`delete`/`resetPassword` all guard
   against the caller targeting their own account (`SelfActionNotAllowedException`, 400) to
   prevent a self-lockout; `approve`, `unblock`, and `resetTotp` don't need the guard since
-  self-targeting them is a genuine no-op, not a lockout. Every operation, reads included, starts
+  self-targeting them can't lock anyone out. `approve` only moves `PENDING` → `APPROVED` (anything
+  else is `InvalidUserStatusTransitionException`, 409, like `block`/`unblock`) and emails the user
+  the "Conta aprovada" message through `AccountMailNotifier`; `unblock` sends nothing. The same
+  notifier emails every approved admin except `AdminAccount.EMAIL`, one message each, when
+  `AuthService` creates a `PENDING` account (local registration or first Google sign-in) (issue
+  #538). Every operation, reads included, starts
   with `requireApprovedCaller()`, the live `CurrentUserProvider` check, because the route's
   `ROLE_ADMIN` gate is cached at login and would otherwise let a blocked admin's open session
   unblock itself (issue #489).
@@ -280,7 +290,7 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 
 ### Wallet cash
 
-`cash` gives every wallet a cash balance in its own currency (issue #508). It belongs to no strategy and is never a holding. **It is replayed, not stored**: `finances.wallet_cash_replay(wallet_id)`, a `plpgsql` set-returning function, walks the wallet's events in date order (credits before debits on the same date, then `created_at`, then id) and returns each one with the running `balance`. A `WITHDRAWAL` result and a transfer in credit the balance. A transfer out and a bank withdrawal debit their whole amount. A purchase lot or contribution takes `min(balance, amount)` as its `cash_used`, and the rest is `new_money`. Storing a running total would go wrong on every backdated entry, and reconciliation registers 2025 transfers on purpose. `finances.wallet_cash` is the last balance per wallet. `WalletRepository`, `WalletDetailService` and `OverviewRepository.findSummary` add it to the current value, never to the gain.
+`cash` gives every wallet a cash balance in its own currency (issue #508). It belongs to no strategy and is never a holding. **It is replayed, not stored**: `finances.wallet_cash_replay(wallet_id)`, a `plpgsql` set-returning function, walks the wallet's events in date order (credits before debits on the same date, then `created_at`, then id) and returns each one with the running `balance`. A `WITHDRAWAL` result and a transfer in credit the balance. A transfer out and a bank withdrawal debit their whole amount. A purchase lot or contribution takes `min(balance, amount)` as its `cash_used`, and the rest is `new_money`. **The balance is kept in whole cents** (issue #563): lot amounts are quantity × price and cross-currency transfers amount × rate, so the replay rounds the running balance to two decimals after every event, and a purchase whose `new_money` would round to zero is paid entirely from cash. Without that, a wallet emptied by a purchase kept a fraction of a cent that every `cash > 0` check read as cash, and the own-money series picked up sub-cent amounts. Storing a running total would go wrong on every backdated entry, and reconciliation registers 2025 transfers on purpose. `finances.wallet_cash` is the last balance per wallet. `WalletRepository`, `WalletDetailService` and `OverviewRepository.findSummary` add it to the current value, never to the gain.
 
 **Only `origin = 'PURCHASE'` lots and contributions spend cash.** `lot_origin` on `stock_lots`, `crypto_lots` and `fund_contributions` marks the ones `ReinvestmentRepository` (`REINVESTMENT`) and `MovableHoldingRepository` (`MOVE`) write. A reinvestment's result and its destination lot both stay out of the replay, so it leaves no cash behind and counts nothing twice. Rows written before the column existed were tagged by matching `created_at` with their reinvestment or move row, since both are inserted in one transaction.
 

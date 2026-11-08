@@ -1,6 +1,7 @@
 import { useConfigurationsStore } from '@/stores/configurations'
 import { useCurrencyStore } from '@/stores/currency'
 import { useHoldingsListStore } from '@/stores/holdingsList'
+import { useMailSettingsStore } from '@/stores/mailSettings'
 import { useNotificationPreferencesStore } from '@/stores/notificationPreferences'
 import { useOverviewStore } from '@/stores/overview'
 import { useRatesStore } from '@/stores/rates'
@@ -28,6 +29,7 @@ export function resetUserStores() {
   useCurrencyStore().reset()
   useUsersAdminStore().reset()
   useConfigurationsStore().reset()
+  useMailSettingsStore().reset()
   useTrustedDevicesStore().reset()
   useNotificationPreferencesStore().reset()
 }

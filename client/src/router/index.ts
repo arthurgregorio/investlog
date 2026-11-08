@@ -12,6 +12,7 @@ import NotificationsView from '@/views/NotificationsView.vue'
 import PriceCurrenciesView from '@/views/PriceCurrenciesView.vue'
 import TypesView from '@/views/TypesView.vue'
 import UsersView from '@/views/UsersView.vue'
+import EmailSettingsView from '@/views/EmailSettingsView.vue'
 import LoginView from '@/views/LoginView.vue'
 import PendingApprovalView from '@/views/PendingApprovalView.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -50,6 +51,7 @@ export const router = createRouter({
     },
     { path: '/settings/types', name: 'settings-types', component: TypesView },
     { path: '/settings/users', name: 'settings-users', component: UsersView },
+    { path: '/settings/email', name: 'settings-email', component: EmailSettingsView },
   ],
   scrollBehavior() {
     return { top: 0 }
@@ -60,6 +62,7 @@ const ADMIN_ONLY_ROUTE_NAMES = new Set([
   'settings-price-currencies',
   'settings-types',
   'settings-users',
+  'settings-email',
 ])
 
 router.beforeEach((to) => {

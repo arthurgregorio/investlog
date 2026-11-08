@@ -14,10 +14,6 @@ import java.time.LocalDate
 @Transactional(readOnly = true)
 class PositionExitService(private val resultRepository: ResultRepository) {
 
-    companion object {
-        private const val COST_BASIS_SCALE = 10
-    }
-
     @Transactional
     fun exitHolding(
         position: HoldingPosition,
@@ -90,5 +86,9 @@ class PositionExitService(private val resultRepository: ResultRepository) {
         }
 
         return result
+    }
+
+    companion object {
+        private const val COST_BASIS_SCALE = 10
     }
 }

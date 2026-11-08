@@ -17,10 +17,6 @@ class WalletSnapshotScheduler(
     private val configurationService: ConfigurationService,
 ) {
 
-    companion object {
-        private const val SCHEDULING_ZONE = "America/Sao_Paulo"
-    }
-
     @Scheduled(cron = "0 45 23 * * *", zone = SCHEDULING_ZONE)
     fun captureSnapshots() {
 
@@ -34,5 +30,9 @@ class WalletSnapshotScheduler(
         } catch (exception: Exception) {
             logger.error(exception) { "Wallet snapshot capture failed, next scheduled run will retry" }
         }
+    }
+
+    companion object {
+        private const val SCHEDULING_ZONE = "America/Sao_Paulo"
     }
 }

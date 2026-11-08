@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:replace="~{layout :: layout(~{::content}, ~{::footer})}">
+<body>
+<div th:fragment="content" th:with="reviewUrl=${publicUrl + '/settings/users'}">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 16px 0;">
+        <tr>
+            <td style="padding: 4px 10px; background-color: #faeeda; border-radius: 999px; font-family: Inter, Arial, sans-serif; font-size: 12px; line-height: 16px; font-weight: 600; color: #7a5806;">Aguardando aprovação</td>
+        </tr>
+    </table>
+    <h1 style="margin: 0 0 16px 0; font-family: Inter, Arial, sans-serif; font-size: 22px; line-height: 30px; font-weight: 700; color: #1d273b;">Novo usuário aguardando aprovação</h1>
+    <p style="margin: 0 0 20px 0; color: #5f6b7a;">Olá, <span th:text="${recipientName}">Arthur</span>. Uma nova conta foi criada no InvestLog e só poderá entrar depois que um administrador aprovar o cadastro.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #f7f9fc; border: 1px solid #eef1f6; border-radius: 8px;">
+        <tr>
+            <td width="50%" valign="top" style="width: 50%; padding: 16px 12px 8px 20px;">
+                <div style="font-size: 12px; line-height: 18px; color: #5f6b7a;">Nome</div>
+                <div th:text="${userName}" style="font-size: 15px; line-height: 22px; font-weight: 600; color: #1d273b;">Maria Souza</div>
+            </td>
+            <td width="50%" valign="top" style="width: 50%; padding: 16px 20px 8px 12px;">
+                <div style="font-size: 12px; line-height: 18px; color: #5f6b7a;">E-mail</div>
+                <div th:text="${userEmail}" style="font-size: 15px; line-height: 22px; font-weight: 600; color: #1d273b; word-break: break-all;">maria.souza@example.com</div>
+            </td>
+        </tr>
+        <tr>
+            <td width="50%" valign="top" style="width: 50%; padding: 8px 12px 16px 20px;">
+                <div style="font-size: 12px; line-height: 18px; color: #5f6b7a;">Cadastro por</div>
+                <div th:text="${signUpMethod}" style="font-size: 15px; line-height: 22px; font-weight: 600; color: #1d273b;">Conta Google</div>
+            </td>
+            <td width="50%" valign="top" style="width: 50%; padding: 8px 20px 16px 12px;">
+                <div style="font-size: 12px; line-height: 18px; color: #5f6b7a;">Criada em</div>
+                <div th:text="${createdAt}" style="font-size: 15px; line-height: 22px; font-weight: 600; color: #1d273b;">02/11/2026 às 13:05</div>
+            </td>
+        </tr>
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+        <tr>
+            <td style="background-color: #087f5b; border-radius: 6px;">
+                <a th:href="${reviewUrl}" href="#" style="display: inline-block; padding: 12px 20px; font-family: Inter, Arial, sans-serif; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff; text-decoration: none;">Revisar cadastros pendentes</a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; font-size: 13px; line-height: 20px; color: #5f6b7a;">O link abre Configurações → Usuários, onde você aprova ou remove a conta. Se o botão não funcionar, copie este endereço: <a th:href="${reviewUrl}" th:text="${reviewUrl}" href="#" style="color: #087f5b; text-decoration: underline; word-break: break-all;">investlog/settings/users</a></p>
+</div>
+<p th:fragment="footer" style="margin: 0;">Você recebe este e-mail porque é administrador do InvestLog.<br/>Enviado automaticamente, não responda.</p>
+</body>
+</html>

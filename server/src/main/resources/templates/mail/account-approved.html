@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:replace="~{layout :: layout(~{::content}, ~{::footer})}">
+<body>
+<div th:fragment="content" th:with="loginUrl=${publicUrl + '/login'}">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 16px 0;">
+        <tr>
+            <td style="padding: 4px 10px; background-color: #e3f2eb; border-radius: 999px; font-family: Inter, Arial, sans-serif; font-size: 12px; line-height: 16px; font-weight: 600; color: #066649;">Conta aprovada</td>
+        </tr>
+    </table>
+    <h1 style="margin: 0 0 16px 0; font-family: Inter, Arial, sans-serif; font-size: 22px; line-height: 30px; font-weight: 700; color: #1d273b;">Sua conta foi aprovada</h1>
+    <p style="margin: 0; color: #5f6b7a;">Olá, <span th:text="${userName}">Maria</span>. Um administrador aprovou o seu cadastro no InvestLog. Você já pode entrar com o e-mail <strong th:text="${userEmail}" style="color: #1d273b;">maria.souza@example.com</strong> e começar a registrar suas carteiras e investimentos.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+        <tr>
+            <td style="background-color: #087f5b; border-radius: 6px;">
+                <a th:href="${loginUrl}" href="#" style="display: inline-block; padding: 12px 20px; font-family: Inter, Arial, sans-serif; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff; text-decoration: none;">Entrar no InvestLog</a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; font-size: 13px; line-height: 20px; color: #5f6b7a;">Se o botão não funcionar, copie este endereço: <a th:href="${loginUrl}" th:text="${loginUrl}" href="#" style="color: #087f5b; text-decoration: underline; word-break: break-all;">investlog/login</a></p>
+</div>
+<p th:fragment="footer" style="margin: 0;">Você recebe este e-mail porque criou uma conta no InvestLog.<br/>Enviado automaticamente, não responda.</p>
+</body>
+</html>
