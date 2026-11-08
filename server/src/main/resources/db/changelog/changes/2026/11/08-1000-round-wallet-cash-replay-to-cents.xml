@@ -12,7 +12,9 @@
             balance used to keep fractions of a cent: a wallet whose cash was effectively zero read
             as holding cash, and a transfer of the full displayed amount could be refused as a
             fraction of a cent short. A purchase now takes its cash_used from the rounded balance,
-            and anything below half a cent counts as zero. wallet_cash, capital_timeline, the
+            and anything below half a cent counts as zero. A purchase that costs less than half a
+            cent more than the balance is paid entirely from cash, so it leaves no sub-cent new_money
+            in the own-money series. wallet_cash, capital_timeline, the
             reconciliation list and the shortfall check all read the replay, so they follow.
         </comment>
         <sqlFile path="08-1000-wallet-cash-replay-whole-cents.sql"

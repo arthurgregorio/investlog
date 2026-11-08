@@ -109,6 +109,10 @@ BEGIN
         ELSE
             cash_used := GREATEST(LEAST(running_balance, cash_event.value), 0);
             new_money := cash_event.value - cash_used;
+            IF ROUND(new_money, 2) = 0 THEN
+                cash_used := cash_event.value;
+                new_money := 0;
+            END IF;
             running_balance := ROUND(running_balance - cash_used, 2);
         END IF;
 

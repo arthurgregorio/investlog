@@ -197,6 +197,29 @@ class CashWholeCentsTest : BaseIntegrationTest() {
     }
 
     @Test
+    fun `a purchase a fraction of a cent above the cash is paid entirely from cash and adds no own money`() {
+        val walletId = createWallet("Centavos Cripto Excedente", "CRYPTO")
+        transfer(sourceWalletId, walletId, "2025-03-01", "1524.00").expectStatus().isCreated()
+        val holdingId = createBitcoin(walletId, "2025-03-01", "0.00366469", "415860.56")
+
+        val lotAmount = purchaseAmount(holdingId)
+        assertFalse(isWholeCents(lotAmount))
+        assertTrue(lotAmount > BigDecimal("1524.00"))
+
+        assertZero(walletCash(walletId))
+        assertZero(replayedCash(walletId))
+
+        val ownMoney = dsl.select(CAPITAL_TIMELINE.OWN_MONEY_AMOUNT)
+            .from(CAPITAL_TIMELINE)
+            .where(CAPITAL_TIMELINE.WALLET_ID.eq(internalId(walletId)))
+            .fetch(CAPITAL_TIMELINE.OWN_MONEY_AMOUNT)
+            .map { amount -> amount!! }
+
+        ownMoney.forEach { amount -> assertTrue(isWholeCents(amount), "own money $amount carries a fraction of a cent") }
+        assertEquals(0, BigDecimal("1524.00").compareTo(ownMoney.sumOf { amount -> amount }))
+    }
+
+    @Test
     fun `the capital timeline carries no fraction of a cent once a later purchase spends the leftover balance`() {
         val walletId = createWallet("Centavos Cripto Série", "CRYPTO")
         transfer(sourceWalletId, walletId, "2025-03-01", "1524.00").expectStatus().isCreated()
