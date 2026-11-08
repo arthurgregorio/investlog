@@ -77,6 +77,38 @@ describe('apiClient error interceptor', () => {
     },
   )
 
+  it('leaves a refused SMTP settings save to the page, which shows it inline', async () => {
+    apiClient.defaults.adapter = rejectWith(400, { errors: ['Informe o servidor SMTP'] })
+
+    await expect(apiClient.put('/mail-settings', {})).rejects.toBeInstanceOf(AxiosError)
+
+    expect(toastOpen).not.toHaveBeenCalled()
+  })
+
+  it('leaves a failed test email to the page, which shows the SMTP message inline', async () => {
+    apiClient.defaults.adapter = rejectWith(422, { detail: '535 Authentication failed' })
+
+    await expect(apiClient.post('/mail-settings/test', {})).rejects.toBeInstanceOf(AxiosError)
+
+    expect(toastOpen).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['a refused switch change', 'patch', '/mail-settings/enabled', 400],
+    ['a forbidden settings save', 'put', '/mail-settings', 403],
+    ['a test email the demo mode refuses', 'post', '/mail-settings/test', 403],
+  ])('still toasts %s', async (_label, method, url, status) => {
+    apiClient.defaults.adapter = rejectWith(status, { detail: 'Recusado' })
+
+    await expect(apiClient.request({ method, url, data: {} })).rejects.toBeInstanceOf(AxiosError)
+
+    expect(toastOpen).toHaveBeenCalledWith({
+      message: 'Recusado',
+      type: 'is-danger',
+      duration: 4000,
+    })
+  })
+
   it('falls back to a generic message when the server gives no reason', async () => {
     apiClient.defaults.adapter = rejectWith(409, {})
 

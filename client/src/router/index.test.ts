@@ -162,6 +162,44 @@ describe('router auth guard', () => {
     expect(router.currentRoute.value.name).toBe('overview')
   })
 
+  it('redirects a non-admin away from /settings/email', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Usuário Comum',
+      email: 'user@example.com',
+      role: 'USER',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    }
+
+    const { router } = await import('./index')
+    router.push('/settings/email')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('overview')
+  })
+
+  it('lets an admin reach /settings/email', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Administrador',
+      email: 'admin@admin.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+      authProvider: 'LOCAL',
+      demoModeEnabled: false,
+    }
+
+    const { router } = await import('./index')
+    router.push('/settings/email')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('settings-email')
+  })
+
   it('redirects /settings to /settings/price-currencies for an admin', async () => {
     vi.resetModules()
     const auth = useAuthStore()

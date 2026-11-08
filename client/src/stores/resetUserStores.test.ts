@@ -5,6 +5,7 @@ import { useAppearanceStore } from './appearance'
 import { useConfigurationsStore } from './configurations'
 import { useCurrencyStore } from './currency'
 import { useHoldingsListStore } from './holdingsList'
+import { useMailSettingsStore } from './mailSettings'
 import { useOverviewStore } from './overview'
 import { useRatesStore } from './rates'
 import { useReinvestmentsStore } from './reinvestments'
@@ -175,6 +176,12 @@ const storeCases: StoreCase[] = [
     useStore: useConfigurationsStore,
     seed: { values: { 'stock-price-sync': 'true' }, loaded: true },
     initial: { values: {}, loaded: false, loading: false },
+  },
+  {
+    name: 'mailSettings',
+    useStore: useMailSettingsStore,
+    seed: { settings: { host: 'smtp.gmail.com' }, loading: true },
+    initial: { settings: null, loading: false },
   },
   {
     name: 'trustedDevices',
