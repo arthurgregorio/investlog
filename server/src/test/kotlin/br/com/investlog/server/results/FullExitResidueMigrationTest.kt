@@ -32,10 +32,6 @@ import kotlin.test.assertNull
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class FullExitResidueMigrationTest : BaseIntegrationTest() {
 
-    companion object {
-        private const val MIGRATION_SQL = "db/changelog/changes/2026/10/20-1100-net-full-exit-cost-basis-residue.sql"
-    }
-
     @Autowired
     lateinit var restTestClient: RestTestClient
 
@@ -299,5 +295,9 @@ class FullExitResidueMigrationTest : BaseIntegrationTest() {
 
         val after = dsl.select(RESULTS.ID, RESULTS.COST_BASIS).from(RESULTS).orderBy(RESULTS.ID).fetch().intoMaps()
         assertEquals(before, after)
+    }
+
+    companion object {
+        private const val MIGRATION_SQL = "db/changelog/changes/2026/10/20-1100-net-full-exit-cost-basis-residue.sql"
     }
 }

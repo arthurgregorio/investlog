@@ -78,6 +78,11 @@ when this happens.
 **`KotlinLogging` instances are named `logger`, not `log`**: `private val logger =
 KotlinLogging.logger {}`.
 
+**Class layout follows the official Kotlin conventions, with the companion object last.** Members
+go in this order: properties and `init` blocks, then secondary constructors, then methods, then the
+`companion object`. A nested type sits next to the code that uses it. No linter enforces this, so
+it is checked in review.
+
 See the root `CLAUDE.md` for the repo-wide comment convention and branch-naming rule — both
 apply here too.
 
