@@ -1,5 +1,10 @@
 import { apiClient } from './client'
-import type { ProfileResponse, ProfileUpdateRequest } from '@/types'
+import type {
+  NotificationPreferencesRequest,
+  NotificationPreferencesResponse,
+  ProfileResponse,
+  ProfileUpdateRequest,
+} from '@/types'
 
 export const profileApi = {
   getProfile(): Promise<ProfileResponse> {
@@ -12,5 +17,17 @@ export const profileApi = {
     return apiClient
       .patch('/profile/password', { currentPassword, newPassword })
       .then(() => undefined)
+  },
+  getNotificationPreferences(): Promise<NotificationPreferencesResponse> {
+    return apiClient
+      .get<NotificationPreferencesResponse>('/profile/notifications')
+      .then((response) => response.data)
+  },
+  updateNotificationPreferences(
+    request: NotificationPreferencesRequest,
+  ): Promise<NotificationPreferencesResponse> {
+    return apiClient
+      .put<NotificationPreferencesResponse>('/profile/notifications', request)
+      .then((response) => response.data)
   },
 }

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createTestingPinia, type TestingPinia } from '@pinia/testing'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import TheNavbar from './TheNavbar.vue'
 import { ModalKey } from '@/composables/useModals'
 import { profileApi } from '@/api/profile'
@@ -47,11 +47,15 @@ const modalControls = {
 
 let activeWrapper: VueWrapper | undefined
 let pinia: TestingPinia
+let router: Router
 
 async function mountNavbar() {
-  const router = createRouter({
+  router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div />' } }],
+    routes: [
+      { path: '/', component: { template: '<div />' } },
+      { path: '/notifications', name: 'notifications', component: { template: '<div />' } },
+    ],
   })
   router.push('/')
   await router.isReady()
@@ -233,6 +237,43 @@ describe('TheNavbar', () => {
 
       expect(document.body.textContent).not.toContain('Alterar senha')
       expect(document.body.textContent).not.toContain('Dispositivos confiáveis')
+    })
+
+    it('opens the notifications page from Notificações', async () => {
+      await mountNavbar()
+
+      dropdownItem('Notificações').click()
+      await flushPromises()
+
+      expect(router.currentRoute.value.name).toBe('notifications')
+    })
+
+    it('offers Notificações to a Google account too', async () => {
+      useAuthStore().session = sessionWith({ authProvider: 'GOOGLE' })
+      await mountNavbar()
+
+      dropdownItem('Notificações').click()
+      await flushPromises()
+
+      expect(router.currentRoute.value.name).toBe('notifications')
+    })
+
+    it('lists Notificações after the trusted devices item with a single divider before Sair', async () => {
+      await mountNavbar()
+
+      const menuEntries = Array.from(
+        document.body.querySelectorAll<HTMLElement>('.dropdown-content > *'),
+      ).map((entry) =>
+        entry.classList.contains('dropdown-divider') ? '---' : entry.textContent?.trim(),
+      )
+      const trustedDevicesIndex = menuEntries.indexOf('Dispositivos confiáveis')
+
+      expect(menuEntries.slice(trustedDevicesIndex, trustedDevicesIndex + 4)).toEqual([
+        'Dispositivos confiáveis',
+        'Notificações',
+        '---',
+        'Sair',
+      ])
     })
 
     it('logs out when Sair is clicked', async () => {

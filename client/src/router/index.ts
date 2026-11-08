@@ -8,6 +8,7 @@ import CashReconciliationView from '@/views/CashReconciliationView.vue'
 import InvestmentsView from '@/views/InvestmentsView.vue'
 import StrategiesView from '@/views/StrategiesView.vue'
 import ContributionPlannerView from '@/views/ContributionPlannerView.vue'
+import NotificationsView from '@/views/NotificationsView.vue'
 import PriceCurrenciesView from '@/views/PriceCurrenciesView.vue'
 import TypesView from '@/views/TypesView.vue'
 import UsersView from '@/views/UsersView.vue'
@@ -40,6 +41,7 @@ export const router = createRouter({
       component: ContributionPlannerView,
       props: true,
     },
+    { path: '/notifications', name: 'notifications', component: NotificationsView },
     { path: '/settings', redirect: { name: 'settings-price-currencies' } },
     {
       path: '/settings/price-currencies',

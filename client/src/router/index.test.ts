@@ -143,6 +143,25 @@ describe('router auth guard', () => {
     expect(router.currentRoute.value.name).toBe('overview')
   })
 
+  it('lets a non-admin reach /notifications', async () => {
+    vi.resetModules()
+    const auth = useAuthStore()
+    auth.session = {
+      name: 'Usuário Comum',
+      email: 'user@example.com',
+      role: 'USER',
+      status: 'APPROVED',
+      authProvider: 'GOOGLE',
+      demoModeEnabled: false,
+    }
+
+    const { router } = await import('./index')
+    router.push('/notifications')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('notifications')
+  })
+
   it('redirects a non-admin away from /settings/users', async () => {
     vi.resetModules()
     const auth = useAuthStore()

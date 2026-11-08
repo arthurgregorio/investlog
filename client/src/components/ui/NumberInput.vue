@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
@@ -7,24 +7,27 @@ const props = withDefaults(
     modelValue: number | ''
     placeholder?: string
     prefix?: string
+    suffix?: string
     step?: string
     min?: string
   }>(),
-  { placeholder: '', prefix: '', step: 'any', min: undefined },
+  { placeholder: '', prefix: '', suffix: '', step: 'any', min: undefined },
 )
 const emit = defineEmits<{ 'update:modelValue': [number | ''] }>()
 
-const MONEY_DECIMALS = 2
+const FIXED_DECIMALS = 2
 const PLAIN_DECIMAL = /^-?\d+(\.\d*)?$/
 
-function padMoney(value: string): string {
-  if (!props.prefix || !PLAIN_DECIMAL.test(value)) return value
+const hasAddon = computed(() => props.prefix !== '' || props.suffix !== '')
+
+function padDecimals(value: string): string {
+  if (!hasAddon.value || !PLAIN_DECIMAL.test(value)) return value
   const [integerPart, decimalPart = ''] = value.split('.')
-  return `${integerPart}.${decimalPart.padEnd(MONEY_DECIMALS, '0')}`
+  return `${integerPart}.${decimalPart.padEnd(FIXED_DECIMALS, '0')}`
 }
 
 function displayText(value: number | ''): string {
-  return value === '' ? '' : padMoney(String(value))
+  return value === '' ? '' : padDecimals(String(value))
 }
 
 function parse(value: string | number): number | '' {
@@ -49,12 +52,12 @@ function onInput(value: string | number) {
 }
 
 function onBlur(event: FocusEvent) {
-  text.value = padMoney((event.target as HTMLInputElement).value)
+  text.value = padDecimals((event.target as HTMLInputElement).value)
 }
 </script>
 <template>
-  <div v-if="prefix" class="field has-addons mb-0">
-    <div class="control">
+  <div v-if="hasAddon" class="field has-addons mb-0">
+    <div v-if="prefix" class="control">
       <span class="button is-static">{{ prefix }}</span>
     </div>
     <b-input
@@ -69,6 +72,9 @@ function onBlur(event: FocusEvent) {
       @update:model-value="onInput"
       @blur="onBlur"
     />
+    <div v-if="suffix" class="control">
+      <span class="button is-static">{{ suffix }}</span>
+    </div>
   </div>
   <b-input
     v-else
