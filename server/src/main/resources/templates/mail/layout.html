@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:fragment="layout(content, footer)">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="color-scheme" content="light"/>
+    <meta name="supported-color-schemes" content="light"/>
+    <title th:text="${subject}">InvestLog</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f4f7; -webkit-text-size-adjust: 100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #f1f4f7;">
+    <tr>
+        <td align="center" style="padding: 32px 16px;">
+            <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 560px;">
+                <tr>
+                    <td style="padding: 0 0 20px 0;">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                                <td width="32" height="32" align="center" valign="bottom" style="width: 32px; height: 32px; background-color: #087f5b; border-radius: 8px;">
+                                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                                        <tr>
+                                            <td valign="bottom" style="padding: 0 1px 8px 1px;"><div style="width: 3px; height: 5px; background-color: #ffffff; border-radius: 1px; font-size: 0; line-height: 0;">&#8203;</div></td>
+                                            <td valign="bottom" style="padding: 0 1px 8px 1px;"><div style="width: 3px; height: 9px; background-color: #ffffff; border-radius: 1px; font-size: 0; line-height: 0;">&#8203;</div></td>
+                                            <td valign="bottom" style="padding: 0 1px 8px 1px;"><div style="width: 3px; height: 13px; background-color: #ffffff; border-radius: 1px; font-size: 0; line-height: 0;">&#8203;</div></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="padding: 0 0 0 10px; font-family: Inter, Arial, sans-serif; font-size: 20px; line-height: 32px; font-weight: 700; color: #1d273b;">Invest<span style="color: #087f5b;">Log</span></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 32px; background-color: #ffffff; border: 1px solid #e1e6ec; border-radius: 8px; font-family: Inter, Arial, sans-serif; font-size: 15px; line-height: 24px; color: #1d273b;">
+                        <div th:replace="${content}"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="center" style="padding: 24px 16px 0 16px; font-family: Inter, Arial, sans-serif; font-size: 12px; line-height: 18px; color: #5f6b7a;">
+                        <div th:replace="${footer}"></div>
+                        <p style="margin: 8px 0 0 0;">InvestLog · <a th:href="${publicUrl}" th:text="${publicUrl}" href="#" style="color: #087f5b; text-decoration: underline;">investlog</a></p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

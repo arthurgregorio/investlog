@@ -4,6 +4,7 @@ import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder
 import com.openhtmltopdf.slf4j.Slf4jLogger
 import com.openhtmltopdf.util.XRLog
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Component
 import org.thymeleaf.TemplateEngine
@@ -12,7 +13,10 @@ import java.io.ByteArrayOutputStream
 import java.util.Locale
 
 @Component
-class InvestmentReportPdfRenderer(private val reportTemplateEngine: TemplateEngine) {
+class InvestmentReportPdfRenderer(
+    @Qualifier("reportTemplateEngine")
+    private val reportTemplateEngine: TemplateEngine,
+) {
 
     init {
         XRLog.setLoggerImpl(Slf4jLogger())
