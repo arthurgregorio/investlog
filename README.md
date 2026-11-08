@@ -199,6 +199,7 @@ the box for a local run.
 | `TOTP_LOCKOUT_BASE_DURATION` | `60s` | Lockout duration after the max attempts are reached; doubles on each repeated lockout |
 | `BRAPI_TOKEN` | _(empty)_ | Free token from [brapi.dev/dashboard](https://brapi.dev/dashboard), used by the hourly stock/FII price sync. Without it, every sync run fails and holdings keep their last-known price |
 | `COINGECKO_KEY` | _(empty)_ | Optional API key from [CoinGecko's developer dashboard](https://www.coingecko.com/en/developers/dashboard), used by the hourly crypto price sync. The sync works without it on CoinGecko's public/keyless demo tier; a key just raises the rate limit. A paid CoinGecko Pro key also works, but switching the API host/auth header for it means editing `investlog.coingecko.base-url`/`api-key-header` in `application.yaml` directly — not a `.env` variable, see the comment above `COINGECKO_KEY` in `example.env` |
+| `MAIL_ENCRYPTION_KEY` | _(empty)_ | Base64-encoded 32-byte key (AES-256-GCM) that encrypts the SMTP password saved in Configurações → E-mail. Generate it with `openssl rand -base64 32`. Without it, saving an SMTP password is refused and only servers without authentication can send. Changing it makes the stored SMTP password unreadable — see [E-mail](#e-mail-optional) |
 
 Building from source adds two more variables, read from `build-from-source/.env`:
 
@@ -240,6 +241,40 @@ just register `http://localhost:8080/private/login/oauth2/code/google` as the re
 Google Cloud Console for this case. The docker-compose stack runs with `SPRING_PROFILES_ACTIVE=prod`,
 which overrides `CLIENT_BASE_URL` back to empty (client and server share one origin there, so a
 relative redirect is already correct).
+
+### E-mail (optional)
+
+InvestLog sends account emails (new user awaiting approval, account approved) through an SMTP
+server an admin configures in the app. The SMTP password is stored encrypted with a key that
+only exists if you set `MAIL_ENCRYPTION_KEY`:
+
+1. Generate a key — a base64-encoded 32-byte value:
+   ```bash
+   openssl rand -base64 32
+   # Windows PowerShell, without openssl:
+   # [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+   ```
+2. Put it in your `.env` (`build-from-source/.env` if that's the stack you run):
+   ```
+   MAIL_ENCRYPTION_KEY=<your generated key>
+   ```
+   and restart the server so it picks up the new environment variable.
+3. Log in as an admin, open **Configurações → E-mail**, fill in the SMTP server and the public
+   URL of your InvestLog, and **Salvar**.
+4. Use **Enviar teste** to send a test message to an address you can read, then turn on
+   **Enviar e-mails**.
+
+The common case is port `587` with `STARTTLS` security. Gmail (`smtp.gmail.com`) needs an
+[app password](https://support.google.com/accounts/answer/185833) instead of your account
+password, which in turn requires 2-Step Verification on the Google account.
+
+Keep the key stable: changing or losing it makes the stored SMTP password unreadable, and you
+have to re-enter it in Configurações → E-mail. Without a key, saving an SMTP password is refused
+("Defina MAIL_ENCRYPTION_KEY para salvar a senha do SMTP") and only SMTP servers without
+authentication can send.
+
+On Railway (or any platform without these Compose files), set `MAIL_ENCRYPTION_KEY` in the
+server service's variables; nothing in `railway.json` needs to change.
 
 ## Stop / reset
 
@@ -286,3 +321,6 @@ The Compose setups above are for running the packaged app. For day-to-day develo
   then `docker compose up -d` from `build-from-source/`.
 - **Data disappeared after `down`** — make sure you didn't run `down -v`; that flag
   deletes the `postgres-data` volume.
+- **"Defina MAIL_ENCRYPTION_KEY para salvar a senha do SMTP"** — the server has no
+  encryption key for the SMTP password. Set `MAIL_ENCRYPTION_KEY` and restart the server (see
+  [E-mail](#e-mail-optional)).
