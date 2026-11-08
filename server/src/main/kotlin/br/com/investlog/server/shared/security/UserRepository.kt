@@ -24,6 +24,14 @@ class UserRepository(private val dsl: DSLContext) {
             ?.toCurrentUser()
     }
 
+    fun findAdministratorsToNotify(): List<CurrentUser> =
+        dsl.selectFrom(USERS)
+            .where(USERS.ROLE.eq(UserRole.ADMIN.name))
+            .and(USERS.STATUS.eq(CurrentUser.Status.APPROVED.name))
+            .and(USERS.EMAIL.ne(AdminAccount.EMAIL))
+            .orderBy(USERS.NAME)
+            .fetch { it.toCurrentUser() }
+
     fun findPasswordHashByEmail(email: String): String? {
         return dsl.select(USERS.PASSWORD_HASH)
             .from(USERS)
