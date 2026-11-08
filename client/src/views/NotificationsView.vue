@@ -38,20 +38,25 @@ const { preferences, loading } = storeToRefs(notificationPreferencesStore)
 const switchesRevision = ref(0)
 const minimumGainDraft = ref<number | ''>()
 const minimumGainError = ref<string>()
+let previousSave: Promise<unknown> = Promise.resolve()
 
 onMounted(() => {
   notificationPreferencesStore.load()
 })
 
 function saveChanges(changes: Partial<NotificationPreferencesRequest>) {
-  const current = preferences.value as NotificationPreferencesResponse
-  return notificationPreferencesStore.save({
-    periodicReportFrequency: current.periodicReportFrequency,
-    monthEndReportEnabled: current.monthEndReportEnabled,
-    frozenAlertEnabled: current.frozenAlertEnabled,
-    frozenAlertMinimumGainPercentage: current.frozenAlertMinimumGainPercentage,
-    ...changes,
+  const save = previousSave.then(() => {
+    const current = preferences.value as NotificationPreferencesResponse
+    return notificationPreferencesStore.save({
+      periodicReportFrequency: current.periodicReportFrequency,
+      monthEndReportEnabled: current.monthEndReportEnabled,
+      frozenAlertEnabled: current.frozenAlertEnabled,
+      frozenAlertMinimumGainPercentage: current.frozenAlertMinimumGainPercentage,
+      ...changes,
+    })
   })
+  previousSave = save.catch(() => undefined)
+  return save
 }
 
 function saveFrequency(periodicReportFrequency: PeriodicReportFrequency) {

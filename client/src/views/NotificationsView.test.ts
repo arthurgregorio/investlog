@@ -403,4 +403,38 @@ describe('NotificationsView', () => {
       expect(input.element.value).toBe('3.00')
     })
   })
+
+  it('waits for a pending save so the next one keeps its change', async () => {
+    const { wrapper, store } = await mountView()
+    let resolveFirstSave: () => void = () => undefined
+    vi.mocked(store.save).mockImplementationOnce(
+      (request: NotificationPreferencesRequest) =>
+        new Promise<void>((resolve) => {
+          resolveFirstSave = () => {
+            store.preferences = { ...request, emailConfigured: true }
+            resolve()
+          }
+        }),
+    )
+    const input = minimumGainInput(wrapper)
+
+    await input.setValue('5.5')
+    await input.trigger('blur')
+    savesSucceed(store)
+    await switchInput(wrapper, 'frozen-alert-switch').setValue(false)
+    await flushPromises()
+
+    expect(store.save).toHaveBeenCalledOnce()
+
+    resolveFirstSave()
+    await flushPromises()
+
+    expect(store.save).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(store.save).mock.calls[1][0]).toEqual({
+      periodicReportFrequency: 'DAILY',
+      monthEndReportEnabled: true,
+      frozenAlertEnabled: false,
+      frozenAlertMinimumGainPercentage: 5.5,
+    })
+  })
 })
