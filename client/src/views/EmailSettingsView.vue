@@ -223,7 +223,6 @@ async function sendTest() {
           <b-field label="E-mail do remetente" class="cell is-col-span-2 is-col-span-4-mobile">
             <b-input
               v-model="form.fromAddress"
-              type="email"
               placeholder="nao-responda@seudominio.com"
               :disabled="demoModeEnabled"
             />
