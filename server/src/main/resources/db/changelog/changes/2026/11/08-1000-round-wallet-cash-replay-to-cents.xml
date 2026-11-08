@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="08-1000-1" author="${claude}">
+        <comment>
+            The cash replay rounds its running balance to whole cents after every event (issue #563).
+            Lot amounts are quantity × price and cross-currency transfers are amount × rate, so the
+            balance used to keep fractions of a cent: a wallet whose cash was effectively zero read
+            as holding cash, and a transfer of the full displayed amount could be refused as a
+            fraction of a cent short. A purchase now takes its cash_used from the rounded balance,
+            and anything below half a cent counts as zero. wallet_cash, capital_timeline, the
+            reconciliation list and the shortfall check all read the replay, so they follow.
+        </comment>
+        <sqlFile path="08-1000-wallet-cash-replay-whole-cents.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"/>
+        <rollback>
+            <sqlFile path="08-1000-wallet-cash-replay-whole-cents-rollback.sql"
+                     relativeToChangelogFile="true"
+                     splitStatements="false"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
