@@ -14,6 +14,7 @@ import br.com.investlog.server.auth.security.GoogleLinkTokenStore
 import br.com.investlog.server.auth.security.IpAttemptLimiter
 import br.com.investlog.server.auth.security.LoginAttemptLimiter
 import br.com.investlog.server.auth.security.TotpAttemptLimiter
+import br.com.investlog.server.mail.services.AccountMailNotifier
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
@@ -49,6 +50,7 @@ class AuthService(
     private val ipAttemptLimiter: IpAttemptLimiter,
     private val clientIpResolver: ClientIpResolver,
     private val trustedDeviceService: TrustedDeviceService,
+    private val accountMailNotifier: AccountMailNotifier,
     @Value($$"${investlog.google-auth.enabled:false}")
     private val googleAuthEnabled: Boolean,
     @Value($$"${investlog.security.totp.enabled:true}")
@@ -149,7 +151,8 @@ class AuthService(
     @Transactional
     fun register(request: RegisterRequest) {
         try {
-            userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
+            val user = userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
+            accountMailNotifier.notifyPendingApproval(user)
         } catch (exception: DataIntegrityViolationException) {
             logger.debug(exception) { "Registration attempted for an email that is already registered" }
         }
@@ -170,6 +173,7 @@ class AuthService(
                 throw GoogleAccountEmailInUseException("Já existe uma conta com o e-mail $email")
             }
             userRepository.createGoogleUser(googleSub, email, name, avatarUrl)
+                .also(accountMailNotifier::notifyPendingApproval)
         }
 
         if (user.status == CurrentUser.Status.BLOCKED) {

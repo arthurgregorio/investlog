@@ -3,6 +3,7 @@ package br.com.investlog.server.usersadmin.services
 import br.com.investlog.server.auth.security.LoginAttemptLimiter
 import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
+import br.com.investlog.server.mail.services.AccountMailNotifier
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.NotFoundException
@@ -32,6 +33,7 @@ class UsersAdminService(
     private val totpAttemptLimiter: TotpAttemptLimiter,
     private val loginAttemptLimiter: LoginAttemptLimiter,
     private val demoModeGuard: DemoModeGuard,
+    private val accountMailNotifier: AccountMailNotifier,
 ) {
 
     fun findAll(pageable: Pageable): PagedModel<UserAdminResponse> {
@@ -42,7 +44,11 @@ class UsersAdminService(
     @Transactional
     fun approve(externalId: UUID): UserAdminResponse {
         requireApprovedCaller()
-        return updateStatus(externalId, Status.APPROVED)
+        val user = requireUser(externalId)
+        requireCurrentStatus(user, Status.PENDING, "aprovar")
+        val approvedUser = usersAdminRepository.updateStatus(user.id!!, Status.APPROVED)
+        accountMailNotifier.notifyAccountApproved(approvedUser.name, approvedUser.email)
+        return approvedUser
     }
 
     @Transactional
