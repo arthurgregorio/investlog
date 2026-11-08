@@ -176,6 +176,41 @@ describe('NumberInput', () => {
     })
   })
 
+  describe('percentage (with a suffix)', () => {
+    it('renders the suffix as a static addon after the input', () => {
+      const wrapper = mount(NumberInput, { props: { modelValue: '', suffix: '%' } })
+
+      const children = Array.from(wrapper.get('.field.has-addons').element.children)
+      expect(wrapper.get('.button.is-static').text()).toBe('%')
+      expect(children[children.length - 1].textContent).toBe('%')
+      expect(children[0].querySelector('input')).not.toBeNull()
+    })
+
+    it('shows a whole prefilled value with two decimals', () => {
+      const wrapper = mount(NumberInput, { props: { modelValue: 1, suffix: '%' } })
+
+      expect(wrapper.get('input').element.value).toBe('1.00')
+    })
+
+    it('pads to two decimals on blur', async () => {
+      const wrapper = mount(NumberInput, { props: { modelValue: '', suffix: '%' } })
+      const input = wrapper.get('input')
+
+      await typeInto(input, '2.5')
+      await leave(input)
+
+      expect(input.element.value).toBe('2.50')
+    })
+
+    it('emits the parsed number when the user types', async () => {
+      const wrapper = mount(NumberInput, { props: { modelValue: '', suffix: '%' } })
+
+      await wrapper.get('input').setValue('0')
+
+      expect(wrapper.emitted('update:modelValue')).toEqual([[0]])
+    })
+  })
+
   describe('quantity (without a prefix)', () => {
     it('does not pad a prefilled value', () => {
       const wrapper = mount(NumberInput, { props: { modelValue: 26.6 } })

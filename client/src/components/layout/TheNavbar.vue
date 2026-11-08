@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import Avatar from '@/components/ui/Avatar.vue'
 import LogoMark from '@/components/icons/LogoMark.vue'
 import { useRatesStore } from '@/stores/rates'
@@ -18,6 +19,7 @@ const currencyStore = useCurrencyStore()
 const overviewStore = useOverviewStore()
 const appearance = useAppearanceStore()
 const auth = useAuthStore()
+const router = useRouter()
 const { openPasswordChange, openTrustedDevices } = useModals()
 const { dark } = storeToRefs(appearance)
 
@@ -133,9 +135,13 @@ async function logout() {
           <b-dropdown-item aria-role="menuitem" @click="openTrustedDevices()">
             <b-icon icon="cellphone-key" size="is-small" /> Dispositivos confiáveis
           </b-dropdown-item>
-
-          <hr class="dropdown-divider" />
         </template>
+
+        <b-dropdown-item aria-role="menuitem" @click="router.push({ name: 'notifications' })">
+          <b-icon icon="bell-outline" size="is-small" /> Notificações
+        </b-dropdown-item>
+
+        <hr class="dropdown-divider" />
 
         <b-dropdown-item aria-role="menuitem" @click="logout">
           <b-icon icon="logout" size="is-small" /> Sair

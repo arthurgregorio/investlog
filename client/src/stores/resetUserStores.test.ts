@@ -5,6 +5,7 @@ import { useAppearanceStore } from './appearance'
 import { useConfigurationsStore } from './configurations'
 import { useCurrencyStore } from './currency'
 import { useHoldingsListStore } from './holdingsList'
+import { useNotificationPreferencesStore } from './notificationPreferences'
 import { useOverviewStore } from './overview'
 import { useRatesStore } from './rates'
 import { useReinvestmentsStore } from './reinvestments'
@@ -181,6 +182,12 @@ const storeCases: StoreCase[] = [
     useStore: useTrustedDevicesStore,
     seed: { devices: [{ id: 'device-1' }], loading: true },
     initial: { devices: [], loading: false },
+  },
+  {
+    name: 'notificationPreferences',
+    useStore: useNotificationPreferencesStore,
+    seed: { preferences: { periodicReportFrequency: 'DAILY' }, loading: true },
+    initial: { preferences: null, loading: false },
   },
 ]
 
