@@ -52,5 +52,6 @@
     <include file="db/changelog/changes/2026/10/27-1000-create-strategies.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/11/03-1200-create-holding-daily-snapshots.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/11/08-1000-create-mail-settings.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/11/08-1100-create-notification-preferences.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

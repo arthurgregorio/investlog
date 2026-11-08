@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="08-1100-1" author="${claude}">
+        <comment>
+            Create system.notification_preferences, each user's choice of investment notifications
+            (issue #540): the periodic report frequency, the month-end report, the frozen-holding
+            alert and its minimum gain percentage. There is no backfill: a user without a row has the
+            column defaults.
+        </comment>
+        <sql>
+            CREATE TABLE system.notification_preferences (
+                user_id BIGINT PRIMARY KEY REFERENCES system.users (id) ON DELETE CASCADE,
+                periodic_report_frequency TEXT NOT NULL DEFAULT 'DISABLED'
+                    CHECK (periodic_report_frequency IN ('DAILY', 'WEEKLY', 'BIWEEKLY', 'DISABLED')),
+                month_end_report_enabled BOOLEAN NOT NULL DEFAULT true,
+                frozen_alert_enabled BOOLEAN NOT NULL DEFAULT true,
+                frozen_alert_minimum_gain_percentage NUMERIC(5, 2) NOT NULL DEFAULT 1.00
+                    CHECK (frozen_alert_minimum_gain_percentage BETWEEN 0 AND 100),
+                updated_at TIMESTAMPTZ NOT NULL
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE system.notification_preferences;</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="08-1100-2" author="${claude}">
+        <comment>
+            Create system.notification_deliveries, the log of every report and alert sent (issue
+            #540). The schedulers claim a (user, kind, period end) row before sending, and the unique
+            constraint is what keeps a restart, a re-run or a second instance from sending the same
+            email twice.
+        </comment>
+        <sql>
+            CREATE TABLE system.notification_deliveries (
+                id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                user_id BIGINT NOT NULL REFERENCES system.users (id) ON DELETE CASCADE,
+                kind TEXT NOT NULL
+                    CHECK (kind IN ('DAILY_REPORT', 'WEEKLY_REPORT', 'BIWEEKLY_REPORT', 'MONTH_END_REPORT', 'FROZEN_ALERT')),
+                period_end DATE NOT NULL,
+                sent_at TIMESTAMPTZ NOT NULL,
+                CONSTRAINT notification_deliveries_user_kind_period_end_key UNIQUE (user_id, kind, period_end)
+            );
+        </sql>
+        <rollback>
+            <sql>DROP TABLE system.notification_deliveries;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
