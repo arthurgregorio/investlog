@@ -29,12 +29,6 @@ class WalletMoveService(
     private val cashService: CashService,
 ) {
 
-    companion object {
-        private const val SCALE = 20
-        private val MOVE_ZONE: ZoneId = ZoneId.of("America/Sao_Paulo")
-        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-    }
-
     @Transactional
     fun move(userId: Long, originWalletId: UUID, request: WalletMoveRequest) {
         val destinationWalletId = request.destinationWalletId!!
@@ -203,5 +197,11 @@ class WalletMoveService(
 
     private fun BigDecimal.normalized(): BigDecimal = stripTrailingZeros().let { value ->
         if (value.scale() < 0) value.setScale(0) else value
+    }
+
+    companion object {
+        private const val SCALE = 20
+        private val MOVE_ZONE: ZoneId = ZoneId.of("America/Sao_Paulo")
+        private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     }
 }
