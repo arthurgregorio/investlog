@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:replace="~{layout :: layout(~{::content}, ~{::footer})}">
+<body>
+<div th:fragment="content">
+    <h1 style="margin: 0 0 16px 0; font-family: Inter, Arial, sans-serif; font-size: 20px; line-height: 28px; font-weight: 700; color: #1d273b;">O envio de e-mails está funcionando</h1>
+    <p style="margin: 0 0 16px 0;">Este é um e-mail de teste enviado em Configurações → E-mail. Se ele chegou, o InvestLog consegue enviar e-mails com o servidor SMTP salvo.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+        <tr>
+            <td style="background-color: #087f5b; border-radius: 6px;">
+                <a th:href="${publicUrl}" href="#" style="display: inline-block; padding: 12px 20px; font-family: Inter, Arial, sans-serif; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff; text-decoration: none;">Abrir o InvestLog</a>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 0; font-size: 13px; line-height: 20px; color: #5f6b7a;">Se o botão não funcionar, copie este endereço no navegador: <a th:href="${publicUrl}" th:text="${publicUrl}" href="#" style="color: #087f5b; text-decoration: underline;">investlog</a></p>
+</div>
+<p th:fragment="footer" style="margin: 0;">Você recebeu este e-mail porque um administrador do InvestLog enviou um teste para este endereço.</p>
+</body>
+</html>

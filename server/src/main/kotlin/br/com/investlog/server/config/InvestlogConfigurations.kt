@@ -10,7 +10,8 @@ data class InvestlogConfigurations(
     val googleAuth: GoogleAuth,
     val brApi: BrApi,
     val coinGecko: CoinGecko,
-    val awesomeApi: AwesomeApi
+    val awesomeApi: AwesomeApi,
+    val mail: Mail = Mail(),
 ) {
     data class DemoMode(
         val enabled: Boolean
@@ -72,5 +73,9 @@ data class InvestlogConfigurations(
 
     data class AwesomeApi(
         val baseUrl: String
+    )
+
+    data class Mail(
+        val encryptionKey: String = "",
     )
 }
