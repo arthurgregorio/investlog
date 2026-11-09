@@ -252,7 +252,7 @@ only exists if you set `MAIL_ENCRYPTION_KEY`:
    ```bash
    openssl rand -base64 32
    # Windows PowerShell, without openssl:
-   # [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+   # $bytes = New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes); [Convert]::ToBase64String($bytes)
    ```
 2. Put it in your `.env` (`build-from-source/.env` if that's the stack you run):
    ```
