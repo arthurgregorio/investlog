@@ -1,6 +1,7 @@
 package br.com.investlog.server.overview.services
 
 import br.com.investlog.server.overview.repositories.CapitalMonth
+import br.com.investlog.server.overview.repositories.MoverCandidate
 import br.com.investlog.server.overview.repositories.OverviewRepository
 import br.com.investlog.server.overview.repositories.WalletSnapshotGain
 import br.com.investlog.server.overview.rest.payloads.MonthSummaryResponse
@@ -35,13 +36,40 @@ class OverviewService(
         val currentMonth = YearMonth.from(today())
         val monthStart = currentMonth.atDay(1)
         val summary = overviewRepository.findSummary(userId, displayCurrency)
-        val snapshotGains = overviewRepository.findWalletSnapshotGains(userId, displayCurrency)
-        val series = series(userId, displayCurrency, currentMonth, summary.lifetimeResult, snapshotGains)
-        val currentIndex = series.indexOfFirst { point -> point.month == currentMonth.toString() }
-        val current = series.getOrNull(currentIndex)
-        val previous = series.getOrNull(currentIndex - 1)
-        val baselineGain = baselineGain(snapshotGains, monthStart)
-        val movers = overviewRepository.findMoverCandidates(userId, monthStart)
+        val baselineGain = baselineGain(overviewRepository.findWalletSnapshotGains(userId, displayCurrency), monthStart)
+
+        return monthSummary(
+            userId = userId,
+            displayCurrency = displayCurrency,
+            month = currentMonth,
+            currentResultChange = baselineGain?.let { gain -> summary.totalGain - gain },
+            moverCandidates = overviewRepository.findMoverCandidates(userId, monthStart),
+        )
+    }
+
+    fun findClosedMonth(userId: Long, displayCurrency: String, endDate: LocalDate, currentResultChange: BigDecimal?): MonthSummaryResponse {
+        val month = YearMonth.from(endDate)
+
+        return monthSummary(
+            userId = userId,
+            displayCurrency = displayCurrency,
+            month = month,
+            currentResultChange = currentResultChange,
+            moverCandidates = overviewRepository.findMoverCandidatesOn(userId, month.atDay(1), endDate),
+        )
+    }
+
+    private fun monthSummary(
+        userId: Long,
+        displayCurrency: String,
+        month: YearMonth,
+        currentResultChange: BigDecimal?,
+        moverCandidates: List<MoverCandidate>,
+    ): MonthSummaryResponse {
+        val capital = overviewRepository.findCapitalSeries(userId, displayCurrency)
+        val current = capital.lastOrNull { point -> !point.month.isAfter(month) }
+        val previous = capital.lastOrNull { point -> point.month.isBefore(month) }
+        val movers = moverCandidates
             .mapNotNull { candidate ->
                 val baselinePrice = candidate.baselinePrice?.takeIf { price -> price.signum() > 0 } ?: return@mapNotNull null
                 MoverResponse(
@@ -56,11 +84,10 @@ class OverviewService(
             .sortedByDescending { mover -> mover.changePct }
 
         return MonthSummaryResponse(
-            month = currentMonth.toString(),
-            contributions = current?.let { point -> point.ownMoney - (previous?.ownMoney ?: BigDecimal.ZERO) } ?: BigDecimal.ZERO,
-            realizedProfit = current?.let { point -> point.reinvestedProfit - (previous?.reinvestedProfit ?: BigDecimal.ZERO) }
-                ?: BigDecimal.ZERO,
-            currentResultChange = baselineGain?.let { gain -> summary.totalGain - gain },
+            month = month.toString(),
+            contributions = (current?.ownMoney ?: BigDecimal.ZERO) - (previous?.ownMoney ?: BigDecimal.ZERO),
+            realizedProfit = (current?.reinvestedProfit ?: BigDecimal.ZERO) - (previous?.reinvestedProfit ?: BigDecimal.ZERO),
+            currentResultChange = currentResultChange,
             bestMover = movers.firstOrNull()?.takeIf { mover -> movers.size > 1 || mover.changePct.signum() > 0 },
             worstMover = movers.lastOrNull()?.takeIf { mover -> movers.size > 1 || mover.changePct.signum() <= 0 },
         )

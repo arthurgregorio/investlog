@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:replace="~{layout :: layout(~{::content}, ~{::footer})}">
+<body>
+<div th:fragment="content">
+    <p style="margin: 0 0 6px 0; font-family: Inter, Arial, sans-serif; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5f6b7a;">Congelados no positivo</p>
+    <h1 th:text="${title}" style="margin: 0 0 8px 0; font-family: Inter, Arial, sans-serif; font-size: 22px; line-height: 30px; font-weight: 700; color: #1d273b;">2 investimentos congelados passaram do ganho mínimo</h1>
+    <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #5f6b7a;"><span th:text="${singular} ? 'Ele passou do ganho mínimo de' : 'Eles passaram do ganho mínimo de'">Eles passaram do ganho mínimo de</span> <b th:text="${minimumGainPercentage}" style="color: #1d273b;">1,00%</b> <span th:text="${singular} ? 'que você definiu e já pode ser vendido com lucro.' : 'que você definiu e já podem ser vendidos com lucro.'">que você definiu e já podem ser vendidos com lucro.</span> A lista traz todos os seus congelados acima desse ganho agora, incluindo os que já foram avisados antes.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border: 1px solid #e1e6ec; border-radius: 8px; border-collapse: separate;">
+        <tr>
+            <td style="padding: 10px 16px; background-color: #f7f9fc; font-family: Inter, Arial, sans-serif; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">Investimento</td>
+            <td align="right" style="padding: 10px 16px; background-color: #f7f9fc; font-family: Inter, Arial, sans-serif; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">Valor atual</td>
+            <td align="right" style="padding: 10px 16px; background-color: #f7f9fc; font-family: Inter, Arial, sans-serif; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">Resultado</td>
+        </tr>
+        <tr th:each="line : ${lines}">
+            <td style="padding: 14px 16px; border-top: 1px solid #eef1f6; font-family: Inter, Arial, sans-serif; font-size: 13px; line-height: 18px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <td width="34" height="34" align="center" valign="middle" style="width: 34px; height: 34px; border: 1px dashed #1971c2; border-radius: 8px; font-family: Arial, sans-serif; font-size: 16px; line-height: 16px; color: #1971c2;">&#10052;&#65038;</td>
+                        <td style="padding: 0 0 0 12px;">
+                            <b th:text="${line.title}" style="font-size: 14px; color: #1d273b;">MGLU3</b>
+                            <span th:if="${line.newSinceLastAlert}" style="display: inline-block; margin: 0 0 0 6px; padding: 1px 8px; border-radius: 999px; background-color: #087f5b; font-size: 11px; line-height: 16px; font-weight: 700; color: #ffffff;">Novo</span>
+                            <br/>
+                            <span th:text="${line.subtitle}" style="font-size: 12px; color: #5f6b7a;">Ações Brasil · Magazine Luiza</span>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td align="right" th:text="${line.currentValue}" style="padding: 14px 16px; border-top: 1px solid #eef1f6; font-family: Inter, Arial, sans-serif; font-size: 13px; line-height: 18px; color: #1d273b; white-space: nowrap;">R$ 11.120,00</td>
+            <td align="right" style="padding: 14px 16px; border-top: 1px solid #eef1f6; font-family: Inter, Arial, sans-serif; font-size: 13px; line-height: 18px; color: #11804f; white-space: nowrap;">
+                <b th:text="${line.gain}">+R$ 412,30</b><br/>
+                <span th:text="${line.gainPercentage}" style="font-size: 12px;">+3,85%</span>
+            </td>
+        </tr>
+    </table>
+    <p style="margin: 20px 0 0 0; font-size: 12px; line-height: 20px; color: #5f6b7a;">Resultado é o ganho atual de cada investimento sobre o valor investido, na moeda da carteira. "Novo" marca o que passou do ganho mínimo desde o último aviso. Você pode mudar o ganho mínimo em Notificações.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0 0 0;">
+        <tr>
+            <td style="background-color: #087f5b; border-radius: 6px;">
+                <a th:href="|${publicUrl}/investments|" href="#" style="display: inline-block; padding: 12px 20px; font-family: Inter, Arial, sans-serif; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff; text-decoration: none;">Ver meus investimentos</a>
+            </td>
+        </tr>
+    </table>
+</div>
+<p th:fragment="footer" style="margin: 0;">No máximo um aviso por dia, entre 08:00 e 22:00. <a th:href="|${publicUrl}/notifications|" href="#" style="color: #087f5b; text-decoration: underline;">Gerenciar notificações</a></p>
+</body>
+</html>

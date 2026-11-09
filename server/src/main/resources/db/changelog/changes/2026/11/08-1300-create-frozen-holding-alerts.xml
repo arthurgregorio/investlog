@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="08-1300-1" author="${claude}">
+        <comment>
+            Create finances.frozen_holding_alerts, the per-holding state of the frozen-holding alert
+            (issue #542): whether a frozen holding is above its owner's minimum gain, since when, and
+            when it was last alerted. Keyed by the KIND and EXTERNAL_ID of finances.holdings_overview,
+            never by a merged ticker row, with the kind typed as finances.wallet_kind like
+            finances.holding_daily_snapshots. There is no holding FK because the key spans three
+            tables, so the scheduler deletes the rows of holdings that are no longer frozen or gone.
+        </comment>
+        <sql>
+            CREATE TABLE finances.frozen_holding_alerts (
+                holding_kind finances.wallet_kind NOT NULL,
+                holding_external_id UUID NOT NULL,
+                user_id BIGINT NOT NULL REFERENCES system.users (id) ON DELETE CASCADE,
+                green BOOLEAN NOT NULL,
+                green_since TIMESTAMPTZ,
+                alerted_at TIMESTAMPTZ,
+                PRIMARY KEY (holding_kind, holding_external_id)
+            );
+
+            CREATE INDEX frozen_holding_alerts_user_id_idx ON finances.frozen_holding_alerts (user_id);
+        </sql>
+        <rollback>
+            <sql>DROP TABLE finances.frozen_holding_alerts;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

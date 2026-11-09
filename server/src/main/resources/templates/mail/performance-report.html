@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:replace="~{layout :: layout(~{::content}, ~{::footer})}">
+<body>
+<div th:fragment="content">
+    <p th:text="${report.label}" style="margin: 0 0 6px 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5f6b7a;">Relatório</p>
+    <h1 th:text="${report.title}" style="margin: 0 0 6px 0; font-family: Inter, Arial, sans-serif; font-size: 24px; line-height: 31px; font-weight: 700; color: #1d273b;">Período</h1>
+    <p th:text="${report.subtitle}" style="margin: 0 0 22px 0; font-size: 14px; line-height: 22px; color: #5f6b7a;">Comparação</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 0 0 22px 0;">
+        <tr>
+            <td width="33%" valign="top" style="padding: 14px 16px; background-color: #f7f9fc; border: 1px solid #eef1f6; border-radius: 10px;">
+                <p th:text="${report.resultLabel}" style="margin: 0 0 6px 0; font-size: 12px; line-height: 16px; color: #5f6b7a;">Resultado</p>
+                <p th:text="${report.periodResult.text}" th:style="'margin: 0; font-size: 20px; line-height: 26px; font-weight: 700; color: ' + ${report.periodResult.color} + ';'" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 700;">+R$ 0,00</p>
+            </td>
+            <td width="12" style="width: 12px; font-size: 0; line-height: 0;">&#8203;</td>
+            <td width="33%" valign="top" style="padding: 14px 16px; background-color: #f7f9fc; border: 1px solid #eef1f6; border-radius: 10px;">
+                <p style="margin: 0 0 6px 0; font-size: 12px; line-height: 16px; color: #5f6b7a;">Valor total</p>
+                <p th:text="${report.totalValue}" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 700; color: #1d273b;">R$ 0,00</p>
+            </td>
+            <td width="12" style="width: 12px; font-size: 0; line-height: 0;">&#8203;</td>
+            <td width="33%" valign="top" style="padding: 14px 16px; background-color: #f7f9fc; border: 1px solid #eef1f6; border-radius: 10px;">
+                <p style="margin: 0 0 6px 0; font-size: 12px; line-height: 16px; color: #5f6b7a;">Resultado atual</p>
+                <p th:text="${report.currentResult}" style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 700; color: #1d273b;">R$ 0,00</p>
+            </td>
+        </tr>
+    </table>
+
+    <table th:if="${report.month != null}" th:with="month=${report.month}" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 0 0 22px 0; border: 1px solid #e1e6ec; border-radius: 10px;">
+        <tr>
+            <td style="padding: 18px 18px 4px 18px;">
+                <p style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 700; color: #1d273b;">No mês</p>
+                <p th:text="${month.range}" style="margin: 0; font-size: 12px; line-height: 18px; color: #5f6b7a;">01/10 a 31/10/2026</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 18px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                    <tr>
+                        <td width="34" valign="middle" style="width: 34px;"><div style="width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 9px; background-color: #087f5b; color: #ffffff; font-size: 18px; font-weight: 700;">+</div></td>
+                        <td valign="middle" style="padding: 0 12px;">
+                            <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d273b;">Aportes no mês</p>
+                            <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5f6b7a;">capital próprio novo</p>
+                        </td>
+                        <td align="right" valign="middle" th:text="${month.contributions.text}" th:style="'white-space: nowrap; font-size: 18px; line-height: 24px; font-weight: 700; color: ' + ${month.contributions.color} + ';'" style="white-space: nowrap; font-size: 18px; font-weight: 700;">R$ 0,00</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 18px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-top: 1px solid #eef1f6;">
+                    <tr>
+                        <td width="34" valign="middle" style="width: 34px; padding-top: 14px;"><div style="width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 9px; background-color: #11804f; color: #ffffff; font-size: 18px; font-weight: 700;">$</div></td>
+                        <td valign="middle" style="padding: 14px 12px 0 12px;">
+                            <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d273b;">Lucro realizado no mês</p>
+                            <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5f6b7a;">vendas e resgates</p>
+                        </td>
+                        <td align="right" valign="middle" th:text="${month.realizedProfit.text}" th:style="'padding-top: 14px; white-space: nowrap; font-size: 18px; line-height: 24px; font-weight: 700; color: ' + ${month.realizedProfit.color} + ';'" style="white-space: nowrap; font-size: 18px; font-weight: 700;">R$ 0,00</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 18px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-top: 1px solid #eef1f6;">
+                    <tr>
+                        <td width="34" valign="middle" style="width: 34px; padding-top: 14px;"><div th:style="'width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 9px; background-color: ' + ${month.changeIconColor} + '; color: #ffffff; font-size: 18px; font-weight: 700;'" style="width: 34px; height: 34px; border-radius: 9px; color: #ffffff;">&#8599;</div></td>
+                        <td valign="middle" style="padding: 14px 12px 0 12px;">
+                            <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d273b;">Variação do resultado atual</p>
+                            <p style="margin: 0; font-size: 12px; line-height: 16px; color: #5f6b7a;">desde o início do mês</p>
+                        </td>
+                        <td align="right" valign="middle" th:text="${month.currentResultChange.text}" th:style="'padding-top: 14px; white-space: nowrap; font-size: 18px; line-height: 24px; font-weight: 700; color: ' + ${month.currentResultChange.color} + ';'" style="white-space: nowrap; font-size: 18px; font-weight: 700;">R$ 0,00</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 18px 18px 18px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; border-top: 1px solid #eef1f6;">
+                    <tr>
+                        <td width="50%" valign="top" style="padding: 14px 6px 0 0;">
+                            <div th:replace="~{performance-report :: mover-tile(${month.bestMover})}"></div>
+                        </td>
+                        <td width="50%" valign="top" style="padding: 14px 0 0 6px;">
+                            <div th:replace="~{performance-report :: mover-tile(${month.worstMover})}"></div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 0 0 16px 0; border: 1px solid #e1e6ec; border-radius: 10px; border-collapse: separate; font-size: 13px; line-height: 18px;">
+        <tr style="background-color: #f7f9fc;">
+            <td style="padding: 10px 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">Carteira</td>
+            <td align="right" style="padding: 10px 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">Valor atual</td>
+            <td align="right" style="padding: 10px 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">Resultado atual</td>
+            <td align="right" th:text="${report.columnLabel}" style="padding: 10px 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">No período</td>
+            <td align="right" style="padding: 10px 14px 10px 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5f6b7a;">Ganho %</td>
+        </tr>
+        <tr th:each="row : ${report.rows}">
+            <td style="padding: 12px 14px; border-top: 1px solid #eef1f6; color: #1d273b;">
+                <span th:text="${row.name}" style="font-weight: 600;">Carteira</span>
+                <br th:if="${row.note != null}"/><span th:if="${row.note != null}" th:text="${row.note}" style="font-size: 11px; color: #5f6b7a;">em USD</span>
+            </td>
+            <td align="right" th:text="${row.currentValue}" style="padding: 12px 8px; border-top: 1px solid #eef1f6; white-space: nowrap; color: #1d273b;">R$ 0,00</td>
+            <td align="right" th:text="${row.currentResult}" style="padding: 12px 8px; border-top: 1px solid #eef1f6; white-space: nowrap; color: #1d273b;">R$ 0,00</td>
+            <td align="right" th:text="${row.periodResult.text}" th:style="'padding: 12px 8px; border-top: 1px solid #eef1f6; white-space: nowrap; font-weight: 600; color: ' + ${row.periodResult.color} + ';'" style="padding: 12px 8px; white-space: nowrap; font-weight: 600;">+R$ 0,00</td>
+            <td align="right" th:text="${row.gainPercentage}" style="padding: 12px 14px 12px 8px; border-top: 1px solid #eef1f6; white-space: nowrap; color: #1d273b;">0,00%</td>
+        </tr>
+        <tr th:with="total=${report.total}" style="background-color: #f7f9fc; font-weight: 700;">
+            <td style="padding: 12px 14px; border-top: 1px solid #e1e6ec; color: #1d273b;">
+                <span th:text="${total.name}">Total</span><br/><span th:text="${total.note}" style="font-size: 11px; font-weight: 500; color: #5f6b7a;">na sua moeda</span>
+            </td>
+            <td align="right" th:text="${total.currentValue}" style="padding: 12px 8px; border-top: 1px solid #e1e6ec; white-space: nowrap; color: #1d273b;">R$ 0,00</td>
+            <td align="right" th:text="${total.currentResult}" style="padding: 12px 8px; border-top: 1px solid #e1e6ec; white-space: nowrap; color: #1d273b;">R$ 0,00</td>
+            <td align="right" th:text="${total.periodResult.text}" th:style="'padding: 12px 8px; border-top: 1px solid #e1e6ec; white-space: nowrap; color: ' + ${total.periodResult.color} + ';'" style="padding: 12px 8px; white-space: nowrap;">+R$ 0,00</td>
+            <td align="right" th:text="${total.gainPercentage}" style="padding: 12px 14px 12px 8px; border-top: 1px solid #e1e6ec; white-space: nowrap; color: #1d273b;">0,00%</td>
+        </tr>
+    </table>
+
+    <p th:text="${report.explanation}" style="margin: 0 0 22px 0; font-size: 12px; line-height: 19px; color: #5f6b7a;">Explicação</p>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0;">
+        <tr>
+            <td style="background-color: #087f5b; border-radius: 8px;">
+                <a th:href="${publicUrl + '/overview'}" href="#" style="display: inline-block; padding: 13px 24px; font-family: Inter, Arial, sans-serif; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff; text-decoration: none;">Abrir o InvestLog</a>
+            </td>
+        </tr>
+    </table>
+</div>
+<div th:fragment="mover-tile(mover)" th:style="'padding: 12px 14px; border-radius: 10px; background-color: ' + ${mover.background} + ';'" style="padding: 12px 14px; border-radius: 10px;">
+    <p th:text="${mover.label}" th:style="'margin: 0 0 4px 0; font-size: 12px; line-height: 16px; font-weight: 600; color: ' + ${mover.labelColor} + ';'" style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600;">Maior alta</p>
+    <p th:text="${mover.name}" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #1d273b;">WEGE3</p>
+    <p th:if="${mover.detail != null}" th:text="${mover.detail}" style="margin: 0; font-size: 12px; line-height: 16px; color: #5f6b7a;">WEG</p>
+    <p th:text="${mover.value.text}" th:style="'margin: 4px 0 0 0; font-size: 18px; line-height: 24px; font-weight: 700; color: ' + ${mover.value.color} + ';'" style="margin: 4px 0 0 0; font-size: 18px; font-weight: 700;">+0,00%</p>
+</div>
+<p th:fragment="footer" style="margin: 0;"><span th:text="${report.footer}">Você recebe este relatório.</span><br/><a th:href="${publicUrl + '/notifications'}" href="#" style="color: #087f5b; text-decoration: underline;">Gerenciar notificações</a></p>
+</body>
+</html>

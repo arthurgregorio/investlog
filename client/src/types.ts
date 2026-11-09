@@ -397,6 +397,21 @@ export interface ProfileUpdateRequest {
   preferredCurrency?: string
 }
 
+export type PeriodicReportFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'DISABLED'
+
+export interface NotificationPreferencesResponse {
+  periodicReportFrequency: PeriodicReportFrequency
+  monthEndReportEnabled: boolean
+  frozenAlertEnabled: boolean
+  frozenAlertMinimumGainPercentage: number
+  emailConfigured: boolean
+}
+
+export type NotificationPreferencesRequest = Omit<
+  NotificationPreferencesResponse,
+  'emailConfigured'
+>
+
 export interface ConfigurationResponse {
   key: string
   value: string

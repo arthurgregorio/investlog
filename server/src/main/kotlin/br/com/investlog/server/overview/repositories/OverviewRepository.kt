@@ -4,6 +4,7 @@ import br.com.investlog.server.jooq.finances.enums.HoldingStatus
 import br.com.investlog.server.jooq.finances.enums.WalletKind
 import br.com.investlog.server.jooq.finances.tables.references.CAPITAL_TIMELINE
 import br.com.investlog.server.jooq.finances.tables.references.CURRENCY_RATES
+import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_OVERVIEW
 import br.com.investlog.server.jooq.finances.tables.references.HOLDINGS_VALUED
 import br.com.investlog.server.jooq.finances.tables.references.HOLDING_DAILY_SNAPSHOTS
 import br.com.investlog.server.jooq.finances.tables.references.WALLETS
@@ -131,10 +132,7 @@ class OverviewRepository(private val dsl: DSLContext) {
 
     fun findMoverCandidates(userId: Long, monthStart: LocalDate): List<MoverCandidate> {
         val overview = HOLDINGS_VALUED.`as`("overview")
-        val baselinePrice = DSL.coalesce(
-            snapshotPrice(overview.KIND, overview.HOLDING_ID, HOLDING_DAILY_SNAPSHOTS.SNAPSHOT_DATE.lt(monthStart), latestFirst = true),
-            snapshotPrice(overview.KIND, overview.HOLDING_ID, HOLDING_DAILY_SNAPSHOTS.SNAPSHOT_DATE.ge(monthStart), latestFirst = false),
-        )
+        val baselinePrice = baselinePrice(overview.KIND, overview.HOLDING_ID, monthStart)
 
         return dsl.select(overview.KIND, overview.TICKER, overview.NAME, overview.CURRENT_PRICE, baselinePrice)
             .from(overview)
@@ -152,6 +150,35 @@ class OverviewRepository(private val dsl: DSLContext) {
                 )
             }
     }
+
+    fun findMoverCandidatesOn(userId: Long, monthStart: LocalDate, endDate: LocalDate): List<MoverCandidate> {
+        val endSnapshots = HOLDING_DAILY_SNAPSHOTS.`as`("end_snapshots")
+        val holdings = HOLDINGS_OVERVIEW.`as`("holdings")
+        val baselinePrice = baselinePrice(endSnapshots.KIND, endSnapshots.HOLDING_ID, monthStart)
+
+        return dsl.select(endSnapshots.KIND, holdings.TICKER, holdings.NAME, endSnapshots.CURRENT_PRICE, baselinePrice)
+            .from(endSnapshots)
+            .join(WALLETS).on(WALLETS.ID.eq(endSnapshots.WALLET_ID))
+            .join(holdings).on(holdings.KIND.eq(endSnapshots.KIND)).and(holdings.HOLDING_ID.eq(endSnapshots.HOLDING_ID))
+            .where(WALLETS.USER_ID.eq(userId))
+            .and(endSnapshots.SNAPSHOT_DATE.eq(endDate))
+            .and(endSnapshots.KIND.`in`(WalletKind.STOCKS, WalletKind.CRYPTO))
+            .and(endSnapshots.CURRENT_PRICE.isNotNull)
+            .fetch { record ->
+                MoverCandidate(
+                    kind = record.get(endSnapshots.KIND)!!.literal,
+                    ticker = record.get(holdings.TICKER),
+                    name = record.get(holdings.NAME),
+                    currentPrice = record.get(endSnapshots.CURRENT_PRICE)!!,
+                    baselinePrice = record.get(baselinePrice),
+                )
+            }
+    }
+
+    private fun baselinePrice(kind: Field<WalletKind?>, holdingId: Field<Long?>, monthStart: LocalDate) = DSL.coalesce(
+        snapshotPrice(kind, holdingId, HOLDING_DAILY_SNAPSHOTS.SNAPSHOT_DATE.lt(monthStart), latestFirst = true),
+        snapshotPrice(kind, holdingId, HOLDING_DAILY_SNAPSHOTS.SNAPSHOT_DATE.ge(monthStart), latestFirst = false),
+    )
 
     private fun snapshotPrice(
         kind: Field<WalletKind?>,
