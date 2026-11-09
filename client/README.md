@@ -1,48 +1,11 @@
-# InvestLog
+# InvestLog client
 
-A manual investment logbook (PT-BR). Track wallets of **stocks/FIIs, crypto and funds**,
-record dated acquisitions/contributions, and see a consolidated, multi-currency view.
-Stock/FII prices auto-update hourly during B3 trading hours; crypto and funds are entered
-by hand, with no live market feed. Backed by a Spring Boot + Postgres API, so everything
-is persisted server-side.
-
-Recreated in **Vue 3** from the Claude Design handoff prototype, matching the Tabler
-visual language pixel-for-pixel.
-
-## Stack
-
-- Vue 3 (`<script setup>` + TypeScript)
-- Pinia (state) · Vue Router 4 (routing)
-- Vite 6
-
-## Getting started
+The InvestLog single-page app: Vue 3, TypeScript, Pinia and Buefy, built with Vite and served by nginx in production. Requires Node 24.15 or newer.
 
 ```bash
 npm install
-npm run dev        # start the dev server (http://localhost:8081)
-npm run build      # type-check (vue-tsc) + production build
-npm run type-check # type-check only
+npm run dev        # dev server at http://localhost:8081, proxying /private to localhost:8080
+npm run build      # type-check, then production build into dist/
 ```
 
-## Screens
-
-- **Visão geral** — consolidated KPIs, cumulative-contributions chart, allocation donut,
-  and per-type distribution cards.
-- **Carteiras** — wallet cards (type, currency, invested, holdings preview) + create-wallet.
-- **Investimentos** — filterable table with expandable rows (lots/contributions, preço
-  médio) and an add-investment modal for stocks/crypto/funds.
-- **Configurações** — currency conversion rates, editable stock/fund types, and the
-  accent-color picker.
-
-## Project structure
-
-```
-src/
-  assets/styles.css      # ported design spec (Tabler-style CSS, theme/accent tokens)
-  data/seed.ts           # seed wallets, holdings, types, rates
-  stores/                # portfolio (logbook state) + appearance (theme/accent)
-  composables/           # formatting, add-investment form, modal controls
-  components/            # AppIcon, ui/ atoms, charts/, layout/, forms/, investments/
-  views/                 # Overview / Wallets / Investments / Settings
-  router/                # routes
-```
+The stack and design are described in the wiki's [Client stack](https://github.com/arthurgregorio/investlog/wiki/Client-stack) page, and every command (tests, linting) in [Local development](https://github.com/arthurgregorio/investlog/wiki/Local-development#client).
