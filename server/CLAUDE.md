@@ -124,6 +124,9 @@ layout — `<feature>/<Controller>.kt` plus `services/`, `repositories/` and `re
 | `investmentreport` | `GET /holdings/report/pdf`, the consolidated investment report as a PDF — see **Investment report PDF** |
 | `strategies` | Investment strategies, their classes and targets, and each holding's class — see **Strategies** |
 | `overview` | Portfolio summary, the month-filled capital and result series, and the current month's summary |
+| `walletsnapshots` | The nightly wallet and holding snapshots behind every chart, delta and month summary |
+| `mail` | SMTP settings, the encrypted SMTP password and sending — see **Email and notifications** |
+| `notifications` | Notification preferences, the periodic and month-end reports and the frozen-holding alert — see **Email and notifications** |
 | `stockpricesync`, `cryptopricesync`, `usdpricesync` | Scheduled price refresh — see **Price sync** |
 | `typelists`, `currencyrates`, `configurations` | Reference data and runtime feature toggles |
 
@@ -320,6 +323,20 @@ This one earns its `@Service`. `WalletDetailService` runs three repository queri
 
 **Allocation and the contribution planner read, never write** (issue #520). `GET /strategies/{id}/allocation` reports each class and holding against its target (actual %, `driftPercentagePoints` and `driftValue`, both positive when above target), a per-class segment breakdown, and the count and value still in "Não definida". `GET /strategies/{id}/contribution-plan?amount=` splits an amount: classes below target once the amount is in receive in proportion to their gap, and inside each one the unfrozen holdings below target receive in proportion to theirs. A below-target class with no holding able to receive is dropped and the amount re-split among the rest, so lines always add up to `amount` (rounded down to cents, the remainder on the last line); every other holding is listed with a `LeftOutReason`, `FROZEN` first. Both reject the default strategy (400), and the planner rejects an amount that rounds to zero or a strategy where nothing can receive. Both read `StrategyAllocationRepository`, one query on `holdings_valued` joined to `holding_strategy_classes`, with values in the user's `preferredCurrency` through `CurrencyRateRepository.findRateOrAnchor`.
 
+### Email and notifications
+
+`mail` (issue #534) owns the one SMTP configuration, admin-only under `GET`/`PUT /mail-settings`, `PATCH /mail-settings/enabled` and `POST /mail-settings/test`. The SMTP password is stored AES-GCM-encrypted by `MailPasswordCipher` under `investlog.mail.encryption-key` (`MAIL_ENCRYPTION_KEY`); without a key it cannot be saved, and responses only ever say `passwordSet`. Messages are Thymeleaf templates rendered through the `mailTemplateEngine` bean.
+
+**`MailSender.send` never throws.** It logs and skips when demo mode is on, sending is disabled or the settings are incomplete, and logs a warning on any delivery failure, so a broken SMTP server never fails the business call that triggered the email. `sendOrThrow` is the exception, used only by the test send so the SMTP error reaches the admin. Account emails (`AccountMailNotifier`, see `usersadmin`) publish a `MailRequested` event instead of sending inline; `MailRequestedListener` delivers it `@Async` after the transaction commits, so a rolled-back registration or approval sends nothing.
+
+`notifications` (issue #535) keeps each user's preferences behind `GET`/`PUT /profile/notifications` and runs two schedulers in `America/Sao_Paulo`:
+- `PerformanceReportScheduler` (07:00 daily) sends every report `ReportPeriod.dueOn(today)` returns — daily on Tuesday to Saturday, weekly on Monday, biweekly on the 1st and 16th, month-end on the 1st — to the users who want that kind, built from `wallet_daily_snapshots`. A period with no snapshot on its end date is skipped.
+- `FrozenHoldingAlertScheduler` (every 2 hours) emails a user once a day, between 08:00 and 22:00, when a frozen holding newly rises above their minimum gain.
+
+**Every send claims a `system.notification_deliveries` row first** (unique on user, kind and period end, `ON CONFLICT DO NOTHING`), so a restart, a second instance or a re-run never sends the same report twice; a report that fails or has no data releases its claim so the next run can retry.
+
+`walletsnapshots`' `WalletSnapshotScheduler` (23:45 daily, same zone) writes the `wallet_daily_snapshots` and `holding_daily_snapshots` rows those reports, the wallet detail deltas and the Overview read.
+
 ### Price sync
 
 Three schedulers refresh prices in place, each gated by its own `ConfigurationKey` toggle
@@ -335,9 +352,7 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   /v2/stocks/quote?symbols={ticker}` on [brapi.dev](https://brapi.dev/) — the current documented
   endpoint; the legacy `/api/quote/{ticker}` still works but is explicitly called out as legacy in
   brapi's own docs — one call per ticker, price nested under `results[].data.regularMarketPrice`)
-  to refresh `current_price`/`updated_at`. A ticker that 404s, times out, or otherwise fails is
-  logged as a warning and skipped — it keeps its last-known price and the loop moves on to the
-  next ticker, so one bad ticker never blocks the rest of a run. `StocksClient` lives in
+  to refresh `current_price`/`updated_at`. `StocksClient` lives in
   `shared/http/brapi` rather than inside `stockpricesync` itself — it's a reusable brapi.dev
   client, not owned by this one sync job — and is registered via `@ImportHttpServices(group =
   "brapi")` in `config/http/BrApiHttpClientsConfig`; **Spring Boot
@@ -471,12 +486,6 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   concrete JSON mapper; `ObjectMapper` is now a more generic base type not meant for direct
   injection. Needed anywhere you serialize a response body by hand outside the normal
   controller/`ProblemDetail` pipeline (e.g. `SecurityConfiguration`'s `AccessDeniedHandler`).
-- The shared test harness (`RestClientTestConfiguration` /
-  `AdminSessionCookieInterceptor`, `src/test/.../AdminSessionCookieInterceptor.kt`) auto-injects
-  an admin session cookie into any `RestTestClient` request that doesn't already carry a `Cookie`
-  header. To test a non-admin or unauthenticated path, capture that user's own session cookie
-  (via a real login/TOTP-verify call) and pass it explicitly with `.header("Cookie", cookie)` —
-  passing an explicit header is what short-circuits the auto-injection.
 
 ### Stack
 
@@ -502,7 +511,8 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   classpath for frameworks that need it (jOOQ/Jackson/Spring).
 - `kotlin-logging-jvm` (`io.github.oshai:kotlin-logging-jvm`) for structured, Kotlin-idiomatic
   logging via `KotlinLogging.logger {}` (SLF4J-backed).
-- Other starters: `actuator`, `mail`, `validation`.
+- Other starters: `actuator`, `cache` (Caffeine), `mail`, `security`, `oauth2-client` (Google
+  login), `validation`.
 - `spring-data-commons` provides `Pageable`/`Page`/`PagedModel` and the MVC argument-resolver
   auto-configuration for paginated collection endpoints (default page size 20, configured via
   `spring.data.web.pageable.default-page-size`).
@@ -521,8 +531,10 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
 - `RestClientTestConfiguration` / `AdminSessionCookieInterceptor`
   (`src/test/.../AdminSessionCookieInterceptor.kt`, imported by `BaseIntegrationTest` alongside
   `TestcontainersConfiguration`) auto-authenticates every `RestTestClient` request as the seeded
-  admin, so existing test classes don't need to log in explicitly — see **Authentication &
-  Authorization** above for how to test as a different/no user.
+  admin (it injects the admin session cookie into any request that carries no `Cookie` header), so
+  test classes don't need to log in explicitly. To test a non-admin or unauthenticated path, capture
+  that user's own session cookie through a real login/TOTP-verify call and pass it with
+  `.header("Cookie", cookie)` — the explicit header is what short-circuits the injection.
 - `TestServerApplication` is an alternate `main` that boots the app with
   `TestcontainersConfiguration` applied, for running locally against a throwaway
   Testcontainers-managed Postgres.
