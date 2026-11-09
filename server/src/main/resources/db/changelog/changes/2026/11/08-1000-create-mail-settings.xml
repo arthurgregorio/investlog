@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <changeSet id="08-1000-1" author="${claude}">
+        <comment>
+            Create system.mail_settings, the single-row SMTP configuration an admin edits in
+            Configurações → E-mail (issue #536). It lives apart from system.configurations because
+            that table returns every value to the client and rejects blank values, while the SMTP
+            password must never leave the server and the username may be blank. The password is
+            stored as AES-256-GCM ciphertext. The row starts disabled with every server field null.
+        </comment>
+        <sql>
+            CREATE TABLE system.mail_settings (
+                id SMALLINT PRIMARY KEY CHECK (id = 1),
+                enabled BOOLEAN NOT NULL DEFAULT false,
+                host TEXT,
+                port INT,
+                security TEXT NOT NULL DEFAULT 'STARTTLS' CHECK (security IN ('NONE', 'STARTTLS', 'SSL_TLS')),
+                username TEXT,
+                password_ciphertext TEXT,
+                from_address TEXT,
+                from_name TEXT,
+                public_url TEXT,
+                updated_at TIMESTAMPTZ NOT NULL
+            );
+
+            INSERT INTO system.mail_settings (id, enabled, updated_at) VALUES (1, false, now());
+        </sql>
+        <rollback>
+            <sql>DROP TABLE system.mail_settings;</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

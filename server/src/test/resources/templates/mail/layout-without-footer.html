@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR" th:replace="~{layout :: layout(~{::content}, ~{})}">
+<body>
+<div th:fragment="content">
+    <p th:text="${greeting}">Olá</p>
+</div>
+</body>
+</html>

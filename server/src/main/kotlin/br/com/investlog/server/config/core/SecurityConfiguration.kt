@@ -66,6 +66,7 @@ class SecurityConfiguration {
                 authorize("/private/oauth2/**", permitAll)
                 authorize("/private/login/oauth2/**", permitAll)
                 authorize("/private/v1/users/**", hasAuthority("ROLE_ADMIN"))
+                authorize("/private/v1/mail-settings/**", hasAuthority("ROLE_ADMIN"))
                 authorize(HttpMethod.POST, "/private/v1/holding-types/**", hasAuthority("ROLE_ADMIN"))
                 authorize(HttpMethod.PUT, "/private/v1/holding-types/**", hasAuthority("ROLE_ADMIN"))
                 authorize(HttpMethod.DELETE, "/private/v1/holding-types/**", hasAuthority("ROLE_ADMIN"))

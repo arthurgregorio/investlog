@@ -25,6 +25,7 @@ function makeRouter() {
       },
       { path: '/settings/types', name: 'settings-types', component: { template: '<div />' } },
       { path: '/settings/users', name: 'settings-users', component: { template: '<div />' } },
+      { path: '/settings/email', name: 'settings-email', component: { template: '<div />' } },
     ],
   })
 }
@@ -56,7 +57,7 @@ describe('TheTopNav', () => {
     expect(wrapper.text()).not.toContain('Configurações')
   })
 
-  it('shows a Configurações dropdown with three children for an admin', async () => {
+  it('shows a Configurações dropdown with four children for an admin', async () => {
     const auth = useAuthStore()
     auth.session = {
       name: 'Administrador',
@@ -76,6 +77,11 @@ describe('TheTopNav', () => {
     expect(document.body.textContent).toContain('Preços e Moedas')
     expect(document.body.textContent).toContain('Usuários')
     expect(document.body.textContent).toContain('Tipos')
+    expect(document.body.textContent).toContain('E-mail')
+    const settingsItems = Array.from(document.body.querySelectorAll('.dropdown-item'))
+      .map((item) => item.textContent?.trim())
+      .filter((label) => ['Preços e Moedas', 'Usuários', 'Tipos', 'E-mail'].includes(label ?? ''))
+    expect(settingsItems).toEqual(['Preços e Moedas', 'Usuários', 'Tipos', 'E-mail'])
   })
 
   it('marks Configurações as active when on a child route', async () => {

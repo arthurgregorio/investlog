@@ -54,6 +54,7 @@ const nav = computed<NavItem[]>(() => {
         { name: 'settings-price-currencies', label: 'Preços e Moedas', icon: 'currency-usd' },
         { name: 'settings-users', label: 'Usuários', icon: 'account-group-outline' },
         { name: 'settings-types', label: 'Tipos', icon: 'shape-outline' },
+        { name: 'settings-email', label: 'E-mail', icon: 'email-outline' },
       ],
     })
   }

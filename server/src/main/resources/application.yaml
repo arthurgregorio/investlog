@@ -57,3 +57,6 @@ investlog:
 
   awesomeapi:
     base-url: https://economia.awesomeapi.com.br
+
+  mail:
+    encryption-key: ${MAIL_ENCRYPTION_KEY:}

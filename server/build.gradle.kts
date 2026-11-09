@@ -58,6 +58,7 @@ val totpVersion = "1.7.1"
 val zxingVersion = "3.5.4"
 val wiremockSpringVersion = "4.0.9"
 val openHtmlToPdfVersion = "1.1.97"
+val greenMailVersion = "2.1.14"
 
 dependencies {
     // spring stuff
@@ -117,6 +118,8 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-postgresql")
 
     testImplementation("org.wiremock.integrations:wiremock-spring-boot:$wiremockSpringVersion")
+
+    testImplementation("com.icegreen:greenmail:$greenMailVersion")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

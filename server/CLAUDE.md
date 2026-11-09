@@ -146,7 +146,12 @@ In detail:
   `ROLE_ADMIN` in `SecurityConfiguration`. `block`/`changeRole`/`delete`/`resetPassword` all guard
   against the caller targeting their own account (`SelfActionNotAllowedException`, 400) to
   prevent a self-lockout; `approve`, `unblock`, and `resetTotp` don't need the guard since
-  self-targeting them is a genuine no-op, not a lockout. Every operation, reads included, starts
+  self-targeting them can't lock anyone out. `approve` only moves `PENDING` → `APPROVED` (anything
+  else is `InvalidUserStatusTransitionException`, 409, like `block`/`unblock`) and emails the user
+  the "Conta aprovada" message through `AccountMailNotifier`; `unblock` sends nothing. The same
+  notifier emails every approved admin except `AdminAccount.EMAIL`, one message each, when
+  `AuthService` creates a `PENDING` account (local registration or first Google sign-in) (issue
+  #538). Every operation, reads included, starts
   with `requireApprovedCaller()`, the live `CurrentUserProvider` check, because the route's
   `ROLE_ADMIN` gate is cached at login and would otherwise let a blocked admin's open session
   unblock itself (issue #489).

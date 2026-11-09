@@ -3,18 +3,21 @@ package br.com.investlog.server.config
 import br.com.investlog.server.shared.exceptions.AccountNotLocalException
 import br.com.investlog.server.shared.exceptions.CashNotCoveredException
 import br.com.investlog.server.shared.exceptions.DemoModeProtectedAccountException
+import br.com.investlog.server.shared.exceptions.DemoModeRestrictedException
 import br.com.investlog.server.shared.exceptions.FrozenHoldingException
 import br.com.investlog.server.shared.exceptions.HoldingTypeKindInUseException
 import br.com.investlog.server.shared.exceptions.HoldingTypeKindMismatchException
 import br.com.investlog.server.shared.exceptions.InvalidCashOperationException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
 import br.com.investlog.server.shared.exceptions.InvalidLotUpdateException
+import br.com.investlog.server.shared.exceptions.InvalidMailSettingsException
 import br.com.investlog.server.shared.exceptions.InvalidReinvestmentException
 import br.com.investlog.server.shared.exceptions.InvalidStrategyException
 import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
 import br.com.investlog.server.shared.exceptions.InvalidUserStatusTransitionException
 import br.com.investlog.server.shared.exceptions.InvalidWalletMoveException
 import br.com.investlog.server.shared.exceptions.InvalidWithdrawalException
+import br.com.investlog.server.shared.exceptions.MailDeliveryException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
@@ -35,6 +38,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.HttpStatus.TOO_MANY_REQUESTS
 import org.springframework.http.HttpStatus.UNAUTHORIZED
+import org.springframework.http.HttpStatus.UNPROCESSABLE_CONTENT
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
@@ -312,6 +316,40 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         val message = ex.message ?: "Esta ação está desabilitada para a conta protegida do administrador de demonstração."
 
         val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(DemoModeRestrictedException::class)
+    fun handleDemoModeRestricted(ex: DemoModeRestrictedException): ProblemDetail {
+
+        val message = ex.message ?: "Indisponível no modo demonstração."
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(FORBIDDEN, message)
+        problemDetail.setProperty("error", "demo_mode")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(InvalidMailSettingsException::class)
+    fun handleInvalidMailSettings(ex: InvalidMailSettingsException): ProblemDetail {
+
+        val message = ex.message ?: "Configuração de e-mail inválida"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(BAD_REQUEST, message)
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(MailDeliveryException::class)
+    fun handleMailDelivery(ex: MailDeliveryException): ProblemDetail {
+
+        val message = ex.message ?: "Não foi possível enviar o e-mail"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(UNPROCESSABLE_CONTENT, message)
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
