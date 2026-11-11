@@ -47,7 +47,7 @@
 </header>
 
 <main id="top">
-  <section class="hero" style="padding-top:88px;">
+  <section class="hero">
     <span class="hero-eyebrow">Seu diário de investimentos</span>
     <h1 class="hero-title">Registre seus aportes e acompanhe sua <span>carteira evoluir</span></h1>
     <p class="hero-sub">InvestLog reúne ações, fundos e criptomoedas em um só lugar, com histórico completo
@@ -59,10 +59,10 @@
     <p class="hero-credentials">Acesse com <code>admin@admin.com</code> / <code>admin</code> — sem cadastro necessário.
     </p>
     <div class="hero-frame">
-      <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot da visão geral">Visão geral do InvestLog
-        <img src="assets/hero.png" alt="Visão geral com patrimônio, evolução dos aportes e alocação por tipo" onerror="this.remove()">
-        <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-      </div>
+      <button type="button" class="ph zoomable" aria-label="Ampliar a visão geral">Visão geral do InvestLog
+        <img src="assets/hero.png" fetchpriority="high" alt="Visão geral com patrimônio, evolução dos aportes e alocação por tipo" onerror="this.remove()">
+        <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+      </button>
     </div>
   </section>
 
@@ -147,85 +147,85 @@
       <div class="carousel-track" id="carouselTrack">
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Carteiras">Carteiras
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Carteiras">Carteiras
               <img src="assets/carteiras.png" alt="Carteiras" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Carteiras</b><span>Carteiras por tipo e moeda, com resultado de cada uma</span></div>
           </div>
         </div>
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Detalhe da carteira">Detalhe da carteira
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Detalhe da carteira">Detalhe da carteira
               <img src="assets/carteira-detalhe.png" alt="Detalhe da carteira" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Detalhe da carteira</b><span>Desempenho diário, destaques e evolução do valor</span></div>
           </div>
         </div>
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Distribuição por segmento">Distribuição por segmento
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Distribuição por segmento">Distribuição por segmento
               <img src="assets/distribuicao-segmentos.png" alt="Distribuição por segmento" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Distribuição por segmento</b><span>Participação de cada ativo ou segmento na carteira</span></div>
           </div>
         </div>
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Investimentos">Investimentos
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Investimentos">Investimentos
               <img src="assets/investimentos.png" alt="Investimentos" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Investimentos</b><span>Todos os ativos com filtros por tipo, carteira e busca</span></div>
           </div>
         </div>
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Histórico de movimentações">Histórico de movimentações
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Histórico de movimentações">Histórico de movimentações
               <img src="assets/historico.png" alt="Histórico de movimentações" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Histórico de movimentações</b><span>Compras e resgates de cada ativo, com saldo e preço médio</span></div>
           </div>
         </div>
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Relatório para impressão">Relatório para impressão
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Relatório para impressão">Relatório para impressão
               <img src="assets/relatorio.png" alt="Relatório para impressão" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Relatório para impressão</b><span>Relatório completo pronto para imprimir ou salvar em PDF</span></div>
           </div>
         </div>
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Tipos e segmentos">Tipos e segmentos
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Tipos e segmentos">Tipos e segmentos
               <img src="assets/tipos-investimento.png" alt="Tipos e segmentos" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Tipos e segmentos</b><span>Tipos de ação, tipos de fundo e segmentos configuráveis</span></div>
           </div>
         </div>
         <div class="carousel-slide">
           <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Modo escuro e multi moedas">Modo escuro e multi moedas
+            <button type="button" class="ph zoomable" aria-label="Ampliar a tela: Modo escuro e multi moedas">Modo escuro e multi moedas
               <img src="assets/modo-escuro.png" alt="Modo escuro e multi moedas" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
+              <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+            </button>
             <div class="shot-caption"><b>Modo escuro e multi moedas</b><span>Tema escuro e carteiras em dólar com conversão automática</span></div>
           </div>
         </div>
       </div>
       <div class="carousel-arrows">
-        <button class="arrow-btn" id="prevBtn" aria-label="Anterior">
+        <button type="button" class="arrow-btn" id="prevBtn" aria-label="Anterior">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 6l-6 6 6 6"></path>
           </svg>
         </button>
-        <button class="arrow-btn" id="nextBtn" aria-label="Próximo">
+        <button type="button" class="arrow-btn" id="nextBtn" aria-label="Próximo">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 6l6 6-6 6"></path>
@@ -309,59 +309,82 @@
   </div>
 </footer>
 
-<div class="lightbox" id="lightbox" hidden>
-  <button class="lightbox-close" id="lightboxClose" aria-label="Fechar">
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Tela ampliada" hidden>
+  <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Fechar">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
   </button>
   <img class="lightbox-img" id="lightboxImg" src="" alt="">
 </div>
 
 <script>
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var track = document.getElementById('carouselTrack');
-  document.getElementById('prevBtn').addEventListener('click', function () {
-    track.scrollBy({left: -track.clientWidth * 0.85, behavior: 'smooth'});
-  });
-  document.getElementById('nextBtn').addEventListener('click', function () {
-    track.scrollBy({left: track.clientWidth * 0.85, behavior: 'smooth'});
-  });
+  function scrollCarousel(direction) {
+    track.scrollBy({left: direction * track.clientWidth * 0.85, behavior: reduceMotion.matches ? 'auto' : 'smooth'});
+  }
+  document.getElementById('prevBtn').addEventListener('click', function () { scrollCarousel(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function () { scrollCarousel(1); });
 
   var lightbox = document.getElementById('lightbox');
   var lightboxImg = document.getElementById('lightboxImg');
+  var lightboxClose = document.getElementById('lightboxClose');
+  var lightboxOpener = null;
 
-  function openLightbox(src, alt) {
-    lightboxImg.src = src;
-    lightboxImg.alt = alt;
+  function lightboxFocusables() {
+    return Array.prototype.filter.call(lightbox.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])'), function (element) {
+      return !element.hidden && !element.disabled;
+    });
+  }
+
+  function openLightbox(opener, img) {
+    lightboxOpener = opener;
+    lightboxImg.src = img.src;
+    lightboxImg.alt = img.alt;
+    lightbox.setAttribute('aria-label', 'Tela ampliada: ' + img.alt);
     lightbox.hidden = false;
     document.body.style.overflow = 'hidden';
+    lightboxClose.focus();
   }
 
   function closeLightbox() {
     lightbox.hidden = true;
     lightboxImg.src = '';
     document.body.style.overflow = '';
+    if (lightboxOpener) lightboxOpener.focus();
+    lightboxOpener = null;
   }
 
-  document.querySelectorAll('.zoomable').forEach(function (ph) {
-    var img = ph.querySelector('img');
+  document.querySelectorAll('.zoomable').forEach(function (zoomable) {
+    var img = zoomable.querySelector('img');
     if (!img) return;
-    ph.addEventListener('click', function () {
-      openLightbox(img.src, img.alt);
-    });
-    ph.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openLightbox(img.src, img.alt);
-      }
+    zoomable.addEventListener('click', function () {
+      openLightbox(zoomable, img);
     });
   });
 
-  document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
-  lightbox.addEventListener('click', function (e) {
-    if (e.target === lightbox) closeLightbox();
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', function (event) {
+    if (event.target === lightbox) closeLightbox();
   });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
+  lightbox.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeLightbox();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    var focusables = lightboxFocusables();
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 </script>
+
 </body>
 </html>
