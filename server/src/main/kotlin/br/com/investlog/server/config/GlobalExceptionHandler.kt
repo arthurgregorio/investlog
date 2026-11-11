@@ -42,6 +42,7 @@ import org.springframework.http.HttpStatus.UNPROCESSABLE_CONTENT
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -392,6 +393,9 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
         return problemDetail
     }
+
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDenied(ex: AccessDeniedException): Nothing = throw ex
 
     @ExceptionHandler(Exception::class)
     fun handleUnexpected(ex: Exception): ProblemDetail {
