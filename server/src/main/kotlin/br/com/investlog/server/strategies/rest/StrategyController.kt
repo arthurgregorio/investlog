@@ -9,6 +9,7 @@ import br.com.investlog.server.strategies.services.ContributionPlannerService
 import br.com.investlog.server.strategies.services.StrategyAllocationService
 import br.com.investlog.server.strategies.services.StrategyService
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Digits
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -62,6 +63,9 @@ class StrategyController(
         ResponseEntity.ok(strategyAllocationService.findAllocation(id))
 
     @GetMapping("/{id}/contribution-plan")
-    fun planContribution(@PathVariable id: UUID, @RequestParam amount: BigDecimal): ResponseEntity<ContributionPlanResponse> =
+    fun planContribution(
+        @PathVariable id: UUID,
+        @RequestParam @Digits(integer = 15, fraction = 8, message = "O valor do aporte está fora da faixa permitida") amount: BigDecimal,
+    ): ResponseEntity<ContributionPlanResponse> =
         ResponseEntity.ok(contributionPlannerService.plan(id, amount))
 }
