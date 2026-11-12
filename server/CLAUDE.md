@@ -474,13 +474,21 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   returns. The trade-off: a distributed attack on one account from many addresses is no longer slowed
   by the per-account lockout, only by each address's own limit. An admin's TOTP or password reset
   clears every key of that email (`clearAllFor`), whatever address it came from.
-- **`ClientIpResolver` decides which address that is.** It builds the chain `X-Forwarded-For` entries
-  plus `remoteAddr` and takes the entry `investlog.security.client-ip.trusted-proxy-count` positions
-  before the end: `0` by default (the compose stack, where nginx sees the client directly) and `1` on
-  the `railway` profile (the Railway edge in front of nginx). A count rather than an address list
-  is what keeps a forged leftmost `X-Forwarded-For` entry from being believed. This only works with
-  `forward-headers-strategy: native` (see above), which has already replaced `remoteAddr` with the last
-  untrusted hop and left the rest of the chain in the header.
+- **`ClientIpResolver` decides which address that is.** It builds the chain of `X-Forwarded-For`
+  entries plus `remoteAddr` and takes the entry `investlog.security.client-ip.trusted-proxy-count`
+  positions before the end: `0` by default (compose) and `1` on the `railway` profile (the Railway
+  edge in front of nginx). Only `remoteAddr`, as `RemoteIpValve` resolved it under
+  `forward-headers-strategy: native` (see above), is trustworthy — any leftover `X-Forwarded-For`
+  entries are client-controlled. On the compose stack an attacker whose peer address nginx sees as
+  internal (a LAN, Docker-network or VPN/Tailscale client) could prepend a forged `X-Forwarded-For`
+  entry that the valve would otherwise walk back to and adopt, becoming the `email|ip` lockout bucket
+  (issue #602). So `application-prod.yaml` sets `server.tomcat.remoteip.remote-ip-header:
+  X-Real-IP`: nginx overwrites `X-Real-IP` with the real peer (`proxy_set_header X-Real-IP
+  $remote_addr`, a single value the client cannot forge), the valve resolves the client from that
+  header alone, and with the count at `0` the resolver returns it as `remoteAddr`. The `railway`
+  profile keeps `remote-ip-header: X-Forwarded-For` with `trusted-proxy-count: 1`, because there the
+  edge — not nginx — appends the client, and `X-Real-IP` would only ever carry nginx's view of the
+  edge.
 - Jackson 3 (Spring Boot 4): inject `tools.jackson.databind.json.JsonMapper`, not
   `tools.jackson.databind.ObjectMapper` — Spring auto-configures a `JsonMapper` bean as the
   concrete JSON mapper; `ObjectMapper` is now a more generic base type not meant for direct
