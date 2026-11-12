@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { ChartOptions, Plugin, ScriptableContext } from 'chart.js'
+import type { ChartArea, ChartOptions, Plugin, ScriptableContext } from 'chart.js'
 import {
   CategoryScale,
   Chart,
@@ -38,6 +38,8 @@ const props = withDefaults(
     fmtY: (value: number) => String(value),
   },
 )
+
+const MARKER_LABEL_GAP = 6
 
 const canvasElement = ref<HTMLCanvasElement | null>(null)
 let chart: Chart<'line'> | null = null
@@ -101,11 +103,23 @@ const decorationsPlugin: Plugin<'line'> = {
     ctx.setLineDash([])
     ctx.fillStyle = colors.textMuted
     ctx.font = '11.5px Inter, sans-serif'
-    ctx.textAlign = 'right'
+    const { textAlign, textX } = markerLabelPlacement(ctx, x, chartArea)
+    ctx.textAlign = textAlign
     ctx.textBaseline = 'top'
-    ctx.fillText(props.markerLabel, x - 6, chartArea.top)
+    ctx.fillText(props.markerLabel, textX, chartArea.top)
     ctx.restore()
   },
+}
+
+function markerLabelPlacement(context: CanvasRenderingContext2D, x: number, chartArea: ChartArea) {
+  const labelWidth = context.measureText(props.markerLabel).width
+  const before = { textAlign: 'right' as const, textX: x - MARKER_LABEL_GAP }
+  const after = { textAlign: 'left' as const, textX: x + MARKER_LABEL_GAP }
+  const roomBefore = before.textX - chartArea.left
+  const roomAfter = chartArea.right - after.textX
+  if (labelWidth <= roomBefore) return before
+  if (labelWidth <= roomAfter) return after
+  return roomBefore >= roomAfter ? before : after
 }
 
 function buildOptions(low: number, high: number): ChartOptions<'line'> {
