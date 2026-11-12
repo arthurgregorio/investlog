@@ -4,6 +4,7 @@ import { router } from '@/router'
 import { rememberPostLoginRedirect } from '@/router/postLoginRedirect'
 import { recordServerActivity } from '@/api/serverActivity'
 import { useAuthStore } from '@/stores/auth'
+import { escapeHtml } from '@/utils/escapeHtml'
 
 const toast = new ToastProgrammatic()
 
@@ -109,7 +110,7 @@ apiClient.interceptors.response.use(
       error.response?.data?.detail ??
       error.response?.data?.message ??
       'Erro ao comunicar com o servidor.'
-    toast.open({ message, type: 'is-danger', duration: 4000 })
+    toast.open({ message: escapeHtml(message), type: 'is-danger', duration: 4000 })
     return Promise.reject(error)
   },
 )
