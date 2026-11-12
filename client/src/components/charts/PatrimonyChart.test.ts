@@ -85,8 +85,9 @@ function latestChart() {
   return fakeCharts[fakeCharts.length - 1]!
 }
 
-function fakeContext() {
+function fakeContext(labelWidth: number) {
   return {
+    measureText: vi.fn(() => ({ width: labelWidth })),
     save: vi.fn(),
     restore: vi.fn(),
     beginPath: vi.fn(),
@@ -104,8 +105,8 @@ function fakeContext() {
   }
 }
 
-function fakeChartInstance(withScales = true) {
-  const context = fakeContext()
+function fakeChartInstance(withScales = true, labelWidth = 80) {
+  const context = fakeContext(labelWidth)
   return {
     context,
     chartInstance: {
@@ -208,7 +209,45 @@ describe('PatrimonyChart', () => {
 
     expect(context.lineTo).toHaveBeenCalledWith(400, 200)
     expect(context.moveTo).toHaveBeenCalledWith(110, 5)
+    expect(context.textAlign).toBe('right')
     expect(context.fillText).toHaveBeenCalledWith('início dos registros diários', 104, 5)
+  })
+
+  it('draws the marker label to the right of the line when it does not fit before the y axis', () => {
+    mountChart({ markerIndex: 0, markerLabel: 'início dos registros diários' })
+
+    const [plugin] = latestChart().config.plugins
+    const { chartInstance, context } = fakeChartInstance()
+    plugin!.afterDatasetsDraw(chartInstance)
+
+    expect(context.textAlign).toBe('left')
+    expect(context.fillText).toHaveBeenCalledWith('início dos registros diários', 16, 5)
+  })
+
+  it('draws a marker label that fits on neither side on the side with more room', () => {
+    mountChart({ markerIndex: 1, markerLabel: 'início dos registros diários' })
+    const [nearStart] = latestChart().config.plugins
+    const towardsRight = fakeChartInstance(true, 500)
+    nearStart!.afterDatasetsDraw(towardsRight.chartInstance)
+
+    expect(towardsRight.context.textAlign).toBe('left')
+    expect(towardsRight.context.fillText).toHaveBeenCalledWith(
+      'início dos registros diários',
+      116,
+      5,
+    )
+
+    mountChart({ markerIndex: 3, markerLabel: 'início dos registros diários' })
+    const [nearEnd] = latestChart().config.plugins
+    const towardsLeft = fakeChartInstance(true, 500)
+    nearEnd!.afterDatasetsDraw(towardsLeft.chartInstance)
+
+    expect(towardsLeft.context.textAlign).toBe('right')
+    expect(towardsLeft.context.fillText).toHaveBeenCalledWith(
+      'início dos registros diários',
+      304,
+      5,
+    )
   })
 
   it('skips the marker without an index and the decorations without scales', () => {
