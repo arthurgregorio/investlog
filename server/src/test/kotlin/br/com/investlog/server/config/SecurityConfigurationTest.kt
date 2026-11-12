@@ -73,6 +73,44 @@ class SecurityConfigurationTest : BaseIntegrationTest() {
             .jsonPath("$.error").isEqualTo("forbidden")
     }
 
+    @Test
+    fun `an approved non-admin is forbidden on non-canonical version aliases of an admin route`() {
+        val cookie = approvedUserSessionCookie("nao-admin-alias@example.com")
+
+        listOf("1", "V1", "v1.0").forEach { version ->
+            val body = restTestClient.get()
+                .uri("/private/$version/users")
+                .header("Cookie", cookie)
+                .exchange()
+                .expectStatus().isForbidden()
+                .returnResult<Map<String, Any?>>()
+                .responseBody
+
+            assertEquals("forbidden", body?.get("error"), version)
+        }
+    }
+
+    @Test
+    fun `an admin still reaches an admin route through every version alias`() {
+        listOf("v1", "1", "V1", "v1.0").forEach { version ->
+            restTestClient.get()
+                .uri("/private/$version/users")
+                .exchange()
+                .expectStatus().isOk()
+        }
+    }
+
+    @Test
+    fun `an approved non-admin still reaches a non-admin endpoint`() {
+        val cookie = approvedUserSessionCookie("nao-admin-ok@example.com")
+
+        restTestClient.get()
+            .uri("/private/v1/profile")
+            .header("Cookie", cookie)
+            .exchange()
+            .expectStatus().isOk()
+    }
+
     private fun approvedUserSessionCookie(email: String): String {
         restTestClient.post()
             .uri("/private/v1/auth/register")
