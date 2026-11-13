@@ -440,6 +440,11 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   not just the filter chain — the filter chain alone will always be one login stale.**
   `/auth/session` and `/auth/logout` deliberately read the raw session principal instead (so a
   pending/rejected user can still check their status and log out).
+- **A session is bound to the account it was issued for, not to its email.** The live lookup
+  in `getCurrentUser()` goes by email, so it also requires the loaded row's `externalId` to equal the
+  session principal's; otherwise the account behind the session was deleted and the email has since
+  been registered again, and the call fails with the same 401 as a deleted account instead of serving
+  the new owner's data to the old session. Keep that comparison if the lookup ever changes.
 - **Admin-only endpoints carry `@RequiresActiveAdministrator`, never a bare `@PreAuthorize("hasAuthority('ROLE_ADMIN')")`.**
   The filter chain's `ROLE_ADMIN` gate and a plain `@PreAuthorize` both read the authority cached at
   login, so a blocked, demoted or deleted admin's open session kept every write that never reached
