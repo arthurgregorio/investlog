@@ -4,18 +4,18 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>InvestLog — Seu diário de investimentos, sempre em dia</title>
-  <meta name="description" content="Seu diário de investimentos, sempre em dia. Acompanhe ações, FIIs, criptomoedas e fundos em um dashboard único." />
+  <meta name="description" content="Seu diário de investimentos, sempre em dia. Registre aportes, resgates e reinvestimentos, acompanhe resultados por carteira e siga estratégias com metas." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://investlog.com.br/" />
   <meta property="og:site_name" content="InvestLog" />
   <meta property="og:title" content="InvestLog" />
-  <meta property="og:description" content="Seu diário de investimentos, sempre em dia. Acompanhe ações, FIIs, criptomoedas e fundos em um dashboard único." />
+  <meta property="og:description" content="Seu diário de investimentos, sempre em dia. Registre aportes, resgates e reinvestimentos, acompanhe resultados por carteira e siga estratégias com metas." />
   <meta property="og:image" content="https://investlog.com.br/assets/og-image.png" />
-  <meta property="og:image:width" content="512" />
-  <meta property="og:image:height" content="512" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="InvestLog" />
-  <meta name="twitter:description" content="Seu diário de investimentos, sempre em dia. Acompanhe ações, FIIs, criptomoedas e fundos em um dashboard único." />
+  <meta name="twitter:description" content="Seu diário de investimentos, sempre em dia. Registre aportes, resgates e reinvestimentos, acompanhe resultados por carteira e siga estratégias com metas." />
   <meta name="twitter:image" content="https://investlog.com.br/assets/og-image.png" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -66,8 +66,8 @@
         </ul>
       </div>
       <button type="button" class="shot ratio-hero hero-shot" aria-label="Ampliar a visão geral"
-              data-shot="assets/hero.png" data-title="Visão geral" data-caption="Patrimônio, evolução dos aportes e alocação por tipo">
-        <img src="assets/hero.png" fetchpriority="high" alt="Visão geral com patrimônio, evolução dos aportes e alocação por tipo">
+              data-shot="assets/hero.png" data-title="Visão geral" data-caption="Visão geral com patrimônio, resultado total e atual, patrimônio mês a mês e o resumo do mês atual">
+        <img src="assets/hero.png" fetchpriority="high" alt="Visão geral com patrimônio, resultado total e atual, patrimônio mês a mês e o resumo do mês atual">
         <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
       </button>
     </div>
@@ -87,10 +87,30 @@
         </div>
       </div>
       <button type="button" class="shot ratio-slide" aria-label="Ampliar o detalhe da carteira"
-              data-shot="assets/carteira-detalhe.png" data-title="Detalhe da carteira" data-caption="Desempenho diário, destaques e evolução do valor">
-        <img src="assets/carteira-detalhe.png" loading="lazy" alt="Detalhe da carteira com desempenho diário, destaques e evolução do valor">
+              data-shot="assets/carteira-detalhe.png" data-title="Detalhe da carteira" data-caption="Detalhe da carteira com caixa, resultado, melhor e pior desempenho e o valor ao longo do tempo">
+        <img src="assets/carteira-detalhe.png" loading="lazy" alt="Detalhe da carteira com caixa, resultado, melhor e pior desempenho e o valor ao longo do tempo">
         <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
       </button>
+    </div>
+  </section>
+
+  <section class="chapter">
+    <div class="wrap split split-7-5">
+      <button type="button" class="shot ratio-slide" aria-label="Ampliar as estratégias"
+              data-shot="assets/estrategias.png" data-title="Estratégias" data-caption="Painel de alocação da estratégia comparando a carteira com as metas de cada classe">
+        <img src="assets/estrategias.png" loading="lazy" alt="Painel de alocação da estratégia comparando a carteira com as metas de cada classe">
+        <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+      </button>
+      <div class="split-text">
+        <h2>Estratégias com metas e um planejador de aportes</h2>
+        <p>Defina classes com percentuais-alvo e metas para cada ativo. O painel compara a carteira com o plano, e o planejador divide o próximo aporte entre os ativos que estão abaixo da meta.</p>
+        <ul class="points">
+          <li><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Classes e metas por ativo</li>
+          <li><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Carteira real comparada ao plano</li>
+          <li><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>Sugestão de onde colocar o próximo aporte</li>
+        </ul>
+        <p><button type="button" class="see" aria-label="Ver tela: Planejador de aportes" data-shot="assets/planejador.png" data-title="Planejador de aportes" data-caption="Planejador dividindo um aporte de R$ 10.000 entre as classes e os ativos abaixo da meta">Ver o planejador<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button></p>
+      </div>
     </div>
   </section>
 
@@ -101,8 +121,8 @@
         <p>Baixe um PDF consolidado por classe e tipo, no formato de um extrato de custódia. Receba por e-mail um relatório periódico, o fechamento do mês e um aviso quando um ativo congelado volta ao positivo.</p>
       </div>
       <button type="button" class="shot ratio-slide" aria-label="Ampliar o relatório"
-              data-shot="assets/relatorio.png" data-title="Relatório" data-caption="Relatório completo agrupado por tipo e carteira">
-        <img src="assets/relatorio.png" loading="lazy" alt="Relatório de investimentos agrupado por tipo e carteira">
+              data-shot="assets/relatorio.png" data-title="Relatório em PDF" data-caption="Primeira página do relatório de investimentos em PDF, agrupado por classe e tipo">
+        <img src="assets/relatorio.png" loading="lazy" alt="Primeira página do relatório de investimentos em PDF, agrupado por classe e tipo">
         <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
       </button>
     </div>
@@ -118,38 +138,50 @@
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
           <b>Carteiras</b>
-          <p>Todas as carteiras por tipo e moeda, com o resultado de cada uma.</p>
-          <button type="button" class="see" aria-label="Ver tela: Carteiras" data-shot="assets/carteiras.png" data-title="Carteiras" data-caption="Carteiras por tipo e moeda, com resultado de cada uma">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+          <p>Todas as carteiras por tipo e moeda, com caixa disponível e o resultado de cada uma.</p>
+          <button type="button" class="see" aria-label="Ver tela: Carteiras" data-shot="assets/carteiras.png" data-title="Carteiras" data-caption="Lista de carteiras por tipo e moeda, com caixa disponível, valor atual e resultado de cada uma">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
         </li>
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
           <b>Investimentos</b>
           <p>Todos os ativos com filtros por tipo, carteira e busca.</p>
-          <button type="button" class="see" aria-label="Ver tela: Investimentos" data-shot="assets/investimentos.png" data-title="Investimentos" data-caption="Todos os ativos com filtros por tipo, carteira e busca">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+          <button type="button" class="see" aria-label="Ver tela: Investimentos" data-shot="assets/investimentos.png" data-title="Investimentos" data-caption="Lista de investimentos com filtros por tipo, carteira e busca">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          <b>Resultados</b>
+          <p>Resultados realizados, com resgates descontando custos e impostos.</p>
+          <button type="button" class="see" aria-label="Ver tela: Resultados" data-shot="assets/resultados.png" data-title="Resultados" data-caption="Resultados com total resgatado, lucro realizado, custos e impostos, reinvestimentos e cada resgate">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+          <b>Notificações</b>
+          <p>Relatório periódico, fechamento do mês e aviso de ativo congelado, cada um ligado ou desligado por você.</p>
+          <button type="button" class="see" aria-label="Ver tela: Notificações" data-shot="assets/notificacoes.png" data-title="Notificações" data-caption="Notificações por e-mail: relatório de desempenho, relatório de fim de mês e aviso de congelados no positivo">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
         </li>
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
           <b>Histórico de movimentações</b>
-          <p>Compras e resgates de cada ativo, com saldo e preço médio.</p>
-          <button type="button" class="see" aria-label="Ver tela: Histórico de movimentações" data-shot="assets/historico.png" data-title="Histórico de movimentações" data-caption="Compras e resgates de cada ativo, com saldo e preço médio">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+          <p>Compras, resgates, reinvestimentos e transferências de cada carteira, com o saldo em caixa.</p>
+          <button type="button" class="see" aria-label="Ver tela: Histórico de movimentações" data-shot="assets/historico.png" data-title="Histórico de movimentações" data-caption="Movimentações de uma carteira: compras, resgates, reinvestimento, transferência e saque, com o saldo em caixa">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
         </li>
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"></path><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path></svg>
           <b>Distribuição por segmento</b>
           <p>A participação de cada ativo ou segmento na carteira.</p>
-          <button type="button" class="see" aria-label="Ver tela: Distribuição por segmento" data-shot="assets/distribuicao-segmentos.png" data-title="Distribuição por segmento" data-caption="Participação de cada ativo ou segmento na carteira">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+          <button type="button" class="see" aria-label="Ver tela: Distribuição por segmento" data-shot="assets/distribuicao-segmentos.png" data-title="Distribuição por segmento" data-caption="Distribuição da carteira por segmento, por valor atual ou investido">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
         </li>
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
           <b>Tipos e segmentos</b>
           <p>Uma única lista de tipos, com segmentos para cada classe de ativo.</p>
-          <button type="button" class="see" aria-label="Ver tela: Tipos e segmentos" data-shot="assets/tipos-investimento.png" data-title="Tipos e segmentos" data-caption="Tipos de investimento e segmentos configuráveis">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+          <button type="button" class="see" aria-label="Ver tela: Tipos e segmentos" data-shot="assets/tipos-investimento.png" data-title="Tipos e segmentos" data-caption="Lista única de tipos de investimento, com os segmentos de cada classe">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
         </li>
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"></path><path d="M15 6h1v4"></path><path d="m6.134 14.768.866-.5 2 3.464"></path><circle cx="16" cy="8" r="6"></circle></svg>
           <b>Multimoedas e modo escuro</b>
           <p>Carteiras em BRL ou USD e tema escuro em todo o sistema.</p>
-          <button type="button" class="see" aria-label="Ver tela: Multimoedas e modo escuro" data-shot="assets/modo-escuro.png" data-title="Multimoedas e modo escuro" data-caption="Tema escuro e carteiras em dólar com conversão automática">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+          <button type="button" class="see" aria-label="Ver tela: Multimoedas e modo escuro" data-shot="assets/modo-escuro.png" data-title="Multimoedas e modo escuro" data-caption="Visão geral no tema escuro">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
         </li>
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 18-1.535 1.605a5 5 0 0 1-8-1.5"></path><path d="M17 22v-4h-4"></path><path d="M20.996 15.251A4.5 4.5 0 0 0 17.495 8h-1.79a7 7 0 1 0-12.709 5.607"></path><path d="M7 10v4h4"></path><path d="m7 14 1.535-1.605a5 5 0 0 1 8 1.5"></path></svg>
@@ -159,7 +191,7 @@
         <li>
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg>
           <b>Usuários e acesso</b>
-          <p>Aprovação de novas contas, login com Google e autenticação em dois fatores.</p>
+          <p>Aprovação de novas contas, login com Google, autenticação em dois fatores e envio de e-mails pelo seu servidor SMTP.</p>
         </li>
       </ul>
     </div>
