@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size
 data class RegisterRequest(
     @field:NotBlank(message = "name não pode estar em branco")
     @field:Size(max = 100, message = "name deve ter no máximo 100 caracteres")
+    @field:Pattern(regexp = "[^\\p{Cc}\\p{Zl}\\p{Zp}]*", message = "name não pode conter caracteres de controle")
     val name: String,
     @field:NotBlank(message = "email não pode estar em branco")
     @field:Size(max = 254, message = "email deve ter no máximo 254 caracteres")
