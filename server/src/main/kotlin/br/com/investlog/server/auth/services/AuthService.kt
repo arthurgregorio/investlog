@@ -79,22 +79,7 @@ class AuthService(
             return LoginResult.Authenticated(establishSession(user, servletRequest, servletResponse))
         }
 
-        val code = request.totpCode
-            ?: throw TotpRequiredException("Um código TOTP é necessário para concluir o login")
-
-        val attemptKey = AttemptKeys.of(request.email, clientIp)
-        totpAttemptLimiter.checkNotLocked(attemptKey)
-
-        val secret = userRepository.findTotpSecretByEmail(request.email)
-            ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
-
-        if (!totpService.isCodeValid(secret, code)) {
-            totpAttemptLimiter.recordFailure(attemptKey)
-            ipAttemptLimiter.recordFailure(clientIp)
-            throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
-        }
-
-        totpAttemptLimiter.recordSuccess(attemptKey)
+        verifyTotpCode(request.email, request.totpCode, clientIp, "Um código TOTP é necessário para concluir o login")
 
         if (request.trustDevice) {
             trustedDeviceService.trust(user.id, servletRequest, servletResponse)
@@ -198,7 +183,12 @@ class AuthService(
         val pending = googleLinkTokenStore.consume(request.linkToken)
             ?: throw InvalidCredentialsException("Solicitação de vínculo expirada ou inválida — entre novamente com o Google")
 
-        val user = verifyActiveCredentials(pending.email, request.password, clientIpResolver.resolve(servletRequest))
+        val clientIp = clientIpResolver.resolve(servletRequest)
+        val user = verifyActiveCredentials(pending.email, request.password, clientIp)
+
+        if (totpRequired && user.totpEnabled && !trustedDeviceService.isTrusted(user.id, servletRequest)) {
+            verifyTotpCode(pending.email, request.totpCode, clientIp, "Um código TOTP é necessário para vincular a conta ao Google")
+        }
 
         userRepository.linkGoogleAccount(user.id, pending.googleSub)
 
@@ -237,6 +227,25 @@ class AuthService(
         }
 
         return user
+    }
+
+    private fun verifyTotpCode(email: String, code: String?, clientIp: String, missingCodeMessage: String) {
+
+        val providedCode = code ?: throw TotpRequiredException(missingCodeMessage)
+
+        val attemptKey = AttemptKeys.of(email, clientIp)
+        totpAttemptLimiter.checkNotLocked(attemptKey)
+
+        val secret = userRepository.findTotpSecretByEmail(email)
+            ?: throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
+
+        if (!totpService.isCodeValid(secret, providedCode)) {
+            totpAttemptLimiter.recordFailure(attemptKey)
+            ipAttemptLimiter.recordFailure(clientIp)
+            throw InvalidTotpCodeException(INVALID_TOTP_CODE_MESSAGE)
+        }
+
+        totpAttemptLimiter.recordSuccess(attemptKey)
     }
 
     private fun verifyCredentials(email: String, password: String, clientIp: String): CurrentUser {

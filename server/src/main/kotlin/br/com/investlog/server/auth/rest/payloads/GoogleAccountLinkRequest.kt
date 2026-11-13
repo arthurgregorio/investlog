@@ -7,4 +7,5 @@ data class GoogleAccountLinkRequest(
     val linkToken: String,
     @field:NotBlank(message = "password não pode estar em branco")
     val password: String,
+    val totpCode: String? = null,
 )
