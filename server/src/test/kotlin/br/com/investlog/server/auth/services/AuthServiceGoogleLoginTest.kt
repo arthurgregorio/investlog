@@ -7,7 +7,11 @@ import br.com.investlog.server.auth.security.GoogleLinkTokenStore
 import br.com.investlog.server.auth.services.AuthService
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
 import br.com.investlog.server.shared.exceptions.InvalidCredentialsException
+import br.com.investlog.server.shared.exceptions.InvalidTotpCodeException
+import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
+import br.com.investlog.server.shared.exceptions.TotpRequiredException
 import br.com.investlog.server.shared.security.UserRepository
+import dev.samstevens.totp.code.DefaultCodeGenerator
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockHttpServletRequest
@@ -17,6 +21,7 @@ import org.springframework.test.web.servlet.client.RestTestClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -30,6 +35,9 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
 
     @Autowired
     lateinit var googleLinkTokenStore: GoogleLinkTokenStore
+
+    @Autowired
+    lateinit var totpService: TotpService
 
     @Autowired
     lateinit var restTestClient: RestTestClient
@@ -234,5 +242,99 @@ class AuthServiceGoogleLoginTest : BaseIntegrationTest() {
                 servletResponse = MockHttpServletResponse(),
             )
         }
+    }
+
+    @Test
+    fun `linking an account with TOTP enabled rejects the correct password without a code and changes nothing`() {
+        val secret = registerWithTotpEnabled("totp-sem-codigo-link@example.com")
+        val token = issueLinkToken("google-sub-link-totp-missing", "totp-sem-codigo-link@example.com")
+
+        assertFailsWith<TotpRequiredException> {
+            authService.linkGoogleAccount(
+                request = GoogleAccountLinkRequest(linkToken = token, password = "Senha123"),
+                servletRequest = MockHttpServletRequest(),
+                servletResponse = MockHttpServletResponse(),
+            )
+        }
+
+        assertAccountUntouched("totp-sem-codigo-link@example.com", "google-sub-link-totp-missing", secret)
+    }
+
+    @Test
+    fun `linking an account with TOTP enabled rejects an invalid code and changes nothing`() {
+        val secret = registerWithTotpEnabled("totp-invalido-link@example.com")
+        val token = issueLinkToken("google-sub-link-totp-invalid", "totp-invalido-link@example.com")
+
+        assertFailsWith<InvalidTotpCodeException> {
+            authService.linkGoogleAccount(
+                request = GoogleAccountLinkRequest(linkToken = token, password = "Senha123", totpCode = "000000"),
+                servletRequest = MockHttpServletRequest(),
+                servletResponse = MockHttpServletResponse(),
+            )
+        }
+
+        assertAccountUntouched("totp-invalido-link@example.com", "google-sub-link-totp-invalid", secret)
+    }
+
+    @Test
+    fun `linking an account with TOTP enabled succeeds with the correct password and a valid code`() {
+        val secret = registerWithTotpEnabled("totp-valido-link@example.com")
+        val token = issueLinkToken("google-sub-link-totp-valid", "totp-valido-link@example.com")
+        val code = DefaultCodeGenerator().generate(secret, System.currentTimeMillis() / 1000L / 30L)
+
+        val session = authService.linkGoogleAccount(
+            request = GoogleAccountLinkRequest(linkToken = token, password = "Senha123", totpCode = code),
+            servletRequest = MockHttpServletRequest(),
+            servletResponse = MockHttpServletResponse(),
+        )
+
+        assertEquals("GOOGLE", session.authProvider.name)
+        assertEquals(
+            userRepository.findByEmail("totp-valido-link@example.com")?.id,
+            userRepository.findByGoogleSub("google-sub-link-totp-valid")?.id,
+        )
+    }
+
+    @Test
+    fun `wrong TOTP codes on the link path lock the address out like they do on login`() {
+        registerWithTotpEnabled("totp-bloqueio-link@example.com")
+
+        repeat(5) { attempt ->
+            val token = issueLinkToken("google-sub-link-totp-lockout-$attempt", "totp-bloqueio-link@example.com")
+            assertFailsWith<InvalidTotpCodeException> {
+                authService.linkGoogleAccount(
+                    request = GoogleAccountLinkRequest(linkToken = token, password = "Senha123", totpCode = "000000"),
+                    servletRequest = MockHttpServletRequest(),
+                    servletResponse = MockHttpServletResponse(),
+                )
+            }
+        }
+
+        val token = issueLinkToken("google-sub-link-totp-lockout-final", "totp-bloqueio-link@example.com")
+        assertFailsWith<TooManyTotpAttemptsException> {
+            authService.linkGoogleAccount(
+                request = GoogleAccountLinkRequest(linkToken = token, password = "Senha123", totpCode = "000000"),
+                servletRequest = MockHttpServletRequest(),
+                servletResponse = MockHttpServletResponse(),
+            )
+        }
+    }
+
+    private fun registerWithTotpEnabled(email: String): String {
+        authService.register(RegisterRequest(name = "Com TOTP", email = email, password = "Senha123"), MockHttpServletRequest())
+        val user = userRepository.findByEmail(email) ?: error("User was not created by register")
+        val secret = totpService.generateSecret()
+        userRepository.enableTotp(user.id, secret)
+        return secret
+    }
+
+    private fun issueLinkToken(googleSub: String, email: String): String =
+        googleLinkTokenStore.issue(googleSub = googleSub, email = email, name = "Com TOTP", avatarUrl = null)
+
+    private fun assertAccountUntouched(email: String, googleSub: String, secret: String) {
+        assertNull(userRepository.findByGoogleSub(googleSub))
+        assertEquals("LOCAL", userRepository.findByEmail(email)?.authProvider?.name)
+        assertNotNull(userRepository.findPasswordHashByEmail(email))
+        assertEquals(secret, userRepository.findTotpSecretByEmail(email))
     }
 }
