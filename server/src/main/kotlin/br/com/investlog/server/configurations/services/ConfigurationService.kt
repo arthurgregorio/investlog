@@ -4,6 +4,7 @@ import br.com.investlog.server.configurations.ConfigurationKey
 import br.com.investlog.server.configurations.repositories.ConfigurationRepository
 import br.com.investlog.server.configurations.rest.payloads.ConfigurationResponse
 import br.com.investlog.server.shared.exceptions.NotFoundException
+import br.com.investlog.server.shared.security.DemoModeGuard
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.annotation.PostConstruct
 import org.springframework.data.domain.Pageable
@@ -18,6 +19,7 @@ private val logger = KotlinLogging.logger {}
 @Transactional(readOnly = true)
 class ConfigurationService(
     private val configurationRepository: ConfigurationRepository,
+    private val demoModeGuard: DemoModeGuard,
 ) {
 
     private val cache = ConcurrentHashMap<String, String>()
@@ -34,6 +36,8 @@ class ConfigurationService(
 
     @Transactional
     fun update(key: String, value: String): ConfigurationResponse {
+        demoModeGuard.assertNotDemoMode()
+
         val configurationKey = ConfigurationKey.entries.find { it.key == key }
             ?: throw NotFoundException("Configuração $key não encontrada")
 
