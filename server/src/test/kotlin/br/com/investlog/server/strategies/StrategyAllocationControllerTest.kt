@@ -268,6 +268,21 @@ class StrategyAllocationControllerTest : BaseIntegrationTest() {
     }
 
     @Test
+    fun `rejects an amount with an out-of-range exponent before entering planning`() {
+        listOf("1E50000000", "1E-50000000", "-1E40000000").forEach { amount ->
+            val startedAt = System.nanoTime()
+            restTestClient.get()
+                .uri("/private/v1/strategies/${UUID.randomUUID()}/contribution-plan?amount=$amount")
+                .exchange()
+                .expectStatus().isBadRequest()
+            val elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000
+            assertTrue(elapsedMillis < 3_000, "rejection of $amount took ${elapsedMillis}ms, so it was scale-aligned before validation")
+        }
+
+        assertAmount("300.00", planContribution(strategy.id, "300").amount)
+    }
+
+    @Test
     fun `another user cannot read this user's strategy`() {
         val cookie = registerApproveAndLogin("allocation-reader@example.com", "Senha123")
 
