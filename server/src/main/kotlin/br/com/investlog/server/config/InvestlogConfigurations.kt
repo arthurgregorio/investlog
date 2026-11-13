@@ -67,22 +67,33 @@ data class InvestlogConfigurations(
 
     data class BrApi(
         val baseUrl: String,
-        val token: String
+        val token: String,
+        val connectTimeout: Duration = DEFAULT_CONNECT_TIMEOUT,
+        val readTimeout: Duration = DEFAULT_READ_TIMEOUT,
     )
 
     data class CoinGecko(
         val baseUrl: String,
         val apiKey: String,
-        val apiKeyHeader: String
+        val apiKeyHeader: String,
+        val connectTimeout: Duration = DEFAULT_CONNECT_TIMEOUT,
+        val readTimeout: Duration = DEFAULT_READ_TIMEOUT,
     ) {
         fun containsApiKey(): Boolean = apiKey.isNotBlank()
     }
 
     data class AwesomeApi(
-        val baseUrl: String
+        val baseUrl: String,
+        val connectTimeout: Duration = DEFAULT_CONNECT_TIMEOUT,
+        val readTimeout: Duration = DEFAULT_READ_TIMEOUT,
     )
 
     data class Mail(
         val encryptionKey: String = "",
     )
+
+    companion object {
+        private val DEFAULT_CONNECT_TIMEOUT: Duration = Duration.ofSeconds(5)
+        private val DEFAULT_READ_TIMEOUT: Duration = Duration.ofSeconds(15)
+    }
 }

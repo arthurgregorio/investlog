@@ -22,6 +22,7 @@ class CoinGeckoHttpClientsConfiguration(
 
             groups.filterByName(CLIENT_GROUP_NAME)
                 .forEachClient { _, builder ->
+                    builder.withTimeouts(coinGeckoConfigs.connectTimeout, coinGeckoConfigs.readTimeout)
                     builder.baseUrl(coinGeckoConfigs.baseUrl)
                     if (coinGeckoConfigs.containsApiKey()) {
                         builder.defaultHeader(coinGeckoConfigs.apiKeyHeader, coinGeckoConfigs.apiKey)

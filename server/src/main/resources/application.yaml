@@ -2,6 +2,11 @@ spring:
   application:
     name: server
 
+  task:
+    scheduling:
+      pool:
+        size: ${SCHEDULING_POOL_SIZE:4}
+
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
     database-change-log-table: database_changelog
@@ -53,14 +58,20 @@ investlog:
   brapi:
     base-url: https://brapi.dev/api
     token: ${BRAPI_TOKEN:}
+    connect-timeout: ${BRAPI_CONNECT_TIMEOUT:5s}
+    read-timeout: ${BRAPI_READ_TIMEOUT:15s}
 
   coingecko:
     base-url: ${COINGECKO_BASE_URL:https://api.coingecko.com/api/v3}
     api-key: ${COINGECKO_KEY:}
     api-key-header: ${COINGECKO_API_KEY_HEADER:x-cg-demo-api-key}
+    connect-timeout: ${COINGECKO_CONNECT_TIMEOUT:5s}
+    read-timeout: ${COINGECKO_READ_TIMEOUT:15s}
 
   awesomeapi:
     base-url: https://economia.awesomeapi.com.br
+    connect-timeout: ${AWESOMEAPI_CONNECT_TIMEOUT:5s}
+    read-timeout: ${AWESOMEAPI_READ_TIMEOUT:15s}
 
   mail:
     encryption-key: ${MAIL_ENCRYPTION_KEY:}
