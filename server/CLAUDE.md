@@ -440,6 +440,14 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   not just the filter chain — the filter chain alone will always be one login stale.**
   `/auth/session` and `/auth/logout` deliberately read the raw session principal instead (so a
   pending/rejected user can still check their status and log out).
+- **Admin-only endpoints carry `@RequiresActiveAdministrator`, never a bare `@PreAuthorize("hasAuthority('ROLE_ADMIN')")`.**
+  The filter chain's `ROLE_ADMIN` gate and a plain `@PreAuthorize` both read the authority cached at
+  login, so a blocked, demoted or deleted admin's open session kept every write that never reached
+  `CurrentUserProvider` (configuration toggles, price-sync triggers, type lists, currency rates). The
+  annotation adds `ActiveAdministratorGuard.isActiveAdministrator()`, which resolves the live row
+  through `CurrentUserProvider` (so a blocked admin gets the same 403 `pending_approval` and a deleted
+  one the same 401 as `/profile`) and then requires `role == ADMIN`. Put it on any new admin
+  controller or method.
 - **`establishSession` is the only session-issuing code path** — every login flow (password,
   TOTP verify, and Phase 4's Google callback) must funnel through it rather than open-coding a
   second way to mint a session, or a gate implemented in one path silently won't apply to another.

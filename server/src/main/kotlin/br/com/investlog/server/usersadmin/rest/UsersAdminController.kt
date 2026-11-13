@@ -1,5 +1,6 @@
 package br.com.investlog.server.usersadmin.rest
 
+import br.com.investlog.server.shared.security.RequiresActiveAdministrator
 import br.com.investlog.server.usersadmin.rest.payloads.PasswordResetRequest
 import br.com.investlog.server.usersadmin.rest.payloads.RoleUpdateRequest
 import br.com.investlog.server.usersadmin.rest.payloads.UserAdminResponse
@@ -8,7 +9,6 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -20,7 +20,7 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/users")
-@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+@RequiresActiveAdministrator
 class UsersAdminController(private val usersAdminService: UsersAdminService) {
 
     @GetMapping

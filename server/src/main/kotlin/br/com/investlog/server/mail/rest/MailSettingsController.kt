@@ -5,9 +5,9 @@ import br.com.investlog.server.mail.rest.payloads.MailSettingsRequest
 import br.com.investlog.server.mail.rest.payloads.MailSettingsResponse
 import br.com.investlog.server.mail.rest.payloads.MailTestRequest
 import br.com.investlog.server.mail.services.MailSettingsService
+import br.com.investlog.server.shared.security.RequiresActiveAdministrator
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/mail-settings")
-@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+@RequiresActiveAdministrator
 class MailSettingsController(private val mailSettingsService: MailSettingsService) {
 
     @GetMapping

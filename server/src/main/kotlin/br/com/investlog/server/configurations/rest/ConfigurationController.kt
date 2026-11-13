@@ -3,11 +3,11 @@ package br.com.investlog.server.configurations.rest
 import br.com.investlog.server.configurations.rest.payloads.ConfigurationResponse
 import br.com.investlog.server.configurations.rest.payloads.ConfigurationUpdateRequest
 import br.com.investlog.server.configurations.services.ConfigurationService
+import br.com.investlog.server.shared.security.RequiresActiveAdministrator
 import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -26,7 +26,7 @@ class ConfigurationController(
         ResponseEntity.ok(configurationService.findAll(pageable))
 
     @PatchMapping("/{key}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @RequiresActiveAdministrator
     fun update(
         @PathVariable key: String, @Valid @RequestBody request: ConfigurationUpdateRequest,
     ): ResponseEntity<ConfigurationResponse> =
