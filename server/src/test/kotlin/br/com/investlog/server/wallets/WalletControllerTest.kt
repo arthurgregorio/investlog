@@ -149,4 +149,28 @@ class WalletControllerTest : BaseIntegrationTest() {
             .jsonPath("$.currentValue").isEqualTo(600.0)
             .jsonPath("$.gain").isEqualTo(100.0)
     }
+
+    @Test
+    @Order(8)
+    fun `rejects an oversized wallet currency on create`() {
+        restTestClient.post()
+            .uri("/private/v1/wallets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"X","kind":"crypto","currency":"${"A".repeat(300)}"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
+    @Test
+    @Order(9)
+    fun `rejects a wallet currency that is not a code of letters on create`() {
+        listOf("US", "U\$D", "BR L", "BRL,USD", "12345").forEach { currency ->
+            restTestClient.post()
+                .uri("/private/v1/wallets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"name":"X","kind":"crypto","currency":"$currency"}""")
+                .exchange()
+                .expectStatus().isBadRequest()
+        }
+    }
 }
