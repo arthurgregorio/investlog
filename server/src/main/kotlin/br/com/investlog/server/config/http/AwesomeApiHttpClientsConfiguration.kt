@@ -19,7 +19,9 @@ class AwesomeApiHttpClientsConfiguration(
         RestClientHttpServiceGroupConfigurer { groups ->
             groups.filterByName(CLIENT_GROUP_NAME)
                 .forEachClient { _, builder ->
-                    builder.baseUrl(investlogConfigurations.awesomeApi.baseUrl)
+                    val awesomeApiConfigs = investlogConfigurations.awesomeApi
+                    builder.withTimeouts(awesomeApiConfigs.connectTimeout, awesomeApiConfigs.readTimeout)
+                    builder.baseUrl(awesomeApiConfigs.baseUrl)
                 }
         }
 

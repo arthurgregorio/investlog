@@ -429,6 +429,8 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
 - `usdpricesync` — no REST controller. Refreshes the USD reference rate on
   `@Scheduled(cron = "0 0 7,18 * * *", zone = "America/Sao_Paulo")`, twice daily.
 
+**Every price-source client has explicit timeouts, and the scheduler has more than one thread** (issue #622). Left unset, the JDK client waits forever on an upstream that accepts a request and never answers, and a call that never fails never reaches the skip rule above. `withTimeouts` (`config/http/HttpClientTimeouts.kt`) installs a `JdkClientHttpRequestFactory` with a connect and a read timeout on the brapi, CoinGecko and AwesomeAPI groups, read from `investlog.brapi|coingecko|awesomeapi.connect-timeout`/`read-timeout` (defaults `5s` and `15s`, in `application.yaml` and as the Kotlin fallback for code that builds the settings by hand, overridable with `BRAPI_*`, `COINGECKO_*` and `AWESOMEAPI_*` `_CONNECT_TIMEOUT`/`_READ_TIMEOUT`). A timeout surfaces as a `ResourceAccessException`, so it takes the ordinary `RestClientException` path of each sync: a brapi ticker is skipped, a CoinGecko timeout skips the run (it is not one of the 400/404/414/422 rejections that trigger the one-at-a-time retry), and the USD run is skipped. The read timeout covers the wait for the response headers. `spring.task.scheduling.pool.size` (`SCHEDULING_POOL_SIZE`, default `4`) replaces Boot's single scheduler thread, because six `@Scheduled` jobs share it and several fire on the same hour mark.
+
 ### Authentication & Authorization
 
 - **Session authorities are computed once at login and never re-evaluated per request.**

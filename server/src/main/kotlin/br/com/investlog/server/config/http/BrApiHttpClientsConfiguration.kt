@@ -24,6 +24,7 @@ class BrApiHttpClientsConfiguration(
             groups.filterByName(CLIENT_GROUP_NAME)
                 .forEachClient { _, builder ->
                     builder
+                        .withTimeouts(brapiConfigs.connectTimeout, brapiConfigs.readTimeout)
                         .baseUrl(brapiConfigs.baseUrl)
                         .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer ${brapiConfigs.token}")
                 }
