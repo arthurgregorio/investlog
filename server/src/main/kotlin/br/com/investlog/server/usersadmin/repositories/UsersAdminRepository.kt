@@ -1,6 +1,7 @@
 package br.com.investlog.server.usersadmin.repositories
 
 import br.com.investlog.server.jooq.system.tables.records.UsersRecord
+import br.com.investlog.server.jooq.system.tables.references.TRUSTED_DEVICES
 import br.com.investlog.server.jooq.system.tables.references.USERS
 import br.com.investlog.server.shared.utils.pagedModelOf
 import br.com.investlog.server.shared.security.AuthProvider
@@ -53,8 +54,12 @@ class UsersAdminRepository(private val dsl: DSLContext) {
             .fetchSingle()
             .toAdminResponse()
 
-    fun resetTotp(userId: Long): UserAdminResponse =
-        dsl.update(USERS)
+    fun resetTotp(userId: Long): UserAdminResponse {
+        dsl.deleteFrom(TRUSTED_DEVICES)
+            .where(TRUSTED_DEVICES.USER_ID.eq(userId))
+            .execute()
+
+        return dsl.update(USERS)
             .set(USERS.TOTP_SECRET, null as String?)
             .set(USERS.TOTP_ENABLED, false)
             .set(USERS.UPDATED_AT, OffsetDateTime.now())
@@ -62,6 +67,7 @@ class UsersAdminRepository(private val dsl: DSLContext) {
             .returning()
             .fetchSingle()
             .toAdminResponse()
+    }
 
     fun updatePasswordHash(userId: Long, passwordHash: String): UserAdminResponse =
         dsl.update(USERS)

@@ -484,7 +484,10 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   step. `trust()` issues a random token, stores only its hash via `TrustedDeviceRepository`, and
   sets a `trusted_device` cookie scoped to `path=/private/v1/auth`; `isTrusted()` re-hashes the
   incoming cookie to look the device up. Managed through `GET`/`DELETE /auth/trusted-devices`.
-  Skipping TOTP is the whole point, so treat any change here as a change to the second factor.
+  Skipping TOTP is the whole point, so treat any change here as a change to the second factor. An
+  administrator's TOTP reset deletes every trusted device of the account in the same transaction
+  (`UsersAdminRepository.resetTotp`), since a cookie issued for the old authenticator must not skip
+  the new one (issue #623).
 - **Google OAuth** (`auth/security/GoogleLogin{Success,Failure}Handler.kt`,
   `GoogleLinkTokenStore.kt`). When a Google account's email already belongs to a local account, the
   success handler does **not** log the user in — it issues a short-lived link token from the

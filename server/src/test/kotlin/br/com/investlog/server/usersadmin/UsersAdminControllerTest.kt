@@ -763,6 +763,98 @@ class UsersAdminControllerTest : BaseIntegrationTest() {
         assertEquals(true, userByEmail("naoadmin@example.com")["totpEnabled"])
     }
 
+    @Test
+    @Order(26)
+    fun `admin totp reset revokes the account's trusted devices, so the next login asks for a code from the new authenticator`() {
+        val email = "trusted-reset@example.com"
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"Dispositivo Confiável","email":"$email","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+
+        val userId = userByEmail(email)["id"] as String
+        restTestClient.patch()
+            .uri("/private/v1/users/$userId/approve")
+            .exchange()
+            .expectStatus().isOk()
+
+        enrollAndVerifyTotp(email)
+
+        val trustedDeviceCookie = restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"$email","password":"Senha123","totpCode":"${currentTotpCode(findTotpSecret(email))}","trustDevice":true}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<SessionResponse>()
+            .responseHeaders["Set-Cookie"]
+            ?.firstOrNull { it.startsWith("trusted_device=") }
+            ?.substringBefore(";")
+            ?: error("Login with trustDevice did not set a trusted_device cookie")
+
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Cookie", trustedDeviceCookie)
+            .body("""{"email":"$email","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isOk()
+
+        restTestClient.patch()
+            .uri("/private/v1/users/$userId/totp-reset")
+            .exchange()
+            .expectStatus().isOk()
+
+        enrollAndVerifyTotp(email)
+
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Cookie", trustedDeviceCookie)
+            .body("""{"email":"$email","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isUnauthorized()
+            .returnResult<Map<String, Any?>>()
+            .responseBody
+            .let { assertEquals("totp_required", it?.get("error")) }
+
+        restTestClient.post()
+            .uri("/private/v1/auth/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Cookie", trustedDeviceCookie)
+            .body("""{"email":"$email","password":"Senha123","totpCode":"${currentTotpCode(findTotpSecret(email))}"}""")
+            .exchange()
+            .expectStatus().isOk()
+    }
+
+    private fun enrollAndVerifyTotp(email: String) {
+        val secret = restTestClient.post()
+            .uri("/private/v1/auth/totp/enroll")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"$email","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isOk()
+            .returnResult<TotpEnrollResponse>()
+            .responseBody
+            ?.secretKey
+            ?: error("Enroll did not return a secret")
+
+        restTestClient.post()
+            .uri("/private/v1/auth/totp/verify")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"email":"$email","password":"Senha123","code":"${currentTotpCode(secret)}"}""")
+            .exchange()
+            .expectStatus().isOk()
+    }
+
+    private fun findTotpSecret(email: String): String =
+        userRepository.findTotpSecretByEmail(email) ?: error("No TOTP secret stored for $email")
+
+    private fun currentTotpCode(secret: String): String =
+        DefaultCodeGenerator().generate(secret, System.currentTimeMillis() / 1000L / 30L)
+
     private fun userByEmail(email: String): Map<*, *> =
         (
             restTestClient.get()
