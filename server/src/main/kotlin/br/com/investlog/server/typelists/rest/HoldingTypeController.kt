@@ -1,5 +1,6 @@
 package br.com.investlog.server.typelists.rest
 
+import br.com.investlog.server.shared.security.RequiresActiveAdministrator
 import br.com.investlog.server.typelists.rest.payloads.HoldingTypeCreateRequest
 import br.com.investlog.server.typelists.rest.payloads.HoldingTypeResponse
 import br.com.investlog.server.typelists.rest.payloads.HoldingTypeUpdateRequest
@@ -10,7 +11,6 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PagedModel
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -36,12 +36,12 @@ class HoldingTypeController(
         ResponseEntity.ok(holdingTypeService.findAll(kind, pageable))
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @RequiresActiveAdministrator
     fun create(@Valid @RequestBody request: HoldingTypeCreateRequest): ResponseEntity<HoldingTypeResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(holdingTypeService.create(request))
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @RequiresActiveAdministrator
     fun update(
         @PathVariable id: UUID,
         @Valid @RequestBody request: HoldingTypeUpdateRequest,
@@ -49,7 +49,7 @@ class HoldingTypeController(
         ResponseEntity.ok(holdingTypeService.update(id, request))
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @RequiresActiveAdministrator
     fun delete(@PathVariable id: UUID): ResponseEntity<Void> {
         holdingTypeService.delete(id)
         return ResponseEntity.noContent().build()
