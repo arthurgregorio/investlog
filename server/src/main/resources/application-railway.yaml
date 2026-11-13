@@ -12,6 +12,9 @@ spring:
 server:
   address: '::'
   forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      remote-ip-header: X-Forwarded-For
 
 investlog:
   demo-mode:
