@@ -109,6 +109,24 @@ describe('apiClient error interceptor', () => {
     })
   })
 
+  it('escapes HTML in the server problem detail before the toast renders it', async () => {
+    const detail = '<img src=x onerror=alert(1)>'
+    apiClient.defaults.adapter = rejectWith(409, { status: 409, detail })
+
+    await expect(apiClient.post('/reinvestments', {})).rejects.toBeInstanceOf(AxiosError)
+
+    expect(toastOpen).toHaveBeenCalledWith({
+      message: '&lt;img src=x onerror=alert(1)&gt;',
+      type: 'is-danger',
+      duration: 4000,
+    })
+    const renderedMessage = toastOpen.mock.calls[0][0].message
+    const container = document.createElement('div')
+    container.innerHTML = renderedMessage
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.textContent).toBe(detail)
+  })
+
   it('falls back to a generic message when the server gives no reason', async () => {
     apiClient.defaults.adapter = rejectWith(409, {})
 
