@@ -1,5 +1,7 @@
 package br.com.investlog.server.cash.rest.payloads
 
+import br.com.investlog.server.shared.validation.BoundedAmount
+import br.com.investlog.server.shared.validation.BoundedUnitValue
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotNull
 import java.math.BigDecimal
@@ -16,8 +18,10 @@ data class CashTransferRequest(
 
     @field:NotNull(message = "O valor é obrigatório")
     @field:DecimalMin(value = "0", inclusive = false, message = "O valor deve ser maior que zero")
+    @field:BoundedAmount
     val amount: BigDecimal?,
 
     @field:DecimalMin(value = "0", inclusive = false, message = "O câmbio deve ser maior que zero")
+    @field:BoundedUnitValue
     val rate: BigDecimal? = null,
 )

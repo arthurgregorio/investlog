@@ -1,5 +1,6 @@
 package br.com.investlog.server.cryptoholdings.rest.payloads
 
+import br.com.investlog.server.shared.validation.BoundedUnitValue
 import br.com.investlog.server.stockholdings.rest.payloads.LotCreateRequest
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -23,5 +24,6 @@ data class CryptoHoldingCreateRequest(
     val ticker: String,
     val name: String?,
     @field:PositiveOrZero
+    @field:BoundedUnitValue
     val currentPrice: BigDecimal?,
 )

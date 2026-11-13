@@ -1,5 +1,6 @@
 package br.com.investlog.server.fundholdings.rest.payloads
 
+import br.com.investlog.server.shared.validation.BoundedAmount
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -17,9 +18,12 @@ data class FundHoldingCreateRequest(
     @field:Valid @field:NotNull
     val contribution: ContributionCreateRequest,
     @field:PositiveOrZero
+    @field:BoundedAmount
     val currentValue: BigDecimal? = null,
     @field:PositiveOrZero
+    @field:BoundedAmount
     val administrationFeeRate: BigDecimal? = null,
     @field:PositiveOrZero
+    @field:BoundedAmount
     val performanceFeeRate: BigDecimal? = null
 )

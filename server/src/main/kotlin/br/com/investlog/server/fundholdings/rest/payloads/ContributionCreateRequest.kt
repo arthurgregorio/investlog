@@ -1,5 +1,6 @@
 package br.com.investlog.server.fundholdings.rest.payloads
 
+import br.com.investlog.server.shared.validation.BoundedAmount
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import java.math.BigDecimal
@@ -10,5 +11,6 @@ data class ContributionCreateRequest(
     val contributionDate: LocalDate,
     @field:NotNull
     @field:Positive
+    @field:BoundedAmount
     val amount: BigDecimal
 )
