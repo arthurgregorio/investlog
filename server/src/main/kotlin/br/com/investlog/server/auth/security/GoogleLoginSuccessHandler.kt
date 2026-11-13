@@ -32,6 +32,13 @@ class GoogleLoginSuccessHandler(
         val oauth2Token = authentication as OAuth2AuthenticationToken
         val attributes = oauth2Token.principal.attributes
 
+        if (attributes["email_verified"] != true) {
+            logger.warn { "Google login rejected because the identity does not carry a verified email" }
+            clearStraySessionState(request)
+            response.sendRedirect("$clientBaseUrl/login?error=oauth_failed")
+            return
+        }
+
         val googleSub = attributes["sub"] as String
         val email = attributes["email"] as String
         val name = attributes["name"] as String
