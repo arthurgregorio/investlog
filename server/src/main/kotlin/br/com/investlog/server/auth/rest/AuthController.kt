@@ -84,8 +84,8 @@ class AuthController(
     fun config(): ResponseEntity<AuthConfigResponse> = ResponseEntity.ok(authService.authConfig())
 
     @PostMapping("/register")
-    fun register(@Valid @RequestBody request: RegisterRequest): ResponseEntity<Void> {
-        authService.register(request)
+    fun register(@Valid @RequestBody request: RegisterRequest, servletRequest: HttpServletRequest): ResponseEntity<Void> {
+        authService.register(request, servletRequest)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 

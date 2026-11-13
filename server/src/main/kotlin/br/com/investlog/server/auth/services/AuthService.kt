@@ -13,6 +13,7 @@ import br.com.investlog.server.auth.security.ClientIpResolver
 import br.com.investlog.server.auth.security.GoogleLinkTokenStore
 import br.com.investlog.server.auth.security.IpAttemptLimiter
 import br.com.investlog.server.auth.security.LoginAttemptLimiter
+import br.com.investlog.server.auth.security.RegistrationAttemptLimiter
 import br.com.investlog.server.auth.security.TotpAttemptLimiter
 import br.com.investlog.server.mail.services.AccountMailNotifier
 import br.com.investlog.server.shared.exceptions.GoogleAccountEmailInUseException
@@ -48,6 +49,7 @@ class AuthService(
     private val totpAttemptLimiter: TotpAttemptLimiter,
     private val loginAttemptLimiter: LoginAttemptLimiter,
     private val ipAttemptLimiter: IpAttemptLimiter,
+    private val registrationAttemptLimiter: RegistrationAttemptLimiter,
     private val clientIpResolver: ClientIpResolver,
     private val trustedDeviceService: TrustedDeviceService,
     private val accountMailNotifier: AccountMailNotifier,
@@ -149,7 +151,10 @@ class AuthService(
     }
 
     @Transactional
-    fun register(request: RegisterRequest) {
+    fun register(request: RegisterRequest, servletRequest: HttpServletRequest) {
+
+        registrationAttemptLimiter.checkAndRecord(clientIpResolver.resolve(servletRequest))
+
         try {
             val user = userRepository.createLocalUser(request.name, request.email, passwordEncoder.encode(request.password)!!)
             accountMailNotifier.notifyPendingApproval(user)

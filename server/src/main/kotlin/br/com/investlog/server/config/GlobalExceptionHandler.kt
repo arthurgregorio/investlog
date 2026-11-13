@@ -21,6 +21,7 @@ import br.com.investlog.server.shared.exceptions.MailDeliveryException
 import br.com.investlog.server.shared.exceptions.NotFoundException
 import br.com.investlog.server.shared.exceptions.SelfActionNotAllowedException
 import br.com.investlog.server.shared.exceptions.TooManyLoginAttemptsException
+import br.com.investlog.server.shared.exceptions.TooManyRegistrationAttemptsException
 import br.com.investlog.server.shared.exceptions.TooManyTotpAttemptsException
 import br.com.investlog.server.shared.exceptions.TotpAlreadyEnabledException
 import br.com.investlog.server.shared.exceptions.TotpRequiredException
@@ -272,6 +273,18 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
 
         val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, message)
         problemDetail.setProperty("error", "too_many_totp_attempts")
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return problemDetail
+    }
+
+    @ExceptionHandler(TooManyRegistrationAttemptsException::class)
+    fun handleTooManyRegistrationAttempts(ex: TooManyRegistrationAttemptsException): ProblemDetail {
+
+        val message = ex.message ?: "Muitas tentativas de cadastro"
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(TOO_MANY_REQUESTS, message)
+        problemDetail.setProperty("error", "too_many_registration_attempts")
         problemDetail.setProperty("timestamp", Instant.now())
 
         return problemDetail
