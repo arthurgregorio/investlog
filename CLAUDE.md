@@ -42,7 +42,9 @@ them there before capturing. The demo seed dates everything relative to the day 
 resgates with fees and taxes, five reinvestments, the "Carteira Moderada" strategy and a wallet
 history covering each wallet's whole life. So Resultados, Estratégias, every wallet chart and the
 Overview's "Neste mês" card (with WEGE3 as the month's gainer and BTC as its loser) all have real
-content to capture.
+content to capture. Every screenshot except `relatorio.png` and `modo-escuro.png` has a `-dark`
+twin captured with `"dark": true`; re-capture both sets together from the same seed load, so the
+dates and figures match when the page switches theme.
 
 Claude in Chrome's `screenshot` caps output at ~1232px, so it can't produce these directly. Bring the
 Chrome window to the front (a hidden tab times out and ignores `resize_window`), resize it to 2016

@@ -8,7 +8,10 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <meta name="color-scheme" content="dark light"/>
+  <script>try{var storedTheme=localStorage.getItem('investlog.landing.theme');if(storedTheme==='dark'||storedTheme==='light')document.documentElement.dataset.theme=storedTheme;}catch(error){}</script>
   <link rel="stylesheet" href="styles.css">
+  <script src="theme.js" defer></script>
 </head>
 <body>
 
@@ -28,6 +31,10 @@
     </a>
     <div class="header-spacer"></div>
     <div class="header-cta">
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Alternar tema" hidden>
+        <svg class="theme-icon-sun" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+        <svg class="theme-icon-moon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+      </button>
       <a class="btn btn-primary btn-md" href="https://demo.investlog.com.br" target="_blank" rel="noopener">Testar agora</a>
     </div>
   </div>
@@ -53,7 +60,7 @@
   <article class="legal">
     <a class="back" href="index.html"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Página inicial</a>
     <h1>Política de Privacidade</h1>
-    <p class="legal-updated">Última atualização: 12 de novembro de 2026</p>
+    <p class="legal-updated">Última atualização: 13 de novembro de 2026</p>
 
     <p>Esta política explica quais dados pessoais são tratados na página inicial do InvestLog
       (<a href="https://investlog.com.br">investlog.com.br</a>) e na instância oficial de demonstração
@@ -104,7 +111,8 @@
     <h2 id="s3">3. Dados tratados na página inicial</h2>
     <p>A página inicial não tem formulários, não usa cookies e não coleta dados diretamente. Como qualquer site, ela é
       entregue pelo seu provedor de hospedagem (GitHub Pages), que recebe o seu endereço IP. As fontes Inter e Space
-      Grotesk são carregadas do Google Fonts, que também recebe o seu endereço IP.</p>
+      Grotesk são carregadas do Google Fonts, que também recebe o seu endereço IP. Se você trocar o tema claro ou escuro
+      pelo botão do cabeçalho, a escolha fica salva apenas no armazenamento local do seu navegador e nunca sai dele.</p>
 
     <h2 id="s4">4. Dados de usuário do Google</h2>
     <p>Ao entrar com o Google, o InvestLog solicita apenas os escopos <code>openid</code>, <code>email</code> e
