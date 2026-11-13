@@ -448,6 +448,12 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   through `CurrentUserProvider` (so a blocked admin gets the same 403 `pending_approval` and a deleted
   one the same 401 as `/profile`) and then requires `role == ADMIN`. Put it on any new admin
   controller or method.
+- **Demo mode is enforced server-side, not just in the UI** (issue #612's fix). On the shared-admin demo
+  every visitor is the admin, so the client's disabled toggles and buttons protect nothing on their own.
+  `DemoModeGuard.assertNotDemoMode()` runs in `ConfigurationService.update`, `StockPriceSyncController` and
+  `CryptoPriceSyncController` (the sync guard sits in the controller so the scheduled jobs, which call the
+  service directly, are unaffected) and in `MailSettingsService`; each refuses with 403 and
+  `error: demo_mode`. Currency rates and the type lists stay editable in demo mode, as the client allows.
 - **`establishSession` is the only session-issuing code path** — every login flow (password,
   TOTP verify, and Phase 4's Google callback) must funnel through it rather than open-coding a
   second way to mint a session, or a gate implemented in one path silently won't apply to another.

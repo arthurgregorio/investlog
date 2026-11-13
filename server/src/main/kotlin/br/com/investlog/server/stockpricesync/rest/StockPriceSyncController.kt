@@ -1,5 +1,6 @@
 package br.com.investlog.server.stockpricesync.rest
 
+import br.com.investlog.server.shared.security.DemoModeGuard
 import br.com.investlog.server.shared.security.RequiresActiveAdministrator
 import br.com.investlog.server.stockpricesync.services.StockPriceSyncService
 import org.springframework.http.ResponseEntity
@@ -12,10 +13,12 @@ import org.springframework.web.bind.annotation.RestController
 @RequiresActiveAdministrator
 class StockPriceSyncController(
     private val stockPriceSyncService: StockPriceSyncService,
+    private val demoModeGuard: DemoModeGuard,
 ) {
 
     @PostMapping
     fun forceSync(): ResponseEntity<Void> {
+        demoModeGuard.assertNotDemoMode()
         stockPriceSyncService.syncPrices()
         return ResponseEntity.noContent().build()
     }
