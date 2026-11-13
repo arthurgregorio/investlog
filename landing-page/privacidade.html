@@ -53,7 +53,7 @@
   <article class="legal">
     <a class="back" href="index.html"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Página inicial</a>
     <h1>Política de Privacidade</h1>
-    <p class="legal-updated">Última atualização: 10 de outubro de 2026</p>
+    <p class="legal-updated">Última atualização: 12 de novembro de 2026</p>
 
     <p>Esta política explica quais dados pessoais são tratados na página inicial do InvestLog
       (<a href="https://investlog.com.br">investlog.com.br</a>) e na instância oficial de demonstração
@@ -65,7 +65,9 @@
       InvestLog.</p>
     <p>O InvestLog é um software de código aberto que qualquer pessoa pode instalar no próprio servidor. Instâncias
       auto-hospedadas são operadas por quem as instala, que é o controlador dos dados tratados nelas. O software não
-      envia dados de usuários aos mantenedores do projeto.</p>
+      envia dados de usuários aos mantenedores do projeto. Uma instância auto-hospedada pode configurar o próprio
+      servidor de e-mail (SMTP) para enviar avisos de conta e notificações. Esse envio é responsabilidade de quem a
+      opera.</p>
 
     <h2 id="s2">2. Dados tratados na demonstração</h2>
     <p><strong>Dados de conta</strong></p>
@@ -74,7 +76,7 @@
       <li>Em contas com e-mail e senha: o hash da senha. A senha em si nunca é armazenada.</li>
       <li>Em contas criadas com o Google: o identificador da conta Google (<code>sub</code>), nome, e-mail e o
         endereço da foto de perfil.</li>
-      <li>Preferências: cor de destaque e moeda preferida. Preferências de aparência, como o tema escuro, também ficam
+      <li>Preferências: cor de destaque, moeda preferida e as escolhas da página Notificações. Preferências de aparência, como o tema escuro, também ficam
         salvas no armazenamento local do seu navegador.</li>
       <li>Somente se você ativar a autenticação em dois fatores: o segredo TOTP e os tokens dos dispositivos que você
         marcar como confiáveis.</li>
@@ -95,11 +97,14 @@
     <p><strong>Conta de demonstração compartilhada.</strong> A página inicial divulga publicamente o login de uma conta
       de administrador para testes. Tudo o que for registrado nessa conta fica visível para qualquer pessoa que entre
       com ela.</p>
+    <p><strong>E-mails.</strong> A demonstração não tem servidor de e-mail configurado e não envia e-mails: nem avisos
+      de conta, nem os relatórios e alertas da página Notificações. As escolhas feitas nessa página ficam salvas, mas
+      nenhuma mensagem é enviada.</p>
 
     <h2 id="s3">3. Dados tratados na página inicial</h2>
     <p>A página inicial não tem formulários, não usa cookies e não coleta dados diretamente. Como qualquer site, ela é
-      entregue pelo seu provedor de hospedagem (GitHub Pages), que recebe o seu endereço IP. A fonte Inter é carregada
-      do Google Fonts, que também recebe o seu endereço IP.</p>
+      entregue pelo seu provedor de hospedagem (GitHub Pages), que recebe o seu endereço IP. As fontes Inter e Space
+      Grotesk são carregadas do Google Fonts, que também recebe o seu endereço IP.</p>
 
     <h2 id="s4">4. Dados de usuário do Google</h2>
     <p>Ao entrar com o Google, o InvestLog solicita apenas os escopos <code>openid</code>, <code>email</code> e
@@ -132,6 +137,7 @@
       <li><strong>Google</strong> — login com o Google, exibição da foto de perfil e Google Fonts, que recebe o endereço
         IP de quem acessa a página inicial ou a demonstração.</li>
     </ul>
+    <p>Não há provedor de envio de e-mail, porque a demonstração não envia e-mails.</p>
     <p>Esses provedores podem processar dados em servidores fora do Brasil. Não usamos ferramentas de análise
       (analytics), anúncios ou cookies de rastreamento. Dados também podem ser divulgados quando exigido por lei ou por
       ordem de autoridade competente.</p>
