@@ -45,12 +45,19 @@ class GoogleLoginSuccessHandlerTest : BaseIntegrationTest() {
         SecurityContextHolder.clearContext()
     }
 
-    private fun googleToken(googleSub: String, email: String, name: String, avatarUrl: String? = null): OAuth2AuthenticationToken {
+    private fun googleToken(
+        googleSub: String,
+        email: String,
+        name: String,
+        avatarUrl: String? = null,
+        emailVerified: Any? = true,
+    ): OAuth2AuthenticationToken {
         val attributes = buildMap<String, Any> {
             put("sub", googleSub)
             put("email", email)
             put("name", name)
             avatarUrl?.let { put("picture", it) }
+            emailVerified?.let { put("email_verified", it) }
         }
         val authorities = listOf(SimpleGrantedAuthority("ROLE_USER"))
         return OAuth2AuthenticationToken(DefaultOAuth2User(authorities, attributes, "sub"), authorities, "google")
@@ -144,6 +151,92 @@ class GoogleLoginSuccessHandlerTest : BaseIntegrationTest() {
         assertEquals("$CLIENT_BASE_URL/login?error=oauth_failed", response.redirectedUrl)
         assertNull(request.getSession(false))
         assertNull(SecurityContextHolder.getContext().authentication)
+    }
+
+    @Test
+    fun `an unverified Google email does not provision an account`() {
+        val request = MockHttpServletRequest()
+        val response = MockHttpServletResponse()
+
+        handler.onAuthenticationSuccess(
+            request,
+            response,
+            googleToken("handler-sub-unverified-new", "handler-unverified-new@example.com", "Nao Verificada", emailVerified = false),
+        )
+
+        assertEquals("$CLIENT_BASE_URL/login?error=oauth_failed", response.redirectedUrl)
+        assertNull(request.getSession(false))
+        assertNull(SecurityContextHolder.getContext().authentication)
+        assertNull(userRepository.findByGoogleSub("handler-sub-unverified-new"))
+        assertNull(userRepository.findByEmail("handler-unverified-new@example.com"))
+    }
+
+    @Test
+    fun `an unverified Google email owned by a local account does not offer the link step`() {
+        authService.register(
+            RegisterRequest(name = "Conta Local", email = "handler-unverified-local@example.com", password = "Senha123"),
+            MockHttpServletRequest(),
+        )
+        val request = MockHttpServletRequest()
+        val response = MockHttpServletResponse()
+
+        handler.onAuthenticationSuccess(
+            request,
+            response,
+            googleToken("handler-sub-unverified-local", "handler-unverified-local@example.com", "Conta Google", emailVerified = false),
+        )
+
+        assertEquals("$CLIENT_BASE_URL/login?error=oauth_failed", response.redirectedUrl)
+        assertNull(userRepository.findByGoogleSub("handler-sub-unverified-local"))
+    }
+
+    @Test
+    fun `an unverified Google email does not log in an account already linked to that Google identity`() {
+        handler.onAuthenticationSuccess(
+            MockHttpServletRequest(),
+            MockHttpServletResponse(),
+            googleToken("handler-sub-unverified-linked", "handler-unverified-linked@example.com", "Conta Vinculada"),
+        )
+        val request = MockHttpServletRequest()
+        val response = MockHttpServletResponse()
+
+        handler.onAuthenticationSuccess(
+            request,
+            response,
+            googleToken("handler-sub-unverified-linked", "handler-unverified-linked@example.com", "Conta Vinculada", emailVerified = false),
+        )
+
+        assertEquals("$CLIENT_BASE_URL/login?error=oauth_failed", response.redirectedUrl)
+        assertNull(request.getSession(false))
+        assertNull(HttpSessionSecurityContextRepository().loadDeferredContext(request).get().authentication)
+    }
+
+    @Test
+    fun `a Google identity without the email_verified attribute is rejected`() {
+        val response = MockHttpServletResponse()
+
+        handler.onAuthenticationSuccess(
+            MockHttpServletRequest(),
+            response,
+            googleToken("handler-sub-missing-flag", "handler-missing-flag@example.com", "Sem Atributo", emailVerified = null),
+        )
+
+        assertEquals("$CLIENT_BASE_URL/login?error=oauth_failed", response.redirectedUrl)
+        assertNull(userRepository.findByGoogleSub("handler-sub-missing-flag"))
+    }
+
+    @Test
+    fun `an email_verified attribute that is not the boolean true is rejected`() {
+        val response = MockHttpServletResponse()
+
+        handler.onAuthenticationSuccess(
+            MockHttpServletRequest(),
+            response,
+            googleToken("handler-sub-string-flag", "handler-string-flag@example.com", "Texto", emailVerified = "false"),
+        )
+
+        assertEquals("$CLIENT_BASE_URL/login?error=oauth_failed", response.redirectedUrl)
+        assertNull(userRepository.findByGoogleSub("handler-sub-string-flag"))
     }
 
     companion object {

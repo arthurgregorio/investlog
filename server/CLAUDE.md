@@ -486,7 +486,10 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   incoming cookie to look the device up. Managed through `GET`/`DELETE /auth/trusted-devices`.
   Skipping TOTP is the whole point, so treat any change here as a change to the second factor.
 - **Google OAuth** (`auth/security/GoogleLogin{Success,Failure}Handler.kt`,
-  `GoogleLinkTokenStore.kt`). When a Google account's email already belongs to a local account, the
+  `GoogleLinkTokenStore.kt`). The success handler first requires the OIDC attribute `email_verified` to be
+  the boolean `true`; anything else (absent, `false`, a string) is the same `oauth_failed` redirect as any
+  other Google failure and provisions, logs in and links nothing, so an unverified address can never claim
+  or link a local account's email. When a Google account's email already belongs to a local account, the
   success handler does **not** log the user in — it issues a short-lived link token from the
   in-memory `GoogleLinkTokenStore` and redirects to `/login?error=email_in_use&linkToken=…`, which
   is the client's `link` step. `POST /auth/google/link` consumes that token with the account's
