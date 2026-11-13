@@ -1,5 +1,6 @@
 package br.com.investlog.server.cash.rest.payloads
 
+import br.com.investlog.server.shared.validation.BoundedAmount
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
@@ -13,6 +14,7 @@ data class CashWithdrawalRequest(
 
     @field:NotNull(message = "O valor é obrigatório")
     @field:DecimalMin(value = "0", inclusive = false, message = "O valor deve ser maior que zero")
+    @field:BoundedAmount
     val amount: BigDecimal?,
 
     @field:Size(max = 60, message = "O nome do banco deve ter no máximo 60 caracteres")

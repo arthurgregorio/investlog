@@ -1,5 +1,6 @@
 package br.com.investlog.server.cryptoholdings.rest.payloads
 
+import br.com.investlog.server.shared.validation.BoundedUnitValue
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.PositiveOrZero
 import jakarta.validation.constraints.Size
@@ -13,6 +14,7 @@ data class CryptoHoldingUpdateRequest(
     val ticker: String? = null,
     val name: String? = null,
     @field:PositiveOrZero
+    @field:BoundedUnitValue
     val currentPrice: BigDecimal? = null,
     val frozen: Boolean? = null,
 )

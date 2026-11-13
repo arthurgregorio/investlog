@@ -1,5 +1,6 @@
 package br.com.investlog.server.stockholdings.rest.payloads
 
+import br.com.investlog.server.shared.validation.BoundedUnitValue
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -16,6 +17,6 @@ data class StockHoldingCreateRequest(
     @field:Pattern(regexp = "^[A-Za-z0-9]+$", message = "ticker deve conter apenas letras e números")
     val ticker: String,
     val name: String? = null,
-    @field:PositiveOrZero val currentPrice: BigDecimal? = null,
+    @field:PositiveOrZero @field:BoundedUnitValue val currentPrice: BigDecimal? = null,
     @field:Valid @field:NotNull val lot: LotCreateRequest,
 )

@@ -548,6 +548,7 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   concrete JSON mapper; `ObjectMapper` is now a more generic base type not meant for direct
   injection. Needed anywhere you serialize a response body by hand outside the normal
   controller/`ProblemDetail` pipeline (e.g. `SecurityConfiguration`'s `AccessDeniedHandler`).
+- **Every `BigDecimal` in a request body is bounded twice** (issue #632). `BoundedBigDecimalDeserializer`, registered by `JacksonConfiguration`, rejects any number whose precision or absolute scale exceeds 64 with a 400 at parse time, because Jackson's `maxNumberLength` caps the text length and not the exponent, so `1E50000000` would otherwise reach `setScale`/`add` inside a `@Transactional` method. Each `BigDecimal` payload field also carries `@BoundedAmount` (`@Digits(15, 8)`: amounts, fees, taxes, values, fee rates, percentages) or `@BoundedUnitValue` (`@Digits(15, 18)`: quantities, unit prices, exchange rates), both in `shared/validation`. A new `BigDecimal` request field gets one of the two; `BoundedDecimalRequestBodyTest` lists the fields.
 
 ### Stack
 
