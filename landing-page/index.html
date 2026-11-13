@@ -19,16 +19,16 @@
   <meta name="twitter:image" content="https://investlog.com.br/assets/og-image.png" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <header class="site-header">
   <div class="header-inner">
-    <a class="brand" href="#top">
+    <a class="brand" href="#top" aria-label="InvestLog, início">
       <span class="brand-mark">
-        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
           <rect x="3.6" y="17.7" width="16.8" height="2.2" rx="1.1" opacity=".5"></rect>
           <rect x="5.4" y="12.4" width="3.1" height="5.6" rx="1.2"></rect>
           <rect x="10.45" y="8.2" width="3.1" height="9.8" rx="1.2"></rect>
@@ -47,240 +47,154 @@
 </header>
 
 <main id="top">
-  <section class="hero" style="padding-top:88px;">
-    <span class="hero-eyebrow">Seu diário de investimentos</span>
-    <h1 class="hero-title">Registre seus aportes e acompanhe sua <span>carteira evoluir</span></h1>
-    <p class="hero-sub">InvestLog reúne ações, fundos e criptomoedas em um só lugar, com histórico completo
-      de cada aporte, resgates e reinvestimentos, e resultado consolidado por ativo, carteira e período.</p>
-    <div class="hero-actions">
-      <a class="btn btn-primary btn-lg" href="https://demo.investlog.com.br" target="_blank" rel="noopener">Testar agora</a>
-      <a class="btn btn-soft btn-lg" href="#video">Ver vídeo de demonstração</a>
-    </div>
-    <p class="hero-credentials">Acesse com <code>admin@admin.com</code> / <code>admin</code> — sem cadastro necessário.
-    </p>
-    <div class="hero-frame">
-      <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot da visão geral">Visão geral do InvestLog
-        <img src="assets/hero.png" alt="Visão geral com patrimônio, evolução dos aportes e alocação por tipo" onerror="this.remove()">
-        <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <h1>Seu diário de investimentos, sempre em dia</h1>
+          <p class="hero-sub">Registre aportes, resgates e reinvestimentos de ações, fundos e criptomoedas, e acompanhe o resultado de cada ativo, carteira e período em um só lugar.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="https://demo.investlog.com.br" target="_blank" rel="noopener">Testar agora</a>
+            <a class="btn btn-soft btn-lg" href="#video">Ver vídeo</a>
+          </div>
+          <p class="demo-access">Entre na demo com <code>admin@admin.com</code> e senha <code>admin</code>, sem cadastro.</p>
+        </div>
+        <ul class="facts">
+          <li><b>Ações, FIIs, fundos e criptoativos</b><span>Em carteiras separadas, com resultado por ativo, carteira e período.</span></li>
+          <li><b>Reais e dólares</b><span>Carteiras em BRL ou USD, com conversão automática e cotações atualizadas.</span></li>
+          <li><b>Código aberto</b><span>Licença Apache 2.0. Instale no seu servidor ou use a demonstração.</span></li>
+        </ul>
       </div>
-    </div>
-  </section>
-
-  <section id="capabilities">
-    <div class="section-head">
-      <span class="section-eyebrow">Recursos</span>
-      <h2 class="section-title">Conheça as principais funcionalidades</h2>
-    </div>
-    <div class="cap-grid">
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
-        </span>
-        <h3>Gestão de carteiras</h3>
-        <p>Organize ações, fundos e criptoativos em carteiras, cada uma com painel próprio: desempenho diário, melhores e piores ativos e distribuição</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"/><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/></svg>
-        </span>
-        <h3>Dashboards de evolução</h3>
-        <p>Patrimônio consolidado, evolução dos aportes e alocação por tipo, além de um painel com os resultados já realizados</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-        </span>
-        <h3>Resgates e reinvestimentos</h3>
-        <p>Registre resgates com lucro, custos e impostos, reinvista em outro ativo e mova investimentos entre carteiras sem perder o histórico</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-        </span>
-        <h3>Histórico de transações</h3>
-        <p>Cada compra, resgate e movimentação fica registrada por investimento, com preço médio e saldo atualizados</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 18-1.535 1.605a5 5 0 0 1-8-1.5"/><path d="M17 22v-4h-4"/><path d="M20.996 15.251A4.5 4.5 0 0 0 17.495 8h-1.79a7 7 0 1 0-12.709 5.607"/><path d="M7 10v4h4"/><path d="m7 14 1.535-1.605a5 5 0 0 1 8 1.5"/></svg>
-        </span>
-        <h3>Atualização de preços</h3>
-        <p>Cotações de ações e FIIs, criptoativos e do dólar atualizadas automaticamente a cada hora (requer configuração extra)</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"/><path d="M15 6h1v4"/><path d="m6.134 14.768.866-.5 2 3.464"/><circle cx="16" cy="8" r="6"/></svg>
-        </span>
-        <h3>Multi moedas</h3>
-        <p>Carteiras em BRL ou USD com conversão automática, e a moeda de exibição pode ser alternada em todo o sistema</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
-        </span>
-        <h3>Tipos e segmentos</h3>
-        <p>Classifique ações por tipo e segmento e fundos pelas categorias ANBIMA, e veja a distribuição da carteira por segmento</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
-        </span>
-        <h3>Relatório para impressão</h3>
-        <p>Gere um relatório completo dos seus investimentos, agrupado por tipo e carteira, pronto para imprimir ou salvar em PDF</p>
-      </div>
-      <div class="cap-card">
-        <span class="cap-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
-        </span>
-        <h3>Gestão de usuários</h3>
-        <p>Carteiras individuais por usuário, aprovação de novos acessos, login com Google e 2FA</p>
-      </div>
+      <button type="button" class="shot ratio-hero hero-shot" aria-label="Ampliar a visão geral"
+              data-shot="assets/hero.png" data-title="Visão geral" data-caption="Patrimônio, evolução dos aportes e alocação por tipo">
+        <img src="assets/hero.png" fetchpriority="high" alt="Visão geral com patrimônio, evolução dos aportes e alocação por tipo">
+        <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+      </button>
     </div>
   </section>
 
-  <section id="screenshots">
-    <div class="section-head">
-      <span class="section-eyebrow">Capturas de tela</span>
-      <h2 class="section-title">Imagens reais do sistema em uso</h2>
-    </div>
-    <div class="carousel">
-      <div class="carousel-track" id="carouselTrack">
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Carteiras">Carteiras
-              <img src="assets/carteiras.png" alt="Carteiras" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Carteiras</b><span>Carteiras por tipo e moeda, com resultado de cada uma</span></div>
-          </div>
-        </div>
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Detalhe da carteira">Detalhe da carteira
-              <img src="assets/carteira-detalhe.png" alt="Detalhe da carteira" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Detalhe da carteira</b><span>Desempenho diário, destaques e evolução do valor</span></div>
-          </div>
-        </div>
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Distribuição por segmento">Distribuição por segmento
-              <img src="assets/distribuicao-segmentos.png" alt="Distribuição por segmento" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Distribuição por segmento</b><span>Participação de cada ativo ou segmento na carteira</span></div>
-          </div>
-        </div>
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Investimentos">Investimentos
-              <img src="assets/investimentos.png" alt="Investimentos" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Investimentos</b><span>Todos os ativos com filtros por tipo, carteira e busca</span></div>
-          </div>
-        </div>
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Histórico de movimentações">Histórico de movimentações
-              <img src="assets/historico.png" alt="Histórico de movimentações" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Histórico de movimentações</b><span>Compras e resgates de cada ativo, com saldo e preço médio</span></div>
-          </div>
-        </div>
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Relatório para impressão">Relatório para impressão
-              <img src="assets/relatorio.png" alt="Relatório para impressão" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Relatório para impressão</b><span>Relatório completo pronto para imprimir ou salvar em PDF</span></div>
-          </div>
-        </div>
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Tipos e segmentos">Tipos e segmentos
-              <img src="assets/tipos-investimento.png" alt="Tipos e segmentos" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Tipos e segmentos</b><span>Tipos de ação, tipos de fundo e segmentos configuráveis</span></div>
-          </div>
-        </div>
-        <div class="carousel-slide">
-          <div class="shot-card">
-            <div class="ph zoomable" role="button" tabindex="0" aria-label="Ampliar screenshot: Modo escuro e multi moedas">Modo escuro e multi moedas
-              <img src="assets/modo-escuro.png" alt="Modo escuro e multi moedas" loading="lazy" onerror="this.remove()">
-              <span class="zoom-overlay"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></span>
-            </div>
-            <div class="shot-caption"><b>Modo escuro e multi moedas</b><span>Tema escuro e carteiras em dólar com conversão automática</span></div>
-          </div>
+  <section class="chapter">
+    <div class="wrap">
+      <div class="wide-head">
+        <h2>Cada carteira com caixa, aportes e resgates</h2>
+        <div>
+          <p>Registre aportes, resgates com custos e impostos e reinvestimentos em outro ativo. O caixa de cada carteira separa o dinheiro que você colocou do lucro reinvestido, e transferências entre carteiras não contam nada duas vezes.</p>
+          <ul class="tags">
+            <li>Transferências entre carteiras</li>
+            <li>Conciliação de caixa</li>
+            <li>Desempenho diário e destaques</li>
+          </ul>
         </div>
       </div>
-      <div class="carousel-arrows">
-        <button class="arrow-btn" id="prevBtn" aria-label="Anterior">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 6l-6 6 6 6"></path>
-          </svg>
-        </button>
-        <button class="arrow-btn" id="nextBtn" aria-label="Próximo">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 6l6 6-6 6"></path>
-          </svg>
-        </button>
-      </div>
+      <button type="button" class="shot ratio-slide" aria-label="Ampliar o detalhe da carteira"
+              data-shot="assets/carteira-detalhe.png" data-title="Detalhe da carteira" data-caption="Desempenho diário, destaques e evolução do valor">
+        <img src="assets/carteira-detalhe.png" loading="lazy" alt="Detalhe da carteira com desempenho diário, destaques e evolução do valor">
+        <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+      </button>
     </div>
   </section>
 
-  <section id="video">
-    <div class="section-head">
-      <span class="section-eyebrow">Demonstração</span>
-      <h2 class="section-title">Veja o InvestLog em ação</h2>
-      <p class="section-sub">Um tour rápido pelas principais telas e funcionalidades do app.</p>
+  <section class="chapter">
+    <div class="wrap split split-4-8">
+      <div class="split-text">
+        <h2>Relatório em PDF e avisos por e-mail</h2>
+        <p>Baixe um PDF consolidado por classe e tipo, no formato de um extrato de custódia. Receba por e-mail um relatório periódico, o fechamento do mês e um aviso quando um ativo congelado volta ao positivo.</p>
+      </div>
+      <button type="button" class="shot ratio-slide" aria-label="Ampliar o relatório"
+              data-shot="assets/relatorio.png" data-title="Relatório" data-caption="Relatório completo agrupado por tipo e carteira">
+        <img src="assets/relatorio.png" loading="lazy" alt="Relatório de investimentos agrupado por tipo e carteira">
+        <span class="zoom-chip" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg>Ampliar</span>
+      </button>
     </div>
-    <div class="video-wrap">
+  </section>
+
+  <section class="more">
+    <div class="wrap more-grid">
+      <div>
+        <h2>Também no InvestLog</h2>
+        <p class="more-intro">O resto do que vem incluído. Onde houver uma tela, abra para ver como ela é.</p>
+      </div>
+      <ul class="index">
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+          <b>Carteiras</b>
+          <p>Todas as carteiras por tipo e moeda, com o resultado de cada uma.</p>
+          <button type="button" class="see" aria-label="Ver tela: Carteiras" data-shot="assets/carteiras.png" data-title="Carteiras" data-caption="Carteiras por tipo e moeda, com resultado de cada uma">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
+          <b>Investimentos</b>
+          <p>Todos os ativos com filtros por tipo, carteira e busca.</p>
+          <button type="button" class="see" aria-label="Ver tela: Investimentos" data-shot="assets/investimentos.png" data-title="Investimentos" data-caption="Todos os ativos com filtros por tipo, carteira e busca">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
+          <b>Histórico de movimentações</b>
+          <p>Compras e resgates de cada ativo, com saldo e preço médio.</p>
+          <button type="button" class="see" aria-label="Ver tela: Histórico de movimentações" data-shot="assets/historico.png" data-title="Histórico de movimentações" data-caption="Compras e resgates de cada ativo, com saldo e preço médio">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"></path><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path></svg>
+          <b>Distribuição por segmento</b>
+          <p>A participação de cada ativo ou segmento na carteira.</p>
+          <button type="button" class="see" aria-label="Ver tela: Distribuição por segmento" data-shot="assets/distribuicao-segmentos.png" data-title="Distribuição por segmento" data-caption="Participação de cada ativo ou segmento na carteira">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle></svg>
+          <b>Tipos e segmentos</b>
+          <p>Uma única lista de tipos, com segmentos para cada classe de ativo.</p>
+          <button type="button" class="see" aria-label="Ver tela: Tipos e segmentos" data-shot="assets/tipos-investimento.png" data-title="Tipos e segmentos" data-caption="Tipos de investimento e segmentos configuráveis">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48"></path><path d="M15 6h1v4"></path><path d="m6.134 14.768.866-.5 2 3.464"></path><circle cx="16" cy="8" r="6"></circle></svg>
+          <b>Multimoedas e modo escuro</b>
+          <p>Carteiras em BRL ou USD e tema escuro em todo o sistema.</p>
+          <button type="button" class="see" aria-label="Ver tela: Multimoedas e modo escuro" data-shot="assets/modo-escuro.png" data-title="Multimoedas e modo escuro" data-caption="Tema escuro e carteiras em dólar com conversão automática">Ver tela<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3M11 8v6M8 11h6"></path></svg></button>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 18-1.535 1.605a5 5 0 0 1-8-1.5"></path><path d="M17 22v-4h-4"></path><path d="M20.996 15.251A4.5 4.5 0 0 0 17.495 8h-1.79a7 7 0 1 0-12.709 5.607"></path><path d="M7 10v4h4"></path><path d="m7 14 1.535-1.605a5 5 0 0 1 8 1.5"></path></svg>
+          <b>Atualização de preços</b>
+          <p>Cotações de ações, FIIs, criptoativos e dólar a cada hora (requer configuração).</p>
+        </li>
+        <li>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><path d="M16 3.128a4 4 0 0 1 0 7.744"></path><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><circle cx="9" cy="7" r="4"></circle></svg>
+          <b>Usuários e acesso</b>
+          <p>Aprovação de novas contas, login com Google e autenticação em dois fatores.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="video" id="video">
+    <div class="wrap video-grid">
+      <div>
+        <h2>O InvestLog em vídeo</h2>
+        <p>Um tour rápido pelas principais telas e funcionalidades do app.</p>
+      </div>
       <div class="video-frame">
-        <video controls preload="none" playsinline poster="assets/investlog-demo.jpg">
+        <video id="demoVideo" preload="none" playsinline poster="assets/investlog-demo.jpg">
           <source src="assets/investlog-demo.mp4" type="video/mp4">
         </video>
+        <button type="button" class="play" id="playVideo" aria-label="Reproduzir o vídeo de demonstração">
+          <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.52.85l10.4-6.5a1 1 0 0 0 0-1.7L9.52 4.65A1 1 0 0 0 8 5.5z"></path></svg>
+        </button>
       </div>
     </div>
   </section>
 
-  <section id="opensource">
-    <div class="oss-card">
-      <span class="oss-icon">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path
-          d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.9.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.35-3.88-1.35-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18a10.9 10.9 0 0 1 5.75 0c2.2-1.49 3.15-1.18 3.15-1.18.63 1.58.24 2.75.12 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.67.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .3.21.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"></path></svg>
-      </span>
-      <div class="oss-body">
+  <section class="closing">
+    <div class="wrap closing-grid">
+      <div class="panel panel-oss">
+        <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.9.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.35-3.88-1.35-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18a10.9 10.9 0 0 1 5.75 0c2.2-1.49 3.15-1.18 3.15-1.18.63 1.58.24 2.75.12 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.67.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .3.21.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"></path></svg>
         <h2>Código aberto e gratuito</h2>
-        <p>InvestLog é open-source: qualquer pessoa pode usar, estudar, modificar e contribuir com o projeto.
-          O código está disponível publicamente no GitHub, sob a licença <strong>Apache License 2.0</strong>.</p>
+        <p>Qualquer pessoa pode usar, estudar, modificar e contribuir. O código está no GitHub, sob a licença Apache 2.0.</p>
+        <a class="btn btn-ink btn-lg" href="https://github.com/arthurgregorio/investlog" target="_blank" rel="noopener">Ver no GitHub</a>
       </div>
-      <div class="oss-actions">
-        <a class="btn btn-github btn-lg" href="https://github.com/arthurgregorio/investlog" target="_blank"
-           rel="noopener">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
-            <path
-              d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.9.57.1.78-.25.78-.55 0-.27-.01-1.17-.02-2.12-3.2.7-3.88-1.35-3.88-1.35-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.18-3.08-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18a10.9 10.9 0 0 1 5.75 0c2.2-1.49 3.15-1.18 3.15-1.18.63 1.58.24 2.75.12 3.04.74.8 1.18 1.83 1.18 3.08 0 4.41-2.7 5.38-5.27 5.67.42.36.78 1.07.78 2.16 0 1.56-.02 2.82-.02 3.2 0 .3.21.66.79.55A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5Z"></path>
-          </svg>
-          Ver no GitHub
-        </a>
+      <div class="panel panel-demo">
+        <h2>Teste com a conta de demonstração</h2>
+        <p>Entre com <code>admin@admin.com</code> e senha <code>admin</code>. A demo já vem com carteiras, resgates e uma estratégia para explorar.</p>
+        <a class="btn btn-on-accent btn-lg" href="https://demo.investlog.com.br" target="_blank" rel="noopener">Testar agora</a>
       </div>
-    </div>
-  </section>
-
-  <section id="cta">
-    <div class="cta-band">
-      <h2>Pronto para organizar seus investimentos?</h2>
-      <p>Teste a demo interativa e veja como o InvestLog pode acompanhar sua carteira.</p>
-      <a class="btn btn-primary btn-lg" href="https://demo.investlog.com.br" target="_blank" rel="noopener">Testar agora</a>
-      <p class="cta-credentials">Acesse com <code>admin@admin.com</code> / <code>admin</code> — sem cadastro necessário.
-      </p>
     </div>
   </section>
 </main>
@@ -289,7 +203,7 @@
   <div class="footer-inner">
     <div class="footer-brand">
       <span class="brand-mark">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+        <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
           <rect x="3.6" y="17.7" width="16.8" height="2.2" rx="1.1" opacity=".5"></rect>
           <rect x="5.4" y="12.4" width="3.1" height="5.6" rx="1.2"></rect>
           <rect x="10.45" y="8.2" width="3.1" height="9.8" rx="1.2"></rect>
@@ -299,68 +213,112 @@
       </span>
       InvestLog
     </div>
-    <div class="footer-links">
+    <nav class="footer-links" aria-label="Rodapé">
       <a href="https://demo.investlog.com.br" target="_blank" rel="noopener">Demo</a>
       <a href="#video">Vídeo</a>
       <a href="https://github.com/arthurgregorio/investlog" target="_blank" rel="noopener">GitHub</a>
       <a href="privacidade.html">Privacidade</a>
       <a href="termos.html">Termos</a>
-    </div>
+    </nav>
   </div>
 </footer>
 
-<div class="lightbox" id="lightbox" hidden>
-  <button class="lightbox-close" id="lightboxClose" aria-label="Fechar">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Tela ampliada" hidden>
+  <p class="lightbox-hint"><kbd>Esc</kbd> fecha · <kbd>←</kbd> <kbd>→</kbd> trocam de tela</p>
+  <button type="button" class="lightbox-ctrl lightbox-close" id="lightboxClose" aria-label="Fechar">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
   </button>
-  <img class="lightbox-img" id="lightboxImg" src="" alt="">
+  <button type="button" class="lightbox-ctrl lightbox-prev" id="lightboxPrev" aria-label="Tela anterior">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+  </button>
+  <button type="button" class="lightbox-ctrl lightbox-next" id="lightboxNext" aria-label="Próxima tela">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+  </button>
+  <figure class="lightbox-figure">
+    <img class="lightbox-img" id="lightboxImg" src="" alt="">
+    <figcaption class="lightbox-caption"><b id="lightboxTitle"></b><span id="lightboxCaption"></span><span id="lightboxCount"></span></figcaption>
+  </figure>
 </div>
 
 <script>
-  var track = document.getElementById('carouselTrack');
-  document.getElementById('prevBtn').addEventListener('click', function () {
-    track.scrollBy({left: -track.clientWidth * 0.85, behavior: 'smooth'});
-  });
-  document.getElementById('nextBtn').addEventListener('click', function () {
-    track.scrollBy({left: track.clientWidth * 0.85, behavior: 'smooth'});
+  var video = document.getElementById('demoVideo');
+  var playVideo = document.getElementById('playVideo');
+  playVideo.addEventListener('click', function () {
+    playVideo.hidden = true;
+    video.controls = true;
+    video.play();
+    video.focus();
   });
 
   var lightbox = document.getElementById('lightbox');
   var lightboxImg = document.getElementById('lightboxImg');
+  var lightboxTitle = document.getElementById('lightboxTitle');
+  var lightboxCaption = document.getElementById('lightboxCaption');
+  var lightboxCount = document.getElementById('lightboxCount');
+  var lightboxClose = document.getElementById('lightboxClose');
+  var openers = Array.prototype.slice.call(document.querySelectorAll('[data-shot]'));
+  var currentIndex = -1;
+  var lightboxOpener = null;
 
-  function openLightbox(src, alt) {
-    lightboxImg.src = src;
-    lightboxImg.alt = alt;
+  function showShot(index) {
+    currentIndex = (index + openers.length) % openers.length;
+    var shot = openers[currentIndex].dataset;
+    lightboxImg.src = shot.shot;
+    lightboxImg.alt = shot.title + ': ' + shot.caption;
+    lightboxTitle.textContent = shot.title;
+    lightboxCaption.textContent = shot.caption;
+    lightboxCount.textContent = (currentIndex + 1) + ' de ' + openers.length;
+    lightbox.setAttribute('aria-label', shot.title + ', tela ampliada');
+  }
+
+  function openLightbox(opener) {
+    lightboxOpener = opener;
+    showShot(openers.indexOf(opener));
     lightbox.hidden = false;
     document.body.style.overflow = 'hidden';
+    lightboxClose.focus();
   }
 
   function closeLightbox() {
     lightbox.hidden = true;
     lightboxImg.src = '';
     document.body.style.overflow = '';
+    if (lightboxOpener) lightboxOpener.focus();
+    lightboxOpener = null;
   }
 
-  document.querySelectorAll('.zoomable').forEach(function (ph) {
-    var img = ph.querySelector('img');
-    if (!img) return;
-    ph.addEventListener('click', function () {
-      openLightbox(img.src, img.alt);
-    });
-    ph.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openLightbox(img.src, img.alt);
-      }
-    });
+  openers.forEach(function (opener) {
+    opener.addEventListener('click', function () { openLightbox(opener); });
   });
 
-  document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
-  lightbox.addEventListener('click', function (e) {
-    if (e.target === lightbox) closeLightbox();
+  lightboxClose.addEventListener('click', closeLightbox);
+  document.getElementById('lightboxPrev').addEventListener('click', function () { showShot(currentIndex - 1); });
+  document.getElementById('lightboxNext').addEventListener('click', function () { showShot(currentIndex + 1); });
+  lightbox.addEventListener('click', function (event) {
+    if (event.target === lightbox) closeLightbox();
   });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
+  lightbox.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeLightbox();
+      return;
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      showShot(currentIndex + (event.key === 'ArrowRight' ? 1 : -1));
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    var focusables = Array.prototype.slice.call(lightbox.querySelectorAll('button'));
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   });
 </script>
 </body>
