@@ -614,6 +614,33 @@ class CryptoHoldingControllerTest : BaseIntegrationTest() {
             .jsonPath("$.detail").isEqualTo("Posição de criptomoeda não encontrada: $unknownHoldingId")
     }
 
+    @Test
+    @Order(32)
+    fun `rejects an oversized ticker on create and on update`() {
+        val oversizedTicker = "A".repeat(300)
+        restTestClient.post()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(
+                """
+                {
+                  "ticker":"$oversizedTicker",
+                  "lot":{"lotDate":"2024-01-01","quantity":0.5,"price":42000.00}
+                }
+            """.trimIndent()
+            )
+            .exchange()
+            .expectStatus().isBadRequest()
+
+        val holding = createHolding("OVERSZ")
+        restTestClient.patch()
+            .uri("/private/v1/wallets/$walletId/crypto-holdings/${holding.id}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"ticker":"$oversizedTicker"}""")
+            .exchange()
+            .expectStatus().isBadRequest()
+    }
+
     private fun seededCryptoTypeId(): UUID {
         val listResponse = restTestClient.get()
             .uri("/private/v1/holding-types?kind=CRYPTO")

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.PositiveOrZero
+import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -17,6 +18,7 @@ data class CryptoHoldingCreateRequest(
     @field:NotNull
     val lot: LotCreateRequest,
     @field:NotBlank
+    @field:Size(max = 20, message = "ticker deve ter no máximo 20 caracteres")
     @field:Pattern(regexp = "^[A-Za-z0-9]+$", message = "ticker deve conter apenas letras e números")
     val ticker: String,
     val name: String?,

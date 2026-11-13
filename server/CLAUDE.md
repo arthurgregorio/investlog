@@ -392,7 +392,14 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   cached — the subsequent `GET /simple/price?ids={resolved ids}&vs_currencies={wallet currencies}`
   call is never cached, so the price actually written is always fresh. A ticker CoinGecko has no
   match for (typo, delisted) is skipped with a warning and keeps its last-known price, same
-  fallback as `stockpricesync`. `CoinGeckoClient` lives in `cryptopricesync/http` (not `shared/`,
+  fallback as `stockpricesync`. The two CoinGecko calls are shared by every tenant, so the run
+  isolates its inputs: tickers and wallet currencies that do not match `^[A-Za-z0-9]{1,20}$` and
+  `^[A-Za-z]{3,5}$` are dropped and logged before any call, and when CoinGecko answers a batch with
+  400/404/414/422 the service retries one ticker (resolve) or one currency (prices) at a time and
+  skips only the one that fails, while a 5xx, 429 or network error still skips the run. The wallet
+  `currency` and the crypto `ticker` carry the same patterns plus `@Size` at the API boundary
+  (`WalletCreateRequest`, `CryptoHoldingCreateRequest`, `CryptoHoldingUpdateRequest`).
+  `CoinGeckoClient` lives in `cryptopricesync/http` (not `shared/`,
   unlike `StocksClient` — CoinGecko has no other consumer in this codebase) and is registered via
   `@ImportHttpServices(group = "coingecko")` in `config/http/CoinGeckoHttpClientsConfig`, base URL
   set programmatically via `RestClientHttpServiceGroupConfigurer` for the same reason documented
