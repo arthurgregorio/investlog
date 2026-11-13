@@ -167,6 +167,30 @@ class RegistrationControllerTest : BaseIntegrationTest() {
             }
     }
 
+    @Test
+    fun `registration rejects a name containing a control character`() {
+        listOf("\\n", "\\r", "\\r\\n", "\\t", "\\u0000", "\\u001b", "\\u007f", "\\u0085", "\\u2028", "\\u2029").forEach { escape ->
+            restTestClient.post()
+                .uri("/private/v1/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""{"name":"Nome${escape}Forjado","email":"controle@example.com","password":"Senha123"}""")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.errors[0]").isEqualTo("name não pode conter caracteres de controle")
+        }
+    }
+
+    @Test
+    fun `registration accepts a name with accents, apostrophes and ordinary spaces`() {
+        restTestClient.post()
+            .uri("/private/v1/auth/register")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body("""{"name":"João D'Ávila Ñandú","email":"acentos@example.com","password":"Senha123"}""")
+            .exchange()
+            .expectStatus().isCreated()
+    }
+
     companion object {
         private lateinit var pendingUserCookie: String
     }

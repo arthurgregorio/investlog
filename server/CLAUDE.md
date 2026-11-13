@@ -522,7 +522,9 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   registration from an address, successful or not, and answers 429 `too_many_registration_attempts`
   once it is over. It reuses `AttemptLockoutTracker`; the test profile raises the limit so suites that
   register many users are unaffected. `RegisterRequest` caps `name` at 100, `email` at 254 and
-  `password` at 128 characters.
+  `password` at 128 characters, and `name` may not contain control characters (issue #626). Text that
+  reaches a log line from a user (the mail subject and recipients in `MailSender`) goes through
+  `String.sanitizedForLog()`, so a name stored before that rule cannot split a log record either.
 - **`ClientIpResolver` decides which address that is.** It builds the chain of `X-Forwarded-For`
   entries plus `remoteAddr` and takes the entry `investlog.security.client-ip.trusted-proxy-count`
   positions before the end: `0` by default (compose) and `1` on the `railway` profile (the Railway

@@ -6,6 +6,7 @@ import br.com.investlog.server.mail.rest.payloads.MailSecurity
 import br.com.investlog.server.shared.exceptions.InvalidMailSettingsException
 import br.com.investlog.server.shared.exceptions.MailDeliveryException
 import br.com.investlog.server.shared.security.DemoModeGuard
+import br.com.investlog.server.shared.utils.sanitizedForLog
 import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.mail.MessagingException
 import org.springframework.beans.factory.annotation.Qualifier
@@ -33,13 +34,13 @@ class MailSender(
             val settings = mailSettingsRepository.find()
 
             when {
-                demoModeGuard.isDemoMode() -> logger.info { "Demo mode is on, not sending \"${message.subject}\"" }
-                !settings.enabled -> logger.info { "Email sending is disabled, not sending \"${message.subject}\"" }
-                !settings.isConfigured() -> logger.info { "SMTP settings are incomplete, not sending \"${message.subject}\"" }
+                demoModeGuard.isDemoMode() -> logger.info { "Demo mode is on, not sending \"${message.subject.sanitizedForLog()}\"" }
+                !settings.enabled -> logger.info { "Email sending is disabled, not sending \"${message.subject.sanitizedForLog()}\"" }
+                !settings.isConfigured() -> logger.info { "SMTP settings are incomplete, not sending \"${message.subject.sanitizedForLog()}\"" }
                 else -> deliver(settings, message)
             }
         } catch (exception: Exception) {
-            logger.warn(exception) { "Could not send \"${message.subject}\" to ${message.to}" }
+            logger.warn(exception) { "Could not send \"${message.subject.sanitizedForLog()}\" to ${message.to.map { it.sanitizedForLog() }}" }
         }
     }
 
