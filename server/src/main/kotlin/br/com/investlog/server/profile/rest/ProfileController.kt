@@ -4,6 +4,9 @@ import br.com.investlog.server.profile.services.ProfileService
 import br.com.investlog.server.profile.rest.payloads.PasswordChangeRequest
 import br.com.investlog.server.profile.rest.payloads.ProfileResponse
 import br.com.investlog.server.profile.rest.payloads.ProfileUpdateRequest
+import br.com.investlog.server.shared.security.SessionPrincipalRefresher
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -15,7 +18,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/profile")
 class ProfileController(
-    private val profileService: ProfileService
+    private val profileService: ProfileService,
+    private val sessionPrincipalRefresher: SessionPrincipalRefresher,
 ) {
 
     @GetMapping
@@ -26,8 +30,13 @@ class ProfileController(
         ResponseEntity.ok(profileService.updateProfile(request))
 
     @PatchMapping("/password")
-    fun changePassword(@Valid @RequestBody request: PasswordChangeRequest): ResponseEntity<Void> {
-        profileService.changePassword(request)
+    fun changePassword(
+        @Valid @RequestBody request: PasswordChangeRequest,
+        servletRequest: HttpServletRequest,
+        servletResponse: HttpServletResponse,
+    ): ResponseEntity<Void> {
+        val updatedUser = profileService.changePassword(request)
+        sessionPrincipalRefresher.refresh(updatedUser, servletRequest, servletResponse)
         return ResponseEntity.noContent().build()
     }
 }

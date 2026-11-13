@@ -55,5 +55,6 @@
     <include file="db/changelog/changes/2026/11/08-1000-create-mail-settings.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/11/08-1100-create-notification-preferences.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/changes/2026/11/08-1300-create-frozen-holding-alerts.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/changes/2026/11/12-1000-add-user-credentials-version.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

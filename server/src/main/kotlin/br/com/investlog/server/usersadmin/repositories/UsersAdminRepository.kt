@@ -66,6 +66,7 @@ class UsersAdminRepository(private val dsl: DSLContext) {
     fun updatePasswordHash(userId: Long, passwordHash: String): UserAdminResponse =
         dsl.update(USERS)
             .set(USERS.PASSWORD_HASH, passwordHash)
+            .set(USERS.CREDENTIALS_VERSION, USERS.CREDENTIALS_VERSION.plus(1))
             .set(USERS.UPDATED_AT, OffsetDateTime.now())
             .where(USERS.ID.eq(userId))
             .returning()
