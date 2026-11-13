@@ -23,6 +23,7 @@ data class InvestlogConfigurations(
         val login: Login,
         val trustedDevice: TrustedDevice,
         val ipLockout: IpLockout = IpLockout(),
+        val registrationLimit: RegistrationLimit = RegistrationLimit(),
         val clientIp: ClientIp = ClientIp(),
     ) {
         data class Totp(
@@ -44,6 +45,12 @@ data class InvestlogConfigurations(
             val maxAttempts: Int = 20,
             val baseDuration: Duration = Duration.ofMinutes(1),
             val failureWindow: Duration = Duration.ofMinutes(15),
+        )
+
+        data class RegistrationLimit(
+            val maxAttempts: Int = 10,
+            val baseDuration: Duration = Duration.ofMinutes(15),
+            val failureWindow: Duration = Duration.ofHours(1),
         )
 
         data class ClientIp(

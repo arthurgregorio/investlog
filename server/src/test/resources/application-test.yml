@@ -1,3 +1,7 @@
 logging:
   level:
     br.com.investlog: debug
+investlog:
+  security:
+    registration-limit:
+      max-attempts: 1000

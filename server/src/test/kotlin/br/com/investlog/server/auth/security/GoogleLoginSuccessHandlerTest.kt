@@ -78,7 +78,7 @@ class GoogleLoginSuccessHandlerTest : BaseIntegrationTest() {
 
     @Test
     fun `a Google email owned by a local account redirects to the link step with an encoded email and a usable token`() {
-        authService.register(RegisterRequest(name = "Conta Local", email = "local+tag@example.com", password = "Senha123"))
+        authService.register(RegisterRequest(name = "Conta Local", email = "local+tag@example.com", password = "Senha123"), MockHttpServletRequest())
         val request = MockHttpServletRequest()
         val strayAuthentication = SecurityContextHolder.createEmptyContext()
         strayAuthentication.authentication = googleToken("handler-sub-collision", "local+tag@example.com", "Conta Google")
