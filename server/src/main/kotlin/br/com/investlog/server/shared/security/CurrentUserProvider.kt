@@ -20,6 +20,10 @@ class SecurityContextCurrentUserProvider(private val userRepository: UserReposit
             ?.takeIf { it.externalId == sessionPrincipal.externalId }
             ?: throw InvalidCredentialsException("O usuário autenticado não existe mais")
 
+        if (user.credentialsVersion != sessionPrincipal.credentialsVersion) {
+            throw InvalidCredentialsException("A sessão foi encerrada porque a senha da conta mudou")
+        }
+
         if (user.status != CurrentUser.Status.APPROVED) {
             throw UserNotApprovedException("O usuário ${user.email} não está aprovado")
         }

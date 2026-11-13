@@ -452,6 +452,12 @@ logged as a warning and skipped, keeping its last-known price, so one bad ticker
   session principal's; otherwise the account behind the session was deleted and the email has since
   been registered again, and the call fails with the same 401 as a deleted account instead of serving
   the new owner's data to the old session. Keep that comparison if the lookup ever changes.
+- **A password change or an administrator reset ends every other open session.** `system.users.credentials_version`
+  is incremented by `UserRepository.updatePasswordHash` and `UsersAdminRepository.updatePasswordHash`; the
+  session principal carries the value it was issued with, and `getCurrentUser()` rejects it with the same 401
+  once the live row's value differs. `ProfileController.changePassword` keeps the changing session usable by
+  rewriting its principal through `SessionPrincipalRefresher` with the user the update returned. Any new code
+  path that replaces a credential must go through those two repository methods (or bump the column itself).
 - **Admin-only endpoints carry `@RequiresActiveAdministrator`, never a bare `@PreAuthorize("hasAuthority('ROLE_ADMIN')")`.**
   The filter chain's `ROLE_ADMIN` gate and a plain `@PreAuthorize` both read the authority cached at
   login, so a blocked, demoted or deleted admin's open session kept every write that never reached

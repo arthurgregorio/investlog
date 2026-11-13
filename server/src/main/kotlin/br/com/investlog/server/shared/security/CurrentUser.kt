@@ -15,6 +15,7 @@ data class CurrentUser(
     val status: Status,
     val authProvider: AuthProvider,
     val totpEnabled: Boolean,
+    val credentialsVersion: Long,
 ) {
     enum class Status { PENDING, APPROVED, BLOCKED }
 }

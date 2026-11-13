@@ -39,13 +39,15 @@ class UserRepository(private val dsl: DSLContext) {
             .fetchOne(USERS.PASSWORD_HASH)
     }
 
-    fun updatePasswordHash(userId: Long, passwordHash: String) {
+    fun updatePasswordHash(userId: Long, passwordHash: String): CurrentUser =
         dsl.update(USERS)
             .set(USERS.PASSWORD_HASH, passwordHash)
+            .set(USERS.CREDENTIALS_VERSION, USERS.CREDENTIALS_VERSION.plus(1))
             .set(USERS.UPDATED_AT, OffsetDateTime.now())
             .where(USERS.ID.eq(userId))
-            .execute()
-    }
+            .returning()
+            .fetchSingle()
+            .toCurrentUser()
 
     fun createLocalUser(name: String, email: String, passwordHash: String): CurrentUser =
         dsl.insertInto(USERS)
@@ -129,5 +131,6 @@ class UserRepository(private val dsl: DSLContext) {
         status = CurrentUser.Status.valueOf(status!!),
         authProvider = AuthProvider.valueOf(authProvider!!),
         totpEnabled = totpEnabled!!,
+        credentialsVersion = credentialsVersion!!,
     )
 }

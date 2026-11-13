@@ -38,7 +38,7 @@ class ProfileService(
     }
 
     @Transactional
-    fun changePassword(request: PasswordChangeRequest) {
+    fun changePassword(request: PasswordChangeRequest): CurrentUser {
 
         val user = currentUserProvider.getCurrentUser()
 
@@ -55,7 +55,7 @@ class ProfileService(
             throw InvalidCredentialsException("A senha atual está incorreta")
         }
 
-        userRepository.updatePasswordHash(user.id, passwordEncoder.encode(request.newPassword)!!)
+        return userRepository.updatePasswordHash(user.id, passwordEncoder.encode(request.newPassword)!!)
     }
 
     private fun CurrentUser.toResponse() = ProfileResponse(
