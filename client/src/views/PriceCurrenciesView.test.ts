@@ -269,7 +269,7 @@ describe('PriceCurrenciesView', () => {
   it('shows no demo-mode notice and keeps every control enabled outside demo mode', async () => {
     const { wrapper } = await mountView()
 
-    expect(wrapper.find('.notification').exists()).toBe(false)
+    expect(wrapper.find('.message').exists()).toBe(false)
     expect(switches(wrapper).every((toggle) => !toggle.element.disabled)).toBe(true)
     expect(
       wrapper
@@ -281,10 +281,13 @@ describe('PriceCurrenciesView', () => {
   it('disables the toggles and the manual syncs in demo mode and explains why', async () => {
     const { wrapper } = await mountView({ demoModeEnabled: true })
 
-    expect(wrapper.findAll('.notification').map((notice) => notice.text())).toEqual([
-      'Indisponível no modo demonstração.',
-      'Indisponível no modo demonstração.',
-    ])
+    const notices = wrapper.findAll('.message.is-warning')
+    expect(notices).toHaveLength(1)
+    expect(notices[0].text()).toContain('Indisponível no modo demonstração.')
+    expect(notices[0].text()).toContain(
+      'As rotinas automáticas e as ações administrativas não podem ser usadas.',
+    )
+    expect(wrapper.findAll('.notification')).toHaveLength(0)
     expect(switches(wrapper).every((toggle) => toggle.element.disabled)).toBe(true)
     expect(
       wrapper
