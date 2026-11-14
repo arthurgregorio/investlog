@@ -258,7 +258,7 @@ describe('TheNavbar', () => {
       expect(router.currentRoute.value.name).toBe('notifications')
     })
 
-    it('lists Notificações after the trusted devices item with a single divider before Sair', async () => {
+    it('lists Notificações before the account security items with a single divider before Sair', async () => {
       await mountNavbar()
 
       const menuEntries = Array.from(
@@ -266,11 +266,12 @@ describe('TheNavbar', () => {
       ).map((entry) =>
         entry.classList.contains('dropdown-divider') ? '---' : entry.textContent?.trim(),
       )
-      const trustedDevicesIndex = menuEntries.indexOf('Dispositivos confiáveis')
+      const notificationsIndex = menuEntries.indexOf('Notificações')
 
-      expect(menuEntries.slice(trustedDevicesIndex, trustedDevicesIndex + 4)).toEqual([
-        'Dispositivos confiáveis',
+      expect(menuEntries.slice(notificationsIndex, notificationsIndex + 5)).toEqual([
         'Notificações',
+        'Alterar senha',
+        'Dispositivos confiáveis',
         '---',
         'Sair',
       ])

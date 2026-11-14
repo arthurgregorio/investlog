@@ -127,6 +127,10 @@ async function logout() {
 
         <hr class="dropdown-divider" />
 
+        <b-dropdown-item aria-role="menuitem" @click="router.push({ name: 'notifications' })">
+          <b-icon icon="bell-outline" size="is-small" /> Notificações
+        </b-dropdown-item>
+
         <template v-if="auth.session?.authProvider === 'LOCAL'">
           <b-dropdown-item aria-role="menuitem" @click="openPasswordChange()">
             <b-icon icon="lock-reset" size="is-small" /> Alterar senha
@@ -136,10 +140,6 @@ async function logout() {
             <b-icon icon="cellphone-key" size="is-small" /> Dispositivos confiáveis
           </b-dropdown-item>
         </template>
-
-        <b-dropdown-item aria-role="menuitem" @click="router.push({ name: 'notifications' })">
-          <b-icon icon="bell-outline" size="is-small" /> Notificações
-        </b-dropdown-item>
 
         <hr class="dropdown-divider" />
 
