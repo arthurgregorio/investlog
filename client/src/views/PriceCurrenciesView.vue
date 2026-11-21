@@ -4,6 +4,7 @@ import { useToast } from 'buefy'
 import CurrencyRateRow from '@/components/settings/CurrencyRateRow.vue'
 import PriceSyncActions from '@/components/settings/PriceSyncActions.vue'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import DemoModeNotice from '@/components/ui/DemoModeNotice.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { useRatesStore } from '@/stores/rates'
 import { useConfigurationsStore } from '@/stores/configurations'
@@ -51,6 +52,10 @@ async function updateRate(currencyCode: string, rate: number) {
       description="Defina as taxas de conversão e a sincronização automática de preços."
     />
 
+    <DemoModeNotice v-if="demoModeEnabled">
+      As rotinas automáticas e as ações administrativas não podem ser usadas.
+    </DemoModeNotice>
+
     <SettingsSection
       title="Moeda base e conversão"
       :description="`A visão consolidada converte cada carteira para ${ratesStore.baseCurrency} usando estas taxas.`"
@@ -75,9 +80,6 @@ async function updateRate(currencyCode: string, rate: number) {
       description="Ative ou desative funções do sistema."
       :loading="configurationsStore.loading"
     >
-      <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
-        Indisponível no modo demonstração.
-      </b-notification>
       <b-switch
         v-for="(toggle, index) in SYNC_TOGGLES"
         :key="toggle.key"
@@ -94,9 +96,6 @@ async function updateRate(currencyCode: string, rate: number) {
       title="Ações administrativas"
       description="Execute ações manuais de manutenção quando necessário."
     >
-      <b-notification v-if="demoModeEnabled" type="is-warning" :closable="false">
-        Indisponível no modo demonstração.
-      </b-notification>
       <PriceSyncActions :disabled="demoModeEnabled" />
     </SettingsSection>
   </div>

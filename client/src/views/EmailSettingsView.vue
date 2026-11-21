@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { isAxiosError } from 'axios'
 import { useToast } from 'buefy'
 import SettingsSection from '@/components/settings/SettingsSection.vue'
+import DemoModeNotice from '@/components/ui/DemoModeNotice.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { mailSettingsApi } from '@/api/mailSettings'
 import { useAuthStore } from '@/stores/auth'
@@ -140,10 +141,9 @@ async function sendTest() {
       description="Configure o servidor que envia os e-mails do InvestLog."
     />
 
-    <b-message v-if="demoModeEnabled" type="is-warning" has-icon :closable="false" class="mb-0">
-      <strong>Indisponível no modo demonstração.</strong> As configurações de e-mail não podem ser
-      alteradas e nenhum e-mail é enviado.
-    </b-message>
+    <DemoModeNotice v-if="demoModeEnabled">
+      As configurações de e-mail não podem ser alteradas e nenhum e-mail é enviado.
+    </DemoModeNotice>
 
     <SettingsSection
       title="Envio de e-mails"
